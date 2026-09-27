@@ -1,0 +1,316 @@
+{
+  "id": "63359891-d0bb-4e66-b72e-3900e3140087",
+  "prevId": "88fb43c6-d0ea-4950-bd9d-ca1685d3cc51",
+  "version": "7",
+  "dialect": "postgresql",
+  "tables": {
+    "agent_reference.job_admissions": {
+      "name": "job_admissions",
+      "schema": "agent_reference",
+      "columns": {
+        "tenant_ref": {
+          "name": "tenant_ref",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "user_ref": {
+          "name": "user_ref",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "namespace_ref": {
+          "name": "namespace_ref",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "request_key": {
+          "name": "request_key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "digest": {
+          "name": "digest",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "job_id": {
+          "name": "job_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "job_admissions_job_id_jobs_job_id_fk": {
+          "name": "job_admissions_job_id_jobs_job_id_fk",
+          "tableFrom": "job_admissions",
+          "tableTo": "jobs",
+          "schemaTo": "agent_reference",
+          "columnsFrom": [
+            "job_id"
+          ],
+          "columnsTo": [
+            "job_id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "job_admissions_tenant_ref_user_ref_namespace_ref_request_key_pk": {
+          "name": "job_admissions_tenant_ref_user_ref_namespace_ref_request_key_pk",
+          "columns": [
+            "tenant_ref",
+            "user_ref",
+            "namespace_ref",
+            "request_key"
+          ]
+        }
+      },
+      "uniqueConstraints": {
+        "admissions_job_id_unique": {
+          "name": "admissions_job_id_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "job_id"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "agent_reference.job_checkpoints": {
+      "name": "job_checkpoints",
+      "schema": "agent_reference",
+      "columns": {
+        "job_id": {
+          "name": "job_id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "version": {
+          "name": "version",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "revision": {
+          "name": "revision",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "snapshot": {
+          "name": "snapshot",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "job_checkpoints_job_id_jobs_job_id_fk": {
+          "name": "job_checkpoints_job_id_jobs_job_id_fk",
+          "tableFrom": "job_checkpoints",
+          "tableTo": "jobs",
+          "schemaTo": "agent_reference",
+          "columnsFrom": [
+            "job_id"
+          ],
+          "columnsTo": [
+            "job_id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "checkpoints_safe_revision": {
+          "name": "checkpoints_safe_revision",
+          "value": "\"agent_reference\".\"job_checkpoints\".\"revision\" between 1 and 9007199254740991"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "agent_reference.job_deliveries": {
+      "name": "job_deliveries",
+      "schema": "agent_reference",
+      "columns": {
+        "job_id": {
+          "name": "job_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "revision": {
+          "name": "revision",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "attempt_ref": {
+          "name": "attempt_ref",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "delivery": {
+          "name": "delivery",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "job_deliveries_job_id_revision_job_events_job_id_revision_fk": {
+          "name": "job_deliveries_job_id_revision_job_events_job_id_revision_fk",
+          "tableFrom": "job_deliveries",
+          "tableTo": "job_events",
+          "schemaTo": "agent_reference",
+          "columnsFrom": [
+            "job_id",
+            "revision"
+          ],
+          "columnsTo": [
+            "job_id",
+            "revision"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "job_deliveries_job_id_revision_attempt_ref_pk": {
+          "name": "job_deliveries_job_id_revision_attempt_ref_pk",
+          "columns": [
+            "job_id",
+            "revision",
+            "attempt_ref"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "agent_reference.job_events": {
+      "name": "job_events",
+      "schema": "agent_reference",
+      "columns": {
+        "job_id": {
+          "name": "job_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "revision": {
+          "name": "revision",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "event": {
+          "name": "event",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "job_events_job_id_jobs_job_id_fk": {
+          "name": "job_events_job_id_jobs_job_id_fk",
+          "tableFrom": "job_events",
+          "tableTo": "jobs",
+          "schemaTo": "agent_reference",
+          "columnsFrom": [
+            "job_id"
+          ],
+          "columnsTo": [
+            "job_id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "job_events_job_id_revision_pk": {
+          "name": "job_events_job_id_revision_pk",
+          "columns": [
+            "job_id",
+            "revision"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "events_safe_revision": {
+          "name": "events_safe_revision",
+          "value": "\"agent_reference\".\"job_events\".\"revision\" between 1 and 9007199254740991"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "agent_reference.jobs": {
+      "name": "jobs",
+      "schema": "agent_reference",
+      "columns": {
+        "job_id": {
+          "name": "job_id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "identity": {
+          "name": "identity",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "revision": {
+          "name": "revision",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "jobs_safe_revision": {
+          "name": "jobs_safe_revision",
+          "value": "\"agent_reference\".\"jobs\".\"revision\" between 0 and 9007199254740991"
+        }
+      },
+      "isRLSEnabled": false
+    }
+  },
+  "enums": {},
+  "schemas": {},
+  "sequences": {},
+  "roles": {},
+  "policies": {},
+  "views": {},
+  "_meta": {
+    "columns": {},
+    "schemas": {},
+    "tables": {}
+  }
+}

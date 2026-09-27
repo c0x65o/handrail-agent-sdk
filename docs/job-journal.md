@@ -13,7 +13,8 @@ approved nonsecret references. Equality checks fence identities; they do not
 verify principal authority, receipt truth, grant scope or instruction ownership.
 An identifier-shaped secret is still forbidden. Handrail will implement this port
 over native authoritative task services, not deploy this reference journal as a
-second controller. Admission, claims, scheduling, cancellation orchestration,
+second controller. [Admission](job-admission.md) now composes this journal with
+atomic request-key reservations. Claims, scheduling, cancellation orchestration,
 answers, effect reconciliation and execution remain separate work.
 
 ## Canonical facts and atomic revisions
@@ -96,7 +97,7 @@ With the documented disposable variables privately injected, run
 fail; missing SQL execution is never a skip or passing acceptance. Linux workers
 with PostgreSQL 15 binaries can instead run `node tests/run-local-postgres.mjs` as
 a non-root user. It creates a new temporary cluster, database and non-superuser
-fixture role, privately injects only its own connection, runs both commands, then
+fixture role, privately injects only its own connection, runs admission, journal and harness commands, then
 stops and removes that cluster. It does not read or modify an existing database.
 
 `npm test` compiles both reference code and the helper, and runs the existing

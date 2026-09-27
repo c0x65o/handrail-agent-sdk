@@ -1,5 +1,5 @@
 import { sql } from 'drizzle-orm';
-import { bigint, check, foreignKey, integer, jsonb, pgSchema, primaryKey, text } from 'drizzle-orm/pg-core';
+import { bigint, check, foreignKey, integer, jsonb, pgSchema, primaryKey, text, unique } from 'drizzle-orm/pg-core';
 import type { JobDelivery, JobEvent, JobIdentity, JobSnapshot } from '../../../src/contracts/job.js';
 
 export const referenceSchemaName = 'agent_reference';
@@ -30,6 +30,15 @@ export function journalTables(namespace = referenceSchemaName) {
     revision: bigint('revision', { mode: 'number' }).notNull(),
     snapshot: jsonb('snapshot').$type<JobSnapshot>().notNull(),
   }, t => [check('checkpoints_safe_revision', sql`${t.revision} between 1 and 9007199254740991`)]);
-  return { jobs, events, deliveries, checkpoints };
+  const admissions = schema.table('job_admissions', {
+    tenantRef: text('tenant_ref').notNull(),
+    userRef: text('user_ref').notNull(),
+    namespaceRef: text('namespace_ref').notNull(),
+    requestKey: text('request_key').notNull(),
+    digest: text('digest').notNull(),
+    jobId: text('job_id').notNull().references(() => jobs.jobId),
+  }, t => [primaryKey({ columns: [t.tenantRef, t.userRef, t.namespaceRef, t.requestKey] }),
+    unique('admissions_job_id_unique').on(t.jobId)]);
+  return { jobs, events, deliveries, checkpoints, admissions };
 }
-export const { jobs, events, deliveries, checkpoints } = journalTables();
+export const { jobs, events, deliveries, checkpoints, admissions } = journalTables();

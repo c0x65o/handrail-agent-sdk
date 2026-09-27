@@ -4,7 +4,7 @@ import * as server from 'handrail-agent-sdk/server';
 import { validateConnectionEnsureInput, validateConnectionEnsureResult, validateConnectionReconnect } from 'handrail-agent-sdk';
 import type { ConnectionEnsureInput, ConnectionEnsureResult, ConnectionState } from 'handrail-agent-sdk';
 type AssertEmpty<T extends never> = T;
-type ServerExports = AssertEmpty<keyof typeof server>;
+type ServerExports = AssertEmpty<Exclude<keyof typeof server, 'createJobAdmission'>>;
 const states: Record<JobState, boolean> = { queued: true, running: true, waiting: true, succeeded: true, failed: true, cancelled: true };
 declare const identity: JobIdentity;
 const command: JobCommand = { command: 'cancel', identity, expectedRevision: 2, reason: 'explicit_stop' };
@@ -138,3 +138,26 @@ if (event.ok) {
 }
 // @ts-expect-error The server port has no public driver/connection handle.
 store.database;
+
+import type { JobAdmissionHost, JobAdmissionStore, JobAdmissionReceipt, JobInspection, JobSubmission } from 'handrail-agent-sdk/server';
+declare const admissionHost: JobAdmissionHost;
+declare const admissionStore: JobAdmissionStore;
+const admission = server.createJobAdmission(admissionHost, admissionStore);
+const submission: JobSubmission = { requestKey: 'key', originTaskRef: 'task', instructionRevision: 1,
+  operation: { operationRef: 'operation', inputRefs: { resource: 'resource' } } };
+const admitted = await admission.submit(submission);
+if (admitted.ok) {
+  const receipt: JobAdmissionReceipt = admitted.value;
+  const inspected = await admission.inspect({ jobId: receipt.jobId });
+  if (inspected.ok) {
+    const state: JobInspection = inspected.value;
+    // @ts-expect-error Raw journal and authorization are not observations.
+    state.identity;
+    // @ts-expect-error Effects are withheld from admission inspection.
+    state.effects;
+  }
+}
+// @ts-expect-error Caller identity cannot grant authority.
+admission.submit({ ...submission, host: identity.host });
+// @ts-expect-error Closing observation is not a cancellation API.
+admission.cancel('job');

@@ -21,3 +21,16 @@ export interface JobStore {
    */
   load(identity: JobIdentity): Promise<JobStoreResult<JobSnapshot>>;
 }
+
+/** Trusted persistence boundary. Atomically bind a request reservation to its
+ * initial event. Implementations must detach/validate inputs and compare the
+ * entire canonical binding, excluding only the newly proposed job ID. */
+export interface JobAdmissionStore {
+  admit(input: {
+    readonly namespaceRef: string;
+    readonly grantRevision: number;
+    readonly operation: import('./submit.js').JobSubmission['operation'];
+    readonly event: JobEvent;
+  }): Promise<JobStoreResult<{ readonly event: JobEvent; readonly replayed: boolean }>>;
+  inspectAdmission(jobId: string, authority: import('./submit.js').JobAuthority): Promise<JobStoreResult<JobSnapshot>>;
+}

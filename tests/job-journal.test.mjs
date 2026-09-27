@@ -5,6 +5,7 @@ import { resolve, join } from 'node:path';
 import { migrate } from 'drizzle-orm/node-postgres/migrator';
 import { createPostgresHarness } from '../.postgres-build/postgres.js';
 import { createJobJournal } from '../.reference-build/reference/node/job-journal.js';
+import { migrations } from './helpers/migrations.mjs';
 import { journalTables } from '../.reference-build/reference/node/db/schema.js';
 
 const identity = {
@@ -29,23 +30,6 @@ function event(kind, previousRevision, extra = {}) {
 function ok(result) { assert.equal(result.ok, true, result.code); return result.value; }
 function rejected(result, code) { assert.deepEqual(result, { ok: false, code }); }
 
-// Apply checked-in Drizzle migrations with only the quoted namespace relocated.
-// The stock migrator's ledger and its table-owned SERIAL sequence live in the
-// same owned schema; dropping that table drops its owned sequence. No global DDL.
-async function migrations(t, harness, client) {
-  const folder = await mkdtemp(resolve('.reference-build/migrations-'));
-  t.after(() => rm(folder, { recursive: true, force: true }));
-  const source = resolve('reference/node/db/migrations');
-  await mkdir(join(folder, 'meta'));
-  await writeFile(join(folder, 'meta/_journal.json'), await readFile(join(source, 'meta/_journal.json')));
-  for (const file of await readdir(source)) if (file.endsWith('.sql')) {
-    const sql = (await readFile(join(source, file), 'utf8')).replaceAll('"agent_reference"', `"${harness.schema}"`);
-    await writeFile(join(folder, file), sql);
-  }
-  try { await migrate(client.database(), { migrationsFolder: folder, migrationsSchema: harness.schema, migrationsTable: 'journal_migrations' }); }
-  catch { assert.fail('ISOLATED_MIGRATION_FAILED'); }
-  return folder;
-}
 async function setup(t) {
   const harness = await createPostgresHarness();
   t.after(() => harness.cleanup());
@@ -73,7 +57,7 @@ test('migration isolation, rerun and owned cleanup preserve independent sentinel
   assert.equal((await first.query('SHOW search_path')).rows[0].search_path, 'pg_catalog');
   try { await migrate(first.database(), { migrationsFolder: folder, migrationsSchema: harness.schema, migrationsTable: 'journal_migrations' }); }
   catch { assert.fail('MIGRATION_RERUN_FAILED'); }
-  assert.equal((await first.query(`SELECT count(*)::int AS n FROM ${harness.table('journal_migrations')}`)).rows[0].n, 1);
+  assert.equal((await first.query(`SELECT count(*)::int AS n FROM ${harness.table('journal_migrations')}`)).rows[0].n, 2);
   ok(await journal.append(event('submitted', 0)));
   await harness.cleanup();
   assert.equal((await observer.query('SELECT count(*)::int AS n FROM pg_catalog.pg_namespace WHERE nspname = $1', [harness.schema])).rows[0].n, 0);
@@ -268,7 +252,7 @@ test('a failed migration rolls back every generated application table', async t 
   assert.deepEqual((await client.query(`SELECT c.relname FROM pg_catalog.pg_class c JOIN pg_catalog.pg_namespace n ON c.relnamespace=n.oid WHERE n.nspname=$1 AND c.relkind='r' ORDER BY c.relname`, [harness.schema])).rows,
     [{ relname: 'journal_migrations' }]);
   assert.equal((await client.query(`SELECT count(*)::int AS n FROM ${harness.table('journal_migrations')}`)).rows[0].n, 0);
-  t.diagnostic('Real SQL: injected final migration failure rolled back all four generated tables and ledger insertion.');
+  t.diagnostic('Real SQL: injected final migration failure rolled back all generated tables and ledger insertion.');
 });
 
 test('append detaches validated input before awaiting SQL', async t => {

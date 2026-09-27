@@ -1,6 +1,6 @@
 {
   "name": "handrail-agent-sdk",
-  "version": "0.0.0.9",
+  "version": "0.0.0.10",
   "private": true,
   "description": "Handrail Agent SDK packaging bootstrap",
   "type": "module",
@@ -36,7 +36,8 @@
     "build:reference": "tsc -p reference/tsconfig.json",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "npm run build:reference && node .reference-build/reference/node/db/migrate.js",
-    "test:journal": "npm run build:reference && npm run build:test-postgres && node --test --test-concurrency=1 --test-reporter=tap tests/job-journal.test.mjs"
+    "test:journal": "npm run build:reference && npm run build:test-postgres && node --test --test-concurrency=1 --test-reporter=tap tests/job-journal.test.mjs",
+    "test:submit": "npm run build:reference && npm run build:test-postgres && node --test --test-concurrency=1 --test-reporter=tap tests/submit.test.mjs"
   },
   "devDependencies": {
     "@types/node": "22.20.4",
