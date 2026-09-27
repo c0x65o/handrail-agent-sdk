@@ -8,5 +8,8 @@
     "noUncheckedSideEffectImports": true,
     "types": []
   },
-  "files": ["consumer.mts"]
+  "files": [
+    "consumer.mts",
+    "convergence-v1.ts"
+  ]
 }

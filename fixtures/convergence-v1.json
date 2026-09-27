@@ -1,0 +1,2553 @@
+{
+  "schemaVersion": 1,
+  "authority": {
+    "ownerGoalId": "1b13c4ab-38c2-4d78-a5cb-238e2f257c62",
+    "ownerTaskId": "7ccb807a-4e38-42c7-bf23-73d62adec118",
+    "itemId": "f0881bfd-7aec-41d3-96d2-f8c82b536efb",
+    "baseline": "revised-owner-goal-v1"
+  },
+  "source": {
+    "branch": "lane/agent-sdk-v1",
+    "baseCommit": "04e8a72b4e5093753d9b03aa4adc62e2b3292383"
+  },
+  "cases": [
+    {
+      "id": "ASDK-V1-M1-CONTRACTS",
+      "milestone": "M1",
+      "title": "Exported contracts",
+      "owner": {
+        "surface": "SDK public and trusted server contracts",
+        "hosts": [
+          "handrail",
+          "reference-node"
+        ]
+      },
+      "expected": {
+        "proofClass": "structural_fixture",
+        "outcome": "Job, connection, vault and browser payloads typecheck through public exports and reject invalid bindings.",
+        "requiredEvidence": [
+          "Pinned compiler output and consumer typecheck",
+          "Focused positive and negative contract test results at an exact source revision"
+        ],
+        "failureConditions": [
+          "Any public contract fixture fails typecheck",
+          "Unknown fields or raw payloads cross the public boundary",
+          "Schema success is reported as runtime or authorization proof"
+        ]
+      },
+      "observed": {
+        "status": "unverified",
+        "evidence": []
+      }
+    },
+    {
+      "id": "ASDK-V1-M1-OWNERSHIP",
+      "milestone": "M1",
+      "title": "Native execution ownership",
+      "owner": {
+        "surface": "Handrail native task, scheduler, vault and provider owners",
+        "hosts": [
+          "handrail"
+        ]
+      },
+      "expected": {
+        "proofClass": "source_review",
+        "outcome": "Map adapters to inspected current definitions and callers; retain original work identities and one native execution owner.",
+        "requiredEvidence": [
+          "Revision-bound native ownership inventory and caller review",
+          "Explicit ownership of admission, persistence, wakes, custody, reconciliation and output release"
+        ],
+        "failureConditions": [
+          "A second planner, controller or scheduler becomes authoritative",
+          "An existing native task/request identity is replaced",
+          "An SDK-local ownership document is claimed without source provenance"
+        ]
+      },
+      "observed": {
+        "status": "unverified",
+        "evidence": []
+      }
+    },
+    {
+      "id": "ASDK-V1-M1-BOUNDARIES",
+      "milestone": "M1",
+      "title": "Threat boundaries",
+      "owner": {
+        "surface": "Host ingress, trusted executor and output release",
+        "hosts": [
+          "handrail",
+          "reference-node"
+        ]
+      },
+      "expected": {
+        "proofClass": "source_review",
+        "outcome": "Specify untrusted inputs, authenticated scope, private custody and all model/client/history/diagnostic output boundaries.",
+        "requiredEvidence": [
+          "Threat review mapped to agent-security-boundary.md and negative scenarios",
+          "Current authorization and fail-closed ownership for dispatch and release"
+        ],
+        "failureConditions": [
+          "Model, page or client claims widen authority",
+          "Secret values or secret-derived data can reach any observation, chat, history, evidence, DOM output, screenshot, log or error sink"
+        ]
+      },
+      "observed": {
+        "status": "unverified",
+        "evidence": []
+      }
+    },
+    {
+      "id": "ASDK-V1-M1-QUALIFICATION",
+      "milestone": "M1",
+      "title": "Trusted adapter qualification",
+      "owner": {
+        "surface": "Host capability registry and independent adapter reviewer",
+        "hosts": [
+          "handrail",
+          "reference-node"
+        ]
+      },
+      "expected": {
+        "proofClass": "independent_security_qa",
+        "outcome": "Enable only exact adapter/version/capability combinations with independent synthetic boundary qualification; disable unsupported capabilities.",
+        "requiredEvidence": [
+          "Adapter, version, transport, telemetry and capability matrix",
+          "Independent redaction, egress, custody and lease-fencing evidence"
+        ],
+        "failureConditions": [
+          "An unqualified adapter is discoverable or executable",
+          "A login, mask, prompt, boolean ready flag or validator success substitutes for qualification"
+        ]
+      },
+      "observed": {
+        "status": "unverified",
+        "evidence": []
+      }
+    },
+    {
+      "id": "ASDK-V1-M1-BASELINE",
+      "milestone": "M1",
+      "title": "Acceptance baseline",
+      "owner": {
+        "surface": "SDK acceptance manifest and typed fixture",
+        "hosts": [
+          "handrail",
+          "reference-node"
+        ]
+      },
+      "expected": {
+        "proofClass": "structural_fixture",
+        "outcome": "Keep stable M1-M6 cases, unmeasured manual metrics and a synthetic same-identity workflow mechanically consistent.",
+        "requiredEvidence": [
+          "Manifest validation and deliberate negative mutations",
+          "Real TypeScript check and exact JSON/typed-workflow comparison",
+          "Source identity and explicit proof limitations"
+        ],
+        "failureConditions": [
+          "Duplicate or missing cases or milestones",
+          "Unsupported pass claims",
+          "Fixture evidence promoted to live-provider or implementation acceptance",
+          "Original identity drift"
+        ]
+      },
+      "observed": {
+        "status": "unverified",
+        "evidence": []
+      }
+    },
+    {
+      "id": "ASDK-V1-M2-ADMISSION",
+      "milestone": "M2",
+      "title": "Durable same-job admission and replay",
+      "owner": {
+        "surface": "Job host and durable journal",
+        "hosts": [
+          "handrail",
+          "reference-node"
+        ]
+      },
+      "expected": {
+        "proofClass": "synthetic_runtime",
+        "outcome": "Persist one original admission and contiguous revisions; identical retries and cross-process restart return canonical facts.",
+        "requiredEvidence": [
+          "Database-backed cross-process admission and replay traces",
+          "Original task/job/request/native/account/action/operation/effect identities before and after restart"
+        ],
+        "failureConditions": [
+          "A duplicate appends another logical fact or effect",
+          "Restart depends on process-local state",
+          "Revision gaps or original identity changes",
+          "Wrong tenant, user, project, account, environment or purpose reads another journal"
+        ]
+      },
+      "observed": {
+        "status": "unverified",
+        "evidence": []
+      }
+    },
+    {
+      "id": "ASDK-V1-M2-IDEMPOTENCY",
+      "milestone": "M2",
+      "title": "Conflicting idempotency",
+      "owner": {
+        "surface": "Job admission and domain effect owner",
+        "hosts": [
+          "handrail",
+          "reference-node"
+        ]
+      },
+      "expected": {
+        "proofClass": "synthetic_runtime",
+        "outcome": "Reuse a logical request/effect only for identical canonical content under current authority.",
+        "requiredEvidence": [
+          "Concurrent identical and conflicting request-key submissions",
+          "Durable admission and effect counts with safe conflict codes"
+        ],
+        "failureConditions": [
+          "Changed instructions, scope, payload or effect under an existing key are accepted",
+          "Retry invents a new effect key",
+          "Conflict errors echo submitted data"
+        ]
+      },
+      "observed": {
+        "status": "unverified",
+        "evidence": []
+      }
+    },
+    {
+      "id": "ASDK-V1-M2-LEASES",
+      "milestone": "M2",
+      "title": "Concurrent lease fencing",
+      "owner": {
+        "surface": "Durable job claim owner",
+        "hosts": [
+          "handrail",
+          "reference-node"
+        ]
+      },
+      "expected": {
+        "proofClass": "synthetic_runtime",
+        "outcome": "Only the current lease holder dispatches, persists and releases; expiry, takeover and restart fence stale workers.",
+        "requiredEvidence": [
+          "Two-worker race with durable compare-and-swap and increasing epochs",
+          "Late dispatch/write/output tests after lease loss and expiry"
+        ],
+        "failureConditions": [
+          "Concurrent leases both execute",
+          "Equal or stale epochs are accepted",
+          "Lease expiry or unavailable authority fails open"
+        ]
+      },
+      "observed": {
+        "status": "unverified",
+        "evidence": []
+      }
+    },
+    {
+      "id": "ASDK-V1-M2-ANSWERS",
+      "milestone": "M2",
+      "title": "Revision-bound challenge answers",
+      "owner": {
+        "surface": "Native challenge and answer owner",
+        "hosts": [
+          "handrail",
+          "reference-node"
+        ]
+      },
+      "expected": {
+        "proofClass": "synthetic_runtime",
+        "outcome": "Consume the current original-job challenge answer once; resume only after host-verified resolution and fresh authorization.",
+        "requiredEvidence": [
+          "Private response-reference binding to requirement ID/revision, actor and job revision",
+          "Duplicate, stale, wrong-actor and restarted answer tests"
+        ],
+        "failureConditions": [
+          "Stale answer or wrong challenge revision is consumed",
+          "Answer alone grants use or resumes",
+          "Duplicate input causes a second effect",
+          "Cancelled or scope-changed work resumes"
+        ]
+      },
+      "observed": {
+        "status": "unverified",
+        "evidence": []
+      }
+    },
+    {
+      "id": "ASDK-V1-M2-CANCELLATION",
+      "milestone": "M2",
+      "title": "Explicit cancellation",
+      "owner": {
+        "surface": "Job host and dispatch/output fences",
+        "hosts": [
+          "handrail",
+          "reference-node"
+        ]
+      },
+      "expected": {
+        "proofClass": "synthetic_runtime",
+        "outcome": "Explicit Stop durably prevents new dispatch and late release while preserving uncertain effects; closing observation only disposes locally.",
+        "requiredEvidence": [
+          "Cancellation races before dispatch, after effect and during waiting",
+          "Restarted cancelled journal and late callback tests",
+          "Observation-disposal test"
+        ],
+        "failureConditions": [
+          "Disposal cancels admitted work",
+          "Explicit cancellation resurrects on resume/retry",
+          "Late output escapes cancellation fence",
+          "Unknown effects disappear"
+        ]
+      },
+      "observed": {
+        "status": "unverified",
+        "evidence": []
+      }
+    },
+    {
+      "id": "ASDK-V1-M2-UNKNOWN",
+      "milestone": "M2",
+      "title": "Unknown-effect reconciliation",
+      "owner": {
+        "surface": "Original domain effect owner and job journal",
+        "hosts": [
+          "handrail",
+          "reference-node"
+        ]
+      },
+      "expected": {
+        "proofClass": "synthetic_runtime",
+        "outcome": "Account for the same uncertain effect through interruption and cancellation; use a separately reviewed domain reconciliation contract before any retry or success.",
+        "requiredEvidence": [
+          "Lost-acknowledgment and restart tests retaining original effect and reconciliation identity",
+          "Qualified domain reconciliation evidence once a supported contract exists"
+        ],
+        "failureConditions": [
+          "Blind replay on timeout",
+          "Unknown outcome is relabelled or discarded",
+          "Success occurs with unresolved effects",
+          "Lifecycle validation invents an unsupported reconciliation transition"
+        ]
+      },
+      "observed": {
+        "status": "unverified",
+        "evidence": []
+      }
+    },
+    {
+      "id": "ASDK-V1-M3-LOGIN",
+      "milestone": "M3",
+      "title": "Password and login handoff",
+      "owner": {
+        "surface": "Private secure-entry route, Vault and qualified executor",
+        "hosts": [
+          "handrail",
+          "reference-node"
+        ]
+      },
+      "expected": {
+        "proofClass": "synthetic_runtime",
+        "outcome": "Capture synthetic login material privately and use it only for the admitted account and exact login target.",
+        "requiredEvidence": [
+          "Reference-only completion bound to original challenge",
+          "Private entry and protected fill runtime checks with synthetic inputs"
+        ],
+        "failureConditions": [
+          "Password or sensitive login identifier enters ordinary chat/model/history/evidence",
+          "Wrong account, origin, frame or form receives fill",
+          "Login is accepted as API capability proof"
+        ]
+      },
+      "observed": {
+        "status": "unverified",
+        "evidence": []
+      }
+    },
+    {
+      "id": "ASDK-V1-M3-API",
+      "milestone": "M3",
+      "title": "API and refresh credentials",
+      "owner": {
+        "surface": "Vault and provider request broker",
+        "hosts": [
+          "handrail",
+          "reference-node"
+        ]
+      },
+      "expected": {
+        "proofClass": "synthetic_runtime",
+        "outcome": "Capture API/refresh credentials privately, encrypt custody and sign bounded endpoint/method/resource requests without exposing tokens.",
+        "requiredEvidence": [
+          "Synthetic API and refresh token capture/use and rotation tests",
+          "Endpoint, redirect, scope and expiry denial evidence"
+        ],
+        "failureConditions": [
+          "Token is returned or placed in a URL, log or error",
+          "Credentialed redirect escapes exact destination",
+          "Refresh widens scope",
+          "Credential presence alone establishes readiness"
+        ]
+      },
+      "observed": {
+        "status": "unverified",
+        "evidence": []
+      }
+    },
+    {
+      "id": "ASDK-V1-M3-IDENTITY",
+      "milestone": "M3",
+      "title": "Synthetic identity and SSN fields",
+      "owner": {
+        "surface": "Vault single-field identity broker",
+        "hosts": [
+          "handrail",
+          "reference-node"
+        ]
+      },
+      "expected": {
+        "proofClass": "synthetic_runtime",
+        "outcome": "Admit synthetic SSN, legal_name, date_of_birth and tax_id one field at a time for explicit recipient and purpose.",
+        "requiredEvidence": [
+          "Synthetic provenance and exact field/recipient/purpose grants",
+          "Per-field protected use and negative recipient tests"
+        ],
+        "failureConditions": [
+          "Raw identity value or bundle appears in retained output",
+          "Real identity data is used in qualification",
+          "Wrong field, recipient, purpose, origin or frame is accepted"
+        ]
+      },
+      "observed": {
+        "status": "unverified",
+        "evidence": []
+      }
+    },
+    {
+      "id": "ASDK-V1-M3-PAYMENT",
+      "milestone": "M3",
+      "title": "Specialized payment references",
+      "owner": {
+        "surface": "Specialized payment custodian and domain approval owner",
+        "hosts": [
+          "handrail",
+          "reference-node"
+        ]
+      },
+      "expected": {
+        "proofClass": "synthetic_runtime",
+        "outcome": "Keep payment references separate from generic secrets and allow only separately authorized verification/attachment.",
+        "requiredEvidence": [
+          "Reference-type incompatibility and exact provider/customer/account/merchant/payee/action binding tests",
+          "Negative purchase and generic-fill checks"
+        ],
+        "failureConditions": [
+          "PAN or CVV is stored or exposed in general custody",
+          "Payment reference substitutes for generic secret",
+          "Reference possession permits purchases or spending",
+          "Wrong payment account or merchant is accepted"
+        ]
+      },
+      "observed": {
+        "status": "unverified",
+        "evidence": []
+      }
+    },
+    {
+      "id": "ASDK-V1-M3-SHARING",
+      "milestone": "M3",
+      "title": "Sharing and item use controls",
+      "owner": {
+        "surface": "Native Vault ACL and grant owner",
+        "hosts": [
+          "handrail",
+          "reference-node"
+        ]
+      },
+      "expected": {
+        "proofClass": "synthetic_runtime",
+        "outcome": "Authorize use per item/version and execution scope; distinguish personal/shared custody, copying, use, human reveal and export.",
+        "requiredEvidence": [
+          "Personal-to-project copy with source/destination identity and authorization",
+          "Wrong tenant/user/project/account/environment/purpose tests",
+          "Use versus reveal/export and catalog visibility tests"
+        ],
+        "failureConditions": [
+          "Membership, sharing, reveal/export or catalog visibility implicitly authorizes Agent use",
+          "Null scope becomes wildcard",
+          "Copy loses source request or entry identity",
+          "Model reveal/export becomes available"
+        ]
+      },
+      "observed": {
+        "status": "unverified",
+        "evidence": []
+      }
+    },
+    {
+      "id": "ASDK-V1-M3-REVOCATION",
+      "milestone": "M3",
+      "title": "Expiry, revocation and scope changes",
+      "owner": {
+        "surface": "Current Vault grant and item authority",
+        "hosts": [
+          "handrail",
+          "reference-node"
+        ]
+      },
+      "expected": {
+        "proofClass": "synthetic_runtime",
+        "outcome": "Recheck item, grant, task, scope and cancellation at dispatch and output release, including duplicate replay.",
+        "requiredEvidence": [
+          "Expiry-equality, deleted item, revoked grant and scope-change tests",
+          "Late completion/output and stale grant revision checks"
+        ],
+        "failureConditions": [
+          "Expired/revoked material is used or released",
+          "Old grant silently renews",
+          "Wrong item version or changed scope is accepted",
+          "Cached replay bypasses current authorization"
+        ]
+      },
+      "observed": {
+        "status": "unverified",
+        "evidence": []
+      }
+    },
+    {
+      "id": "ASDK-V1-M3-CUSTODY",
+      "milestone": "M3",
+      "title": "Encrypted custody and key lifecycle",
+      "owner": {
+        "surface": "Native or reference private custodian",
+        "hosts": [
+          "handrail",
+          "reference-node"
+        ]
+      },
+      "expected": {
+        "proofClass": "independent_security_qa",
+        "outcome": "Authenticate encrypted item/profile scope and versions; rotate, retire and recover keys without restoring revoked authority.",
+        "requiredEvidence": [
+          "Encrypted-at-rest and authenticated scope tamper tests",
+          "Versioned key rotation/retirement/deletion and backup recovery tests",
+          "Current tombstones checked after restore"
+        ],
+        "failureConditions": [
+          "Plaintext or keys reach public output or storage paths",
+          "Ciphertext can move across tenants/accounts/environments",
+          "Old backup resurrects grants or deleted items",
+          "Key fallback bypasses configured custody"
+        ]
+      },
+      "observed": {
+        "status": "unverified",
+        "evidence": []
+      }
+    },
+    {
+      "id": "ASDK-V1-M3-ISOLATION",
+      "milestone": "M3",
+      "title": "Browser isolation and leases",
+      "owner": {
+        "surface": "Qualified browser executor and profile custodian",
+        "hosts": [
+          "handrail",
+          "reference-node"
+        ]
+      },
+      "expected": {
+        "proofClass": "synthetic_runtime",
+        "outcome": "Isolate each scoped profile/session and fence concurrent human/agent access, stale workers and unknown contexts.",
+        "requiredEvidence": [
+          "Wrong tenant/account/environment profile tests",
+          "Concurrent context/lease races and quarantine on fencing failure"
+        ],
+        "failureConditions": [
+          "Profiles, cookies or storage cross scopes",
+          "Two controllers operate concurrently",
+          "Stale controller can write or observe",
+          "Unfenceable context is reused"
+        ]
+      },
+      "observed": {
+        "status": "unverified",
+        "evidence": []
+      }
+    },
+    {
+      "id": "ASDK-V1-M3-RESTORE",
+      "milestone": "M3",
+      "title": "Browser storage restoration",
+      "owner": {
+        "surface": "Profile persistence and session host",
+        "hosts": [
+          "handrail",
+          "reference-node"
+        ]
+      },
+      "expected": {
+        "proofClass": "synthetic_runtime",
+        "outcome": "Restore encrypted cookies/storage after restart only under fresh current authorization and current tombstones.",
+        "requiredEvidence": [
+          "Process restart using encrypted profile custody",
+          "Revoked/deleted/expired profile and cross-account restore tests",
+          "Separate local and remote revocation receipts"
+        ],
+        "failureConditions": [
+          "Restoration uses plaintext exports or revives revoked authority",
+          "Local deletion is claimed to prove remote logout",
+          "Wrong profile revision is restored"
+        ]
+      },
+      "observed": {
+        "status": "unverified",
+        "evidence": []
+      }
+    },
+    {
+      "id": "ASDK-V1-M3-TAKEOVER",
+      "milestone": "M3",
+      "title": "Takeover and handback",
+      "owner": {
+        "surface": "Native handoff routes and durable browser lease owner",
+        "hosts": [
+          "handrail",
+          "reference-node"
+        ]
+      },
+      "expected": {
+        "proofClass": "synthetic_runtime",
+        "outcome": "Bind human takeover to the original challenge; fence each controller transfer and require fresh handback authority before same-job continuation.",
+        "requiredEvidence": [
+          "Requested/leased/handed-back and expired flows with increasing epochs",
+          "Wrong actor/origin/challenge, stale handback and cancellation tests"
+        ],
+        "failureConditions": [
+          "Old controller retains control or output access",
+          "Handback reuses a prior grant",
+          "Stale/expired answer or changed challenge is accepted",
+          "Handback automatically resumes or discards unknown effects"
+        ]
+      },
+      "observed": {
+        "status": "unverified",
+        "evidence": []
+      }
+    },
+    {
+      "id": "ASDK-V1-M3-FILL",
+      "milestone": "M3",
+      "title": "Protected browser fill",
+      "owner": {
+        "surface": "Browser-to-Vault grant broker",
+        "hosts": [
+          "handrail",
+          "reference-node"
+        ]
+      },
+      "expected": {
+        "proofClass": "synthetic_runtime",
+        "outcome": "Bind protected fill to the current profile, lease, document/navigation, complete ordered frame ancestry, exact field and form endpoint.",
+        "requiredEvidence": [
+          "Qualified atomic target binding at dispatch",
+          "Wrong origin/frame/account, redirect, popup, changed document and duplicate-field negative tests"
+        ],
+        "failureConditions": [
+          "Any changed target inherits credential authority",
+          "Partial frame ancestry or ambiguous field is accepted",
+          "Raw script, clipboard, debug access or ordinary type bypasses protected fill"
+        ]
+      },
+      "observed": {
+        "status": "unverified",
+        "evidence": []
+      }
+    },
+    {
+      "id": "ASDK-V1-M3-CAPTURE",
+      "milestone": "M3",
+      "title": "Protected credential capture",
+      "owner": {
+        "surface": "Qualified browser capture and private Vault custodian",
+        "hosts": [
+          "handrail",
+          "reference-node"
+        ]
+      },
+      "expected": {
+        "proofClass": "synthetic_runtime",
+        "outcome": "Capture newly issued password/token directly into a host-reserved item/version with a separate grant and reference-only receipt.",
+        "requiredEvidence": [
+          "Synthetic issued-credential capture with destination and item binding",
+          "Denied raw DOM/screenshot/network/error output and unknown capture effect tests"
+        ],
+        "failureConditions": [
+          "Captured value reaches model or retained sinks",
+          "Model-chosen custody or changed destination is accepted",
+          "Unknown capture is blindly retried"
+        ]
+      },
+      "observed": {
+        "status": "unverified",
+        "evidence": []
+      }
+    },
+    {
+      "id": "ASDK-V1-M3-TRANSFERS",
+      "milestone": "M3",
+      "title": "Bounded browser actions and transfers",
+      "owner": {
+        "surface": "Browser action broker and transfer gate",
+        "hosts": [
+          "handrail",
+          "reference-node"
+        ]
+      },
+      "expected": {
+        "proofClass": "synthetic_runtime",
+        "outcome": "Authorize bounded navigation/tabs/inspection/click/wait/type and exact scoped upload/download content, type, size and destination.",
+        "requiredEvidence": [
+          "Action catalog and timeout bounds",
+          "Transfer authorization, redirect, unsafe artifact and scope denial tests",
+          "Host-resolved non-sensitive text references"
+        ],
+        "failureConditions": [
+          "Raw paths or unrestricted eval/CDP/shell/export are exposed",
+          "Download or attachment smuggles secret content",
+          "Wrong destination, content type, size or artifact scope is accepted",
+          "Ordinary typing admits secret values"
+        ]
+      },
+      "observed": {
+        "status": "unverified",
+        "evidence": []
+      }
+    },
+    {
+      "id": "ASDK-V1-M3-REDACTION",
+      "milestone": "M3",
+      "title": "Ingress and all-sink secrecy",
+      "owner": {
+        "surface": "Host admission and qualified observation filter",
+        "hosts": [
+          "handrail",
+          "reference-node"
+        ]
+      },
+      "expected": {
+        "proofClass": "independent_security_qa",
+        "outcome": "Withhold unsafe ingress before persistence/model use and filter every output before streaming or retention, including transformed/reflected secrets and unknown page content.",
+        "requiredEvidence": [
+          "Independent synthetic leakage tests for model, chat, history, evidence, DOM, screenshots, logs, errors, network and transfers",
+          "Attestation provenance bound to adapter/version/session/epoch/operation",
+          "Fail-closed redaction/takeover evidence"
+        ],
+        "failureConditions": [
+          "Any raw sensitive value or secret-derived data reaches a retained or model-visible sink",
+          "Masking, a forged attestation or debug/private diagnostics bypasses filtering",
+          "Partial output escapes before redaction"
+        ]
+      },
+      "observed": {
+        "status": "unverified",
+        "evidence": []
+      }
+    },
+    {
+      "id": "ASDK-V1-M4-PREREQUISITES",
+      "milestone": "M4",
+      "title": "Authorized Meta prerequisites",
+      "owner": {
+        "surface": "Marketing SDK provider owner and account owner",
+        "hosts": [
+          "handrail-marketing"
+        ]
+      },
+      "expected": {
+        "proofClass": "authorized_provider",
+        "outcome": "Freeze an explicitly authorized Meta account, exact requested API capabilities and versioned provider prerequisites before provider verification.",
+        "requiredEvidence": [
+          "Authorized account selection and scope record",
+          "Versioned official prerequisite review including consent, account roles, review and access levels",
+          "Trusted adapter qualification references"
+        ],
+        "failureConditions": [
+          "Account or capabilities are guessed",
+          "Outdated prerequisites are treated as current",
+          "Consent/review/access controls are bypassed",
+          "Synthetic aliases are treated as live account evidence"
+        ]
+      },
+      "observed": {
+        "status": "unverified",
+        "evidence": []
+      }
+    },
+    {
+      "id": "ASDK-V1-M4-CONNECT",
+      "milestone": "M4",
+      "title": "Meta missing-to-ready connection",
+      "owner": {
+        "surface": "Marketing SDK AgentPort and Meta verification owner",
+        "hosts": [
+          "handrail-marketing"
+        ]
+      },
+      "expected": {
+        "proofClass": "authorized_provider",
+        "outcome": "Begin with missing access, complete only authorized setup and verify intended Meta account and exact API capabilities through Marketing SDK.",
+        "requiredEvidence": [
+          "Installed-runtime missing-state and private setup receipts",
+          "Authenticated provider API capability receipt with scope, prerequisite version, verification time and expiry"
+        ],
+        "failureConditions": [
+          "Preconfigured token, browser login, token presence or boolean ready replaces API proof",
+          "Wrong tenant/account/environment/capabilities",
+          "Fixture receipt relabelled provider",
+          "Ads, spending or purchases occur"
+        ]
+      },
+      "observed": {
+        "status": "unverified",
+        "evidence": []
+      }
+    },
+    {
+      "id": "ASDK-V1-M4-RESUME",
+      "milestone": "M4",
+      "title": "Original marketing task continuation",
+      "owner": {
+        "surface": "Marketing SDK completion and native Task owner",
+        "hosts": [
+          "handrail-marketing"
+        ]
+      },
+      "expected": {
+        "proofClass": "authorized_provider",
+        "outcome": "After verified setup resume the same original task/job/request and action/operation/effect/challenge bindings under native acceptance and action-specific gates.",
+        "requiredEvidence": [
+          "Before/after original identities and bound requirement revision",
+          "Authorized provider receipt correlated with original installed task continuation"
+        ],
+        "failureConditions": [
+          "New task/job substitutes for the original",
+          "Stale challenge answer is consumed",
+          "Setup grants mutation/spending authority",
+          "Worker exit alone establishes task success"
+        ]
+      },
+      "observed": {
+        "status": "unverified",
+        "evidence": []
+      }
+    },
+    {
+      "id": "ASDK-V1-M4-RECOVERY",
+      "milestone": "M4",
+      "title": "Meta restart, expiry, revoke and duplicate recovery",
+      "owner": {
+        "surface": "Marketing SDK connection lifecycle and durable job owner",
+        "hosts": [
+          "handrail-marketing"
+        ]
+      },
+      "expected": {
+        "proofClass": "authorized_provider",
+        "outcome": "Repeat the original authorized workflow after process restart, credential expiry/revocation and duplicate delivery; reverify within the original capability ceiling.",
+        "requiredEvidence": [
+          "Each recovery variant on the authorized installed runtime",
+          "Durable identity and effect counts with current authorization and receipt provenance",
+          "Fresh verification after expiry/revocation and explicit scope-change handling"
+        ],
+        "failureConditions": [
+          "Restart loses original work",
+          "Duplicate delivery causes another effect",
+          "Expired/revoked receipt is reused",
+          "Scope change silently widens/replaces admission",
+          "Provider-labelled fixture is accepted"
+        ]
+      },
+      "observed": {
+        "status": "unverified",
+        "evidence": []
+      }
+    },
+    {
+      "id": "ASDK-V1-M4-UNKNOWN",
+      "milestone": "M4",
+      "title": "Meta uncertain-effect recovery",
+      "owner": {
+        "surface": "Marketing SDK domain reconciliation owner",
+        "hosts": [
+          "handrail-marketing"
+        ]
+      },
+      "expected": {
+        "proofClass": "authorized_provider",
+        "outcome": "After lost acknowledgment retain original effect and reconciliation identity until qualified domain verification accounts for its outcome.",
+        "requiredEvidence": [
+          "Authorized installed-runtime uncertain-effect scenario without ads or spending",
+          "Domain-owned reconciliation proof and same-task continuation after supported resolution"
+        ],
+        "failureConditions": [
+          "Unknown effects vanish or trigger blind replay",
+          "New effect identity hides duplicate work",
+          "An unsupported current-contract reconciliation transition is claimed",
+          "Synthetic guard tests are presented as live recovery"
+        ]
+      },
+      "observed": {
+        "status": "unverified",
+        "evidence": []
+      }
+    },
+    {
+      "id": "ASDK-V1-M5-PORTABILITY",
+      "milestone": "M5",
+      "title": "Provider-neutral host portability",
+      "owner": {
+        "surface": "SDK core and injected host adapters",
+        "hosts": [
+          "handrail",
+          "reference-node"
+        ]
+      },
+      "expected": {
+        "proofClass": "synthetic_runtime",
+        "outcome": "Run the same core with Handrail and independent Node composition; inject model/provider/storage adapters and preserve host authority.",
+        "requiredEvidence": [
+          "Same capability contract and scenarios on both hosts",
+          "Host dependency graph and explicit unsupported capability negotiation"
+        ],
+        "failureConditions": [
+          "Core requires Handrail globals or a specific model provider",
+          "Standalone host cannot run independently",
+          "Adapter becomes a competing native controller"
+        ]
+      },
+      "observed": {
+        "status": "unverified",
+        "evidence": []
+      }
+    },
+    {
+      "id": "ASDK-V1-M5-TOOLS",
+      "milestone": "M5",
+      "title": "Scoped typed discovery and execution",
+      "owner": {
+        "surface": "Native tool catalog and execution gateway",
+        "hosts": [
+          "handrail",
+          "reference-node"
+        ]
+      },
+      "expected": {
+        "proofClass": "synthetic_runtime",
+        "outcome": "Expose typed tools only within principal scope and reauthorize bounded execution against current grants, revisions and domain approvals.",
+        "requiredEvidence": [
+          "Typed schema consumer and invalid argument checks",
+          "Discovery isolation plus stale catalog/revoked grant/execution-scope tests",
+          "Retry effect identity and cancellation bounds"
+        ],
+        "failureConditions": [
+          "Discovery leaks unauthorized tools",
+          "Catalog visibility authorizes execution",
+          "Wrong tenant/account/environment or scope change is accepted",
+          "Tool retry changes effect identity or bypasses approvals"
+        ]
+      },
+      "observed": {
+        "status": "unverified",
+        "evidence": []
+      }
+    },
+    {
+      "id": "ASDK-V1-M5-EVENTS",
+      "milestone": "M5",
+      "title": "Durable event continuation",
+      "owner": {
+        "surface": "Native event ingress and job owner",
+        "hosts": [
+          "handrail",
+          "reference-node"
+        ]
+      },
+      "expected": {
+        "proofClass": "synthetic_runtime",
+        "outcome": "Authenticate, persist and deduplicate external events before resuming the original job under current authority.",
+        "requiredEvidence": [
+          "Duplicate, reordered, forged and late callback tests across restart",
+          "Event/request/challenge correlation and cancelled-job denial"
+        ],
+        "failureConditions": [
+          "Event creates a replacement task",
+          "Duplicate wake repeats effect",
+          "Forged or stale event resumes work",
+          "Process memory is the only continuation record"
+        ]
+      },
+      "observed": {
+        "status": "unverified",
+        "evidence": []
+      }
+    },
+    {
+      "id": "ASDK-V1-M5-SCHEDULES",
+      "milestone": "M5",
+      "title": "One-time and recurring wakes",
+      "owner": {
+        "surface": "Native scheduler or reference durable scheduler adapter",
+        "hosts": [
+          "handrail",
+          "reference-node"
+        ]
+      },
+      "expected": {
+        "proofClass": "synthetic_runtime",
+        "outcome": "Persist one-time and recurring wake identities, due times and cancellation with bounded retry and no duplicate occurrence execution.",
+        "requiredEvidence": [
+          "Restart before/after due time and concurrent scheduler tests",
+          "Occurrence deduplication, missed-wake policy and cancellation evidence"
+        ],
+        "failureConditions": [
+          "Wake is lost or repeated after restart",
+          "Recurring occurrence loses original task binding",
+          "Cancelled work wakes into execution",
+          "A competing polling controller replaces native scheduling"
+        ]
+      },
+      "observed": {
+        "status": "unverified",
+        "evidence": []
+      }
+    },
+    {
+      "id": "ASDK-V1-M5-CHANNELS",
+      "milestone": "M5",
+      "title": "Future channel identity mapping",
+      "owner": {
+        "surface": "Host channel adapter",
+        "hosts": [
+          "handrail",
+          "reference-node"
+        ]
+      },
+      "expected": {
+        "proofClass": "structural_fixture",
+        "outcome": "Map channel/route/correlation and original native request/thread identities without changing core lifecycle or implying live Avery iMessage replacement.",
+        "requiredEvidence": [
+          "Typed channel-neutral adapter example and identity/replay fixtures",
+          "Explicit deferred live iMessage boundary"
+        ],
+        "failureConditions": [
+          "Channel switch replaces original work identities",
+          "Core depends on iMessage",
+          "A fixture is reported as live channel integration"
+        ]
+      },
+      "observed": {
+        "status": "unverified",
+        "evidence": []
+      }
+    },
+    {
+      "id": "ASDK-V1-M6-CONFORMANCE",
+      "milestone": "M6",
+      "title": "Both-host conformance",
+      "owner": {
+        "surface": "Shared conformance suite and each host owner",
+        "hosts": [
+          "handrail",
+          "reference-node"
+        ]
+      },
+      "expected": {
+        "proofClass": "synthetic_runtime",
+        "outcome": "Run the same recovery and secure-handoff suite on both hosts at exact matching SDK revisions.",
+        "requiredEvidence": [
+          "Per-host runnable commands and results",
+          "Durable database and private browser harness provenance",
+          "Capability matrix distinguishing unsupported, fixture and provider evidence"
+        ],
+        "failureConditions": [
+          "One host is omitted or silently skipped",
+          "Different suite/revisions are compared as parity",
+          "Narrow mocks substitute for persistence or boundary proof"
+        ]
+      },
+      "observed": {
+        "status": "unverified",
+        "evidence": []
+      }
+    },
+    {
+      "id": "ASDK-V1-M6-REFERENCE",
+      "milestone": "M6",
+      "title": "Runnable reference Node host",
+      "owner": {
+        "surface": "Reference Node composition and operator",
+        "hosts": [
+          "reference-node"
+        ]
+      },
+      "expected": {
+        "proofClass": "synthetic_runtime",
+        "outcome": "Start an independent reference host with documented persistence, worker and secure handoff composition using the shared core.",
+        "requiredEvidence": [
+          "Clean-environment startup and representative original-job continuation commands",
+          "Declared dependencies, versions and sanitized operator output"
+        ],
+        "failureConditions": [
+          "Host requires undeclared Handrail services or local workspace links",
+          "Example cannot start or resume after restart",
+          "Runtime claims exceed qualified capabilities"
+        ]
+      },
+      "observed": {
+        "status": "unverified",
+        "evidence": []
+      }
+    },
+    {
+      "id": "ASDK-V1-M6-RUNTIME-QA",
+      "milestone": "M6",
+      "title": "Independent runtime QA",
+      "owner": {
+        "surface": "Independent QA reviewer and both host owners",
+        "hosts": [
+          "handrail",
+          "reference-node"
+        ]
+      },
+      "expected": {
+        "proofClass": "independent_runtime_qa",
+        "outcome": "Independently verify durability, replay, leases, cancellation, schedules and unknown-effect accounting.",
+        "requiredEvidence": [
+          "Independent campaign/reviewer identity, exact host/SDK revisions, commands and safe evidence references",
+          "Positive and adversarial recovery outcomes on both hosts"
+        ],
+        "failureConditions": [
+          "Implementer self-report or worker exit substitutes for independent QA",
+          "Race/restart/cancellation variants are missing",
+          "Failures or unmeasured outcomes are marked passed"
+        ]
+      },
+      "observed": {
+        "status": "unverified",
+        "evidence": []
+      }
+    },
+    {
+      "id": "ASDK-V1-M6-SECURITY-QA",
+      "milestone": "M6",
+      "title": "Independent security QA",
+      "owner": {
+        "surface": "Independent boundary reviewer and qualified adapters",
+        "hosts": [
+          "handrail",
+          "reference-node"
+        ]
+      },
+      "expected": {
+        "proofClass": "independent_security_qa",
+        "outcome": "Independently qualify ingress, custody, browser, transfer and output boundaries using synthetic sensitive data.",
+        "requiredEvidence": [
+          "Exact adapter/policy versions and all-sink synthetic leakage results",
+          "Wrong scope/origin/frame, revocation, stale answer and concurrent controller results"
+        ],
+        "failureConditions": [
+          "Any secret reaches prohibited sinks",
+          "Raw synthetic sensitive values are retained as QA evidence",
+          "Unqualified capability is enabled",
+          "Fixture metadata is mistaken for actual security execution"
+        ]
+      },
+      "observed": {
+        "status": "unverified",
+        "evidence": []
+      }
+    },
+    {
+      "id": "ASDK-V1-M6-INSTALL",
+      "milestone": "M6",
+      "title": "Reproducible public Git installation",
+      "owner": {
+        "surface": "SDK consumer installation and lockfile owner",
+        "hosts": [
+          "handrail",
+          "reference-node"
+        ]
+      },
+      "expected": {
+        "proofClass": "clean_git_install",
+        "outcome": "Install the public HTTPS Git repository at a full 40-character commit SHA with matching lockfile and compilation in normal install/build.",
+        "requiredEvidence": [
+          "Clean consumer manifest and matching resolved lockfile SHA",
+          "Exact Node/npm/TypeScript versions and install/build/typecheck results",
+          "Public HTTPS source availability at selected revision"
+        ],
+        "failureConditions": [
+          "Registry, tarball, file, workspace, branch or tag dependency",
+          "Lockfile differs from manifest pin",
+          "Build needs a separate publishing step",
+          "Local package tests are substituted for a clean public Git install"
+        ]
+      },
+      "observed": {
+        "status": "unverified",
+        "evidence": []
+      }
+    },
+    {
+      "id": "ASDK-V1-M6-OPERATIONS",
+      "milestone": "M6",
+      "title": "Operator documentation and recovery",
+      "owner": {
+        "surface": "Both host operators",
+        "hosts": [
+          "handrail",
+          "reference-node"
+        ]
+      },
+      "expected": {
+        "proofClass": "source_review",
+        "outcome": "Document installation, scope/capability configuration, safe recovery, cancellation, revocation, key lifecycle and escalation with reproducible commands.",
+        "requiredEvidence": [
+          "Revision-bound install guide and runbook",
+          "Reviewed recovery exercises and safe diagnostic examples",
+          "Explicit action-specific provider/deploy/release gates"
+        ],
+        "failureConditions": [
+          "Runbook leaks secrets or instructs blind retry",
+          "Unsupported behavior is documented as available",
+          "Documentation implies authorization to deploy, purchase or call providers"
+        ]
+      },
+      "observed": {
+        "status": "unverified",
+        "evidence": []
+      }
+    },
+    {
+      "id": "ASDK-V1-M6-RELEASE",
+      "milestone": "M6",
+      "title": "Exact revision and installed-runtime evidence",
+      "owner": {
+        "surface": "Native acceptance owner and release evidence assembler",
+        "hosts": [
+          "handrail",
+          "reference-node"
+        ]
+      },
+      "expected": {
+        "proofClass": "installed_runtime_release",
+        "outcome": "Assemble exact SDK/host commits, capability and adapter versions, independent QA, clean installation and original authorized Meta workflow evidence.",
+        "requiredEvidence": [
+          "Exact full-SHA revision/capability matrix with per-host evidence class and unresolved gaps",
+          "Installed runtime original-task Meta setup and recovery receipts",
+          "Independent runtime/security QA and native task acceptance references"
+        ],
+        "failureConditions": [
+          "Release evidence identifies only a branch/tag or dirty checkout as installed release",
+          "Fixture receipts are promoted to provider proof",
+          "Unverified cases become passed",
+          "Original workflow is demonstrated on a different revision/runtime",
+          "Source readiness bypasses publication/deployment/provider gates"
+        ]
+      },
+      "observed": {
+        "status": "unverified",
+        "evidence": []
+      }
+    }
+  ],
+  "workflow": {
+    "fixtureRef": "fixture.convergence-v1",
+    "evidenceMode": "fixture",
+    "identity": {
+      "jobId": "fixture.job",
+      "originTaskRef": "fixture.original-task",
+      "requestKey": "fixture.request",
+      "instructionRevision": 1,
+      "host": {
+        "tenantRef": "fixture.tenant",
+        "userRef": "fixture.user",
+        "projectRef": "fixture.project",
+        "accountRef": "fixture.account",
+        "environmentRef": "fixture.environment",
+        "purposeRef": "fixture.purpose"
+      },
+      "native": {
+        "requestRef": "fixture.native-request",
+        "rootTaskRef": "fixture.root-task",
+        "actionRef": "fixture.action",
+        "operationRef": "fixture.operation",
+        "effectRef": "fixture.effect",
+        "sourceQueue": {
+          "queueRef": "fixture.queue",
+          "messageRef": "fixture.original-message"
+        }
+      },
+      "origin": {
+        "channelRef": "fixture.channel",
+        "routeRef": "fixture.route",
+        "correlationRef": "fixture.correlation"
+      }
+    },
+    "request": {
+      "operation": "connection.ensure",
+      "identity": {
+        "jobId": "fixture.job",
+        "originTaskRef": "fixture.original-task",
+        "requestKey": "fixture.request",
+        "instructionRevision": 1,
+        "host": {
+          "tenantRef": "fixture.tenant",
+          "userRef": "fixture.user",
+          "projectRef": "fixture.project",
+          "accountRef": "fixture.account",
+          "environmentRef": "fixture.environment",
+          "purposeRef": "fixture.purpose"
+        },
+        "native": {
+          "requestRef": "fixture.native-request",
+          "rootTaskRef": "fixture.root-task",
+          "actionRef": "fixture.action",
+          "operationRef": "fixture.operation",
+          "effectRef": "fixture.effect",
+          "sourceQueue": {
+            "queueRef": "fixture.queue",
+            "messageRef": "fixture.original-message"
+          }
+        },
+        "origin": {
+          "channelRef": "fixture.channel",
+          "routeRef": "fixture.route",
+          "correlationRef": "fixture.correlation"
+        }
+      },
+      "connectionRef": "fixture.connection",
+      "providerRef": "fixture.provider",
+      "prerequisiteVersion": "fixture.prerequisites-v1",
+      "minimumCapabilities": [
+        "fixture.api.read"
+      ],
+      "evidenceMode": "fixture",
+      "effect": {
+        "actionRef": "fixture.action",
+        "operationRef": "fixture.operation",
+        "effectRef": "fixture.effect"
+      }
+    },
+    "requirement": {
+      "kind": "secure_input",
+      "requirementRef": "fixture.challenge",
+      "revision": 1,
+      "actor": {
+        "kind": "user",
+        "actorRef": "fixture.user"
+      }
+    },
+    "steps": [
+      {
+        "stepRef": "fixture.submit",
+        "now": 1800000000000,
+        "kind": "append",
+        "delivery": {
+          "attemptRef": "fixture.attempt-1"
+        },
+        "connection": {
+          "request": {
+            "operation": "connection.ensure",
+            "identity": {
+              "jobId": "fixture.job",
+              "originTaskRef": "fixture.original-task",
+              "requestKey": "fixture.request",
+              "instructionRevision": 1,
+              "host": {
+                "tenantRef": "fixture.tenant",
+                "userRef": "fixture.user",
+                "projectRef": "fixture.project",
+                "accountRef": "fixture.account",
+                "environmentRef": "fixture.environment",
+                "purposeRef": "fixture.purpose"
+              },
+              "native": {
+                "requestRef": "fixture.native-request",
+                "rootTaskRef": "fixture.root-task",
+                "actionRef": "fixture.action",
+                "operationRef": "fixture.operation",
+                "effectRef": "fixture.effect",
+                "sourceQueue": {
+                  "queueRef": "fixture.queue",
+                  "messageRef": "fixture.original-message"
+                }
+              },
+              "origin": {
+                "channelRef": "fixture.channel",
+                "routeRef": "fixture.route",
+                "correlationRef": "fixture.correlation"
+              }
+            },
+            "connectionRef": "fixture.connection",
+            "providerRef": "fixture.provider",
+            "prerequisiteVersion": "fixture.prerequisites-v1",
+            "minimumCapabilities": [
+              "fixture.api.read"
+            ],
+            "evidenceMode": "fixture",
+            "effect": {
+              "actionRef": "fixture.action",
+              "operationRef": "fixture.operation",
+              "effectRef": "fixture.effect"
+            }
+          },
+          "state": "requested",
+          "authorization": {
+            "state": "unverified"
+          }
+        },
+        "event": {
+          "kind": "submitted",
+          "previousRevision": 0,
+          "snapshot": {
+            "identity": {
+              "jobId": "fixture.job",
+              "originTaskRef": "fixture.original-task",
+              "requestKey": "fixture.request",
+              "instructionRevision": 1,
+              "host": {
+                "tenantRef": "fixture.tenant",
+                "userRef": "fixture.user",
+                "projectRef": "fixture.project",
+                "accountRef": "fixture.account",
+                "environmentRef": "fixture.environment",
+                "purposeRef": "fixture.purpose"
+              },
+              "native": {
+                "requestRef": "fixture.native-request",
+                "rootTaskRef": "fixture.root-task",
+                "actionRef": "fixture.action",
+                "operationRef": "fixture.operation",
+                "effectRef": "fixture.effect",
+                "sourceQueue": {
+                  "queueRef": "fixture.queue",
+                  "messageRef": "fixture.original-message"
+                }
+              },
+              "origin": {
+                "channelRef": "fixture.channel",
+                "routeRef": "fixture.route",
+                "correlationRef": "fixture.correlation"
+              }
+            },
+            "revision": 1,
+            "state": "queued",
+            "effects": []
+          }
+        }
+      },
+      {
+        "stepRef": "fixture.start",
+        "now": 1800000001000,
+        "kind": "append",
+        "delivery": {
+          "attemptRef": "fixture.attempt-2"
+        },
+        "connection": {
+          "request": {
+            "operation": "connection.ensure",
+            "identity": {
+              "jobId": "fixture.job",
+              "originTaskRef": "fixture.original-task",
+              "requestKey": "fixture.request",
+              "instructionRevision": 1,
+              "host": {
+                "tenantRef": "fixture.tenant",
+                "userRef": "fixture.user",
+                "projectRef": "fixture.project",
+                "accountRef": "fixture.account",
+                "environmentRef": "fixture.environment",
+                "purposeRef": "fixture.purpose"
+              },
+              "native": {
+                "requestRef": "fixture.native-request",
+                "rootTaskRef": "fixture.root-task",
+                "actionRef": "fixture.action",
+                "operationRef": "fixture.operation",
+                "effectRef": "fixture.effect",
+                "sourceQueue": {
+                  "queueRef": "fixture.queue",
+                  "messageRef": "fixture.original-message"
+                }
+              },
+              "origin": {
+                "channelRef": "fixture.channel",
+                "routeRef": "fixture.route",
+                "correlationRef": "fixture.correlation"
+              }
+            },
+            "connectionRef": "fixture.connection",
+            "providerRef": "fixture.provider",
+            "prerequisiteVersion": "fixture.prerequisites-v1",
+            "minimumCapabilities": [
+              "fixture.api.read"
+            ],
+            "evidenceMode": "fixture",
+            "effect": {
+              "actionRef": "fixture.action",
+              "operationRef": "fixture.operation",
+              "effectRef": "fixture.effect"
+            }
+          },
+          "state": "inspecting",
+          "authorization": {
+            "state": "unverified"
+          }
+        },
+        "event": {
+          "kind": "started",
+          "previousRevision": 1,
+          "snapshot": {
+            "identity": {
+              "jobId": "fixture.job",
+              "originTaskRef": "fixture.original-task",
+              "requestKey": "fixture.request",
+              "instructionRevision": 1,
+              "host": {
+                "tenantRef": "fixture.tenant",
+                "userRef": "fixture.user",
+                "projectRef": "fixture.project",
+                "accountRef": "fixture.account",
+                "environmentRef": "fixture.environment",
+                "purposeRef": "fixture.purpose"
+              },
+              "native": {
+                "requestRef": "fixture.native-request",
+                "rootTaskRef": "fixture.root-task",
+                "actionRef": "fixture.action",
+                "operationRef": "fixture.operation",
+                "effectRef": "fixture.effect",
+                "sourceQueue": {
+                  "queueRef": "fixture.queue",
+                  "messageRef": "fixture.original-message"
+                }
+              },
+              "origin": {
+                "channelRef": "fixture.channel",
+                "routeRef": "fixture.route",
+                "correlationRef": "fixture.correlation"
+              }
+            },
+            "revision": 2,
+            "state": "running",
+            "effects": []
+          }
+        }
+      },
+      {
+        "stepRef": "fixture.missing",
+        "now": 1800000002000,
+        "kind": "append",
+        "delivery": {
+          "attemptRef": "fixture.attempt-3"
+        },
+        "connection": {
+          "request": {
+            "operation": "connection.ensure",
+            "identity": {
+              "jobId": "fixture.job",
+              "originTaskRef": "fixture.original-task",
+              "requestKey": "fixture.request",
+              "instructionRevision": 1,
+              "host": {
+                "tenantRef": "fixture.tenant",
+                "userRef": "fixture.user",
+                "projectRef": "fixture.project",
+                "accountRef": "fixture.account",
+                "environmentRef": "fixture.environment",
+                "purposeRef": "fixture.purpose"
+              },
+              "native": {
+                "requestRef": "fixture.native-request",
+                "rootTaskRef": "fixture.root-task",
+                "actionRef": "fixture.action",
+                "operationRef": "fixture.operation",
+                "effectRef": "fixture.effect",
+                "sourceQueue": {
+                  "queueRef": "fixture.queue",
+                  "messageRef": "fixture.original-message"
+                }
+              },
+              "origin": {
+                "channelRef": "fixture.channel",
+                "routeRef": "fixture.route",
+                "correlationRef": "fixture.correlation"
+              }
+            },
+            "connectionRef": "fixture.connection",
+            "providerRef": "fixture.provider",
+            "prerequisiteVersion": "fixture.prerequisites-v1",
+            "minimumCapabilities": [
+              "fixture.api.read"
+            ],
+            "evidenceMode": "fixture",
+            "effect": {
+              "actionRef": "fixture.action",
+              "operationRef": "fixture.operation",
+              "effectRef": "fixture.effect"
+            }
+          },
+          "state": "waiting_for_user",
+          "authorization": {
+            "state": "unverified"
+          },
+          "missingRequirements": [
+            {
+              "kind": "secure_input",
+              "requirementRef": "fixture.challenge",
+              "revision": 1,
+              "actor": {
+                "kind": "user",
+                "actorRef": "fixture.user"
+              },
+              "reason": "credentials_required"
+            }
+          ]
+        },
+        "event": {
+          "kind": "waiting",
+          "previousRevision": 2,
+          "snapshot": {
+            "identity": {
+              "jobId": "fixture.job",
+              "originTaskRef": "fixture.original-task",
+              "requestKey": "fixture.request",
+              "instructionRevision": 1,
+              "host": {
+                "tenantRef": "fixture.tenant",
+                "userRef": "fixture.user",
+                "projectRef": "fixture.project",
+                "accountRef": "fixture.account",
+                "environmentRef": "fixture.environment",
+                "purposeRef": "fixture.purpose"
+              },
+              "native": {
+                "requestRef": "fixture.native-request",
+                "rootTaskRef": "fixture.root-task",
+                "actionRef": "fixture.action",
+                "operationRef": "fixture.operation",
+                "effectRef": "fixture.effect",
+                "sourceQueue": {
+                  "queueRef": "fixture.queue",
+                  "messageRef": "fixture.original-message"
+                }
+              },
+              "origin": {
+                "channelRef": "fixture.channel",
+                "routeRef": "fixture.route",
+                "correlationRef": "fixture.correlation"
+              }
+            },
+            "revision": 3,
+            "state": "waiting",
+            "effects": [],
+            "requirement": {
+              "kind": "secure_input",
+              "requirementRef": "fixture.challenge",
+              "revision": 1,
+              "actor": {
+                "kind": "user",
+                "actorRef": "fixture.user"
+              }
+            }
+          }
+        }
+      },
+      {
+        "stepRef": "fixture.duplicate",
+        "now": 1800000003000,
+        "kind": "duplicate",
+        "delivery": {
+          "attemptRef": "fixture.attempt-4"
+        },
+        "connection": {
+          "request": {
+            "operation": "connection.ensure",
+            "identity": {
+              "jobId": "fixture.job",
+              "originTaskRef": "fixture.original-task",
+              "requestKey": "fixture.request",
+              "instructionRevision": 1,
+              "host": {
+                "tenantRef": "fixture.tenant",
+                "userRef": "fixture.user",
+                "projectRef": "fixture.project",
+                "accountRef": "fixture.account",
+                "environmentRef": "fixture.environment",
+                "purposeRef": "fixture.purpose"
+              },
+              "native": {
+                "requestRef": "fixture.native-request",
+                "rootTaskRef": "fixture.root-task",
+                "actionRef": "fixture.action",
+                "operationRef": "fixture.operation",
+                "effectRef": "fixture.effect",
+                "sourceQueue": {
+                  "queueRef": "fixture.queue",
+                  "messageRef": "fixture.original-message"
+                }
+              },
+              "origin": {
+                "channelRef": "fixture.channel",
+                "routeRef": "fixture.route",
+                "correlationRef": "fixture.correlation"
+              }
+            },
+            "connectionRef": "fixture.connection",
+            "providerRef": "fixture.provider",
+            "prerequisiteVersion": "fixture.prerequisites-v1",
+            "minimumCapabilities": [
+              "fixture.api.read"
+            ],
+            "evidenceMode": "fixture",
+            "effect": {
+              "actionRef": "fixture.action",
+              "operationRef": "fixture.operation",
+              "effectRef": "fixture.effect"
+            }
+          },
+          "state": "waiting_for_user",
+          "authorization": {
+            "state": "unverified"
+          },
+          "missingRequirements": [
+            {
+              "kind": "secure_input",
+              "requirementRef": "fixture.challenge",
+              "revision": 1,
+              "actor": {
+                "kind": "user",
+                "actorRef": "fixture.user"
+              },
+              "reason": "credentials_required"
+            }
+          ]
+        },
+        "snapshot": {
+          "identity": {
+            "jobId": "fixture.job",
+            "originTaskRef": "fixture.original-task",
+            "requestKey": "fixture.request",
+            "instructionRevision": 1,
+            "host": {
+              "tenantRef": "fixture.tenant",
+              "userRef": "fixture.user",
+              "projectRef": "fixture.project",
+              "accountRef": "fixture.account",
+              "environmentRef": "fixture.environment",
+              "purposeRef": "fixture.purpose"
+            },
+            "native": {
+              "requestRef": "fixture.native-request",
+              "rootTaskRef": "fixture.root-task",
+              "actionRef": "fixture.action",
+              "operationRef": "fixture.operation",
+              "effectRef": "fixture.effect",
+              "sourceQueue": {
+                "queueRef": "fixture.queue",
+                "messageRef": "fixture.original-message"
+              }
+            },
+            "origin": {
+              "channelRef": "fixture.channel",
+              "routeRef": "fixture.route",
+              "correlationRef": "fixture.correlation"
+            }
+          },
+          "revision": 3,
+          "state": "waiting",
+          "effects": [],
+          "requirement": {
+            "kind": "secure_input",
+            "requirementRef": "fixture.challenge",
+            "revision": 1,
+            "actor": {
+              "kind": "user",
+              "actorRef": "fixture.user"
+            }
+          }
+        }
+      },
+      {
+        "stepRef": "fixture.restart",
+        "now": 1800000004000,
+        "kind": "restart",
+        "delivery": {
+          "attemptRef": "fixture.attempt-5"
+        },
+        "connection": {
+          "request": {
+            "operation": "connection.ensure",
+            "identity": {
+              "jobId": "fixture.job",
+              "originTaskRef": "fixture.original-task",
+              "requestKey": "fixture.request",
+              "instructionRevision": 1,
+              "host": {
+                "tenantRef": "fixture.tenant",
+                "userRef": "fixture.user",
+                "projectRef": "fixture.project",
+                "accountRef": "fixture.account",
+                "environmentRef": "fixture.environment",
+                "purposeRef": "fixture.purpose"
+              },
+              "native": {
+                "requestRef": "fixture.native-request",
+                "rootTaskRef": "fixture.root-task",
+                "actionRef": "fixture.action",
+                "operationRef": "fixture.operation",
+                "effectRef": "fixture.effect",
+                "sourceQueue": {
+                  "queueRef": "fixture.queue",
+                  "messageRef": "fixture.original-message"
+                }
+              },
+              "origin": {
+                "channelRef": "fixture.channel",
+                "routeRef": "fixture.route",
+                "correlationRef": "fixture.correlation"
+              }
+            },
+            "connectionRef": "fixture.connection",
+            "providerRef": "fixture.provider",
+            "prerequisiteVersion": "fixture.prerequisites-v1",
+            "minimumCapabilities": [
+              "fixture.api.read"
+            ],
+            "evidenceMode": "fixture",
+            "effect": {
+              "actionRef": "fixture.action",
+              "operationRef": "fixture.operation",
+              "effectRef": "fixture.effect"
+            }
+          },
+          "state": "waiting_for_user",
+          "authorization": {
+            "state": "unverified"
+          },
+          "missingRequirements": [
+            {
+              "kind": "secure_input",
+              "requirementRef": "fixture.challenge",
+              "revision": 1,
+              "actor": {
+                "kind": "user",
+                "actorRef": "fixture.user"
+              },
+              "reason": "credentials_required"
+            }
+          ]
+        },
+        "snapshot": {
+          "identity": {
+            "jobId": "fixture.job",
+            "originTaskRef": "fixture.original-task",
+            "requestKey": "fixture.request",
+            "instructionRevision": 1,
+            "host": {
+              "tenantRef": "fixture.tenant",
+              "userRef": "fixture.user",
+              "projectRef": "fixture.project",
+              "accountRef": "fixture.account",
+              "environmentRef": "fixture.environment",
+              "purposeRef": "fixture.purpose"
+            },
+            "native": {
+              "requestRef": "fixture.native-request",
+              "rootTaskRef": "fixture.root-task",
+              "actionRef": "fixture.action",
+              "operationRef": "fixture.operation",
+              "effectRef": "fixture.effect",
+              "sourceQueue": {
+                "queueRef": "fixture.queue",
+                "messageRef": "fixture.original-message"
+              }
+            },
+            "origin": {
+              "channelRef": "fixture.channel",
+              "routeRef": "fixture.route",
+              "correlationRef": "fixture.correlation"
+            }
+          },
+          "revision": 3,
+          "state": "waiting",
+          "effects": [],
+          "requirement": {
+            "kind": "secure_input",
+            "requirementRef": "fixture.challenge",
+            "revision": 1,
+            "actor": {
+              "kind": "user",
+              "actorRef": "fixture.user"
+            }
+          }
+        }
+      },
+      {
+        "stepRef": "fixture.answer",
+        "now": 1800000005000,
+        "kind": "append",
+        "delivery": {
+          "attemptRef": "fixture.attempt-6"
+        },
+        "connection": {
+          "request": {
+            "operation": "connection.ensure",
+            "identity": {
+              "jobId": "fixture.job",
+              "originTaskRef": "fixture.original-task",
+              "requestKey": "fixture.request",
+              "instructionRevision": 1,
+              "host": {
+                "tenantRef": "fixture.tenant",
+                "userRef": "fixture.user",
+                "projectRef": "fixture.project",
+                "accountRef": "fixture.account",
+                "environmentRef": "fixture.environment",
+                "purposeRef": "fixture.purpose"
+              },
+              "native": {
+                "requestRef": "fixture.native-request",
+                "rootTaskRef": "fixture.root-task",
+                "actionRef": "fixture.action",
+                "operationRef": "fixture.operation",
+                "effectRef": "fixture.effect",
+                "sourceQueue": {
+                  "queueRef": "fixture.queue",
+                  "messageRef": "fixture.original-message"
+                }
+              },
+              "origin": {
+                "channelRef": "fixture.channel",
+                "routeRef": "fixture.route",
+                "correlationRef": "fixture.correlation"
+              }
+            },
+            "connectionRef": "fixture.connection",
+            "providerRef": "fixture.provider",
+            "prerequisiteVersion": "fixture.prerequisites-v1",
+            "minimumCapabilities": [
+              "fixture.api.read"
+            ],
+            "evidenceMode": "fixture",
+            "effect": {
+              "actionRef": "fixture.action",
+              "operationRef": "fixture.operation",
+              "effectRef": "fixture.effect"
+            }
+          },
+          "state": "verifying",
+          "authorization": {
+            "state": "unverified"
+          }
+        },
+        "event": {
+          "kind": "answered",
+          "previousRevision": 3,
+          "snapshot": {
+            "identity": {
+              "jobId": "fixture.job",
+              "originTaskRef": "fixture.original-task",
+              "requestKey": "fixture.request",
+              "instructionRevision": 1,
+              "host": {
+                "tenantRef": "fixture.tenant",
+                "userRef": "fixture.user",
+                "projectRef": "fixture.project",
+                "accountRef": "fixture.account",
+                "environmentRef": "fixture.environment",
+                "purposeRef": "fixture.purpose"
+              },
+              "native": {
+                "requestRef": "fixture.native-request",
+                "rootTaskRef": "fixture.root-task",
+                "actionRef": "fixture.action",
+                "operationRef": "fixture.operation",
+                "effectRef": "fixture.effect",
+                "sourceQueue": {
+                  "queueRef": "fixture.queue",
+                  "messageRef": "fixture.original-message"
+                }
+              },
+              "origin": {
+                "channelRef": "fixture.channel",
+                "routeRef": "fixture.route",
+                "correlationRef": "fixture.correlation"
+              }
+            },
+            "revision": 4,
+            "state": "waiting",
+            "effects": [],
+            "requirement": {
+              "kind": "secure_input",
+              "requirementRef": "fixture.challenge",
+              "revision": 1,
+              "actor": {
+                "kind": "user",
+                "actorRef": "fixture.user"
+              }
+            },
+            "answer": {
+              "requirementRef": "fixture.challenge",
+              "requirementRevision": 1,
+              "responseRef": "fixture.private-response"
+            }
+          },
+          "command": {
+            "command": "answer",
+            "identity": {
+              "jobId": "fixture.job",
+              "originTaskRef": "fixture.original-task",
+              "requestKey": "fixture.request",
+              "instructionRevision": 1,
+              "host": {
+                "tenantRef": "fixture.tenant",
+                "userRef": "fixture.user",
+                "projectRef": "fixture.project",
+                "accountRef": "fixture.account",
+                "environmentRef": "fixture.environment",
+                "purposeRef": "fixture.purpose"
+              },
+              "native": {
+                "requestRef": "fixture.native-request",
+                "rootTaskRef": "fixture.root-task",
+                "actionRef": "fixture.action",
+                "operationRef": "fixture.operation",
+                "effectRef": "fixture.effect",
+                "sourceQueue": {
+                  "queueRef": "fixture.queue",
+                  "messageRef": "fixture.original-message"
+                }
+              },
+              "origin": {
+                "channelRef": "fixture.channel",
+                "routeRef": "fixture.route",
+                "correlationRef": "fixture.correlation"
+              }
+            },
+            "expectedRevision": 3,
+            "answer": {
+              "requirementRef": "fixture.challenge",
+              "requirementRevision": 1,
+              "responseRef": "fixture.private-response"
+            }
+          }
+        }
+      },
+      {
+        "stepRef": "fixture.resume",
+        "now": 1800000006000,
+        "kind": "append",
+        "delivery": {
+          "attemptRef": "fixture.attempt-7"
+        },
+        "connection": {
+          "request": {
+            "operation": "connection.ensure",
+            "identity": {
+              "jobId": "fixture.job",
+              "originTaskRef": "fixture.original-task",
+              "requestKey": "fixture.request",
+              "instructionRevision": 1,
+              "host": {
+                "tenantRef": "fixture.tenant",
+                "userRef": "fixture.user",
+                "projectRef": "fixture.project",
+                "accountRef": "fixture.account",
+                "environmentRef": "fixture.environment",
+                "purposeRef": "fixture.purpose"
+              },
+              "native": {
+                "requestRef": "fixture.native-request",
+                "rootTaskRef": "fixture.root-task",
+                "actionRef": "fixture.action",
+                "operationRef": "fixture.operation",
+                "effectRef": "fixture.effect",
+                "sourceQueue": {
+                  "queueRef": "fixture.queue",
+                  "messageRef": "fixture.original-message"
+                }
+              },
+              "origin": {
+                "channelRef": "fixture.channel",
+                "routeRef": "fixture.route",
+                "correlationRef": "fixture.correlation"
+              }
+            },
+            "connectionRef": "fixture.connection",
+            "providerRef": "fixture.provider",
+            "prerequisiteVersion": "fixture.prerequisites-v1",
+            "minimumCapabilities": [
+              "fixture.api.read"
+            ],
+            "evidenceMode": "fixture",
+            "effect": {
+              "actionRef": "fixture.action",
+              "operationRef": "fixture.operation",
+              "effectRef": "fixture.effect"
+            }
+          },
+          "state": "ready",
+          "authorization": {
+            "state": "active",
+            "expiresAt": 1800000060000
+          },
+          "evidence": {
+            "kind": "api_capabilities",
+            "receiptRef": "fixture.capability-receipt",
+            "provenance": {
+              "kind": "fixture",
+              "fixtureRef": "fixture.convergence-v1"
+            },
+            "scope": {
+              "tenantRef": "fixture.tenant",
+              "userRef": "fixture.user",
+              "projectRef": "fixture.project",
+              "accountRef": "fixture.account",
+              "environmentRef": "fixture.environment",
+              "purposeRef": "fixture.purpose"
+            },
+            "providerRef": "fixture.provider",
+            "prerequisiteVersion": "fixture.prerequisites-v1",
+            "verifiedCapabilities": [
+              "fixture.api.read"
+            ],
+            "verifiedAt": 1800000006000,
+            "expiresAt": 1800000060000
+          }
+        },
+        "event": {
+          "kind": "resumed",
+          "previousRevision": 4,
+          "snapshot": {
+            "identity": {
+              "jobId": "fixture.job",
+              "originTaskRef": "fixture.original-task",
+              "requestKey": "fixture.request",
+              "instructionRevision": 1,
+              "host": {
+                "tenantRef": "fixture.tenant",
+                "userRef": "fixture.user",
+                "projectRef": "fixture.project",
+                "accountRef": "fixture.account",
+                "environmentRef": "fixture.environment",
+                "purposeRef": "fixture.purpose"
+              },
+              "native": {
+                "requestRef": "fixture.native-request",
+                "rootTaskRef": "fixture.root-task",
+                "actionRef": "fixture.action",
+                "operationRef": "fixture.operation",
+                "effectRef": "fixture.effect",
+                "sourceQueue": {
+                  "queueRef": "fixture.queue",
+                  "messageRef": "fixture.original-message"
+                }
+              },
+              "origin": {
+                "channelRef": "fixture.channel",
+                "routeRef": "fixture.route",
+                "correlationRef": "fixture.correlation"
+              }
+            },
+            "revision": 5,
+            "state": "queued",
+            "effects": []
+          },
+          "command": {
+            "command": "resume",
+            "identity": {
+              "jobId": "fixture.job",
+              "originTaskRef": "fixture.original-task",
+              "requestKey": "fixture.request",
+              "instructionRevision": 1,
+              "host": {
+                "tenantRef": "fixture.tenant",
+                "userRef": "fixture.user",
+                "projectRef": "fixture.project",
+                "accountRef": "fixture.account",
+                "environmentRef": "fixture.environment",
+                "purposeRef": "fixture.purpose"
+              },
+              "native": {
+                "requestRef": "fixture.native-request",
+                "rootTaskRef": "fixture.root-task",
+                "actionRef": "fixture.action",
+                "operationRef": "fixture.operation",
+                "effectRef": "fixture.effect",
+                "sourceQueue": {
+                  "queueRef": "fixture.queue",
+                  "messageRef": "fixture.original-message"
+                }
+              },
+              "origin": {
+                "channelRef": "fixture.channel",
+                "routeRef": "fixture.route",
+                "correlationRef": "fixture.correlation"
+              }
+            },
+            "expectedRevision": 4,
+            "requirementRef": "fixture.challenge",
+            "requirementRevision": 1,
+            "resolutionReceiptRef": "fixture.resolution-receipt"
+          }
+        }
+      },
+      {
+        "stepRef": "fixture.continue",
+        "now": 1800000007000,
+        "kind": "append",
+        "delivery": {
+          "attemptRef": "fixture.attempt-8"
+        },
+        "connection": {
+          "request": {
+            "operation": "connection.ensure",
+            "identity": {
+              "jobId": "fixture.job",
+              "originTaskRef": "fixture.original-task",
+              "requestKey": "fixture.request",
+              "instructionRevision": 1,
+              "host": {
+                "tenantRef": "fixture.tenant",
+                "userRef": "fixture.user",
+                "projectRef": "fixture.project",
+                "accountRef": "fixture.account",
+                "environmentRef": "fixture.environment",
+                "purposeRef": "fixture.purpose"
+              },
+              "native": {
+                "requestRef": "fixture.native-request",
+                "rootTaskRef": "fixture.root-task",
+                "actionRef": "fixture.action",
+                "operationRef": "fixture.operation",
+                "effectRef": "fixture.effect",
+                "sourceQueue": {
+                  "queueRef": "fixture.queue",
+                  "messageRef": "fixture.original-message"
+                }
+              },
+              "origin": {
+                "channelRef": "fixture.channel",
+                "routeRef": "fixture.route",
+                "correlationRef": "fixture.correlation"
+              }
+            },
+            "connectionRef": "fixture.connection",
+            "providerRef": "fixture.provider",
+            "prerequisiteVersion": "fixture.prerequisites-v1",
+            "minimumCapabilities": [
+              "fixture.api.read"
+            ],
+            "evidenceMode": "fixture",
+            "effect": {
+              "actionRef": "fixture.action",
+              "operationRef": "fixture.operation",
+              "effectRef": "fixture.effect"
+            }
+          },
+          "state": "ready",
+          "authorization": {
+            "state": "active",
+            "expiresAt": 1800000060000
+          },
+          "evidence": {
+            "kind": "api_capabilities",
+            "receiptRef": "fixture.capability-receipt",
+            "provenance": {
+              "kind": "fixture",
+              "fixtureRef": "fixture.convergence-v1"
+            },
+            "scope": {
+              "tenantRef": "fixture.tenant",
+              "userRef": "fixture.user",
+              "projectRef": "fixture.project",
+              "accountRef": "fixture.account",
+              "environmentRef": "fixture.environment",
+              "purposeRef": "fixture.purpose"
+            },
+            "providerRef": "fixture.provider",
+            "prerequisiteVersion": "fixture.prerequisites-v1",
+            "verifiedCapabilities": [
+              "fixture.api.read"
+            ],
+            "verifiedAt": 1800000006000,
+            "expiresAt": 1800000060000
+          }
+        },
+        "event": {
+          "kind": "started",
+          "previousRevision": 5,
+          "snapshot": {
+            "identity": {
+              "jobId": "fixture.job",
+              "originTaskRef": "fixture.original-task",
+              "requestKey": "fixture.request",
+              "instructionRevision": 1,
+              "host": {
+                "tenantRef": "fixture.tenant",
+                "userRef": "fixture.user",
+                "projectRef": "fixture.project",
+                "accountRef": "fixture.account",
+                "environmentRef": "fixture.environment",
+                "purposeRef": "fixture.purpose"
+              },
+              "native": {
+                "requestRef": "fixture.native-request",
+                "rootTaskRef": "fixture.root-task",
+                "actionRef": "fixture.action",
+                "operationRef": "fixture.operation",
+                "effectRef": "fixture.effect",
+                "sourceQueue": {
+                  "queueRef": "fixture.queue",
+                  "messageRef": "fixture.original-message"
+                }
+              },
+              "origin": {
+                "channelRef": "fixture.channel",
+                "routeRef": "fixture.route",
+                "correlationRef": "fixture.correlation"
+              }
+            },
+            "revision": 6,
+            "state": "running",
+            "effects": []
+          }
+        }
+      },
+      {
+        "stepRef": "fixture.unknown",
+        "now": 1800000008000,
+        "kind": "append",
+        "delivery": {
+          "attemptRef": "fixture.attempt-9"
+        },
+        "connection": {
+          "request": {
+            "operation": "connection.ensure",
+            "identity": {
+              "jobId": "fixture.job",
+              "originTaskRef": "fixture.original-task",
+              "requestKey": "fixture.request",
+              "instructionRevision": 1,
+              "host": {
+                "tenantRef": "fixture.tenant",
+                "userRef": "fixture.user",
+                "projectRef": "fixture.project",
+                "accountRef": "fixture.account",
+                "environmentRef": "fixture.environment",
+                "purposeRef": "fixture.purpose"
+              },
+              "native": {
+                "requestRef": "fixture.native-request",
+                "rootTaskRef": "fixture.root-task",
+                "actionRef": "fixture.action",
+                "operationRef": "fixture.operation",
+                "effectRef": "fixture.effect",
+                "sourceQueue": {
+                  "queueRef": "fixture.queue",
+                  "messageRef": "fixture.original-message"
+                }
+              },
+              "origin": {
+                "channelRef": "fixture.channel",
+                "routeRef": "fixture.route",
+                "correlationRef": "fixture.correlation"
+              }
+            },
+            "connectionRef": "fixture.connection",
+            "providerRef": "fixture.provider",
+            "prerequisiteVersion": "fixture.prerequisites-v1",
+            "minimumCapabilities": [
+              "fixture.api.read"
+            ],
+            "evidenceMode": "fixture",
+            "effect": {
+              "actionRef": "fixture.action",
+              "operationRef": "fixture.operation",
+              "effectRef": "fixture.effect"
+            }
+          },
+          "state": "unknown_effect",
+          "authorization": {
+            "state": "active",
+            "expiresAt": 1800000060000
+          },
+          "effect": {
+            "actionRef": "fixture.action",
+            "operationRef": "fixture.operation",
+            "effectRef": "fixture.effect",
+            "outcome": "unknown"
+          },
+          "reconciliationRef": "fixture.reconciliation"
+        },
+        "event": {
+          "kind": "effects_recorded",
+          "previousRevision": 6,
+          "snapshot": {
+            "identity": {
+              "jobId": "fixture.job",
+              "originTaskRef": "fixture.original-task",
+              "requestKey": "fixture.request",
+              "instructionRevision": 1,
+              "host": {
+                "tenantRef": "fixture.tenant",
+                "userRef": "fixture.user",
+                "projectRef": "fixture.project",
+                "accountRef": "fixture.account",
+                "environmentRef": "fixture.environment",
+                "purposeRef": "fixture.purpose"
+              },
+              "native": {
+                "requestRef": "fixture.native-request",
+                "rootTaskRef": "fixture.root-task",
+                "actionRef": "fixture.action",
+                "operationRef": "fixture.operation",
+                "effectRef": "fixture.effect",
+                "sourceQueue": {
+                  "queueRef": "fixture.queue",
+                  "messageRef": "fixture.original-message"
+                }
+              },
+              "origin": {
+                "channelRef": "fixture.channel",
+                "routeRef": "fixture.route",
+                "correlationRef": "fixture.correlation"
+              }
+            },
+            "revision": 7,
+            "state": "running",
+            "effects": [
+              {
+                "actionRef": "fixture.action",
+                "operationRef": "fixture.operation",
+                "effectRef": "fixture.effect",
+                "outcome": "unknown"
+              }
+            ]
+          }
+        }
+      },
+      {
+        "stepRef": "fixture.restart-unknown",
+        "now": 1800000009000,
+        "kind": "restart",
+        "delivery": {
+          "attemptRef": "fixture.attempt-10"
+        },
+        "connection": {
+          "request": {
+            "operation": "connection.ensure",
+            "identity": {
+              "jobId": "fixture.job",
+              "originTaskRef": "fixture.original-task",
+              "requestKey": "fixture.request",
+              "instructionRevision": 1,
+              "host": {
+                "tenantRef": "fixture.tenant",
+                "userRef": "fixture.user",
+                "projectRef": "fixture.project",
+                "accountRef": "fixture.account",
+                "environmentRef": "fixture.environment",
+                "purposeRef": "fixture.purpose"
+              },
+              "native": {
+                "requestRef": "fixture.native-request",
+                "rootTaskRef": "fixture.root-task",
+                "actionRef": "fixture.action",
+                "operationRef": "fixture.operation",
+                "effectRef": "fixture.effect",
+                "sourceQueue": {
+                  "queueRef": "fixture.queue",
+                  "messageRef": "fixture.original-message"
+                }
+              },
+              "origin": {
+                "channelRef": "fixture.channel",
+                "routeRef": "fixture.route",
+                "correlationRef": "fixture.correlation"
+              }
+            },
+            "connectionRef": "fixture.connection",
+            "providerRef": "fixture.provider",
+            "prerequisiteVersion": "fixture.prerequisites-v1",
+            "minimumCapabilities": [
+              "fixture.api.read"
+            ],
+            "evidenceMode": "fixture",
+            "effect": {
+              "actionRef": "fixture.action",
+              "operationRef": "fixture.operation",
+              "effectRef": "fixture.effect"
+            }
+          },
+          "state": "unknown_effect",
+          "authorization": {
+            "state": "active",
+            "expiresAt": 1800000060000
+          },
+          "effect": {
+            "actionRef": "fixture.action",
+            "operationRef": "fixture.operation",
+            "effectRef": "fixture.effect",
+            "outcome": "unknown"
+          },
+          "reconciliationRef": "fixture.reconciliation"
+        },
+        "snapshot": {
+          "identity": {
+            "jobId": "fixture.job",
+            "originTaskRef": "fixture.original-task",
+            "requestKey": "fixture.request",
+            "instructionRevision": 1,
+            "host": {
+              "tenantRef": "fixture.tenant",
+              "userRef": "fixture.user",
+              "projectRef": "fixture.project",
+              "accountRef": "fixture.account",
+              "environmentRef": "fixture.environment",
+              "purposeRef": "fixture.purpose"
+            },
+            "native": {
+              "requestRef": "fixture.native-request",
+              "rootTaskRef": "fixture.root-task",
+              "actionRef": "fixture.action",
+              "operationRef": "fixture.operation",
+              "effectRef": "fixture.effect",
+              "sourceQueue": {
+                "queueRef": "fixture.queue",
+                "messageRef": "fixture.original-message"
+              }
+            },
+            "origin": {
+              "channelRef": "fixture.channel",
+              "routeRef": "fixture.route",
+              "correlationRef": "fixture.correlation"
+            }
+          },
+          "revision": 7,
+          "state": "running",
+          "effects": [
+            {
+              "actionRef": "fixture.action",
+              "operationRef": "fixture.operation",
+              "effectRef": "fixture.effect",
+              "outcome": "unknown"
+            }
+          ]
+        }
+      }
+    ]
+  }
+}

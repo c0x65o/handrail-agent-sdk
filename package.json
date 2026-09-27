@@ -1,6 +1,6 @@
 {
   "name": "handrail-agent-sdk",
-  "version": "0.0.0.6",
+  "version": "0.0.0.7",
   "private": true,
   "description": "Handrail Agent SDK packaging bootstrap",
   "type": "module",
@@ -27,8 +27,10 @@
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "prepare": "npm run build",
-    "pretest": "npm run build",
-    "test": "node --test --test-concurrency=1 --test-reporter=tap tests/contracts/job.test.mjs tests/contracts/connection.test.mjs tests/contracts/vault.test.mjs tests/contracts/browser.test.mjs tests/packaging.test.mjs"
+    "pretest": "npm run build && npm run typecheck:acceptance",
+    "test": "node --test --test-concurrency=1 --test-reporter=tap tests/contracts/job.test.mjs tests/contracts/connection.test.mjs tests/contracts/vault.test.mjs tests/contracts/browser.test.mjs tests/packaging.test.mjs tests/acceptance.test.mjs",
+    "typecheck:acceptance": "tsc -p tests/fixtures/tsconfig.acceptance.json",
+    "check:acceptance": "npm run build && npm run typecheck:acceptance && node scripts/validate-convergence-v1.mjs && node --test --test-concurrency=1 tests/acceptance.test.mjs"
   },
   "devDependencies": {
     "typescript": "5.9.3"
