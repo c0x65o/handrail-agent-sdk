@@ -11,3 +11,4 @@ dist/
 .postgres-build/
 *.tsbuildinfo
 .reference-build/
+.browser-build/

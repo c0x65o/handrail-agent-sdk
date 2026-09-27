@@ -1,0 +1,182 @@
+{
+  "schema_version": 1,
+  "recorded_at": "2026-09-27T22:40:26.413021+00:00",
+  "owner_item_id": "9a6a2d4d-4c5e-494e-ae1e-cbbb4c6bd17a",
+  "work_request_id": "8737bc1f-720e-4b24-bcc9-7b8099a9940d",
+  "branch": "lane/agent-sdk-v1",
+  "candidate": {
+    "base_head": "c0c8ba0515f05141dc4886be4205ef6526510054",
+    "files": {
+      ".gitignore": "7a1fe62c452a15cd9a487f9a2d3f8b25d273d4c9b96650829be290a5968768dc",
+      "docs/local-browser-testing.md": "0f5b71d2a89827232610c21cc0825ecdb48d2cbadcba5bac76ceecd934b2ea16",
+      "package-lock.json": "3d9803a75429599ccd51dc9ae1ec7a1ba952b54a6ea44a04183b22ef5179d37f",
+      "package.json": "62717dabeb9cb6142c1a5b697060c9028850ce224ca194b1df37a0b736e44d5f",
+      "tests/browser-boundary.test.mjs": "041ec8f5d3e3043d0c89e9f26fa7625b66da35626a727cc25040df5b64f6eda8",
+      "tests/browser.test.mjs": "0c8c9765a6e2face7c4d58788955d6399e059e6189114822d482c2797c9b3708",
+      "tests/fixtures/protected-page.html": "5b93449ccf691b410c151797ded898426d20cca12234c3dba83bd608fec7de62",
+      "tests/helpers/browser-private.ts": "9f95203672d9828c32bc5e411aa25020e3b1ab9438a689473b2ed057b69e697c",
+      "tests/helpers/browser.ts": "68f7d871640fbbfd528a27c9f4e255ac64497b7775bd51d199c4da95845352d4",
+      "tests/tsconfig.browser.json": "d77ac5fc313cc90eeb8fc8db59bd34a0a735755ca2900fd47a6f4842ccf84210"
+    },
+    "sha256": "7a424ab3437d94bcb9ddbd55c09e5df4c8ee7e9d9706d97c017d8a1dea061b03"
+  },
+  "acceptance": "pending_real_browser_and_independent_native_dev_qa",
+  "source_status": "uncommitted",
+  "toolchain": {
+    "node": "v22.23.1",
+    "npm": "10.9.8",
+    "typescript": "5.9.3",
+    "playwright_core": "1.63.0",
+    "platform": "linux",
+    "expected_chromium_revision": "1243",
+    "expected_chromium_version": "153.0.8010.12",
+    "actual_browser_version": null,
+    "browser_executable_available": false,
+    "expected_executable": "/opt/handrail/.cache/ms-playwright/chromium-1243/chrome-linux64/chrome",
+    "browser_downloaded": false
+  },
+  "dependency_commands": [
+    "npm install --save-dev --save-exact playwright-core@1.63.0 --ignore-scripts --no-audit --no-fund",
+    "npm install --include=dev --ignore-scripts --no-audit --no-fund"
+  ],
+  "checks": [
+    {
+      "command": "npm run test:browser-boundary",
+      "exit_code": 0,
+      "includes_scoped_typescript_compile": true,
+      "tap": {
+        "tests": 3,
+        "suites": 0,
+        "pass": 3,
+        "fail": 0,
+        "cancelled": 0,
+        "skipped": 0,
+        "todo": 0
+      },
+      "cases": [
+        {
+          "caseId": "F01_NETWORK_POLICY",
+          "status": "passed",
+          "checks": 15,
+          "contextsClosed": 0,
+          "browsersClosed": 0,
+          "listenersClosed": 3,
+          "artifactsRemoved": 1
+        },
+        {
+          "caseId": "F02_PARTIAL_LISTENER",
+          "status": "passed",
+          "checks": 2,
+          "contextsClosed": 0,
+          "browsersClosed": 0,
+          "listenersClosed": 1,
+          "artifactsRemoved": 1
+        },
+        {
+          "caseId": "F03_OUTPUT_GATE",
+          "status": "passed",
+          "checks": 1,
+          "contextsClosed": 0,
+          "browsersClosed": 0,
+          "listenersClosed": 0,
+          "artifactsRemoved": 1
+        }
+      ]
+    },
+    {
+      "command": "npm run test:browser",
+      "exit_code": 1,
+      "includes_scoped_typescript_compile": true,
+      "tap": {
+        "tests": 4,
+        "suites": 0,
+        "pass": 0,
+        "fail": 4,
+        "cancelled": 0,
+        "skipped": 0,
+        "todo": 0
+      },
+      "cases": [
+        {
+          "caseId": "B01_ISOLATION",
+          "status": "unverified_browser_prerequisite",
+          "checks": 4,
+          "contextsClosed": 0,
+          "browsersClosed": 0,
+          "listenersClosed": 3,
+          "artifactsRemoved": 1
+        },
+        {
+          "caseId": "B02_PARTIAL_BROWSER",
+          "status": "unverified_browser_prerequisite",
+          "checks": 4,
+          "contextsClosed": 0,
+          "browsersClosed": 0,
+          "listenersClosed": 3,
+          "artifactsRemoved": 1
+        },
+        {
+          "caseId": "B03_PARTIAL_CONTEXT",
+          "status": "unverified_browser_prerequisite",
+          "checks": 4,
+          "contextsClosed": 0,
+          "browsersClosed": 0,
+          "listenersClosed": 3,
+          "artifactsRemoved": 1
+        },
+        {
+          "caseId": "B04_TEST_FAILURE",
+          "status": "unverified_browser_prerequisite",
+          "checks": 4,
+          "contextsClosed": 0,
+          "browsersClosed": 0,
+          "listenersClosed": 3,
+          "artifactsRemoved": 1
+        }
+      ]
+    },
+    {
+      "command": "npm test && node node_modules/typescript/bin/tsc -p tests/fixtures/tsconfig.json",
+      "exit_code": 0,
+      "tap": {
+        "tests": 771,
+        "suites": 0,
+        "pass": 771,
+        "fail": 0,
+        "cancelled": 0,
+        "skipped": 0,
+        "todo": 0
+      }
+    },
+    {
+      "command": "npm pack --dry-run --ignore-scripts --json",
+      "exit_code": 0,
+      "caseId": "PACKAGE_EXCLUDES_BROWSER_FIXTURES",
+      "status": "passed",
+      "files": 24,
+      "verification": "Parsed dry-run manifest; no tests/, .browser-build/, browser-private or protected-page entries. No archive was created."
+    },
+    {
+      "command": "git diff --check",
+      "exit_code": 0
+    }
+  ],
+  "limitations": [
+    "No installed browser executable was available; no real-browser case passed. No browser or DOM mock substituted for these cases.",
+    "Real context isolation, cross-origin browser behavior and browser-process cleanup remain unverified until browser-equipped independent QA runs the four B cases.",
+    "The three passing F cases prove transport/output/setup boundaries only.",
+    "No provider operations, real credentials, publication, commit, push, deployment, live configuration changes or QA campaign launch."
+  ],
+  "owner_task_ledger": {
+    "start_recorded": true,
+    "progress_recorded": true,
+    "completion_recorded": false,
+    "qa_campaign_id": null,
+    "qa_proposal_created": false,
+    "mcp_limitation": "QA proposal, subsequent current-context read and final progress update rejected: correction source was cancelled, held or replaced. Earlier start/progress updates succeeded. No rejected action was bypassed.",
+    "correction_id": "131ec0c3-e580-4ff2-b860-49e837a7260f",
+    "final_progress_recorded": false
+  },
+  "procedure": "docs/local-browser-testing.md",
+  "fixture": "tests/fixtures/protected-page.html"
+}

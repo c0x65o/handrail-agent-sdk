@@ -1,6 +1,6 @@
 {
   "name": "handrail-agent-sdk",
-  "version": "0.0.0.13",
+  "version": "0.0.0.14",
   "private": true,
   "description": "Handrail Agent SDK packaging bootstrap",
   "type": "module",
@@ -25,6 +25,9 @@
     }
   },
   "scripts": {
+    "build:test-browser": "tsc -p tests/tsconfig.browser.json",
+    "test:browser": "npm run build:test-browser && node --test --test-concurrency=1 --test-reporter=tap tests/browser.test.mjs",
+    "test:browser-boundary": "npm run build:test-browser && node --test --test-concurrency=1 --test-reporter=tap tests/browser-boundary.test.mjs",
     "build": "tsc -p tsconfig.json",
     "prepare": "npm run build",
     "pretest": "npm run build && npm run typecheck:acceptance && npm run build:test-postgres && npm run build:reference",
@@ -47,6 +50,7 @@
     "@types/node": "22.20.4",
     "@types/pg": "8.23.1",
     "drizzle-kit": "0.31.11",
+    "playwright-core": "1.63.0",
     "typescript": "5.9.3"
   },
   "dependencies": {
