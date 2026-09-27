@@ -10,3 +10,4 @@ dist/
 .acceptance-build/
 .postgres-build/
 *.tsbuildinfo
+.reference-build/

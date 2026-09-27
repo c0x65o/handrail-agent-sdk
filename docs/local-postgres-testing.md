@@ -5,7 +5,8 @@ no application schema, migration framework or Handrail persistence adapter. Read
 [security boundaries](agent-security-boundary.md) and
 [acceptance proof classes](agent-v1-acceptance.md). Published revision 1 of KB
 `handrail-node-postgres-drizzle-contract` governs later application persistence;
-this scoped test harness uses `pg` directly, with test-only locked dependencies.
+this scoped test harness uses `pg` directly. The reference journal now uses
+Drizzle with `pg` as its application driver; see [journal storage](job-journal.md).
 
 ## Explicit disposable connection
 
@@ -99,3 +100,20 @@ and unverified checks separately from local results. This writer run's initial
 inspection was rejected because the tool requires its own active read-only
 validation work request; that restriction must be resolved in the verification
 handoff, not bypassed with host SQL.
+
+## Reference journal acceptance
+
+`npm run test:journal` builds the separate reference target and exercises generated
+Drizzle migrations and the journal using this same harness. `TestClient.database()`
+is a trusted-test Drizzle boundary over the owned client; never log its internals
+or raw Drizzle exceptions. The journal normalizes failures, and migration tests
+catch exceptions without retaining payloads or causes. SQL names remain qualified
+and the search path remains `pg_catalog`. Cleanup rules above are unchanged.
+
+On a non-root Linux worker with `/usr/lib/postgresql/15/bin`,
+`node tests/run-local-postgres.mjs` can create a fresh temporary cluster and run
+both journal and smoke suites. This optional fixture runner uses only its own
+random credentials and database, then stops/removes the owned cluster. It does
+not discover credentials or select an existing database. Missing binaries or
+startup/test failures fail the command. These are real PostgreSQL fixture results,
+not live provider or deployed Handrail-host acceptance.

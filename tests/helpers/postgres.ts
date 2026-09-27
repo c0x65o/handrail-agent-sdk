@@ -1,7 +1,10 @@
 import { randomUUID } from 'node:crypto';
+import { drizzle } from 'drizzle-orm/node-postgres';
+import type { NodePgDatabase } from 'drizzle-orm/node-postgres';
 import type { Client, ClientConfig, QueryResult, QueryResultRow } from 'pg';
 
-// No raw pg client, configuration, error, cause or notice escapes this module.
+// No raw pg client, configuration, error, cause or notice is returned by queries.
+// The Drizzle boundary is for trusted repository tests only; never log its internals.
 const failure = (code: string): Error => new Error(code);
 const quote = (identifier: string): string => `"${identifier.replaceAll('"', '""')}"`;
 
@@ -47,6 +50,9 @@ function configuration(): ClientConfig {
 }
 
 export interface TestClient {
+  /** Same owned connection, for application Drizzle queries/transactions.
+   * Do not overlap transactions on this client. Journal normalizes its errors. */
+  database(): NodePgDatabase;
   query<Row extends QueryResultRow = QueryResultRow>(sql: string, values?: unknown[]): Promise<QueryResult<Row>>;
   transaction<T>(run: (client: TestClient) => Promise<T>): Promise<T>;
   close(): Promise<void>;
@@ -64,6 +70,7 @@ async function connect(config: ClientConfig): Promise<TestClient> {
   raw.on('error', () => { broken = true; });
   raw.on('notice', () => {});
   const client: TestClient = {
+    database() { return drizzle(raw); },
     async query<Row extends QueryResultRow>(sql: string, values?: unknown[]) {
       if (closed || broken) throw failure('POSTGRES_CLIENT_UNAVAILABLE');
       try { return await raw.query<Row>(sql, values); }

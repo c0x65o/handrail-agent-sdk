@@ -43,12 +43,12 @@ test('entrypoints and contract import graph have no startup calls or external ru
     const source = ts.createSourceFile(path, readFileSync(new URL(`../${path}`, import.meta.url), 'utf8'), ts.ScriptTarget.Latest);
     if (path.includes('/server/')) {
       if (path.startsWith('src/')) {
-        assert.equal(source.statements.length, 2, path);
+        assert.equal(source.statements.length, 3, path);
         for (const statement of source.statements) {
           assert.ok(ts.isExportDeclaration(statement), path);
           assert.equal(statement.isTypeOnly, true, path);
         }
-        assert.deepEqual(source.statements.map(s => s.moduleSpecifier.text), ['./vault-policy.js', './browser-policy.js']);
+        assert.deepEqual(source.statements.map(s => s.moduleSpecifier.text), ['./vault-policy.js', './browser-policy.js', './job-store.js']);
       } else {
         assert.equal(source.statements.length, 1, path);
         const [statement] = source.statements;

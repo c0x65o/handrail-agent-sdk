@@ -1,0 +1,234 @@
+{
+  "id": "88fb43c6-d0ea-4950-bd9d-ca1685d3cc51",
+  "prevId": "00000000-0000-0000-0000-000000000000",
+  "version": "7",
+  "dialect": "postgresql",
+  "tables": {
+    "agent_reference.job_checkpoints": {
+      "name": "job_checkpoints",
+      "schema": "agent_reference",
+      "columns": {
+        "job_id": {
+          "name": "job_id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "version": {
+          "name": "version",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "revision": {
+          "name": "revision",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "snapshot": {
+          "name": "snapshot",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "job_checkpoints_job_id_jobs_job_id_fk": {
+          "name": "job_checkpoints_job_id_jobs_job_id_fk",
+          "tableFrom": "job_checkpoints",
+          "tableTo": "jobs",
+          "schemaTo": "agent_reference",
+          "columnsFrom": [
+            "job_id"
+          ],
+          "columnsTo": [
+            "job_id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "checkpoints_safe_revision": {
+          "name": "checkpoints_safe_revision",
+          "value": "\"agent_reference\".\"job_checkpoints\".\"revision\" between 1 and 9007199254740991"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "agent_reference.job_deliveries": {
+      "name": "job_deliveries",
+      "schema": "agent_reference",
+      "columns": {
+        "job_id": {
+          "name": "job_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "revision": {
+          "name": "revision",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "attempt_ref": {
+          "name": "attempt_ref",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "delivery": {
+          "name": "delivery",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "job_deliveries_job_id_revision_job_events_job_id_revision_fk": {
+          "name": "job_deliveries_job_id_revision_job_events_job_id_revision_fk",
+          "tableFrom": "job_deliveries",
+          "tableTo": "job_events",
+          "schemaTo": "agent_reference",
+          "columnsFrom": [
+            "job_id",
+            "revision"
+          ],
+          "columnsTo": [
+            "job_id",
+            "revision"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "job_deliveries_job_id_revision_attempt_ref_pk": {
+          "name": "job_deliveries_job_id_revision_attempt_ref_pk",
+          "columns": [
+            "job_id",
+            "revision",
+            "attempt_ref"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "agent_reference.job_events": {
+      "name": "job_events",
+      "schema": "agent_reference",
+      "columns": {
+        "job_id": {
+          "name": "job_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "revision": {
+          "name": "revision",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "event": {
+          "name": "event",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "job_events_job_id_jobs_job_id_fk": {
+          "name": "job_events_job_id_jobs_job_id_fk",
+          "tableFrom": "job_events",
+          "tableTo": "jobs",
+          "schemaTo": "agent_reference",
+          "columnsFrom": [
+            "job_id"
+          ],
+          "columnsTo": [
+            "job_id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "job_events_job_id_revision_pk": {
+          "name": "job_events_job_id_revision_pk",
+          "columns": [
+            "job_id",
+            "revision"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "events_safe_revision": {
+          "name": "events_safe_revision",
+          "value": "\"agent_reference\".\"job_events\".\"revision\" between 1 and 9007199254740991"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "agent_reference.jobs": {
+      "name": "jobs",
+      "schema": "agent_reference",
+      "columns": {
+        "job_id": {
+          "name": "job_id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "identity": {
+          "name": "identity",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "revision": {
+          "name": "revision",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "jobs_safe_revision": {
+          "name": "jobs_safe_revision",
+          "value": "\"agent_reference\".\"jobs\".\"revision\" between 0 and 9007199254740991"
+        }
+      },
+      "isRLSEnabled": false
+    }
+  },
+  "enums": {},
+  "schemas": {},
+  "sequences": {},
+  "roles": {},
+  "policies": {},
+  "views": {},
+  "_meta": {
+    "columns": {},
+    "schemas": {},
+    "tables": {}
+  }
+}

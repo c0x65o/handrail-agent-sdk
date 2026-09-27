@@ -1,6 +1,6 @@
 {
   "name": "handrail-agent-sdk",
-  "version": "0.0.0.8",
+  "version": "0.0.0.9",
   "private": true,
   "description": "Handrail Agent SDK packaging bootstrap",
   "type": "module",
@@ -27,17 +27,25 @@
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "prepare": "npm run build",
-    "pretest": "npm run build && npm run typecheck:acceptance && npm run build:test-postgres",
+    "pretest": "npm run build && npm run typecheck:acceptance && npm run build:test-postgres && npm run build:reference",
     "test": "node --test --test-concurrency=1 --test-reporter=tap tests/contracts/job.test.mjs tests/contracts/connection.test.mjs tests/contracts/vault.test.mjs tests/contracts/browser.test.mjs tests/packaging.test.mjs tests/acceptance.test.mjs",
     "build:test-postgres": "tsc -p tests/tsconfig.postgres.json",
     "test:postgres": "npm run build:test-postgres && node --test --test-concurrency=1 --test-reporter=tap tests/postgres.test.mjs",
     "typecheck:acceptance": "tsc -p tests/fixtures/tsconfig.acceptance.json",
-    "check:acceptance": "npm run build && npm run typecheck:acceptance && node scripts/validate-convergence-v1.mjs && node --test --test-concurrency=1 tests/acceptance.test.mjs"
+    "check:acceptance": "npm run build && npm run typecheck:acceptance && node scripts/validate-convergence-v1.mjs && node --test --test-concurrency=1 tests/acceptance.test.mjs",
+    "build:reference": "tsc -p reference/tsconfig.json",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "npm run build:reference && node .reference-build/reference/node/db/migrate.js",
+    "test:journal": "npm run build:reference && npm run build:test-postgres && node --test --test-concurrency=1 --test-reporter=tap tests/job-journal.test.mjs"
   },
   "devDependencies": {
     "@types/node": "22.20.4",
     "@types/pg": "8.23.1",
-    "pg": "8.23.0",
+    "drizzle-kit": "0.31.11",
     "typescript": "5.9.3"
+  },
+  "dependencies": {
+    "drizzle-orm": "0.45.3",
+    "pg": "8.23.0"
   }
 }

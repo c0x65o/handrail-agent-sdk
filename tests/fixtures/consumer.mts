@@ -129,3 +129,12 @@ const unattested: BrowserObservation = { request: browserOperation, kind: 'sanit
 import type { BrowserOperationContext as PublicBrowserContext } from 'handrail-agent-sdk';
 // @ts-expect-error Implementation remains private.
 import 'handrail-agent-sdk/dist/contracts/browser.js';
+
+import type { JobStore, JobStoreResult } from 'handrail-agent-sdk/server';
+declare const store: JobStore;
+const loaded: Promise<JobStoreResult<JobSnapshot>> = store.load(identity);
+if (event.ok) {
+  const appended: Promise<JobStoreResult<{ readonly event: JobEvent; readonly replayed: boolean }>> = store.append(event.value);
+}
+// @ts-expect-error The server port has no public driver/connection handle.
+store.database;
