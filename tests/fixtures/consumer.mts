@@ -58,3 +58,42 @@ const invalidReady: ConnectionEnsureResult = { request: connectionInput, authori
 const invalidUnknown: ConnectionEnsureResult = { request: connectionInput, authorization: { state: 'unverified' }, state: 'unknown_effect' };
 // @ts-expect-error Contract implementation paths remain private.
 import 'handrail-agent-sdk/dist/contracts/connection.js';
+
+import { validateVaultItem, validateVaultEntryCompletion, validateVaultOperation, validateVaultBrokerResult } from 'handrail-agent-sdk';
+import type { VaultSecretReference, VaultPaymentReference, VaultBroker, VaultOperation, VaultEntryCompletion } from 'handrail-agent-sdk';
+import type { VaultPermissions, VaultAgentPermissions, VaultEntryContext, VaultUseContext } from 'handrail-agent-sdk/server';
+declare const secret: VaultSecretReference;
+declare const payment: VaultPaymentReference;
+// @ts-expect-error Specialized payment custody cannot use generic references.
+const wrongPayment: VaultPaymentReference = secret;
+// @ts-expect-error Payment reference cannot be used as a generic secret.
+const wrongSecret: VaultSecretReference = payment;
+declare const broker: VaultBroker;
+// @ts-expect-error Agent reveal is unavailable.
+broker.reveal(secret);
+// @ts-expect-error Agent export is unavailable.
+broker.export(payment);
+// @ts-expect-error No public raw-value getter.
+broker.get(secret);
+// @ts-expect-error Trusted host policy is server-only.
+import type { VaultUseGrant } from 'handrail-agent-sdk';
+const humanPermissions: VaultPermissions = { use: false, reveal: true, export: true };
+// @ts-expect-error Human reveal/export permissions cannot enable Agent reveal/export.
+const agentPermissions: VaultAgentPermissions = humanPermissions;
+declare const vaultOperation: VaultOperation;
+declare const vaultCompletion: VaultEntryCompletion;
+declare const vaultContext: VaultEntryContext;
+declare const useContext: VaultUseContext;
+validateVaultItem(vaultCompletion.item);
+validateVaultEntryCompletion(vaultCompletion, vaultContext, 1000);
+validateVaultOperation(vaultOperation, useContext, 1000);
+validateVaultBrokerResult({}, vaultOperation);
+// @ts-expect-error There is no value in reference-only completion.
+vaultCompletion.item.value;
+// @ts-expect-error Public operations cannot export values.
+const exportOperation: VaultOperation = { ...vaultOperation, operation: 'export' };
+if (vaultOperation.operation === 'fill') {
+  // @ts-expect-error Browser fill never accepts specialized payment references.
+  const browserReference: VaultSecretReference = payment;
+  broker.fill(vaultOperation);
+}
