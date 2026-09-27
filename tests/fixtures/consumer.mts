@@ -97,3 +97,35 @@ if (vaultOperation.operation === 'fill') {
   const browserReference: VaultSecretReference = payment;
   broker.fill(vaultOperation);
 }
+
+import { validateBrowserOperation, validateBrowserOperationSchema, validateBrowserTakeoverTransition, validateBrowserObservation } from 'handrail-agent-sdk';
+import type { BrowserOperation, BrowserTakeover, BrowserObservation, BrowserAction, BrowserLease } from 'handrail-agent-sdk';
+import type { BrowserOperationContext, BrowserTakeoverContext, BrowserHandbackAuthorization } from 'handrail-agent-sdk/server';
+declare const browserOperation: BrowserOperation;
+declare const browserContext: BrowserOperationContext;
+declare const takeoverContext: BrowserTakeoverContext;
+declare const browserTakeover: BrowserTakeover;
+const browserParsed = validateBrowserOperation(browserOperation, browserContext, 2000);
+validateBrowserOperationSchema(browserOperation);
+validateBrowserTakeoverTransition(browserTakeover, takeoverContext, 2000);
+if (browserParsed.ok) {
+  const typed: BrowserOperation = browserParsed.value;
+  // @ts-expect-error Profile scope is immutable.
+  typed.lease.profile.scope.accountRef = 'other';
+  // @ts-expect-error Frame ancestry cannot be mutated.
+  typed.document.frames.push({ frameRef: 'other', origin: 'https://fixture.example' });
+}
+const browserObservation = validateBrowserObservation({}, browserOperation);
+if (browserObservation.ok) { const typed: BrowserObservation = browserObservation.value; }
+// @ts-expect-error Model-facing contract has no arbitrary evaluation.
+const evaluation: BrowserAction = { kind: 'eval', script: 'synthetic' };
+// @ts-expect-error Ordinary typing resolves a host-approved nonsecret text reference.
+const rawTyping: BrowserAction = { kind: 'type', elementRef: 'element', text: 'synthetic' };
+// @ts-expect-error Unknown outcome requires reconciliation binding.
+const unknownObservation: BrowserObservation = { request: browserOperation, kind: 'redacted', status: 'observation_withheld', effect: { ...browserOperation.effect, outcome: 'unknown' } };
+// @ts-expect-error Sanitized observations require adapter attestation.
+const unattested: BrowserObservation = { request: browserOperation, kind: 'sanitized', effect: { ...browserOperation.effect, outcome: 'verified' }, facts: [] };
+// @ts-expect-error Trusted context stays on server type boundary.
+import type { BrowserOperationContext as PublicBrowserContext } from 'handrail-agent-sdk';
+// @ts-expect-error Implementation remains private.
+import 'handrail-agent-sdk/dist/contracts/browser.js';

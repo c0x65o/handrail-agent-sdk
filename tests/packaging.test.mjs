@@ -28,6 +28,9 @@ for (const specifier of ['handrail-agent-sdk', 'handrail-agent-sdk/server']) {
       console.log(JSON.stringify(Object.keys(entry)));
     `]);
     assert.deepEqual(JSON.parse(output), specifier.endsWith('/server') ? [] : [
+      'validateBrowserLease', 'validateBrowserLeaseSuccessor', 'validateBrowserObservation',
+      'validateBrowserOperation', 'validateBrowserOperationSchema', 'validateBrowserProfile',
+      'validateBrowserRevocationResult', 'validateBrowserTakeover', 'validateBrowserTakeoverTransition',
       'validateConnectionEnsureInput', 'validateConnectionEnsureResult', 'validateConnectionReconnect',
       'validateJobCommand', 'validateJobEvent', 'validateJobResult', 'validateJobSnapshot', 'validateJobTransition',
       'validateVaultBrokerResult', 'validateVaultEntryCompletion', 'validateVaultEntryRequest', 'validateVaultItem', 'validateVaultOperation',
@@ -39,28 +42,35 @@ test('entrypoints and contract import graph have no startup calls or external ru
   for (const path of ['src/index.ts', 'src/server/index.ts', 'dist/index.js', 'dist/server/index.js']) {
     const source = ts.createSourceFile(path, readFileSync(new URL(`../${path}`, import.meta.url), 'utf8'), ts.ScriptTarget.Latest);
     if (path.includes('/server/')) {
-      assert.equal(source.statements.length, 1, path);
-      const [statement] = source.statements;
-      assert.ok(ts.isExportDeclaration(statement), path);
       if (path.startsWith('src/')) {
-        assert.equal(statement.isTypeOnly, true, path);
-        assert.equal(statement.moduleSpecifier.text, './vault-policy.js', path);
+        assert.equal(source.statements.length, 2, path);
+        for (const statement of source.statements) {
+          assert.ok(ts.isExportDeclaration(statement), path);
+          assert.equal(statement.isTypeOnly, true, path);
+        }
+        assert.deepEqual(source.statements.map(s => s.moduleSpecifier.text), ['./vault-policy.js', './browser-policy.js']);
       } else {
+        assert.equal(source.statements.length, 1, path);
+        const [statement] = source.statements;
+        assert.ok(ts.isExportDeclaration(statement), path);
         assert.equal(statement.moduleSpecifier, undefined, path);
         assert.equal(statement.exportClause.elements.length, 0, path);
       }
     } else {
       assert.ok(source.statements.every(ts.isExportDeclaration), path);
-      assert.deepEqual(source.statements.map(s => s.moduleSpecifier.text), ['./contracts/job.js', './contracts/connection.js', './contracts/vault.js'], path);
+      assert.deepEqual(source.statements.map(s => s.moduleSpecifier.text), ['./contracts/job.js', './contracts/connection.js', './contracts/vault.js', './contracts/browser.js'], path);
     }
   }
-  for (const name of ['job', 'connection', 'vault']) {
+  for (const name of ['job', 'connection', 'vault', 'browser']) {
     const source = ts.createSourceFile(`${name}.js`, readFileSync(new URL(`../dist/contracts/${name}.js`, import.meta.url), 'utf8'), ts.ScriptTarget.Latest);
     for (const statement of source.statements) {
       if (ts.isImportDeclaration(statement)) {
-        assert.ok(name === 'connection' || name === 'vault');
-        assert.equal(statement.moduleSpecifier.text, './job.js');
-        assert.deepEqual(statement.importClause.namedBindings.elements.map(e => e.name.text), name === 'vault' ? ['validateJobCommand', 'validateJobSnapshot'] : ['validateJobCommand']);
+        const expectedImports = {
+          connection: { './job.js': ['validateJobCommand'] },
+          vault: { './job.js': ['validateJobCommand', 'validateJobSnapshot'] },
+          browser: { './job.js': ['validateJobCommand', 'validateJobSnapshot'], './vault.js': ['validateVaultOperation'] },
+        };
+        assert.deepEqual(statement.importClause.namedBindings.elements.map(e => e.name.text), expectedImports[name]?.[statement.moduleSpecifier.text]);
         continue;
       }
       assert.ok(ts.isFunctionDeclaration(statement) || ts.isVariableStatement(statement));
@@ -69,7 +79,7 @@ test('entrypoints and contract import graph have no startup calls or external ru
           const init = declaration.initializer;
           const literalChoice = node => ts.isCallExpression(node) && node.expression.text === 'oneOf'
             && node.arguments.every(ts.isStringLiteral);
-          const fields = ['connection', 'vault'].includes(name)
+          const fields = ['connection', 'vault', 'browser'].includes(name)
             && ['effectFields', 'contextFields'].includes(declaration.name.text)
             && ts.isObjectLiteralExpression(init)
             && init.properties.every(p => ts.isShorthandPropertyAssignment(p)
@@ -104,6 +114,8 @@ test('implementation paths are not public package entrypoints', () => {
       code: 'ERR_PACKAGE_PATH_NOT_EXPORTED',
     });
     await assert.rejects(import('handrail-agent-sdk/dist/contracts/vault.js'), { code: 'ERR_PACKAGE_PATH_NOT_EXPORTED' });
+    await assert.rejects(import('handrail-agent-sdk/dist/contracts/browser.js'), { code: 'ERR_PACKAGE_PATH_NOT_EXPORTED' });
+    await assert.rejects(import('handrail-agent-sdk/dist/server/browser-policy.js'), { code: 'ERR_PACKAGE_PATH_NOT_EXPORTED' });
     await assert.rejects(import('handrail-agent-sdk/dist/server/vault-policy.js'), { code: 'ERR_PACKAGE_PATH_NOT_EXPORTED' });
     await assert.rejects(import('handrail-agent-sdk/dist/server/index.js'), {
       code: 'ERR_PACKAGE_PATH_NOT_EXPORTED',
