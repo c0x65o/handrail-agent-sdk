@@ -112,7 +112,7 @@ and the search path remains `pg_catalog`. Cleanup rules above are unchanged.
 
 On a non-root Linux worker with `/usr/lib/postgresql/15/bin`,
 `node tests/run-local-postgres.mjs` can create a fresh temporary cluster and run
-lease, admission, journal and smoke suites. This optional fixture runner uses only its own
+vault, lease, admission, journal and smoke suites. This optional fixture runner uses only its own
 random credentials and database, then stops/removes the owned cluster. It does
 not discover credentials or select an existing database. Missing binaries or
 startup/test failures fail the command. These are real PostgreSQL fixture results,
@@ -134,3 +134,11 @@ boundary and generated migrations. It is included first in the disposable runner
 Distinct backend IDs and observed lock waits establish concurrency; injected
 host time controls expiry. See [lease fencing](job-lease.md) and
 [local fixture evidence](evidence/job-lease.json) for scope and results.
+
+## Reference vault acceptance
+
+`node tests/run-local-postgres.mjs test:vault` selects only the encrypted custody
+suite; omitting arguments runs all persistence suites sequentially.
+`npm run test:vault` strictly compiles the TypeScript suite and uses the explicit
+disposable connection above. See [vault storage](vault-store.md) for fresh-process
+proof, private key fixtures, canary scans and the limits of local acceptance.

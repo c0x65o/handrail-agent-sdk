@@ -1,0 +1,214 @@
+{
+  "schema_version": 1,
+  "proof_class": "local_disposable_postgresql_reference_host",
+  "recorded_at": "2026-09-27T19:11:00.036099+00:00",
+  "item_id": "9773e835-c951-4884-8e96-7c5686b7bd5d",
+  "work_request_id": "4ee1ba41-0b95-4699-b1a8-ab41ca007666",
+  "candidate": {
+    "branch": "lane/agent-sdk-v1",
+    "base_commit": "aae39c95ba25c2fc2787ff182c61051c1e9cf896",
+    "state": "tested uncommitted patch",
+    "source_manifest_sha256": "7d1abb313fefba12d4e6beb13abb2127dfa9eac7e9acd54f6ba44bc939f48da6",
+    "hash_definition": "SHA256 of compact sorted-key JSON of the ordered path/sha256 manifest below; excludes this evidence file to avoid self-reference. Not a native verifier digest or a new Git commit.",
+    "files": [
+      {
+        "path": "docs/local-postgres-testing.md",
+        "sha256": "74a0af00b4e8599353f473f444adfb706c6dc6279b998503fcf918be03b2d974"
+      },
+      {
+        "path": "docs/vault-contract.md",
+        "sha256": "ef3c7038a560f6908da2f3f3bb5c08a0520c8d82c27f8a714c0f0687c84e7a3b"
+      },
+      {
+        "path": "docs/vault-store.md",
+        "sha256": "13f30481cd855257760f492843de42f139b6ada7ff3be82c3b30fcf2b0fa8453"
+      },
+      {
+        "path": "package.json",
+        "sha256": "7ae3adfe4012c8df5d770034eb4768717157cdb5f42891a8d1997d609f7ee264"
+      },
+      {
+        "path": "reference/node/db/migrations/0003_vault_items.sql",
+        "sha256": "52fbb59a9dac81a9664cf2b584e8d15b549f4fa85eb4cf48d700c5d035e2753f"
+      },
+      {
+        "path": "reference/node/db/migrations/meta/0003_snapshot.json",
+        "sha256": "f087cfc18713c4afbe86569732e296208b9955cae9b2ae99df533808dcc1f980"
+      },
+      {
+        "path": "reference/node/db/migrations/meta/_journal.json",
+        "sha256": "d13b324407ba71088d4ddd1ea3b4470b7a5d00a57492937eb44f6647721b4d94"
+      },
+      {
+        "path": "reference/node/db/schema.ts",
+        "sha256": "30fa546c87b512652e5b7d926bd5003f1fc9060f09b41abe90eca38d09f087df"
+      },
+      {
+        "path": "reference/node/vault-store.ts",
+        "sha256": "02225d37f59671a68ccb1eff4b1bb6a48f4bae4bf46d06e74f9433b7de1650d4"
+      },
+      {
+        "path": "tests/job-journal.test.mjs",
+        "sha256": "0105e677a86c40958e6bef2ed9c7d1a3ea45a8b4c1d2b9e93ac38e629d7ccbd2"
+      },
+      {
+        "path": "tests/packaging.test.mjs",
+        "sha256": "bb018dc10a666b26da92c46eefb0f4476f0ce70569b57b38cf46352acbfe1338"
+      },
+      {
+        "path": "tests/reference/vault-fixture.ts",
+        "sha256": "8daf21642848a35e896a7fc049b0954f9a5e26cd8c8651e2398aa6d87f52a8f3"
+      },
+      {
+        "path": "tests/reference/vault-process.ts",
+        "sha256": "bc5a6ad9eb939d2b47e040019ad45a1ce355cf2e6d9e41dbd99e640a48da066f"
+      },
+      {
+        "path": "tests/reference/vault-store.test.ts",
+        "sha256": "53dee78bb6ffacac9e6121ade68be31eeba5a38679739f48196466e7c8a63c61"
+      },
+      {
+        "path": "tests/run-local-postgres.mjs",
+        "sha256": "c374d131136a94b4a1bf8c3785bcbcb825717b3320e3669c636bb8d4ee6dd5fa"
+      },
+      {
+        "path": "tests/tsconfig.reference.json",
+        "sha256": "ef80c8e0347b1125d82120e1dbcda25edcf7e33c6e705a26269c22e46333dfdb"
+      }
+    ]
+  },
+  "runtime": {
+    "node": "22.23.1",
+    "npm": "10.9.8",
+    "postgresql_major": 15
+  },
+  "checks": [
+    {
+      "command": "npm run db:generate -- --name=vault_items",
+      "exit_code": 0,
+      "result": "Generated 0003_vault_items.sql, snapshot and journal metadata; no live migration."
+    },
+    {
+      "command": "npm run build:reference",
+      "exit_code": 0,
+      "result": "Reference TypeScript compilation passed."
+    },
+    {
+      "command": "npm run build:test-reference",
+      "exit_code": 0,
+      "result": "Strict source, fixture and TypeScript test compilation passed; also repeated by test:vault."
+    },
+    {
+      "command": "node tests/run-local-postgres.mjs test:vault",
+      "exit_code": 0,
+      "tests": 13,
+      "passed": 13,
+      "failed": 0,
+      "skipped": 0,
+      "log": ".reference-build/vault-focused.tap"
+    },
+    {
+      "command": "node tests/run-local-postgres.mjs",
+      "exit_code": 0,
+      "tests": 48,
+      "passed": 48,
+      "failed": 0,
+      "skipped": 0,
+      "suites": {
+        "vault": 13,
+        "lease": 9,
+        "submit": 11,
+        "journal": 14,
+        "harness": 1
+      },
+      "log": ".reference-build/vault-postgres.tap",
+      "note": "Final added wrong-key revocation assertion was subsequently verified by the focused 13-test run."
+    },
+    {
+      "command": "npm test",
+      "exit_code": 0,
+      "tests": 771,
+      "passed": 771,
+      "failed": 0,
+      "skipped": 0,
+      "log": ".reference-build/vault-contracts.tap",
+      "result": "Contracts, acceptance, packaging; pretest SDK/reference/helper builds and acceptance typecheck."
+    },
+    {
+      "command": "node node_modules/typescript/bin/tsc -p tests/fixtures/tsconfig.json",
+      "exit_code": 0
+    },
+    {
+      "command": "git diff --check",
+      "exit_code": 0
+    }
+  ],
+  "fresh_process_evidence": {
+    "writer_exited_before_reader": true,
+    "distinct_child_pids_verified": true,
+    "recovered_variants": 8,
+    "variants": [
+      "login/password",
+      "api token",
+      "refresh token",
+      "synthetic ssn",
+      "synthetic legal_name",
+      "synthetic date_of_birth",
+      "synthetic tax_id",
+      "specialized payment adapter alias"
+    ],
+    "writes_before_and_after_restart": 16,
+    "unique_persisted_nonces": 16,
+    "seed_transport": "Private IPC; no retained seed, key bytes or canaries."
+  },
+  "negative_coverage": [
+    "Independent tenant/user/project/account/environment/purpose denial before key service invocation",
+    "Ciphertext/tag/nonce tampering and malformed encoding",
+    "Authenticated swapped scope, item identity, revision, token subtype, identity field/provenance and payment metadata",
+    "Missing/wrong keys, malformed key references, unsupported envelope/algorithm/key versions; same-key alias substitution",
+    "Strict raw payment/identity-bundle rejection and inert input copying",
+    "Duplicate/concurrent writes and nonce uniqueness constraint",
+    "Revocation across key resolution before decryption/output/write; key/driver/authorization errors bounded"
+  ],
+  "private_scans": {
+    "passed": true,
+    "sinks": [
+      "vault records",
+      "populated journal/events/checkpoints",
+      "delivery/admission tables",
+      "reference receipts",
+      "child stdout/stderr",
+      "captured errors"
+    ],
+    "representations": [
+      "raw synthetic canaries",
+      "base64/hex canaries",
+      "seed",
+      "hex/base64/byte-array keys"
+    ],
+    "diagnostics": "Boolean assertions and fixed failures only; no canary bytes retained."
+  },
+  "cleanup": {
+    "owned_migrated_schema_removed": true,
+    "independent_sentinel_preserved": true,
+    "child_owned_connections_and_helper_schemas_closed": true,
+    "owned_cluster_stopped_and_directory_removed": true,
+    "migration_temp_directories_removed": true
+  },
+  "native_verification": {
+    "status": "unavailable",
+    "tool": "handrail_run_read_only_tests",
+    "action": "inspect",
+    "profile": "sdk",
+    "error": "This tool requires its own active read-only validation work request.",
+    "run_attempted": false,
+    "receipt": null
+  },
+  "private_candidate_receipt": "/opt/handrail/.handrail/codex-runs/3fa50f71-9a4b-448f-a2af-0d8623a78a07/tmp/vault-candidate-receipt.json",
+  "limitations": [
+    "Local deterministic private key adapter qualifies mechanics only; no managed production key-provider qualification.",
+    "No deployed/native Handrail host, live provider or external key service proof.",
+    "Rotation/deletion, grants/brokers, secure entry and browser persistence remain separate items.",
+    "No commit, push, PR, deployment, live migration or CI/CD mutation performed."
+  ]
+}

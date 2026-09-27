@@ -58,7 +58,7 @@ test('migration isolation, rerun and owned cleanup preserve independent sentinel
   assert.equal((await first.query('SHOW search_path')).rows[0].search_path, 'pg_catalog');
   try { await migrate(first.database(), { migrationsFolder: folder, migrationsSchema: harness.schema, migrationsTable: 'journal_migrations' }); }
   catch { assert.fail('MIGRATION_RERUN_FAILED'); }
-  assert.equal((await first.query(`SELECT count(*)::int AS n FROM ${harness.table('journal_migrations')}`)).rows[0].n, 3);
+  assert.equal((await first.query(`SELECT count(*)::int AS n FROM ${harness.table('journal_migrations')}`)).rows[0].n, 4);
   ok(await journal.append(event('submitted', 0)));
   await harness.cleanup();
   assert.equal((await observer.query('SELECT count(*)::int AS n FROM pg_catalog.pg_namespace WHERE nspname = $1', [harness.schema])).rows[0].n, 0);

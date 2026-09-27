@@ -1,6 +1,7 @@
 import { sql } from 'drizzle-orm';
 import { bigint, check, foreignKey, integer, jsonb, pgSchema, primaryKey, text, unique } from 'drizzle-orm/pg-core';
 import type { JobDelivery, JobEvent, JobIdentity, JobSnapshot } from '../../../src/contracts/job.js';
+import type { VaultItem } from '../../../src/contracts/vault.js';
 
 export const referenceSchemaName = 'agent_reference';
 /** Explicit namespace, including a harness-owned schema in tests. No search_path dependency. */
@@ -57,3 +58,25 @@ export function journalTables(namespace = referenceSchemaName) {
   return { jobs, events, deliveries, checkpoints, admissions };
 }
 export const { jobs, events, deliveries, checkpoints, admissions } = journalTables();
+
+/** Separate custody table: no plaintext or key bytes, and no journal dependency. */
+export function vaultTables(namespace = referenceSchemaName) {
+  const items = pgSchema(namespace).table('vault_items', {
+    itemId: text('item_id').primaryKey(),
+    revision: bigint('revision', { mode: 'number' }).notNull(),
+    scope: jsonb('scope').$type<JobIdentity['host']>().notNull(),
+    item: jsonb('item').$type<VaultItem>().notNull(),
+    envelopeVersion: integer('envelope_version').notNull(),
+    algorithm: text('algorithm').notNull(),
+    keyHandle: text('key_handle').notNull(),
+    keyVersion: integer('key_version').notNull(),
+    nonce: text('nonce').notNull(),
+    ciphertext: text('ciphertext').notNull(),
+    tag: text('tag').notNull(),
+  }, t => [
+    check('vault_safe_revision', sql`${t.revision} between 1 and 9007199254740991`),
+    unique('vault_key_nonce_unique').on(t.keyHandle, t.keyVersion, t.nonce),
+  ]);
+  return { items };
+}
+export const { items: vaultItems } = vaultTables();

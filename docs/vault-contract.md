@@ -1,6 +1,6 @@
 # Scoped vault handoff contract
 
-`src/contracts/vault.ts` provides pure readonly metadata/reference types and strict validators exported from `handrail-agent-sdk`. `handrail-agent-sdk/server` exports only trusted policy **types**. Neither entrypoint starts services. No plaintext adapter, storage, secure-entry UI, browser executor or provider integration is implemented.
+`src/contracts/vault.ts` provides pure readonly metadata/reference types and strict validators exported from `handrail-agent-sdk`. `handrail-agent-sdk/server` exports only trusted policy **types**. Neither entrypoint starts services. These public entrypoints contain no plaintext adapter, storage, secure-entry UI, browser executor or provider integration. Private reference-host storage is documented separately in [vault persistence](vault-store.md).
 
 ## Ownership and authority
 

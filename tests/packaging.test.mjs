@@ -118,6 +118,7 @@ test('implementation paths are not public package entrypoints', () => {
     await assert.rejects(import('handrail-agent-sdk/dist/contracts/connection.js'), {
       code: 'ERR_PACKAGE_PATH_NOT_EXPORTED',
     });
+    await assert.rejects(import('handrail-agent-sdk/reference/node/vault-store.js'), { code: 'ERR_PACKAGE_PATH_NOT_EXPORTED' });
     await assert.rejects(import('handrail-agent-sdk/dist/contracts/vault.js'), { code: 'ERR_PACKAGE_PATH_NOT_EXPORTED' });
     await assert.rejects(import('handrail-agent-sdk/dist/contracts/browser.js'), { code: 'ERR_PACKAGE_PATH_NOT_EXPORTED' });
     await assert.rejects(import('handrail-agent-sdk/dist/server/browser-policy.js'), { code: 'ERR_PACKAGE_PATH_NOT_EXPORTED' });
@@ -133,9 +134,11 @@ test('lease and reference factories are inert on import and construction', () =>
     import { createJobLease } from 'handrail-agent-sdk/server';
     import { createJobLeaseStore } from './.reference-build/reference/node/job-lease.js';
     import { createJobJournal } from './.reference-build/reference/node/job-journal.js';
+    import { createVaultStore } from './.reference-build/reference/node/vault-store.js';
     const untouched = new Proxy({}, { get() { throw Error('FACTORY_STARTED_WORK'); } });
     createJobLease(untouched, untouched);
     createJobLeaseStore(untouched);
     createJobJournal(untouched);
+    createVaultStore(untouched, untouched, untouched);
   `]);
 });
