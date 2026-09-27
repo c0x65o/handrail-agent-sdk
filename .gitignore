@@ -8,4 +8,5 @@
 node_modules/
 dist/
 .acceptance-build/
+.postgres-build/
 *.tsbuildinfo

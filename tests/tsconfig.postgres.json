@@ -1,0 +1,10 @@
+{
+  "extends": "../tsconfig.json",
+  "compilerOptions": {
+    "rootDir": "helpers",
+    "outDir": "../.postgres-build",
+    "declaration": false,
+    "types": ["node"]
+  },
+  "include": ["helpers/postgres.ts"]
+}
