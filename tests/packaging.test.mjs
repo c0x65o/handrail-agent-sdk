@@ -27,7 +27,7 @@ for (const specifier of ['handrail-agent-sdk', 'handrail-agent-sdk/server']) {
       const entry = await import(${JSON.stringify(specifier)});
       console.log(JSON.stringify(Object.keys(entry)));
     `]);
-    assert.deepEqual(JSON.parse(output), specifier.endsWith('/server') ? ['createJobAdmission'] : [
+    assert.deepEqual(JSON.parse(output), specifier.endsWith('/server') ? ['createJobAdmission', 'createJobLease'] : [
       'validateBrowserLease', 'validateBrowserLeaseSuccessor', 'validateBrowserObservation',
       'validateBrowserOperation', 'validateBrowserOperationSchema', 'validateBrowserProfile',
       'validateBrowserRevocationResult', 'validateBrowserTakeover', 'validateBrowserTakeoverTransition',
@@ -44,23 +44,27 @@ test('entrypoints and contract import graph have no startup calls or external ru
     if (path.includes('/server/')) {
       assert.ok(source.statements.every(ts.isExportDeclaration), path);
       const runtime = source.statements.filter(s => !s.isTypeOnly);
-      assert.equal(runtime.length, 1, path);
+      assert.equal(runtime.length, 2, path);
       assert.equal(runtime[0].moduleSpecifier.text, './submit.js', path);
+      assert.equal(runtime[1].moduleSpecifier.text, './job-lease.js', path);
+      assert.deepEqual(runtime[1].exportClause.elements.map(e => e.name.text), ['createJobLease']);
       assert.deepEqual(runtime[0].exportClause.elements.map(e => e.name.text), ['createJobAdmission']);
     } else {
       assert.ok(source.statements.every(ts.isExportDeclaration), path);
       assert.deepEqual(source.statements.map(s => s.moduleSpecifier.text), ['./contracts/job.js', './contracts/connection.js', './contracts/vault.js', './contracts/browser.js'], path);
     }
   }
-  const admission = ts.createSourceFile('submit.js', readFileSync(new URL('../dist/server/submit.js', import.meta.url), 'utf8'), ts.ScriptTarget.Latest);
-  for (const statement of admission.statements) {
-    if (ts.isImportDeclaration(statement)) {
-      assert.equal(statement.moduleSpecifier.text, '../contracts/job.js');
-    } else if (ts.isVariableStatement(statement)) {
-      for (const declaration of statement.declarationList.declarations) {
-        assert.ok(ts.isArrowFunction(declaration.initializer) || ts.isObjectLiteralExpression(declaration.initializer));
-      }
-    } else assert.ok(ts.isFunctionDeclaration(statement));
+  for (const name of ['submit', 'job-lease']) {
+    const admission = ts.createSourceFile(`${name}.js`, readFileSync(new URL(`../dist/server/${name}.js`, import.meta.url), 'utf8'), ts.ScriptTarget.Latest);
+    for (const statement of admission.statements) {
+      if (ts.isImportDeclaration(statement)) {
+        assert.equal(statement.moduleSpecifier.text, '../contracts/job.js');
+      } else if (ts.isVariableStatement(statement)) {
+        for (const declaration of statement.declarationList.declarations) {
+          assert.ok(ts.isArrowFunction(declaration.initializer) || ts.isObjectLiteralExpression(declaration.initializer));
+        }
+      } else assert.ok(ts.isFunctionDeclaration(statement));
+    }
   }
   for (const name of ['job', 'connection', 'vault', 'browser']) {
     const source = ts.createSourceFile(`${name}.js`, readFileSync(new URL(`../dist/contracts/${name}.js`, import.meta.url), 'utf8'), ts.ScriptTarget.Latest);
@@ -121,5 +125,17 @@ test('implementation paths are not public package entrypoints', () => {
     await assert.rejects(import('handrail-agent-sdk/dist/server/index.js'), {
       code: 'ERR_PACKAGE_PATH_NOT_EXPORTED',
     });
+  `]);
+});
+
+test('lease and reference factories are inert on import and construction', () => {
+  runNode(['--input-type=module', '--eval', `
+    import { createJobLease } from 'handrail-agent-sdk/server';
+    import { createJobLeaseStore } from './.reference-build/reference/node/job-lease.js';
+    import { createJobJournal } from './.reference-build/reference/node/job-journal.js';
+    const untouched = new Proxy({}, { get() { throw Error('FACTORY_STARTED_WORK'); } });
+    createJobLease(untouched, untouched);
+    createJobLeaseStore(untouched);
+    createJobJournal(untouched);
   `]);
 });

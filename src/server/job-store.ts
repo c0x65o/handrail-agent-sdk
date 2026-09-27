@@ -1,7 +1,7 @@
 import type { JobErrorCode, JobEvent, JobIdentity, JobSnapshot } from '../contracts/job.js';
 
 export type JobStoreErrorCode = JobErrorCode | 'conflict' | 'not_found'
-  | 'invalid_checkpoint' | 'invalid_history';
+  | 'invalid_checkpoint' | 'invalid_history' | 'lease_lost';
 export type JobStoreResult<T> = { readonly ok: true; readonly value: T }
   | { readonly ok: false; readonly code: JobStoreErrorCode };
 
@@ -12,10 +12,11 @@ export type JobStoreResult<T> = { readonly ok: true; readonly value: T }
  */
 export interface JobStore {
   /** previousRevision is the CAS expectation. Delivery is stored separately;
+   * Non-submitted writes require a current fence in the same transaction.
    * canonical comparison includes every other field (object key order ignored).
    * An identical retry returns the original canonical event, without delivery.
    */
-  append(event: JobEvent): Promise<JobStoreResult<{ readonly event: JobEvent; readonly replayed: boolean }>>;
+  append(event: JobEvent, fence?: import('./job-lease.js').JobAppendFence): Promise<JobStoreResult<{ readonly event: JobEvent; readonly replayed: boolean }>>;
   /** Validate canonical history and checkpoint; repair missing/stale checkpoints.
    * Ahead, incompatible or inconsistent checkpoints fail closed.
    */

@@ -10,7 +10,22 @@ export function journalTables(namespace = referenceSchemaName) {
     jobId: text('job_id').primaryKey(),
     identity: jsonb('identity').$type<JobIdentity>().notNull(),
     revision: bigint('revision', { mode: 'number' }).notNull(),
-  }, t => [check('jobs_safe_revision', sql`${t.revision} between 0 and 9007199254740991`)]);
+    leaseOwner: text('lease_owner'),
+    leaseEpoch: bigint('lease_epoch', { mode: 'number' }).notNull().default(0),
+    leaseExpiresAt: bigint('lease_expires_at', { mode: 'number' }),
+    leaseGrantRevision: bigint('lease_grant_revision', { mode: 'number' }),
+    leaseCancellationRevision: bigint('lease_cancellation_revision', { mode: 'number' }),
+  }, t => [check('jobs_safe_revision', sql`${t.revision} between 0 and 9007199254740991`),
+    check('jobs_safe_lease_epoch', sql`${t.leaseEpoch} between 0 and 9007199254740991`),
+    check('jobs_lease_shape', sql`(
+      ${t.leaseOwner} is null and ${t.leaseExpiresAt} is null and ${t.leaseGrantRevision} is null and ${t.leaseCancellationRevision} is null
+    ) or (
+      ${t.leaseOwner} is not null and ${t.leaseExpiresAt} is not null and ${t.leaseGrantRevision} is not null and ${t.leaseCancellationRevision} is not null
+      and ${t.leaseOwner} ~ '^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$' and ${t.leaseEpoch} > 0
+      and ${t.leaseExpiresAt} between 0 and 9007199254740991
+      and ${t.leaseGrantRevision} between 1 and 9007199254740991
+      and ${t.leaseCancellationRevision} between 0 and 9007199254740991
+    )`)]);
   const events = schema.table('job_events', {
     jobId: text('job_id').notNull().references(() => jobs.jobId),
     revision: bigint('revision', { mode: 'number' }).notNull(),

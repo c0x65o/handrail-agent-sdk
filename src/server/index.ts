@@ -5,3 +5,5 @@ export type { JobStore, JobStoreErrorCode, JobStoreResult } from './job-store.js
 export { createJobAdmission } from './submit.js';
 export type { JobSubmission, JobAuthority, AuthorizedSubmission, JobAdmissionHost, JobInspection, JobAdmissionReceipt, JobAdmission } from './submit.js';
 export type { JobAdmissionStore } from './job-store.js';
+export { createJobLease } from './job-lease.js';
+export type { JobLease, JobLeaseHost, JobLeaseAuthority, JobLeaseFence, JobLeaseOperation, JobLeaseStore, JobLeaseContext, JobAppendFence, JobAppendResult } from './job-lease.js';

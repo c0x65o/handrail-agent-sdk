@@ -14,8 +14,9 @@ verify principal authority, receipt truth, grant scope or instruction ownership.
 An identifier-shaped secret is still forbidden. Handrail will implement this port
 over native authoritative task services, not deploy this reference journal as a
 second controller. [Admission](job-admission.md) now composes this journal with
-atomic request-key reservations. Claims, scheduling, cancellation orchestration,
-answers, effect reconciliation and execution remain separate work.
+atomic request-key reservations. [Lease fencing](job-lease.md) now protects runtime appends. Scheduling,
+cancellation orchestration, answers, effect reconciliation and execution remain
+separate work.
 
 ## Canonical facts and atomic revisions
 
@@ -28,7 +29,10 @@ Canonical identity is `(jobId, snapshot.revision)`. Comparison includes kind,
 previousRevision, the complete snapshot and any embedded command, with exact
 scalar values and array order but independent of object property order. Delivery
 is excluded. `append` returns that original canonical event with no delivery,
-including when retrying an older revision after the job has advanced. Changed
+including when retrying an older revision after the job has advanced. Every
+non-submitted append now also requires a current server-only `JobAppendFence`;
+prefer `createJobLease(...).append/complete` to establish host authority around
+the whole transaction. The initial admission append signature is unchanged. Changed
 canonical content conflicts. It never merges or replaces a persisted fact.
 
 `job_deliveries` separately retains the validated attempt/callback/queue identity,
@@ -97,7 +101,7 @@ With the documented disposable variables privately injected, run
 fail; missing SQL execution is never a skip or passing acceptance. Linux workers
 with PostgreSQL 15 binaries can instead run `node tests/run-local-postgres.mjs` as
 a non-root user. It creates a new temporary cluster, database and non-superuser
-fixture role, privately injects only its own connection, runs admission, journal and harness commands, then
+fixture role, privately injects only its own connection, runs lease, admission, journal and harness commands, then
 stops and removes that cluster. It does not read or modify an existing database.
 
 `npm test` compiles both reference code and the helper, and runs the existing

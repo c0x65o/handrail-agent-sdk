@@ -4,7 +4,9 @@ import { createPostgresHarness } from '../.postgres-build/postgres.js';
 import { migrations } from './helpers/migrations.mjs';
 import { createJobAdmission } from '../.reference-build/src/server/submit.js';
 import { createJobAdmissionStore } from '../.reference-build/reference/node/job-admission.js';
-import { createJobJournal } from '../.reference-build/reference/node/job-journal.js';
+import { fixtureLeaseHost } from './helpers/job-lease.mjs';
+import { createJobLease } from '../.reference-build/src/server/job-lease.js';
+import { createJobLeaseStore } from '../.reference-build/reference/node/job-lease.js';
 import { journalTables } from '../.reference-build/reference/node/db/schema.js';
 
 const request = { requestKey: 'admission-request-1', originTaskRef: 'original-task-submit-1', instructionRevision: 7,
@@ -182,7 +184,9 @@ test('inspection exposes only allowlisted durable state and cursor; replay stays
   const { api, first, tables, stored } = await setup(t);
   const admitted = ok(await api.submit(request));
   const identity = (await stored()).jobs[0].identity;
-  const journal = createJobJournal(first.database(), tables);
+  const runtime = createJobLease(fixtureLeaseHost(identity), createJobLeaseStore(first.database(), tables));
+  const fence = ok(await runtime.claim(identity, 10000));
+  const journal = { append: event => runtime.append(event, fence) };
   ok(await journal.append({ kind: 'started', previousRevision: 1,
     snapshot: { identity, state: 'running', revision: 2, effects: [] } }));
   ok(await journal.append({ kind: 'waiting', previousRevision: 2,

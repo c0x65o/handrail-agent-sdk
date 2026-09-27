@@ -119,7 +119,7 @@ client disposal. Use a Pool or one dedicated Client per concurrent transaction.
 `npm run test:submit` executes the admission suite with the explicitly disposable
 PostgreSQL variables described in [local PostgreSQL testing](local-postgres-testing.md).
 `node tests/run-local-postgres.mjs` creates a fresh PostgreSQL 15 cluster and runs
-admission, journal and harness suites sequentially, then stops/removes its owned
+lease, admission, journal and harness suites sequentially, then stops/removes its owned
 cluster. Migrations use the shared helper and harness-owned schemas; cleanup
 preserves an independent sentinel. No existing database credentials are read.
 
@@ -127,3 +127,7 @@ See [sanitized evidence](evidence/job-admission.json) for source identity, exact
 commands, counts and original synthetic job/task receipts. Compilation is
 reported separately from executed SQL tests. This proves PostgreSQL fixture
 behavior only, not deployed Handrail, live providers or later runtime milestones.
+
+Runtime writes now use [transactional lease fencing](job-lease.md). Admission
+receipts and request reservations retain their original contracts; ownership is
+private server data and is never added to these receipts.

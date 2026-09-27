@@ -1,3 +1,4 @@
+import { copyAppendFence, matchesJobFence } from './job-lease-fence.js';
 import { and, asc, eq } from 'drizzle-orm';
 import { validateJobCommand, validateJobEvent, validateJobSnapshot, validateJobTransition } from '../../src/contracts/job.js';
 import type { JobEvent, JobIdentity, JobSnapshot } from '../../src/contracts/job.js';
@@ -34,7 +35,7 @@ function identityInput(value: JobIdentity): JobIdentity {
 
 /** Reference-host persistence, not admission or execution authority. All reads
  * and writes use the injected shared Drizzle boundary. No connection is opened. */
-export function createJobJournal(db: ReferenceDatabase, tables = journalTables()): JobStore {
+export function createJobJournal(db: ReferenceDatabase, tables = journalTables()): JobStore & { load(identity: JobIdentity, repair?: boolean): Promise<JobStoreResult<JobSnapshot>> } {
   const { jobs, events, deliveries, checkpoints } = tables;
   type Transaction = Parameters<Parameters<ReferenceDatabase['transaction']>[0]>[0];
   type Head = typeof jobs.$inferSelect;
@@ -75,11 +76,12 @@ export function createJobJournal(db: ReferenceDatabase, tables = journalTables()
     } else await tx.insert(deliveries).values(values);
   }
   return {
-    append(input) {
+    append(input, inputFence) {
       return safe(async () => {
         if (!validateJobEvent(input).ok) reject('invalid_payload');
         const event = detached(input);
         if (!validateJobEvent(event).ok) reject('invalid_payload');
+        const access = inputFence ? copyAppendFence(inputFence) : undefined;
         const { delivery: _delivery, ...canonical } = event;
         const { identity, revision } = canonical.snapshot;
         return db.transaction(async tx => {
@@ -90,10 +92,15 @@ export function createJobJournal(db: ReferenceDatabase, tables = journalTables()
           if (!head) reject('not_found');
           if (!same(head.identity, identity)) reject('identity_mismatch');
           const { current, rows } = await history(tx, head);
+          const checkFence = () => {
+            if (event.kind !== 'submitted' && (!access || !matchesJobFence(head, access))) reject('lease_lost');
+          };
+          checkFence();
           const original = rows.find(row => row.revision === revision)?.event;
           if (original) {
             if (!same(original, canonical)) reject('conflict');
             await saveDelivery(tx, event);
+            checkFence();
             return { event: original, replayed: true };
           }
           if (event.previousRevision !== head.revision) reject('invalid_revision');
@@ -105,11 +112,12 @@ export function createJobJournal(db: ReferenceDatabase, tables = journalTables()
           if (updated.length !== 1) reject('conflict');
           await saveDelivery(tx, event);
           await saveCheckpoint(tx, canonical.snapshot);
+          checkFence();
           return { event: canonical, replayed: false };
         });
       });
     },
-    load(input) {
+    load(input, repair = true) {
       return safe(async () => {
         const identity = identityInput(input);
         return db.transaction(async tx => {
@@ -118,7 +126,7 @@ export function createJobJournal(db: ReferenceDatabase, tables = journalTables()
           if (!same(head.identity, identity)) reject('identity_mismatch');
           const { current, checkpoint } = await history(tx, head);
           if (!current) reject('invalid_history');
-          if (!checkpoint || checkpoint.revision < current.revision) await saveCheckpoint(tx, current);
+          if (repair && (!checkpoint || checkpoint.revision < current.revision)) await saveCheckpoint(tx, current);
           return current;
         });
       });

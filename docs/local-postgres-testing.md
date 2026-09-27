@@ -112,7 +112,7 @@ and the search path remains `pg_catalog`. Cleanup rules above are unchanged.
 
 On a non-root Linux worker with `/usr/lib/postgresql/15/bin`,
 `node tests/run-local-postgres.mjs` can create a fresh temporary cluster and run
-admission, journal and smoke suites. This optional fixture runner uses only its own
+lease, admission, journal and smoke suites. This optional fixture runner uses only its own
 random credentials and database, then stops/removes the owned cluster. It does
 not discover credentials or select an existing database. Missing binaries or
 startup/test failures fail the command. These are real PostgreSQL fixture results,
@@ -126,3 +126,11 @@ only against the explicitly disposable connection above. The local fixture
 runner now includes this suite before journal/harness regressions. See
 [job admission](job-admission.md) for namespace, digest and authorization rules,
 and [fixture evidence](evidence/job-admission.json) for actual results.
+
+## Runtime lease acceptance
+
+`npm run test:lease` executes real PostgreSQL races through the shared Drizzle
+boundary and generated migrations. It is included first in the disposable runner.
+Distinct backend IDs and observed lock waits establish concurrency; injected
+host time controls expiry. See [lease fencing](job-lease.md) and
+[local fixture evidence](evidence/job-lease.json) for scope and results.

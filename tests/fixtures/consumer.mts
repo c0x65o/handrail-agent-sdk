@@ -4,7 +4,7 @@ import * as server from 'handrail-agent-sdk/server';
 import { validateConnectionEnsureInput, validateConnectionEnsureResult, validateConnectionReconnect } from 'handrail-agent-sdk';
 import type { ConnectionEnsureInput, ConnectionEnsureResult, ConnectionState } from 'handrail-agent-sdk';
 type AssertEmpty<T extends never> = T;
-type ServerExports = AssertEmpty<Exclude<keyof typeof server, 'createJobAdmission'>>;
+type ServerExports = AssertEmpty<Exclude<keyof typeof server, 'createJobAdmission' | 'createJobLease'>>;
 const states: Record<JobState, boolean> = { queued: true, running: true, waiting: true, succeeded: true, failed: true, cancelled: true };
 declare const identity: JobIdentity;
 const command: JobCommand = { command: 'cancel', identity, expectedRevision: 2, reason: 'explicit_stop' };
@@ -161,3 +161,14 @@ if (admitted.ok) {
 admission.submit({ ...submission, host: identity.host });
 // @ts-expect-error Closing observation is not a cancellation API.
 admission.cancel('job');
+
+// Runtime fences and ownership remain on the server entrypoint.
+import { createJobLease } from 'handrail-agent-sdk/server';
+import type { JobLease, JobLeaseHost, JobLeaseStore, JobLeaseFence } from 'handrail-agent-sdk/server';
+declare const leaseHost: JobLeaseHost;
+declare const leaseStore: JobLeaseStore;
+declare const leaseFence: JobLeaseFence;
+const leases: JobLease = createJobLease(leaseHost, leaseStore);
+void leases.check(leaseFence);
+// @ts-expect-error runtime ownership is not a public client/model contract
+import type { JobLeaseFence as PublicLeaseFence } from 'handrail-agent-sdk';

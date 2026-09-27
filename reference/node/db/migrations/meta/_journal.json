@@ -15,6 +15,13 @@
       "when": 1790533101227,
       "tag": "0001_round_garia",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1790534070334,
+      "tag": "0002_outgoing_night_thrasher",
+      "breakpoints": true
     }
   ]
 }

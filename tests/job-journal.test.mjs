@@ -6,6 +6,7 @@ import { migrate } from 'drizzle-orm/node-postgres/migrator';
 import { createPostgresHarness } from '../.postgres-build/postgres.js';
 import { createJobJournal } from '../.reference-build/reference/node/job-journal.js';
 import { migrations } from './helpers/migrations.mjs';
+import { leasedJournals } from './helpers/job-lease.mjs';
 import { journalTables } from '../.reference-build/reference/node/db/schema.js';
 
 const identity = {
@@ -36,8 +37,8 @@ async function setup(t) {
   const first = await harness.client(), second = await harness.client();
   const folder = await migrations(t, harness, first);
   const tables = journalTables(harness.schema);
-  const journal = createJobJournal(first.database(), tables);
-  const other = createJobJournal(second.database(), tables);
+  const [journal, other] = leasedJournals(first, second, tables,
+    createJobJournal(first.database(), tables), createJobJournal(second.database(), tables));
   const stored = async () => {
     const result = {};
     for (const name of ['jobs', 'job_events', 'job_deliveries', 'job_checkpoints']) {
@@ -57,7 +58,7 @@ test('migration isolation, rerun and owned cleanup preserve independent sentinel
   assert.equal((await first.query('SHOW search_path')).rows[0].search_path, 'pg_catalog');
   try { await migrate(first.database(), { migrationsFolder: folder, migrationsSchema: harness.schema, migrationsTable: 'journal_migrations' }); }
   catch { assert.fail('MIGRATION_RERUN_FAILED'); }
-  assert.equal((await first.query(`SELECT count(*)::int AS n FROM ${harness.table('journal_migrations')}`)).rows[0].n, 2);
+  assert.equal((await first.query(`SELECT count(*)::int AS n FROM ${harness.table('journal_migrations')}`)).rows[0].n, 3);
   ok(await journal.append(event('submitted', 0)));
   await harness.cleanup();
   assert.equal((await observer.query('SELECT count(*)::int AS n FROM pg_catalog.pg_namespace WHERE nspname = $1', [harness.schema])).rows[0].n, 0);
