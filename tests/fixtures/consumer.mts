@@ -1,6 +1,8 @@
 import { validateJobCommand, validateJobSnapshot, validateJobEvent, validateJobResult, validateJobTransition } from 'handrail-agent-sdk';
 import type { JobState, JobSnapshot, JobCommand, JobResult, JobEvent, JobIdentity, JobObservation } from 'handrail-agent-sdk';
 import * as server from 'handrail-agent-sdk/server';
+import { validateConnectionEnsureInput, validateConnectionEnsureResult, validateConnectionReconnect } from 'handrail-agent-sdk';
+import type { ConnectionEnsureInput, ConnectionEnsureResult, ConnectionState } from 'handrail-agent-sdk';
 type AssertEmpty<T extends never> = T;
 type ServerExports = AssertEmpty<keyof typeof server>;
 const states: Record<JobState, boolean> = { queued: true, running: true, waiting: true, succeeded: true, failed: true, cancelled: true };
@@ -33,3 +35,26 @@ observation.dispose();
 import 'handrail-agent-sdk/dist/server/index.js';
 // @ts-expect-error Contract is exposed through the root entrypoint only.
 import 'handrail-agent-sdk/dist/contracts/job.js';
+declare const connectionInput: ConnectionEnsureInput;
+const connection = validateConnectionEnsureResult({}, connectionInput, 10000);
+validateConnectionEnsureInput(connectionInput);
+if (connection.ok) {
+  const typed: ConnectionEnsureResult = connection.value;
+  const state: ConnectionState = typed.state;
+  validateConnectionReconnect(typed, typed, 10000);
+  // @ts-expect-error Reconnect cannot replace the original task.
+  typed.request.identity.originTaskRef = 'replacement';
+  // @ts-expect-error Capabilities are readonly.
+  typed.request.minimumCapabilities.push('extra');
+  if (typed.state === 'ready') {
+    const active: 'active' = typed.authorization.state;
+    // @ts-expect-error Verification facts are readonly.
+    typed.evidence.provenance.kind = 'fixture';
+  }
+}
+// @ts-expect-error Ready requires API evidence.
+const invalidReady: ConnectionEnsureResult = { request: connectionInput, authorization: { state: 'active', expiresAt: 20000 }, state: 'ready' };
+// @ts-expect-error Unknown effects require reconciliation identity.
+const invalidUnknown: ConnectionEnsureResult = { request: connectionInput, authorization: { state: 'unverified' }, state: 'unknown_effect' };
+// @ts-expect-error Contract implementation paths remain private.
+import 'handrail-agent-sdk/dist/contracts/connection.js';

@@ -1,6 +1,6 @@
 {
   "name": "handrail-agent-sdk",
-  "version": "0.0.0.3",
+  "version": "0.0.0.4",
   "private": true,
   "description": "Handrail Agent SDK packaging bootstrap",
   "type": "module",
@@ -28,7 +28,7 @@
     "build": "tsc -p tsconfig.json",
     "prepare": "npm run build",
     "pretest": "npm run build",
-    "test": "node --test --test-concurrency=1 --test-reporter=tap tests/contracts/job.test.mjs tests/packaging.test.mjs"
+    "test": "node --test --test-concurrency=1 --test-reporter=tap tests/contracts/job.test.mjs tests/contracts/connection.test.mjs tests/packaging.test.mjs"
   },
   "devDependencies": {
     "typescript": "5.9.3"
