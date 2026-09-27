@@ -29,6 +29,20 @@
       "when": 1790535707333,
       "tag": "0003_vault_items",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1790545842090,
+      "tag": "0004_vault_lifecycle",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1790545881712,
+      "tag": "0005_vault_lifecycle_backfill",
+      "breakpoints": true
     }
   ]
 }

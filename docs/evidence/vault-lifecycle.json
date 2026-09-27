@@ -1,0 +1,388 @@
+{
+  "schema_version": 1,
+  "proof_class": "local_disposable_postgresql_reference_host",
+  "recorded_at": "2026-09-27T21:58:07.379126+00:00",
+  "item_id": "2e79d124-5f00-43fa-97b5-210a96f223db",
+  "work_request_id": "9894b69a-580d-4543-a70f-01b4ee5bd497",
+  "candidate": {
+    "branch": "lane/agent-sdk-v1",
+    "head": "c26087f17ea9ca79b9fa272c983710626c87bcaa",
+    "state": "verified uncommitted patch",
+    "source_manifest_sha256": "721dc1e597d4421809c280780d7c1d09c5a25159b17d9f25e3aed0879de0d4ad",
+    "hash_definition": "SHA256 of compact sorted-key JSON of the ordered changed-source path/sha256 manifest; UTF-8, no trailing newline. Evidence file excluded to avoid self-reference. Not a native verifier digest or new Git commit.",
+    "files": [
+      {
+        "path": "docs/local-postgres-testing.md",
+        "sha256": "e70e81b61041cfd7799c6b897879e53a9046c39ac1a64d5c5dc78ea77c696ce8"
+      },
+      {
+        "path": "docs/vault-store.md",
+        "sha256": "f766c9cc4db5be2f1f60ca064d8d4e9d11d21a6a07419c3b13010aa6f98c1890"
+      },
+      {
+        "path": "package.json",
+        "sha256": "8d6ca1528f2a1818273377b5a0979b74a861c5846846d0687ec7917433ac4f60"
+      },
+      {
+        "path": "reference/node/db/migrations/0004_vault_lifecycle.sql",
+        "sha256": "acd25ae34cacaedca2317ed09169c2a78b6316941def8cbb9ac02ce3a93950ae"
+      },
+      {
+        "path": "reference/node/db/migrations/0005_vault_lifecycle_backfill.sql",
+        "sha256": "a61d7c6a6013c02159bf3a0e000f129dd52a1f7bb20b208a370e65d4e6f2c406"
+      },
+      {
+        "path": "reference/node/db/migrations/meta/0004_snapshot.json",
+        "sha256": "266b3a2da7cb8fc8dcafbf4e6179963229f4d60dc070c5765e6b1795ab628832"
+      },
+      {
+        "path": "reference/node/db/migrations/meta/0005_snapshot.json",
+        "sha256": "06133f548871456518b8d624cece7d8355cd4cabd9dfe9dba763e4eb827dcb6f"
+      },
+      {
+        "path": "reference/node/db/migrations/meta/_journal.json",
+        "sha256": "02eab63cce128dc20c43aa8a55a9546ca5029c67947d2fa743baa0bf0c311bfe"
+      },
+      {
+        "path": "reference/node/db/schema.ts",
+        "sha256": "20f194fb1af0ff75fc0a036ef8895973652771125f7ea94c4e53c487e262c8f4"
+      },
+      {
+        "path": "reference/node/vault-lifecycle.ts",
+        "sha256": "728bcd5dc9bdb0b50616a725c82dd6824de276cb5d746e4a57209b5195bbf49b"
+      },
+      {
+        "path": "reference/node/vault-private.ts",
+        "sha256": "424de7c5ee5d115ac28a0d5f4d8d84aafad3b5b8c049a81a07b1ec510f47e624"
+      },
+      {
+        "path": "reference/node/vault-store.ts",
+        "sha256": "714e135d831b41c5bf6eafb37d95c478770f984d3a0c619b5f8209f8863bf464"
+      },
+      {
+        "path": "tests/job-journal.test.mjs",
+        "sha256": "d8c4841174d38067281f4910bcadd987d59aac0f6dcc682e3ff75acab3c76e16"
+      },
+      {
+        "path": "tests/reference/vault-fixture.ts",
+        "sha256": "42435f5b3691a6f7380bf6a728bbdf4c7bafd703bed5c16e0364c8d3cd8ff38c"
+      },
+      {
+        "path": "tests/reference/vault-lifecycle.test.ts",
+        "sha256": "99992f5c2f174387fd28f9bbfcba14b78cafb81b926728d2849e5cc7c6eff1cb"
+      },
+      {
+        "path": "tests/reference/vault-process.ts",
+        "sha256": "b4c12ff3d42c11c0c0e64ad56671ba2fddd2ba6909b75b672c6483e7728460f8"
+      },
+      {
+        "path": "tests/run-local-postgres.mjs",
+        "sha256": "22956b1bca31ee335259cf0338fcfc9fda863ee3a3e6fc00e1135ef88eb0167d"
+      }
+    ]
+  },
+  "changed_paths": [
+    "docs/evidence/vault-lifecycle.json",
+    "docs/local-postgres-testing.md",
+    "docs/vault-store.md",
+    "package.json",
+    "reference/node/db/migrations/0004_vault_lifecycle.sql",
+    "reference/node/db/migrations/0005_vault_lifecycle_backfill.sql",
+    "reference/node/db/migrations/meta/0004_snapshot.json",
+    "reference/node/db/migrations/meta/0005_snapshot.json",
+    "reference/node/db/migrations/meta/_journal.json",
+    "reference/node/db/schema.ts",
+    "reference/node/vault-lifecycle.ts",
+    "reference/node/vault-private.ts",
+    "reference/node/vault-store.ts",
+    "tests/job-journal.test.mjs",
+    "tests/reference/vault-fixture.ts",
+    "tests/reference/vault-lifecycle.test.ts",
+    "tests/reference/vault-process.ts",
+    "tests/run-local-postgres.mjs"
+  ],
+  "local_execution_receipt": {
+    "kind": "local_unsigned_execution_record",
+    "command": "node tests/run-local-postgres.mjs test:vault-lifecycle test:vault",
+    "exit_code": 0,
+    "tap_path": ".reference-build/vault-lifecycle-focused.tap",
+    "tap_sha256": "ec3dd13b26df4354d2b6c08f9b8a154923d22815cdd90e2c2dfaf42d1f1b46cc",
+    "tap_finished_at": "2026-09-27T21:56:47.681207+00:00",
+    "reproduce": "Run the command from repository root with locked dev dependencies on a non-root Linux host with PostgreSQL 15 binaries; the runner creates its own cluster and credentials. No host database connection is required.",
+    "suites": [
+      {
+        "name": "test:vault-lifecycle",
+        "tests": 18,
+        "passed": 18,
+        "failed": 0,
+        "skipped": 0,
+        "cancelled": 0
+      },
+      {
+        "name": "test:vault",
+        "tests": 13,
+        "passed": 13,
+        "failed": 0,
+        "skipped": 0,
+        "cancelled": 0
+      }
+    ],
+    "total": {
+      "tests": 31,
+      "passed": 31,
+      "failed": 0,
+      "skipped": 0,
+      "cancelled": 0
+    },
+    "acceptance_cases": [
+      {
+        "name": "fresh processes resume durable preparation for eight variants with unchanged references and exact target keys",
+        "result": "passed"
+      },
+      {
+        "name": "concurrent commits have one winner; stale preparations and receipts cannot replace newer key state",
+        "result": "passed"
+      },
+      {
+        "name": "deleted fences pending recovery, reads, recreation and replayed backups before and after cleanup",
+        "result": "passed"
+      },
+      {
+        "name": "revoked fences pending recovery, reads, recreation and replayed backups before and after cleanup",
+        "result": "passed"
+      },
+      {
+        "name": "durable tombstone during read key resolution prevents decryption/output or persistence",
+        "result": "passed"
+      },
+      {
+        "name": "durable tombstone during prepare key resolution prevents decryption/output or persistence",
+        "result": "passed"
+      },
+      {
+        "name": "durable tombstone during prepare-target key resolution prevents decryption/output or persistence",
+        "result": "passed"
+      },
+      {
+        "name": "durable tombstone during resume key resolution prevents decryption/output or persistence",
+        "result": "passed"
+      },
+      {
+        "name": "durable tombstone during create key resolution prevents decryption/output or persistence",
+        "result": "passed"
+      },
+      {
+        "name": "final private output fence observes a deletion after decryption during authorization",
+        "result": "passed"
+      },
+      {
+        "name": "cleanup SQL interruption rolls back private removal but leaves committed tombstone retryable",
+        "result": "passed"
+      },
+      {
+        "name": "missing and wrong exact keys fail closed; target-only recovery is retryable without key retirement",
+        "result": "passed"
+      },
+      {
+        "name": "all six scopes and current host denial fence preparation/recovery/cleanup; changed scope during key access fails closed",
+        "result": "passed"
+      },
+      {
+        "name": "missing/unavailable authoritative ledger and stale ciphertext fail closed without reconstruction",
+        "result": "passed"
+      },
+      {
+        "name": "tampered prepared bindings cannot authenticate even with current host authorization",
+        "result": "passed"
+      },
+      {
+        "name": "generated migrations rerun safely; owned lifecycle schemas removed with independent sentinel intact",
+        "result": "passed"
+      },
+      {
+        "name": "one-time generated upgrade preserves existing v1 envelopes and initializes their durable fence",
+        "result": "passed"
+      },
+      {
+        "name": "failed rotation commit rolls back envelope and generation together; preparation remains retryable",
+        "result": "passed"
+      },
+      {
+        "name": "all eight variants survive exited writer and fresh reader processes; restart nonces and sinks stay private",
+        "result": "passed"
+      },
+      {
+        "name": "each ownership dimension denies reads and writes before any key service call",
+        "result": "passed"
+      },
+      {
+        "name": "ciphertext, tag and nonce corruption and malformed encoding fail closed",
+        "result": "passed"
+      },
+      {
+        "name": "all six swapped scope fields remain authenticated even when host authorizes the altered scope",
+        "result": "passed"
+      },
+      {
+        "name": "swapped item, revision and valid type metadata cannot authenticate",
+        "result": "passed"
+      },
+      {
+        "name": "missing and wrong keys, unsupported envelope/algorithm/key versions have bounded errors",
+        "result": "passed"
+      },
+      {
+        "name": "token, identity and payment metadata and key identifiers are cryptographically bound",
+        "result": "passed"
+      },
+      {
+        "name": "invalid or unavailable active keys never persist a row and need no fallback",
+        "result": "passed"
+      },
+      {
+        "name": "strict value shapes reject raw payment data, identity bundles and accessor metadata without key access",
+        "result": "passed"
+      },
+      {
+        "name": "concurrent writes have one winner and duplicate writes never overwrite ciphertext",
+        "result": "passed"
+      },
+      {
+        "name": "detached inputs and repeated host checks fence revocation during key resolution",
+        "result": "passed"
+      },
+      {
+        "name": "driver and authorization failures never retain canaries or key bytes in errors or receipts",
+        "result": "passed"
+      },
+      {
+        "name": "generated migration reruns, uniqueness constraints and owned cleanup preserve independent sentinel",
+        "result": "passed"
+      }
+    ],
+    "diagnostics": [
+      "Writer exited after preparation; fresh reader recovered all 8 variants without source key access; references unchanged; captured diagnostics and SQL scans passed.",
+      "Owned migrated lifecycle schema removed; independent sentinel preserved; migration reruns did not clear tombstones.",
+      "Two distinct child processes exited successfully; 8 variants recovered, 16 unique persisted nonces; private scans passed.",
+      "Owned migrated schema removed; independent sentinel preserved; both harness cleanups succeeded."
+    ]
+  },
+  "commands": [
+    {
+      "command": "npm run db:generate -- --name=vault_lifecycle",
+      "exit_code": 0,
+      "result": "Generated schema migration and snapshot, no database connection."
+    },
+    {
+      "command": "npm run db:generate -- --custom --name=vault_lifecycle_backfill",
+      "exit_code": 0,
+      "result": "Generated custom migration scaffold; added one-time v1 state initialization."
+    },
+    {
+      "command": "npm run build:test-reference",
+      "exit_code": 0,
+      "result": "Strict focused TypeScript compile; repeated successfully by each final named suite."
+    },
+    {
+      "command": "node tests/run-local-postgres.mjs test:vault-lifecycle test:vault",
+      "exit_code": 0,
+      "result": "31 passed, 0 failed/skipped/cancelled; only owned disposable PostgreSQL fixtures."
+    },
+    {
+      "command": "git diff --check",
+      "exit_code": 0
+    }
+  ],
+  "runtime": {
+    "node": "v22.23.1",
+    "postgresql_major": 15
+  },
+  "fresh_process": {
+    "writer_exited_before_recovery": true,
+    "distinct_child_pids_verified": true,
+    "variants": 8,
+    "references_unchanged": true,
+    "source_key_unavailable_during_recovery": true,
+    "target_version": 2,
+    "repeated_resume_passed": true,
+    "seed_transport": "Private per-run IPC only; no retained seeds, keys or plaintext."
+  },
+  "secrecy_checks": {
+    "passed": true,
+    "assertions": "Boolean-only private scans and fixed exception codes before TAP serialization.",
+    "sinks": [
+      "vault_items",
+      "vault_preparations",
+      "vault_states (allowlisted terminal audit metadata)",
+      "jobs/events/deliveries/checkpoints/admissions",
+      "rotation/create receipts",
+      "captured child stdout/stderr",
+      "bounded errors"
+    ],
+    "encodings": [
+      "raw/base64/hex generated canaries",
+      "seed",
+      "hex/base64/byte-array encodings of source, target, newer and injected wrong keys"
+    ],
+    "retained_evidence": "Allowlisted test names, static diagnostics, booleans, paths and SHA-256 identities only; no fixture row payloads or key-service output."
+  },
+  "cleanup": {
+    "owned_migrated_schema_removed": true,
+    "independent_sentinel_preserved": true,
+    "child_connections_and_helper_schemas_closed": true,
+    "cluster_stopped": true,
+    "owned_cluster_and_migration_directories_removed": true,
+    "terminal_tombstone_survived_interrupted_cleanup_and_migration_rerun": true
+  },
+  "native_verification": {
+    "status": "unverified",
+    "receipt": null,
+    "run_attempted": false,
+    "inherited_admission_restriction": "docs/evidence/vault-store.json records: This tool requires its own active read-only validation work request. Not bypassed."
+  },
+  "owner_task_ledger": {
+    "start": "succeeded",
+    "progress": "unavailable after implementation",
+    "error": "Handrail MCP release metadata is invalid; request was not dispatched.",
+    "completion": "Attempted action=complete; rejected before dispatch by the same MCP release-metadata error. Dispatcher reconciliation required."
+  },
+  "limitations": [
+    "Local synthetic key-service qualification only; production key service, deployed/native host and external provider behavior unverified.",
+    "Authoritative lifecycle and migration ledgers must not be rolled back with ciphertext backups; independently authenticated host authority must deny access when freshness cannot be established.",
+    "Reads linearize at final durable state check. Host grant/lease enforcement remains responsible for values already delivered to trusted executors.",
+    "No key-retirement/destruction API, external backup erasure or provider credential invalidation claim.",
+    "One-time migration requires old writers to be stopped; no live migration/deployment performed.",
+    "No commit, push, PR, broad npm test, unqualified runner, CI/CD mutation, or external-service change."
+  ],
+  "initial_check_repairs": [
+    "Initial focused compilation found modifier ordering and fixture typing errors; corrected before successful acceptance. No unrelated failures observed."
+  ],
+  "ci_repair_receipt": {
+    "kind": "local_unsigned_execution_record",
+    "recorded_at": "2026-09-27T22:01:19.000414+00:00",
+    "reason": "Migration isolation test assumed four migrations; lifecycle adds two. Derive expected applied count from the fixture migration journal.",
+    "changed_source": "tests/job-journal.test.mjs",
+    "command": "node tests/run-local-postgres.mjs test:journal",
+    "exit_code": 0,
+    "compilation": [
+      "build:reference passed",
+      "build:test-postgres passed"
+    ],
+    "tap_path": ".reference-build/journal-repair.tap",
+    "tap_sha256": "7a16f6568c4bc424e2b1b877e10b8144be1caaa43f5747af56174efbe661d3e0",
+    "total": {
+      "tests": 14,
+      "passed": 14,
+      "failed": 0,
+      "skipped": 0,
+      "cancelled": 0
+    },
+    "cleanup": {
+      "owned_schema_removed_and_independent_sentinel_preserved": true,
+      "cluster_stopped": true,
+      "owned_cluster_directories_removed": true
+    },
+    "scope": "Focused journal regression only; existing vault acceptance receipt retained unchanged. Unqualified runner and broad npm test not run.",
+    "owner_task_ledger": "Required handrail_current_context and handrail_owner_task_update_item tools unavailable in repair run; dispatcher reconciliation required."
+  }
+}

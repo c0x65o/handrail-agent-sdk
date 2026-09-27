@@ -1,7 +1,7 @@
 // Private deterministic adapter: per-run random seed, never a production key.
 import { createHmac, createSecretKey } from 'node:crypto';
 import type { VaultItem } from '../../src/contracts/vault.js';
-import type { VaultKeyService, VaultScope, VaultValue } from '../../reference/node/vault-store.js';
+import type { VaultScope, VaultValue } from '../../reference/node/vault-store.js';
 export const scope: VaultScope = { tenantRef: 'tenant', userRef: 'user', projectRef: 'project', accountRef: 'account', environmentRef: 'test', purposeRef: 'fixture' };
 export function fixtures(seed: string, suffix = ''): { item: VaultItem; value: VaultValue }[] {
   const secret = (label: string) => createHmac('sha256', seed).update(label).digest('hex');
@@ -20,15 +20,23 @@ export function fixtures(seed: string, suffix = ''): { item: VaultItem; value: V
     return { item, value };
   });
 }
-export function keyBytes(seed: string): Buffer { return createHmac('sha256', seed).update('private-test-key').digest(); }
-export function keyService(seed: string): VaultKeyService & { calls: number } {
+export function keyBytes(seed: string, version = 1): Buffer {
+  return createHmac('sha256', seed).update(version === 1 ? 'private-test-key' : `private-test-key-${version}`).digest();
+}
+export function keyService(seed: string) {
   return {
     calls: 0,
-    async active() { this.calls++; return { keyHandle: 'private-key', keyVersion: 1 }; },
-    async resolve(_scope, ref) {
+    version: 1,
+    unavailable: new Set<number>(),
+    wrong: new Set<number>(),
+    // Deterministic barriers/faults, never a persistence fake.
+    beforeResolve: undefined as ((version: number) => Promise<void>) | undefined,
+    async active() { this.calls++; return { keyHandle: 'private-key', keyVersion: this.version }; },
+    async resolve(_scope: VaultScope, ref: { keyHandle: string; keyVersion: number }) {
       this.calls++;
-      if (ref.keyHandle !== 'private-key' || ref.keyVersion !== 1) return null;
-      const bytes = keyBytes(seed);
+      await this.beforeResolve?.(ref.keyVersion);
+      if (ref.keyHandle !== 'private-key' || ![1, 2, 3].includes(ref.keyVersion) || this.unavailable.has(ref.keyVersion)) return null;
+      const bytes = keyBytes(seed, this.wrong.has(ref.keyVersion) ? 99 : ref.keyVersion);
       try { return createSecretKey(bytes); } finally { bytes.fill(0); }
     },
   };
@@ -37,7 +45,11 @@ export function privateScan(seed: string, outputs: unknown): boolean {
   const serialized = JSON.stringify(outputs);
   const raw = fixtures(seed).flatMap(f => Object.values(f.value));
   const key = keyBytes(seed);
-  const needles = [...raw.flatMap(v => [v, Buffer.from(v).toString('base64'), Buffer.from(v).toString('hex')]), seed,
+  const versions = [2, 3, 99].flatMap(v => {
+    const b = keyBytes(seed, v);
+    try { return [b.toString('hex'), b.toString('base64'), JSON.stringify([...b])]; } finally { b.fill(0); }
+  });
+  const needles = [...versions, ...raw.flatMap(v => [v, Buffer.from(v).toString('base64'), Buffer.from(v).toString('hex')]), seed,
     key.toString('hex'), key.toString('base64'), JSON.stringify([...key])];
   key.fill(0);
   return needles.every(needle => !serialized.includes(needle));

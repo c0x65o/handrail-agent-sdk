@@ -142,3 +142,15 @@ suite; omitting arguments runs all persistence suites sequentially.
 `npm run test:vault` strictly compiles the TypeScript suite and uses the explicit
 disposable connection above. See [vault storage](vault-store.md) for fresh-process
 proof, private key fixtures, canary scans and the limits of local acceptance.
+
+## Reference vault lifecycle acceptance
+
+`node tests/run-local-postgres.mjs test:vault-lifecycle test:vault` strictly compiles
+reference source and private fixtures, then runs only lifecycle and existing vault
+TAP suites with concurrency 1. The disposable cluster and schema ownership rules
+above apply unchanged. Lifecycle coverage includes exited-process preparation and
+recovery, exact versioned key resolution, rotation CAS/rollback, terminal fencing,
+interrupted cleanup, restored ciphertext rejection and a one-time migration of
+existing v1 envelopes. See [vault lifecycle](vault-store.md#rotation-recovery-and-terminal-fences)
+and [local evidence](evidence/vault-lifecycle.json); neither is a native verifier
+receipt or production key-service qualification.

@@ -77,6 +77,25 @@ export function vaultTables(namespace = referenceSchemaName) {
     check('vault_safe_revision', sql`${t.revision} between 1 and 9007199254740991`),
     unique('vault_key_nonce_unique').on(t.keyHandle, t.keyVersion, t.nonce),
   ]);
-  return { items };
+  // Authoritative lifecycle ledger; never restore it from a ciphertext backup.
+  const states = pgSchema(namespace).table('vault_states', {
+    itemId: text('item_id').primaryKey(),
+    scope: jsonb('scope').$type<JobIdentity['host']>().notNull(),
+    revision: bigint('revision', { mode: 'number' }).notNull(),
+    generation: bigint('generation', { mode: 'number' }).notNull(),
+    status: text('status').$type<'active' | 'deleted' | 'revoked'>().notNull(),
+    activeNonce: text('active_nonce'),
+    lastRotation: text('last_rotation'),
+  }, t => [check('vault_state_generation', sql`${t.generation} between 1 and 9007199254740991`),
+    check('vault_state_shape', sql`(${t.status} = 'active' and ${t.activeNonce} is not null) or
+      (${t.status} in ('deleted', 'revoked') and ${t.activeNonce} is null and ${t.lastRotation} is null)`)]);
+  const preparations = pgSchema(namespace).table('vault_preparations', {
+    rotationId: text('rotation_id').primaryKey(),
+    itemId: text('item_id').notNull(),
+    generation: bigint('generation', { mode: 'number' }).notNull(),
+    sourceNonce: text('source_nonce').notNull(),
+    envelope: jsonb('envelope').$type<typeof items.$inferSelect>().notNull(),
+  });
+  return { items, states, preparations };
 }
-export const { items: vaultItems } = vaultTables();
+export const { items: vaultItems, states: vaultStates, preparations: vaultPreparations } = vaultTables();
