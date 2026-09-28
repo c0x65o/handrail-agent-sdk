@@ -1,0 +1,218 @@
+{
+  "schema_version": 1,
+  "recorded_at": "2026-09-28T20:31:12.165208+00:00",
+  "owner_task_id": "7ccb807a-4e38-42c7-bf23-73d62adec118",
+  "owner_item_id": "9a6a2d4d-4c5e-494e-ae1e-cbbb4c6bd17a",
+  "work_request_id": "e62c5c91-4dc1-4e7b-bb7f-545c2935715b",
+  "codex_run_id": "447c1f34-65d7-48c0-b22b-c4c551fd79ae",
+  "branch": "lane/agent-sdk-v1",
+  "candidate": {
+    "base_head": "b4ea90a2b9e710e328e1640b60578fa2837a023c",
+    "files": {
+      ".gitignore": "7a1fe62c452a15cd9a487f9a2d3f8b25d273d4c9b96650829be290a5968768dc",
+      "docs/local-browser-testing.md": "dab339291d0a542951fb9008211b05bd3eec029ffadc4c5b47f7dffb08ab42c6",
+      "package-lock.json": "b55e4a5e54b30e842779834a53a3837821f1c9cf4c998dbda630f18b41876238",
+      "package.json": "6cc02ff66244c85e79c36c33a629f72abdc32514814e5d2779661b58f7b6f34f",
+      "tests/browser-boundary.test.mjs": "041ec8f5d3e3043d0c89e9f26fa7625b66da35626a727cc25040df5b64f6eda8",
+      "tests/browser.test.mjs": "0c8c9765a6e2face7c4d58788955d6399e059e6189114822d482c2797c9b3708",
+      "tests/fixtures/protected-page.html": "5b93449ccf691b410c151797ded898426d20cca12234c3dba83bd608fec7de62",
+      "tests/helpers/browser-private.ts": "d2e50674f3750e29217ebbfa59c9a051c1f0f689d3bf286867ec17da2614dc5b",
+      "tests/helpers/browser.ts": "68f7d871640fbbfd528a27c9f4e255ac64497b7775bd51d199c4da95845352d4",
+      "tests/tsconfig.browser.json": "d77ac5fc313cc90eeb8fc8db59bd34a0a735755ca2900fd47a6f4842ccf84210",
+      "tsconfig.json": "b632554574c04df2d36df403e65b62b39e0ac3d7cc4f62f9d2e5afc2a77c478f"
+    },
+    "sha256": "4de2a02a8cf8376532d47490ab1ea1afc2fa4330e74ad2731ae7a26357516f00"
+  },
+  "baseline": "clean; no tracked or untracked changes",
+  "source_changed": false,
+  "acceptance": "blocked_before_browser_reproduction; not fixed",
+  "toolchain": {
+    "node": "v22.23.1",
+    "npm": "10.9.8",
+    "typescript": "5.9.3",
+    "playwright_core": "1.63.0",
+    "requested_browser_version": "153.0.8010.12",
+    "browser_version_verified": false,
+    "requested_browser_executable": "/opt/handrail/.cache/handrail-ms-playwright/chromium-1243/chrome-linux64/chrome",
+    "browser_path_available": false,
+    "browser_downloaded": false
+  },
+  "execution": {
+    "workspace": "Disposable scoped source copy with symlink to existing locked node_modules; removed after checks.",
+    "environment": "Explicit HANDRAIL_TEST_BROWSER_EXECUTABLE and short mode-0700 TMPDIR; original private subprocess environment/output allowlists unchanged.",
+    "private_artifacts_remaining": 0,
+    "scratch_removed": true
+  },
+  "checks": [
+    {
+      "command": "npm run build:test-browser",
+      "exit_code": 0,
+      "cases": [],
+      "tap": {}
+    },
+    {
+      "command": "npm run test:browser-boundary",
+      "exit_code": 0,
+      "cases": [
+        {
+          "caseId": "F01_NETWORK_POLICY",
+          "status": "passed",
+          "checks": 16,
+          "contextsClosed": 0,
+          "browsersClosed": 0,
+          "listenersClosed": 3,
+          "artifactsRemoved": 1
+        },
+        {
+          "caseId": "F02_PARTIAL_LISTENER",
+          "status": "passed",
+          "checks": 2,
+          "contextsClosed": 0,
+          "browsersClosed": 0,
+          "listenersClosed": 1,
+          "artifactsRemoved": 1
+        },
+        {
+          "caseId": "F03_OUTPUT_GATE",
+          "status": "passed",
+          "checks": 1,
+          "contextsClosed": 0,
+          "browsersClosed": 0,
+          "listenersClosed": 0,
+          "artifactsRemoved": 1
+        }
+      ],
+      "tap": {
+        "tests": 3,
+        "suites": 0,
+        "pass": 3,
+        "fail": 0,
+        "cancelled": 0,
+        "skipped": 0,
+        "todo": 0
+      }
+    },
+    {
+      "command": "npm run test:browser",
+      "exit_code": 1,
+      "cases": [
+        {
+          "caseId": "B01_ISOLATION",
+          "status": "unverified_browser_prerequisite",
+          "checks": 4,
+          "contextsClosed": 0,
+          "browsersClosed": 0,
+          "listenersClosed": 3,
+          "artifactsRemoved": 1
+        },
+        {
+          "caseId": "B02_PARTIAL_BROWSER",
+          "status": "unverified_browser_prerequisite",
+          "checks": 4,
+          "contextsClosed": 0,
+          "browsersClosed": 0,
+          "listenersClosed": 3,
+          "artifactsRemoved": 1
+        },
+        {
+          "caseId": "B03_PARTIAL_CONTEXT",
+          "status": "unverified_browser_prerequisite",
+          "checks": 4,
+          "contextsClosed": 0,
+          "browsersClosed": 0,
+          "listenersClosed": 3,
+          "artifactsRemoved": 1
+        },
+        {
+          "caseId": "B04_TEST_FAILURE",
+          "status": "unverified_browser_prerequisite",
+          "checks": 4,
+          "contextsClosed": 0,
+          "browsersClosed": 0,
+          "listenersClosed": 3,
+          "artifactsRemoved": 1
+        }
+      ],
+      "tap": {
+        "tests": 4,
+        "suites": 0,
+        "pass": 0,
+        "fail": 4,
+        "cancelled": 0,
+        "skipped": 0,
+        "todo": 0
+      }
+    },
+    {
+      "command": "node --test --test-concurrency=1 --test-reporter=tap --test-name-pattern=^B01_ISOLATION$ tests/browser.test.mjs",
+      "exit_code": 1,
+      "cases": [
+        {
+          "caseId": "B01_ISOLATION",
+          "status": "unverified_browser_prerequisite",
+          "checks": 4,
+          "contextsClosed": 0,
+          "browsersClosed": 0,
+          "listenersClosed": 3,
+          "artifactsRemoved": 1
+        }
+      ],
+      "tap": {
+        "tests": 1,
+        "suites": 0,
+        "pass": 0,
+        "fail": 1,
+        "cancelled": 0,
+        "skipped": 0,
+        "todo": 0
+      }
+    }
+  ],
+  "fresh_blocker": {
+    "filesystem": "The explicitly requested /opt/handrail/.cache/handrail-ms-playwright/chromium-1243/chrome-linux64/chrome and its /opt/handrail/.cache ancestor are absent from this worker filesystem. No installed Chromium alternative was found in accessible executable/cache locations.",
+    "mcp_fallback": "handrail_run_read_only_tests(action=inspect, profile=sdk) returned: This tool requires its own active read-only validation work request. No candidate execution occurred.",
+    "required_dependency": "Expose the already authorized Chromium 1243 installation read-only to the same-item repair executor, or provide an authorized supported runner for private diagnostic reproduction. Do not download from a read-only validation runner or change security gates.",
+    "not_claimed": "This is fresh worker accessibility evidence, not a claim that QA lacks an installed browser."
+  },
+  "source_inference": {
+    "successful_pre_cleanup_checks": 25,
+    "successful_cleanup_checks": 7,
+    "remaining_sequence": [
+      "protected-page reload",
+      "denied-frame evaluation",
+      "destination-specific frame denial assertion"
+    ],
+    "root_cause_confirmed": false,
+    "behavior_changed": false
+  },
+  "historical_evidence": {
+    "receipt_hashes": {
+      "docs/evidence/browser-fixtures.json": "0082141766d1cca328568cf136803bd2c73c38f163adcf682784fb5db65b23c8",
+      "docs/evidence/browser-fixtures-denial-repair.json": "26e2996e88912cb3d793a9288c02576a2f08e155a05a44f866dc5216ac512e3c"
+    },
+    "implementation_work_request_id": "8737bc1f-720e-4b24-bcc9-7b8099a9940d",
+    "prior_repair_work_request_id": "662a59df-6862-4ee4-92ac-7a446603e814",
+    "historical_campaign_id": "957efda0-6e3c-4081-837e-3ddbac55e732",
+    "zero_run_validation_work_request_id": "873a8260-1587-462c-9584-aba546c29d6b",
+    "source_qa_campaign_id": "327025b3-141b-44db-86b8-a142adc398b3",
+    "validation_work_request_id": "b0414f97-159a-4c6f-8d87-7c8d824ff662",
+    "validation_run_id": "47cf22dd-c9ab-4d43-8412-8ab6508a62e0",
+    "acceptance_artifact_id": "869f85a2-285b-4bed-be4b-f43f8f40e447",
+    "acceptance_artifact_sha256": "61aed96fb52838c47e2bdc589bde0efbda7071cb0de59c3bf29d1445a0463aae",
+    "disposition": "not_fixed",
+    "finding_id": "1ce783dc-1f1a-4821-822b-1c66692034f6",
+    "overwritten": false
+  },
+  "next_step": {
+    "same_item": true,
+    "independent_qa_required_after_repair": true,
+    "environment": "dev",
+    "use_mobile_app": false,
+    "local_fixture": {
+      "repo_id": "e22dd818-166e-4646-b83f-423861de18a6",
+      "fixture_path": "tests/fixtures/protected-page.html",
+      "procedure_path": "tests/helpers/browser.ts"
+    },
+    "required": "Privately reproduce complete remaining B01 sequence, apply supported minimal correction, compile, run F01/F02/F03 and B01/B02/B03/B04 plus fresh B01 with zero skips and matching cleanup; then independent native same-item QA with exact source binding. Worker passes alone cannot settle item."
+  }
+}
