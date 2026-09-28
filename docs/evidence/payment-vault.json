@@ -1,0 +1,112 @@
+{
+  "item_id": "c74a5f57-4c31-41ee-90d8-538e83684a87",
+  "recorded_at": "2026-09-28T06:18:56.259327+00:00",
+  "result": "specialized payment-reference boundary implemented; local synthetic conformance only",
+  "candidate": {
+    "head_sha": "2b18d55046af43a1ed80c3cc07b17e98c7519cc1",
+    "commit_containing_change": null,
+    "state": "uncommitted lane workspace; pre-existing changes preserved",
+    "source_tree_sha256": "2818a6aee19734a53a9b54c04eb46f7a0b71b797364211b11773f2741ea7c44d",
+    "source_tree_file_count": 100,
+    "fingerprint_method": "SHA256 of sorted lines: <file SHA256>  <POSIX relative path>\\n; all files under src, reference, tests plus package.json, package-lock.json, tsconfig.json",
+    "task_touched_file_sha256": {
+      "src/server/payment-vault.ts": "2b759a3db5e61eda2230f30dfe7738bb2436b1e4dc54f3ac6498819aea894471",
+      "src/server/vault-entry.ts": "11d57cbde0136031d96ff68a9f92a6e0767601b1e38997d05d6c44f14ee67a6d",
+      "reference/node/vault-entry.ts": "2bca81691e61c3f80a0070b8c598f9b0488283811178746006c6f68ec086c1c7",
+      "src/server/index.ts": "5b5c78118a1b2fccc197692332ea9a103ce256df5d02e822ba423e4a7c72c61c",
+      "tests/payment-vault.test.mjs": "ab64ecf0eae6fa26bee7e04297a3e8538da79dd77590cf7adb8e8040ff9848e2",
+      "tests/fixtures/consumer.mts": "bd542406adb3e4d23dab40336739760e30db03d3758d48e959552ad6eb4c5892",
+      "tests/packaging.test.mjs": "de02b2f74b1754d8e10d13392a08b3f31030c6e1f403fb92f19ce2976f4f3c08",
+      "tests/run-local-postgres.mjs": "3753a81758fe749fbca405b9c787ecece613afcdcdb4508e0f18cedd7edb44ed",
+      "package.json": "9358cbdeba4dcc574554d5ef0908751ef9790191794c28a2d0ccc5d693866907",
+      "docs/payment-vault.md": "8e95ba4a3278c4620dbd51219d3f2ce91865104834ece61d937141501b17a552"
+    }
+  },
+  "checks": [
+    {
+      "command": "node tests/run-local-postgres.mjs test:payment-vault",
+      "result": "passed",
+      "tests": 33,
+      "passed": 33,
+      "failed": 0,
+      "skipped": 0,
+      "top_level_tests": 30
+    },
+    {
+      "command": "node tests/run-local-postgres.mjs test:payment-vault test:vault-entry",
+      "suite": "test:vault-entry",
+      "result": "passed",
+      "tests": 50,
+      "passed": 50,
+      "failed": 0,
+      "skipped": 0,
+      "note": "Generic entry regression passed in the initial combined run. That run had one payment fixture alias-mutation failure; the fixture was corrected and the final standalone payment suite passed."
+    },
+    {
+      "command": "npm run build",
+      "result": "passed"
+    },
+    {
+      "command": "node node_modules/typescript/bin/tsc -p tests/fixtures/tsconfig.json",
+      "result": "passed"
+    },
+    {
+      "command": "node --test --test-concurrency=1 --test-reporter=tap tests/contracts/vault.test.mjs tests/packaging.test.mjs",
+      "result": "passed",
+      "tests": 365,
+      "passed": 365,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "command": "git diff --check",
+      "result": "passed"
+    }
+  ],
+  "harness": {
+    "database": "fresh disposable PostgreSQL 15; dedicated non-superuser role; existing migration harness; temporary clusters stopped and removed",
+    "service_boundary": "handwritten specialized payment adapter fake only",
+    "persistence": "real SQL session/job/item locks, existing encrypted UUID alias custody, consent, outbox, rollback and duplicate answer delivery"
+  },
+  "acceptance": {
+    "new_reference_handoff": true,
+    "existing_reference_selection": true,
+    "reject_wrong_account_environment_tenant_purpose_customer_merchant_origin_session_revision_adapter_alias": true,
+    "expiry_revoke_cancellation_concurrent_completion_replay_and_scope_consent_fences": true,
+    "generic_raw_card_cvv_provider_token_field_rejection": true,
+    "purchase_operation_exposed": false,
+    "scan": "Generated disposable canaries checked privately against vault/session/grant/challenge/job rows and returned errors/completions/receipts. No canary values retained. Adapter exceptions, arbitrary error bodies and modified SDK results withheld."
+  },
+  "qualification": {
+    "fixture_adapter": "synthetic-payment-boundary",
+    "fixture_version": "fixture-1",
+    "selected_authorized_adapter": null,
+    "selected_adapter_version": null,
+    "selected_adapter_qualification": "unverified",
+    "production_payment_capability": "unsupported",
+    "v1_payment_requirement": "unverified",
+    "independent_qa": "not performed",
+    "qa_campaign_id": null,
+    "provider_operations": "none",
+    "policy": "docs/agent-security-boundary.md section 8",
+    "remaining_prerequisite": "Identify an already-authorized adapter/version from host inventory; independently qualify its actual code, authenticated callbacks, hosted entry/retention, revocation fences and output channels using authorized synthetic sandbox fixtures."
+  },
+  "handrail_workflow": {
+    "current_context": "tool absent from callable catalog",
+    "owner_task_update": "tool absent from callable catalog; start/progress/complete not recorded in Owner Task ledger",
+    "native_inventory": "not freshly verified; readers unavailable",
+    "repository_receipt_is_not_owner_task_ledger": true
+  },
+  "scope": {
+    "commit": false,
+    "push": false,
+    "pr": false,
+    "deployment": false,
+    "production_or_preview_mutation": false,
+    "full_repository_acceptance": false
+  },
+  "corrected_validation_issues": [
+    "Negative fixture initially shared mutable custody alias with host allowlist; detached authenticated fixture data before mutation.",
+    "Consumer export allowlist initially omitted createPaymentVault; added expected server export."
+  ]
+}

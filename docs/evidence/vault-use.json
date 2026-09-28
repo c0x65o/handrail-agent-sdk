@@ -1,0 +1,190 @@
+{
+  "schemaVersion": 1,
+  "itemId": "09e73ec5-baff-492a-94c1-5289447a02a8",
+  "workRequestId": "e6c0ec77-02ec-4f35-b267-b91c4d19c017",
+  "ownerGoalId": "1b13c4ab-38c2-4d78-a5cb-238e2f257c62",
+  "recordedAt": "2026-09-28T05:34:56.122158+00:00",
+  "classification": "Synthetic private-value fixture on real disposable PostgreSQL 15; not live-provider proof",
+  "source": {
+    "baseCommit": "2b18d55046af43a1ed80c3cc07b17e98c7519cc1",
+    "branch": "lane/agent-sdk-v1",
+    "candidateTreeSha": "0ef8ce390d1008bae947c025cdad5659a2af74b3",
+    "candidateCommitSha": null,
+    "binding": "Git tree assembled from all nonignored tracked/untracked files using a temporary index, excluding this vault-use evidence to avoid self-reference. Lane index and HEAD unchanged. Prior uncommitted prerequisites included and preserved. Per-file SHA-256 values below bind changed source and reused security boundaries. No commit, push or deployment performed.",
+    "sha256": {
+      "src/server/vault-use.ts": "ede4e5c0aa1604061e65f5b733ff41e325bac91a5d937b9c0b1ef44f25848059",
+      "src/contracts/vault.ts": "d0cae9779a5ab3d612750286eb7a0cc40278d379a75ac17552b698391f42a880",
+      "src/server/index.ts": "f004100ba154205a1e45d2be9818c60428562a298dd6c6ee924e00c09f6eb94e",
+      "reference/node/vault-grants.ts": "c6c5b257efa2dabcad0d7e50a165b2e66f0338ec2d65c57c37cd91a7af0803dc",
+      "reference/node/db/schema.ts": "e3a5fdd4139b03bd4313253ac025e82e243df3559d7771156ca80eaeeca68f57",
+      "reference/node/db/migrations/0009_vault_item_grants.sql": "feaee98eae0a82250979726ed23521d3099bb643dc1e229900d0c593ee2fcf2e",
+      "reference/node/db/migrations/meta/_journal.json": "c9bffef3afc27d0d0fe45aa53170eb93b17174ddc32483a8216f7aac0adcd403",
+      "tests/vault-use.test.mjs": "80b9c09f192492c0ae62da8095f5f411beb8be0185c3bce709be581c46f8b3e4",
+      "tests/fixtures/consumer.mts": "368dacc734fc3a488b85fe594370106106580d73a7991c14341892f5bd7eea3c",
+      "tests/packaging.test.mjs": "edeedc23942d6a655613db299288aa6c86e84c8c8ccf28a750d9f11a5e20ae0c",
+      "tests/run-local-postgres.mjs": "1d5dc7628dfa7a7530452e3de96c200061f5a33ba01b324297ab5a8ad2b1c605",
+      "package.json": "b66b9c87a925ec2f9ed824db28317a15590d012ee7021a7fbc6338a98c45e171",
+      "docs/vault-use.md": "1fdf007e82769835b81688dc6cb05a960a0c13b35b5d73b0e2b7f95d21eec073",
+      "src/server/effects.ts": "f1e2493f92ae778a1a4a236c2a06ca0a00d0fe38b738225dcf0348b85d09d47c",
+      "reference/node/effects.ts": "2d2b9ef481db85e948727b09d26aa10e1769db6e6855c9dd28e7f61fe77ec6e9",
+      "src/server/job-lease.ts": "96ee19e34987b1748b9d19d9eec7e87c95bbdb27b51f2aab2a20f5203d7e4239",
+      "reference/node/job-lease-fence.ts": "a8f1c4772523c3302f88197f2a3a73fdf608b1b28616bacf2e6de0eb4566f826",
+      "reference/node/job-journal.ts": "f6269ba1df0b9f139644bb2bfe50436317e88fccd6ee3ef23f15d49424b7a501",
+      "reference/node/vault-store.ts": "714e135d831b41c5bf6eafb37d95c478770f984d3a0c619b5f8209f8863bf464",
+      "reference/node/vault-private.ts": "424de7c5ee5d115ac28a0d5f4d8d84aafad3b5b8c049a81a07b1ec510f47e624",
+      "reference/node/vault-lifecycle.ts": "728bcd5dc9bdb0b50616a725c82dd6824de276cb5d746e4a57209b5195bbf49b",
+      "tests/helpers/effect-fixture.mjs": "3aff52bb1965450fc6d6515d6d8ceca6b28f46edbd0e247005e413d7deb5c283",
+      "tests/helpers/postgres.ts": "2ef4b2a8b2765b11a2e8dceaed6d85983ab03cc3d77a9e37ba3ccba55c356040",
+      "tests/helpers/migrations.mjs": "5da670f44c598605df43da514493026c3578b22096e9397e75e8d138b5f2cda8"
+    }
+  },
+  "prerequisites": {
+    "effectReconciliationWorkRequestId": "2df4f64f-a07a-4816-9bfa-55c83b808301",
+    "evidence": "docs/evidence/effect-reconciliation.json",
+    "initialTrackedModifications": 12,
+    "initialUntrackedFiles": 25
+  },
+  "harness": {
+    "runner": "tests/run-local-postgres.mjs test:vault-use",
+    "engine": "PostgreSQL 15",
+    "isolation": "Fresh temporary cluster, dedicated disposable database, non-superuser fixture role, per-case schemas, checked-in Drizzle migrations, two independent SQL connections. Never reads DATABASE_URL.",
+    "cleanup": "Owned temporary PostgreSQL cluster stopped and removed."
+  },
+  "checks": [
+    {
+      "name": "vault_use",
+      "command": "node tests/run-local-postgres.mjs test:vault-use",
+      "result": "passed",
+      "tap": {
+        "tests": 41,
+        "pass": 41,
+        "fail": 0,
+        "skipped": 0,
+        "cancelled": 0
+      },
+      "transcriptSha256": "d932cf879086dcb1140c489a44443560573e693b83fd87713439a2c4c62677b8"
+    },
+    {
+      "name": "contracts_and_packaging",
+      "command": "node --test --test-concurrency=1 --test-reporter=tap tests/contracts/vault.test.mjs tests/packaging.test.mjs",
+      "result": "passed",
+      "tap": {
+        "tests": 365,
+        "pass": 365,
+        "fail": 0,
+        "skipped": 0,
+        "cancelled": 0
+      },
+      "transcriptSha256": "e5b1f0c5b1769a40e7122da9cf2c1b6440893127fa8635553729570031acabf7"
+    },
+    {
+      "command": "node node_modules/typescript/bin/tsc -p tsconfig.json",
+      "result": "passed"
+    },
+    {
+      "command": "node node_modules/typescript/bin/tsc -p reference/tsconfig.json",
+      "result": "passed"
+    },
+    {
+      "command": "node node_modules/typescript/bin/tsc -p tests/fixtures/tsconfig.json",
+      "result": "passed"
+    }
+  ],
+  "races": [
+    {
+      "mutation": "revoke",
+      "grantRevisionAfterCommit": 2,
+      "admissionBeforeMutation": "committed unknown",
+      "privateReadsAfterMutation": 0,
+      "executorDispatches": 0,
+      "retainedEffect": "unknown",
+      "effectReceiptRef": "vault-effect"
+    },
+    {
+      "mutation": "destination method narrowed POST to GET",
+      "grantRevisionAfterCommit": 2,
+      "admissionBeforeMutation": "committed unknown",
+      "privateReadsAfterMutation": 0,
+      "executorDispatches": 0,
+      "retainedEffect": "unknown",
+      "effectReceiptRef": "vault-effect"
+    }
+  ],
+  "lockContention": "Reverse-order race observed pg_stat_activity wait_event_type=Lock; revoke waits for already-started dispatch. No later use after revoke commit.",
+  "authorizationCoverage": [
+    "Personal owner requires explicit item grant",
+    "Shared recipient explicit grant; org/project sharing alone denies",
+    "Authenticated actor and all six host dimensions",
+    "Item/version and grant revision",
+    "Purpose/action/destination and browser origin/frame",
+    "Unsupported reveal/export/caller callback",
+    "Separate human reveal/export permissions cannot confer use",
+    "Native authority revision, cancellation, stale lease and lifecycle revocation",
+    "Expiry before dispatch and across reconcile/private key awaits",
+    "Concurrent grant CAS and atomic revocation",
+    "Authorized bounded redacted history through a new reference-store instance",
+    "Duplicate execution uses existing immutable effect receipt",
+    "Unknown effects and safe read-only reconciliation after revoke",
+    "Malicious exceptions and receipt-shaped output withheld",
+    "Custody timeout cannot dispatch late"
+  ],
+  "receipts": {
+    "verifiedEffect": "vault-effect",
+    "accessHistory": "Server-generated UUID receipt per redacted access fact; no request/private/provider payloads"
+  },
+  "ledger": {
+    "currentContext": "Confirmed active project, lane, owner goal, work request and selected running item once required MCP tools became callable. Initially absent from callable catalog.",
+    "progress": "Recorded through handrail_owner_task_update_item action=progress.",
+    "qaCampaignId": null,
+    "completion": "handrail_owner_task_update_item action=complete succeeded; selected item status=succeeded."
+  },
+  "limits": [
+    "No independent QA campaign or live provider proof claimed",
+    "HTTP/browser/payment executor implementations remain separate dependents",
+    "No native Handrail authority changes",
+    "Grant revoke advances local fence only, not remote credential revocation",
+    "An already-started remote operation can remain in flight after timeout and revoke; retained unknown requires existing reconciliation"
+  ],
+  "ciRepair": {
+    "recordedAt": "2026-09-28T05:40:49.718255+00:00",
+    "failedCheckReceipt": "2d8a4e64-2a19-4042-a647-789dc071fe72",
+    "reason": "Lifecycle v1 upgrade fixture rewound the migration ledger while retaining migration 0009 tables, causing replay to fail. Drop vault_item_grants and vault_access in the owned disposable schema before replay; runtime source unchanged.",
+    "candidateTreeSha": "00bf3cef3da3dbf4862ca824b9d3fabe448072ad",
+    "candidateCommitSha": null,
+    "binding": "All nonignored workspace source captured using a temporary Git index; excludes docs/evidence/vault-use.json to avoid self-reference. Original source evidence above preserved. HEAD and lane index unchanged.",
+    "sha256": {
+      "tests/reference/vault-lifecycle.test.ts": "7abc87f9f718b26ff314cfbfc5c423f24669c930d7c2c84a8598b6bab266dd31"
+    },
+    "checks": [
+      {
+        "phase": "before",
+        "command": "node tests/run-local-postgres.mjs",
+        "exitCode": 1,
+        "tap": {
+          "tests": 136,
+          "pass": 135,
+          "fail": 1,
+          "skipped": 0,
+          "cancelled": 0
+        },
+        "transcriptSha256": "21a089e6b092807e962b79c4e8b1f08516a6e51132783dbae34608cb9ebc6061"
+      },
+      {
+        "phase": "after",
+        "command": "node tests/run-local-postgres.mjs",
+        "exitCode": 0,
+        "tap": {
+          "tests": 136,
+          "pass": 136,
+          "fail": 0,
+          "skipped": 0,
+          "cancelled": 0
+        },
+        "transcriptSha256": "0dd145dfc3eb9df0c4f6ece2bef5b666e0eb1a5de38341f7586b276b3604e843"
+      }
+    ],
+    "typecheck": "Reference host, reference tests and PostgreSQL helper compiled by the passing runner.",
+    "cleanup": "Owned temporary PostgreSQL cluster stopped and removed.",
+    "limits": "Local disposable PostgreSQL fixture evidence; no deployed host or live provider claim."
+  }
+}

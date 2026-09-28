@@ -15,7 +15,7 @@ export interface JobLeaseFence extends JobLeaseAuthority {
   /** Host-clock milliseconds. Informational: storage checks its current expiry. */
   readonly expiresAt: number;
 }
-export type JobLeaseOperation = 'claim' | 'renew' | 'release' | 'check' | 'append' | 'complete';
+export type JobLeaseOperation = 'claim' | 'renew' | 'release' | 'check' | 'append' | 'complete' | 'admit_effect';
 export interface JobLeaseHost {
   /** Authenticate and authorize this exact original identity and operation anew.
    * Deny cancelled/held/revoked work with not_authorized. Hold native authority
@@ -43,7 +43,7 @@ export interface JobLeaseStore {
   renew(fence: JobLeaseFence, ttlMs: number, context: JobLeaseContext): Promise<JobStoreResult<JobLeaseFence>>;
   release(fence: JobLeaseFence, context: JobLeaseContext): Promise<JobStoreResult<void>>;
   check(fence: JobLeaseFence, context: JobLeaseContext): Promise<JobStoreResult<JobLeaseFence>>;
-  append(event: JobEvent, context: JobAppendFence, complete: boolean): Promise<JobStoreResult<JobAppendResult>>;
+  append(event: JobEvent, context: JobAppendFence, complete: boolean, effectAdmission?: boolean): Promise<JobStoreResult<JobAppendResult>>;
 }
 export interface JobLease {
   claim(identity: JobIdentity, ttlMs: number): Promise<JobStoreResult<JobLeaseFence | null>>;
@@ -53,6 +53,9 @@ export interface JobLease {
    * Cannot undo transmission or authorize replay of an unknown effect. */
   check(fence: JobLeaseFence): Promise<JobStoreResult<JobLeaseFence>>;
   append(event: JobEvent, fence: JobLeaseFence): Promise<JobStoreResult<JobAppendResult>>;
+  /** Commit an unknown effect before dispatch. Only a new admission may trigger
+   * the external call; a replay must reconcile the original effect instead. */
+  admitEffect(event: JobEvent, fence: JobLeaseFence): Promise<JobStoreResult<JobAppendResult>>;
   /** Atomically append a terminal event and release ownership. */
   complete(event: JobEvent, fence: JobLeaseFence): Promise<JobStoreResult<JobAppendResult>>;
 }
@@ -115,14 +118,15 @@ export function createJobLease(host: JobLeaseHost, store: JobLeaseStore): JobLea
       });
     } catch { return Promise.resolve({ ok: false, code: 'invalid_payload' }); }
   }
-  function append(input: JobEvent, fence: JobLeaseFence, complete: boolean): Promise<JobStoreResult<JobAppendResult>> {
+  function append(input: JobEvent, fence: JobLeaseFence, complete: boolean, effect = false): Promise<JobStoreResult<JobAppendResult>> {
     try {
       if (!validateJobEvent(input).ok || input.kind === 'submitted'
+        || (effect && (input.kind !== 'effects_recorded' || !input.snapshot.effects.some(item => item.outcome === 'unknown')))
         || (complete && !['succeeded', 'failed', 'cancelled'].includes(input.kind))) return Promise.resolve({ ok: false, code: 'invalid_payload' });
       const event = copy(input);
-      return fenced(fence, complete ? 'complete' : 'append', (f, context) => {
+      return fenced(fence, effect ? 'admit_effect' : complete ? 'complete' : 'append', (f, context) => {
         if (!sameLeaseValue(event.snapshot.identity, f.identity)) return Promise.resolve({ ok: false, code: 'identity_mismatch' });
-        return store.append(event, { ...context, fence: f }, complete);
+        return store.append(event, { ...context, fence: f }, complete, effect);
       });
     } catch { return Promise.resolve({ ok: false, code: 'invalid_payload' }); }
   }
@@ -145,6 +149,7 @@ export function createJobLease(host: JobLeaseHost, store: JobLeaseStore): JobLea
     release: fence => fenced(fence, 'release', (f, context) => store.release(f, context)),
     check: fence => fenced(fence, 'check', (f, context) => store.check(f, context)),
     append: (event, fence) => append(event, fence, false),
+    admitEffect: (event, fence) => append(event, fence, false, true),
     complete: (event, fence) => append(event, fence, true),
   };
 }

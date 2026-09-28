@@ -57,17 +57,25 @@ the private subprocess, compared there, and never written into source/evidence.
 
 | ID | Required result |
 | --- | --- |
-| B01_ISOLATION | Two distinct browser contexts; initially empty and subsequently distinct cookies, local/session storage and IndexedDB; reflections in fields, text, attributes, canvas and an HTTP response checked privately; alternate-origin frame loads and has separate origin storage; permitted redirect succeeds; denied redirect, direct destinations and frame requests increment the private proxy denial count. |
+| B01_ISOLATION | Two distinct browser contexts; initially empty and subsequently distinct cookies, local/session storage and IndexedDB; reflections in fields, text, attributes, canvas and an HTTP response checked privately; alternate-origin frame loads and has separate origin storage; permitted redirect succeeds; denied redirect, browser-eligible direct destinations (including wrong loopback port 80 and an external hostname) and frame requests increment the destination-specific private proxy denial count; unsafe port 1 separately requires Chromium’s exact unsafe-port failure and no proxy denial increment. |
 | B02_PARTIAL_BROWSER | Injected failure after browser startup cleans its process group, browser transport listener and all three HTTP listeners; no contexts were created. |
 | B03_PARTIAL_CONTEXT | Injected failure after first context creation closes that context, browser and listeners. |
 | B04_TEST_FAILURE | Injected canary-bearing exception after two contexts have stored/reflected values closes both contexts, browser and listeners without exposing the exception. |
-| F01_NETWORK_POLICY | Browser-independent transport test allows exactly the two generated fixture origins, serves redirects, denies external hostname, HTTPS, wrong port, host alias and URL credentials before opening an upstream connection. |
+| F01_NETWORK_POLICY | Browser-independent transport test allows exactly the two generated fixture origins, serves redirects, denies external hostname, HTTPS, wrong ports 1 and 80, host alias and URL credentials before opening an upstream connection. |
 | F02_PARTIAL_LISTENER | Browser-independent injected setup failure removes the first owned listener and temporary artifacts. |
 | F03_OUTPUT_GATE | Browser-independent canaries written to discarded child stdout/stderr and thrown in an exception never appear in the returned receipt. |
 
 F cases are infrastructure evidence, **not real-browser isolation proof**.
 Cookies are scoped to hosts rather than ports; the two loopback ports test
 cross-origin frames/storage, while the two contexts test cookie isolation.
+A navigation error alone is never proxy-denial evidence. Browser-eligible wrong-port
+and hostname requests must reach the same proxy deny branch. Chromium can reject
+unsafe port 1 before that branch: B01 privately checks the exact
+`net::ERR_UNSAFE_PORT` request failure and an unchanged destination counter; F01
+also sends port 1 directly through the proxy and requires HTTP 403. The raw
+browser failure stays inside the private subprocess. Neither check widens the
+allowlist. Redirect and denied-frame checks still require proxy counter increments.
+
 The HTTP proxy validates every destination before connecting, including every
 redirect hop (Playwright route interception alone does not guarantee that).
 Only GET to the exact two loopback origins is forwarded; CONNECT, upgrades and
@@ -101,17 +109,21 @@ B cases plus all three F cases to pass, zero skips, and cleanup counts to match.
 Do not substitute mocked DOM tests, worker completion or non-browser tests.
 Do not launch provider workflows, deploy, publish or change live configuration.
 
-The initial worker receipt is `docs/evidence/browser-fixtures.json`. Its candidate
+The historical initial worker receipt is `docs/evidence/browser-fixtures.json`;
+retain it unchanged. The denial repair receipt is
+`docs/evidence/browser-fixtures-denial-repair.json`. Its candidate
 fingerprint is SHA-256 of canonical JSON with sorted keys and compact separators
-containing `base_head` and `files` (a map of changed candidate paths to file SHA-256).
-Those files plus the unchanged base define the source candidate. The receipt
+containing `base_head` and `files` (a map of scoped candidate paths to file SHA-256).
+The repair receipt hashes the complete scoped input set, including inherited
+package scripts and compiler options. It does not claim unrelated dirty files
+were verified. Those files plus the base define the scoped source candidate. The receipt
 itself is excluded to avoid self-reference; no canary or generated artifact is
 part of the fingerprint. To verify it without reading private artifacts:
 
 ```sh
 python3 - <<'PY'
 import hashlib, json, pathlib, subprocess
-receipt = json.loads(pathlib.Path('docs/evidence/browser-fixtures.json').read_text())
+receipt = json.loads(pathlib.Path('docs/evidence/browser-fixtures-denial-repair.json').read_text())
 source = receipt['candidate']
 assert subprocess.check_output(['git', 'rev-parse', 'HEAD'], text=True).strip() == source['base_head']
 for name, expected in source['files'].items():
@@ -121,3 +133,14 @@ assert hashlib.sha256(json.dumps(payload, sort_keys=True, separators=(',', ':'))
 print('BROWSER_CANDIDATE_FINGERPRINT_VERIFIED')
 PY
 ```
+
+Resume native independent **same-item** dev QA on Change Lane
+`convergence-loop-9689ef5f-b976-42ca-97a7-278658db473e`, using
+`source_qa_campaign_id=957efda0-6e3c-4081-837e-3ddbac55e732`,
+`use_mobile_app=false` and
+`local_fixture={repo_id:'e22dd818-166e-4646-b83f-423861de18a6',fixture_path:'tests/fixtures/protected-page.html',procedure_path:'tests/helpers/browser.ts'}`.
+Follow this procedure for launch and privacy requirements. Preserve the original
+implementation WR `8737bc1f-720e-4b24-bcc9-7b8099a9940d` and zero-run validation
+WR `873a8260-1587-462c-9584-aba546c29d6b`; neither is fresh passing acceptance.
+Require fresh source attribution, actual browser execution and structured
+passing acceptance before settling the item.

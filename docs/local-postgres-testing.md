@@ -154,3 +154,15 @@ interrupted cleanup, restored ciphertext rejection and a one-time migration of
 existing v1 envelopes. See [vault lifecycle](vault-store.md#rotation-recovery-and-terminal-fences)
 and [local evidence](evidence/vault-lifecycle.json); neither is a native verifier
 receipt or production key-service qualification.
+
+## Reference browser-profile persistence acceptance
+
+`node tests/run-local-postgres.mjs test:browser-profile test:vault-lifecycle test:vault`
+selects profile persistence plus the shared-encryption vault regressions. The
+profile suite builds the private TypeScript reference target and runs serially
+against the same isolated PostgreSQL harness. It launches fresh Node processes,
+not browsers or an application service. See [profile custody](browser-profile-store.md)
+for supported state, exact scope, CAS, durable fences and fixed recovery results;
+[redacted evidence](evidence/browser-profile-store.json) binds results to the dirty
+candidate as well as the source HEAD. This is local SQL proof, not independent
+runtime QA or a native release receipt.

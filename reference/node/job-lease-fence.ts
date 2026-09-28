@@ -22,6 +22,7 @@ export function matchesJobFence(head: Head, context: JobAppendFence): boolean {
   return sameLeaseValue(head.identity, fence.identity) && sameLeaseValue(authority.host, head.identity.host)
     && head.leaseOwner === fence.ownerToken && head.leaseEpoch === fence.epoch
     && head.leaseGrantRevision === fence.grantRevision && head.leaseGrantRevision === authority.grantRevision
+    && head.cancellationEpoch <= fence.cancellationRevision
     && head.leaseCancellationRevision === fence.cancellationRevision && head.leaseCancellationRevision === authority.cancellationRevision
     && head.leaseExpiresAt !== null && head.leaseExpiresAt > leaseNow(context);
 }

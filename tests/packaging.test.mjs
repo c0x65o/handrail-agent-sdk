@@ -27,13 +27,13 @@ for (const specifier of ['handrail-agent-sdk', 'handrail-agent-sdk/server']) {
       const entry = await import(${JSON.stringify(specifier)});
       console.log(JSON.stringify(Object.keys(entry)));
     `]);
-    assert.deepEqual(JSON.parse(output), specifier.endsWith('/server') ? ['createJobAdmission', 'createJobLease'] : [
+    assert.deepEqual(JSON.parse(output), specifier.endsWith('/server') ? ['createEffects', 'createJobAdmission', 'createJobAnswer', 'createJobCancellation', 'createJobLease', 'createPaymentVault', 'createVaultEntry', 'createVaultRequestExecutor', 'createVaultUse'] : [
       'validateBrowserLease', 'validateBrowserLeaseSuccessor', 'validateBrowserObservation',
       'validateBrowserOperation', 'validateBrowserOperationSchema', 'validateBrowserProfile',
       'validateBrowserRevocationResult', 'validateBrowserTakeover', 'validateBrowserTakeoverTransition',
       'validateConnectionEnsureInput', 'validateConnectionEnsureResult', 'validateConnectionReconnect',
       'validateJobCommand', 'validateJobEvent', 'validateJobResult', 'validateJobSnapshot', 'validateJobTransition',
-      'validateVaultBrokerResult', 'validateVaultEntryCompletion', 'validateVaultEntryRequest', 'validateVaultItem', 'validateVaultOperation',
+      'validateVaultBrokerResult', 'validateVaultEntryCompletion', 'validateVaultEntryRequest', 'validateVaultItem', 'validateVaultOperation', 'validateVaultOperationSchema',
     ]);
   });
 }
@@ -44,11 +44,20 @@ test('entrypoints and contract import graph have no startup calls or external ru
     if (path.includes('/server/')) {
       assert.ok(source.statements.every(ts.isExportDeclaration), path);
       const runtime = source.statements.filter(s => !s.isTypeOnly);
-      assert.equal(runtime.length, 2, path);
+      assert.equal(runtime.length, 9, path);
       assert.equal(runtime[0].moduleSpecifier.text, './submit.js', path);
       assert.equal(runtime[1].moduleSpecifier.text, './job-lease.js', path);
+      assert.equal(runtime[2].moduleSpecifier.text, './cancel.js', path);
+      assert.equal(runtime[3].moduleSpecifier.text, './answer.js', path);
+      assert.equal(runtime[4].moduleSpecifier.text, './effects.js', path);
+      assert.equal(runtime[5].moduleSpecifier.text, './vault-use.js', path);
+      assert.equal(runtime[6].moduleSpecifier.text, './vault-entry.js', path);
+      assert.equal(runtime[7].moduleSpecifier.text, './payment-vault.js', path);
+      assert.equal(runtime[8].moduleSpecifier.text, './vault-request.js', path);
       assert.deepEqual(runtime[1].exportClause.elements.map(e => e.name.text), ['createJobLease']);
       assert.deepEqual(runtime[0].exportClause.elements.map(e => e.name.text), ['createJobAdmission']);
+      assert.deepEqual(runtime[2].exportClause.elements.map(e => e.name.text), ['createJobCancellation']);
+      assert.deepEqual(runtime[3].exportClause.elements.map(e => e.name.text), ['createJobAnswer']);
     } else {
       assert.ok(source.statements.every(ts.isExportDeclaration), path);
       assert.deepEqual(source.statements.map(s => s.moduleSpecifier.text), ['./contracts/job.js', './contracts/connection.js', './contracts/vault.js', './contracts/browser.js'], path);
@@ -131,12 +140,14 @@ test('implementation paths are not public package entrypoints', () => {
 
 test('lease and reference factories are inert on import and construction', () => {
   runNode(['--input-type=module', '--eval', `
-    import { createJobLease } from 'handrail-agent-sdk/server';
+    import { createJobLease, createVaultEntry, createPaymentVault } from 'handrail-agent-sdk/server';
     import { createJobLeaseStore } from './.reference-build/reference/node/job-lease.js';
     import { createJobJournal } from './.reference-build/reference/node/job-journal.js';
     import { createVaultStore } from './.reference-build/reference/node/vault-store.js';
     const untouched = new Proxy({}, { get() { throw Error('FACTORY_STARTED_WORK'); } });
     createJobLease(untouched, untouched);
+    createVaultEntry(untouched, untouched);
+    createPaymentVault(untouched, untouched, { adapterRef: 'fixture', version: '1', environmentRef: 'fixture', qualification: 'synthetic_boundary_only' }, untouched);
     createJobLeaseStore(untouched);
     createJobJournal(untouched);
     createVaultStore(untouched, untouched, untouched);

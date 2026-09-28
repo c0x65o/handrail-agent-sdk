@@ -275,6 +275,18 @@ acceptance('one-time generated upgrade preserves existing v1 envelopes and initi
   // Reconstruct the pre-lifecycle schema only inside this owned disposable fixture.
   await s.client.query(`DROP TABLE ${s.harness.table('vault_states')}`);
   await s.client.query(`DROP TABLE ${s.harness.table('vault_preparations')}`);
+  // The fixture rewinds the migration ledger to v1; remove newer job and vault grant
+  // objects too so the forward migrations can replay from that exact schema.
+  await s.client.query(`DROP TABLE ${s.harness.table('job_cancellation_evidence')}`);
+  await s.client.query(`ALTER TABLE ${s.harness.table('jobs')} DROP COLUMN cancellation_epoch`);
+  await s.client.query(`DROP TABLE ${s.harness.table('job_answer_deliveries')}`);
+  await s.client.query(`DROP TABLE ${s.harness.table('job_challenges')}`);
+  await s.client.query(`DROP TABLE ${s.harness.table('job_effects')}`);
+  await s.client.query(`DROP TABLE ${s.harness.table('vault_item_grants')}`);
+  await s.client.query(`DROP TABLE ${s.harness.table('vault_access')}`);
+  await s.client.query(`DROP TABLE ${s.harness.table('vault_entry_sessions')}`);
+  await s.client.query(`DROP TABLE ${s.harness.table('browser_profile_snapshots')}`);
+  await s.client.query(`DROP TABLE ${s.harness.table('browser_profile_states')}`);
   await s.client.query(`DELETE FROM ${s.harness.table('journal_migrations')} WHERE id > 4`);
   await migrations(t, s.harness, s.client);
   assert.equal(JSON.stringify(await s.client.database().select().from(s.tables.items)) === before, true);

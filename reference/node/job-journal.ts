@@ -1,3 +1,4 @@
+import { isEffectResolution } from './effect-resolution.js';
 import { copyAppendFence, matchesJobFence } from './job-lease-fence.js';
 import { and, asc, eq } from 'drizzle-orm';
 import { validateJobCommand, validateJobEvent, validateJobSnapshot, validateJobTransition } from '../../src/contracts/job.js';
@@ -35,20 +36,25 @@ function identityInput(value: JobIdentity): JobIdentity {
 
 /** Reference-host persistence, not admission or execution authority. All reads
  * and writes use the injected shared Drizzle boundary. No connection is opened. */
-export function createJobJournal(db: ReferenceDatabase, tables = journalTables()): JobStore & { load(identity: JobIdentity, repair?: boolean): Promise<JobStoreResult<JobSnapshot>> } {
+export function createJobJournal(db: ReferenceDatabase, tables = journalTables()): JobStore & {
+  load(identity: JobIdentity, repair?: boolean): Promise<JobStoreResult<JobSnapshot>>;
+  appendEffectResolution(event: JobEvent, fence: import('../../src/server/job-lease.js').JobAppendFence): ReturnType<JobStore['append']>;
+  countCheckpoints(identity: JobIdentity): Promise<JobStoreResult<number>>;
+} {
   const { jobs, events, deliveries, checkpoints } = tables;
   type Transaction = Parameters<Parameters<ReferenceDatabase['transaction']>[0]>[0];
   type Head = typeof jobs.$inferSelect;
 
   async function history(tx: Transaction, head: Head) {
     const rows = await tx.select().from(events).where(eq(events.jobId, head.jobId)).orderBy(asc(events.revision));
+    const proofs = await tx.select().from(tables.effects).where(eq(tables.effects.jobId, head.jobId));
     let current: JobSnapshot | null = null;
     for (const row of rows) {
       if (!validateJobEvent(row.event).ok || 'delivery' in row.event
         || row.revision !== row.event.snapshot.revision
         || row.jobId !== row.event.snapshot.identity.jobId
         || !same(head.identity, row.event.snapshot.identity)
-        || !validateJobTransition(current, row.event).ok) reject('invalid_history');
+        || (!validateJobTransition(current, row.event).ok && !isEffectResolution(current, row.event, proofs))) reject('invalid_history');
       current = row.event.snapshot;
     }
     if ((current?.revision ?? 0) !== head.revision) reject('invalid_history');
@@ -75,8 +81,7 @@ export function createJobJournal(db: ReferenceDatabase, tables = journalTables()
       if (!same(old.delivery, values.delivery)) reject('conflict');
     } else await tx.insert(deliveries).values(values);
   }
-  return {
-    append(input, inputFence) {
+  function append(input: JobEvent, inputFence?: import('../../src/server/job-lease.js').JobAppendFence, resolution = false): ReturnType<JobStore['append']> {
       return safe(async () => {
         if (!validateJobEvent(input).ok) reject('invalid_payload');
         const event = detached(input);
@@ -105,7 +110,10 @@ export function createJobJournal(db: ReferenceDatabase, tables = journalTables()
           }
           if (event.previousRevision !== head.revision) reject('invalid_revision');
           const transition = validateJobTransition(current, canonical);
-          if (!transition.ok) reject(transition.code);
+          if (!transition.ok) {
+            const proofs = resolution ? await tx.select().from(tables.effects).where(eq(tables.effects.jobId, identity.jobId)) : [];
+            if (!resolution || !isEffectResolution(current, canonical, proofs)) reject(transition.code);
+          }
           await tx.insert(events).values({ jobId: identity.jobId, revision, event: canonical });
           const updated = await tx.update(jobs).set({ revision }).where(and(eq(jobs.jobId, identity.jobId),
             eq(jobs.revision, event.previousRevision))).returning({ revision: jobs.revision });
@@ -116,7 +124,10 @@ export function createJobJournal(db: ReferenceDatabase, tables = journalTables()
           return { event: canonical, replayed: false };
         });
       });
-    },
+    }
+  return {
+    append: (event, fence) => append(event, fence),
+    appendEffectResolution: (event, fence) => append(event, fence, true),
     load(input, repair = true) {
       return safe(async () => {
         const identity = identityInput(input);
@@ -128,6 +139,18 @@ export function createJobJournal(db: ReferenceDatabase, tables = journalTables()
           if (!current) reject('invalid_history');
           if (repair && (!checkpoint || checkpoint.revision < current.revision)) await saveCheckpoint(tx, current);
           return current;
+        });
+      });
+    },
+    countCheckpoints(input: JobIdentity): Promise<JobStoreResult<number>> {
+      return safe(async () => {
+        const identity = identityInput(input);
+        return db.transaction(async tx => {
+          const [head] = await tx.select().from(jobs).where(eq(jobs.jobId, identity.jobId)).for('update');
+          if (!head) reject('not_found');
+          if (!same(head.identity, identity)) reject('identity_mismatch');
+          const { rows } = await history(tx, head);
+          return rows.filter(row => row.event.kind === 'effects_recorded').length;
         });
       });
     },

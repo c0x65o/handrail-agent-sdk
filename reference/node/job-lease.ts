@@ -58,6 +58,7 @@ export function createJobLeaseStore(db: ReferenceDatabase, tables = journalTable
           // Fully validate history without repairing checkpoints on a losing claim.
           const snapshot = unwrap(await createJobJournal(tx, tables).load(identity, false));
           if (!['queued', 'running'].includes(snapshot.state)) return null;
+          if (head.cancellationEpoch > access.authority.cancellationRevision) reject('lease_lost');
           const now = leaseNow(access);
           if (head.leaseOwner !== null && head.leaseExpiresAt! > now) return null;
           if (head.leaseEpoch >= Number.MAX_SAFE_INTEGER) reject('lease_lost');
@@ -77,11 +78,25 @@ export function createJobLeaseStore(db: ReferenceDatabase, tables = journalTable
       return result.ok ? { ok: true, value: undefined } : result;
     },
     check: (fence, context) => use(fence, context, 'check'),
-    append(input, context, complete) {
+    append(input, context, complete, effectAdmission = false) {
       return safe(async () => {
         const access = copyAppendFence(context);
         // The journal detaches/validates the event synchronously before SQL.
         // Its savepoint cannot release our outer transaction's row lock.
+        if (effectAdmission) {
+          if (input.kind !== 'effects_recorded') reject('invalid_payload');
+          return db.transaction(async tx => {
+            const [head] = await tx.select().from(jobs).where(eq(jobs.jobId, access.fence.identity.jobId)).for('update');
+            if (!head || !matchesJobFence(head, access)) reject('lease_lost');
+            const current = unwrap(await createJobJournal(tx, tables).load(head.identity, false));
+            if (input.snapshot.revision > current.revision) {
+              const added = input.snapshot.effects.filter(item => !current.effects.some(old => old.effectRef === item.effectRef));
+              if (current.state !== 'running' || added.length !== 1 || added[0].outcome !== 'unknown'
+                || input.snapshot.effects.length !== current.effects.length + 1) reject('effect_conflict');
+            }
+            return unwrap(await createJobJournal(tx, tables).append(input, access));
+          });
+        }
         if (!complete) return unwrap(await createJobJournal(db, tables).append(input, access));
         if (!['succeeded', 'failed', 'cancelled'].includes(input.kind)) reject('invalid_payload');
         // Detach before the first await; the journal revalidates inside the transaction.

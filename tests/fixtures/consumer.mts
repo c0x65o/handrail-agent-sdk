@@ -4,7 +4,7 @@ import * as server from 'handrail-agent-sdk/server';
 import { validateConnectionEnsureInput, validateConnectionEnsureResult, validateConnectionReconnect } from 'handrail-agent-sdk';
 import type { ConnectionEnsureInput, ConnectionEnsureResult, ConnectionState } from 'handrail-agent-sdk';
 type AssertEmpty<T extends never> = T;
-type ServerExports = AssertEmpty<Exclude<keyof typeof server, 'createJobAdmission' | 'createJobLease'>>;
+type ServerExports = AssertEmpty<Exclude<keyof typeof server, 'createJobAdmission' | 'createJobLease' | 'createJobCancellation' | 'createJobAnswer' | 'createEffects' | 'createVaultUse' | 'createVaultEntry' | 'createPaymentVault' | 'createVaultRequestExecutor'>>;
 const states: Record<JobState, boolean> = { queued: true, running: true, waiting: true, succeeded: true, failed: true, cancelled: true };
 declare const identity: JobIdentity;
 const command: JobCommand = { command: 'cancel', identity, expectedRevision: 2, reason: 'explicit_stop' };
@@ -172,3 +172,78 @@ const leases: JobLease = createJobLease(leaseHost, leaseStore);
 void leases.check(leaseFence);
 // @ts-expect-error runtime ownership is not a public client/model contract
 import type { JobLeaseFence as PublicLeaseFence } from 'handrail-agent-sdk';
+
+import { createEffects } from 'handrail-agent-sdk/server';
+import type { EffectHost, EffectStore, EffectAdapter, EffectRequest, EffectObservation } from 'handrail-agent-sdk/server';
+declare const effectHost: EffectHost;
+declare const effectStore: EffectStore;
+declare const effectAdapter: EffectAdapter;
+declare const effectRequest: EffectRequest;
+const effects = createEffects(effectHost, effectStore, effectAdapter);
+const effectResult: Promise<JobStoreResult<EffectObservation>> = effects.execute(effectRequest, leaseFence);
+void effects.reconcile(effectRequest);
+// @ts-expect-error The effect adapter stays on the trusted server boundary.
+import type { EffectAdapter as PublicEffectAdapter } from 'handrail-agent-sdk';
+// @ts-expect-error Verified results require the original safe receipt.
+const incompleteEffect: EffectObservation = { outcome: 'verified' };
+
+import { createVaultUse } from 'handrail-agent-sdk/server';
+import type { VaultUseHost, VaultUsePort, TrustedVaultExecutor, VaultItemGrantPort } from 'handrail-agent-sdk/server';
+declare const vaultUseHost: VaultUseHost;
+declare const vaultUsePort: VaultUsePort<{ token: string }>;
+declare const privateExecutor: TrustedVaultExecutor<{ token: string }>;
+declare const vaultRequest: import('handrail-agent-sdk').VaultOperation;
+declare const grantAdmin: VaultItemGrantPort;
+const vaultUse = createVaultUse(vaultUseHost, vaultUsePort, [privateExecutor]);
+const vaultEffect: Promise<JobStoreResult<EffectObservation>> = vaultUse.execute(vaultRequest, leaseFence);
+void grantAdmin.history(vaultRequest.item, 50);
+// @ts-expect-error Private executor registration is server-only.
+import type { TrustedVaultExecutor as PublicVaultExecutor } from 'handrail-agent-sdk';
+// @ts-expect-error No value getter on the dispatch facade.
+vaultUse.readForExecutor(vaultRequest.item);
+// @ts-expect-error No reveal/export on the dispatch facade.
+vaultUse.reveal(vaultRequest.item);
+// @ts-expect-error Callers cannot pass arbitrary private-value callbacks.
+vaultUse.execute(vaultRequest, leaseFence, (value: unknown) => value);
+
+import { createVaultEntry } from 'handrail-agent-sdk/server';
+import type { VaultEntryHost, VaultEntryStore, VaultEntryHandle } from 'handrail-agent-sdk/server';
+declare const entryHost: VaultEntryHost;
+declare const entryStore: VaultEntryStore<{ token: string }>;
+declare const entryHandle: VaultEntryHandle;
+const entry = createVaultEntry(entryHost, entryStore);
+void entry.deliver(entryHandle);
+// @ts-expect-error Private entry authority is not exposed to model/client contracts.
+import type { VaultEntryHost as PublicEntryHost } from 'handrail-agent-sdk';
+// @ts-expect-error Closing a surface must not cancel or resume the job.
+entry.close(entryHandle);
+// @ts-expect-error No private value getter on the session API.
+entry.read(entryHandle);
+
+import { createPaymentVault } from 'handrail-agent-sdk/server';
+import type { PaymentVaultHost, PaymentAdapterRegistration, SpecializedPaymentAdapter } from 'handrail-agent-sdk/server';
+declare const paymentHost: PaymentVaultHost;
+declare const paymentStore: VaultEntryStore<{ readonly adapterRef: string }>;
+declare const paymentAdapter: SpecializedPaymentAdapter;
+declare const paymentRegistration: PaymentAdapterRegistration;
+const payments = createPaymentVault(paymentHost, paymentStore, paymentRegistration, paymentAdapter);
+void payments.complete(entryHandle);
+// @ts-expect-error No client token or raw card input on payment completion.
+payments.complete({ ...entryHandle, pan: 'synthetic' });
+// @ts-expect-error No CVV argument or provider token string creates authority.
+payments.complete(entryHandle, { cvv: 'synthetic' });
+// @ts-expect-error Payment factory exposes no purchase operation.
+payments.purchase(entryHandle);
+// @ts-expect-error Specialized payment adapters are not public client contracts.
+import type { SpecializedPaymentAdapter as PublicPaymentAdapter } from 'handrail-agent-sdk';
+
+import { createVaultRequestExecutor } from 'handrail-agent-sdk/server';
+import type { VaultHttpClient, VaultRequestRecipe } from 'handrail-agent-sdk/server';
+declare const approvedHttpClient: VaultHttpClient;
+declare const requestRecipe: VaultRequestRecipe<{ token: string }>;
+const requestExecutor: TrustedVaultExecutor<{ token: string }> = createVaultRequestExecutor(requestRecipe, approvedHttpClient);
+void createVaultUse(vaultUseHost, vaultUsePort, [requestExecutor]);
+// @ts-expect-error HTTP client and recipe registration are server-only.
+import type { VaultHttpClient as PublicHttpClient } from 'handrail-agent-sdk';
+// @ts-expect-error HTTP execution still accepts only a bound operation and fence.
+vaultUse.execute({ ...vaultRequest, headers: { authorization: 'model-input' } }, leaseFence);

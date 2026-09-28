@@ -113,11 +113,11 @@ async function policyChecks(proxy: string): Promise<void> {
   check(await get(origins[0] + '/redirect-ok') === 302);
   check(await get(origins[0] + '/redirect-denied') === 302);
   const before = fixtureHits;
-  for (const target of [forbidden, 'https://127.0.0.1:1', 'http://127.0.0.1:1', origins[0].replace('127.0.0.1', 'localhost'), origins[0].replace('http://', 'http://user:pass@')]) {
+  for (const target of [forbidden, 'https://127.0.0.1:1', 'http://127.0.0.1:1', 'http://127.0.0.1:80', origins[0].replace('127.0.0.1', 'localhost'), origins[0].replace('http://', 'http://user:pass@')]) {
     check(await get(target) === 403);
   }
   check(fixtureHits === before);
-  check(denied === 5);
+  check(denied === 6);
 }
 
 async function launch(proxy: string): Promise<void> {
@@ -240,9 +240,26 @@ async function isolation(): Promise<void> {
     check((deniedDestinations.get(key) ?? 0) > before);
   }
   await deniedNavigation(origins[0] + '/redirect-denied?value=' + values[0], forbidden + '/');
-  for (const target of [forbidden + '/?value=' + values[0], origins[0].replace('127.0.0.1', 'localhost') + '/', 'http://127.0.0.1:1/']) {
+  // Port 80 is browser-eligible and cannot be either ephemeral fixture port.
+  // Both this wrong-port destination and the unrelated hostname must reach the
+  // same proxy deny branch; a navigation error alone proves nothing about it.
+  for (const target of [forbidden + '/?value=' + values[0], origins[0].replace('127.0.0.1', 'localhost') + '/', 'http://127.0.0.1:80/']) {
     await deniedNavigation(target);
   }
+  // Chromium rejects unsafe ports before proxy admission. Keep the triggering
+  // case, but require its exact private browser-policy failure and no proxy hit.
+  // F01 separately sends port 1 through the proxy and requires a 403 response.
+  const unsafeTarget = 'http://127.0.0.1:1/';
+  const unsafeKey = destinationKey(new URL(unsafeTarget));
+  const unsafeBefore = deniedDestinations.get(unsafeKey) ?? 0;
+  const [unsafeRequest] = await Promise.all([
+    page.waitForEvent('requestfailed', {
+      predicate: req => req.isNavigationRequest() && req.url() === unsafeTarget,
+    }),
+    page.goto(unsafeTarget).catch(() => {}),
+  ]);
+  check(unsafeRequest.failure()?.errorText === 'net::ERR_UNSAFE_PORT');
+  check((deniedDestinations.get(unsafeKey) ?? 0) === unsafeBefore);
   await page.goto(origins[0] + '/protected');
   const frameDestination = forbidden + '/';
   const before = deniedDestinations.get(frameDestination) ?? 0;

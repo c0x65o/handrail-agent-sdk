@@ -1,5 +1,7 @@
 // Internal reference-host helpers, never exported by the SDK.
-import { createCipheriv, createDecipheriv, randomBytes, KeyObject } from 'node:crypto';
+import { KeyObject } from 'node:crypto';
+import { seal, open } from './private-envelope.js';
+export { bytes } from './private-envelope.js';
 import { eq } from 'drizzle-orm';
 import { validateVaultItem } from '../../src/contracts/vault.js';
 import type { VaultItem } from '../../src/contracts/vault.js';
@@ -57,14 +59,6 @@ export function keyReference(value: any): value is VaultKeyReference {
   return exact(value, ['keyHandle', 'keyVersion']) && ref(value.keyHandle)
     && Number.isInteger(value.keyVersion) && value.keyVersion > 0 && value.keyVersion <= 2147483647;
 }
-export function bytes(value: string, length?: number): Buffer {
-  if (typeof value !== 'string' || value.length > 131_072) throw Error();
-  const decoded = Buffer.from(value, 'base64');
-  if (decoded.toString('base64') !== value || (length !== undefined && decoded.length !== length)) throw Error();
-  return decoded;
-}
-
-
 export function inputItem(input: VaultItem): VaultItem {
   try { const item = copy(input); if (!validateVaultItem(item).ok) throw Error(); return item; }
   catch { return reject('invalid_payload'); }
@@ -101,25 +95,12 @@ export function validateRow(row: VaultRow, item: VaultItem, scope: VaultScope) {
     || !keyReference({ keyHandle: row.keyHandle, keyVersion: row.keyVersion })) reject('unavailable');
 }
 export function encrypt(header: Omit<VaultRow, 'nonce' | 'ciphertext' | 'tag'>, value: VaultValue, key: KeyObject): VaultRow {
-  const nonce = randomBytes(12), plaintext = Buffer.from(JSON.stringify(value), 'utf8');
-  try {
-    const cipher = createCipheriv('aes-256-gcm', key, nonce, { authTagLength: 16 });
-    cipher.setAAD(aad(header));
-    const ciphertext = Buffer.concat([cipher.update(plaintext), cipher.final()]);
-    return { ...header, nonce: nonce.toString('base64'), ciphertext: ciphertext.toString('base64'), tag: cipher.getAuthTag().toString('base64') };
-  } finally { plaintext.fill(0); }
+  return { ...header, ...seal(value, key, aad(header)) };
 }
 export function decrypt(row: VaultRow, key: KeyObject): VaultValue {
-  const decipher = createDecipheriv('aes-256-gcm', key, bytes(row.nonce, 12), { authTagLength: 16 });
-  decipher.setAAD(aad(row)); decipher.setAuthTag(bytes(row.tag, 16));
-  const partial = decipher.update(bytes(row.ciphertext));
-  let plaintext: Buffer | undefined;
-  try {
-    plaintext = Buffer.concat([partial, decipher.final()]);
-    const value = copy(JSON.parse(plaintext.toString('utf8')));
-    if (!valueValid(row.item, value)) reject('unavailable');
-    return value;
-  } finally { partial.fill(0); plaintext?.fill(0); }
+  const value = copy(open(row, key, aad(row)));
+  if (!valueValid(row.item, value)) reject('unavailable');
+  return value;
 }
 
 /** Read only the authoritative ledger, never infer active state from ciphertext. */

@@ -290,6 +290,8 @@ export function validateVaultEntryCompletion(value: unknown, context: unknown, n
     return { ok: true, value, disposition: 'accept' };
   } catch { return failure('invalid_payload'); }
 }
+/** Server dispatch structural check; this does not authorize use. */
+export function validateVaultOperationSchema(value: unknown): VaultValidation<VaultOperation> { return checked(value, operation); }
 /** Exact current one-item/operation/destination/effect grant; at most five minutes. */
 export function validateVaultOperation(value: unknown, context: unknown, now: number): VaultValidation<VaultOperation> {
   try {

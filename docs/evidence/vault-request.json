@@ -1,0 +1,164 @@
+{
+  "schemaVersion": 1,
+  "itemId": "7b3911ea-d099-4193-bf7f-5d2644095b1c",
+  "workRequestId": "1088c1b0-7e23-4222-a4e3-2d6f0c4c3be6",
+  "ownerGoalId": "1b13c4ab-38c2-4d78-a5cb-238e2f257c62",
+  "recordedAt": "2026-09-28T06:40:17.652537+00:00",
+  "classification": "Synthetic token on disposable loopback HTTP and real PostgreSQL 15. No live provider call, native TLS qualification, Meta readiness, full-repository acceptance or deployment claim.",
+  "source": {
+    "baseCommit": "2b18d55046af43a1ed80c3cc07b17e98c7519cc1",
+    "branch": "lane/agent-sdk-v1",
+    "candidateTreeSha": "3c50e7fa4936e54a27c2470d3cd2ffc134240282",
+    "candidateCommitSha": null,
+    "binding": "Candidate tree assembled from all nonignored tracked/untracked files with a temporary Git index, excluding this evidence file to avoid self-reference. Prior prerequisites preserved. HEAD and real index unchanged; no commit or push. SHA-256 values bind changed files and reused security boundaries.",
+    "sha256": {
+      "src/server/vault-request.ts": "1a609f75a9dbf4c87704ee9d7a5a7d252a1e1194caab457d21325c933ff41605",
+      "src/server/vault-use.ts": "39205d50836608ab6cfd466cb48d9420e81eafe33d3748940de45df01c03a2a6",
+      "src/server/index.ts": "e02bb4f4ebb46a28d18251bd41ec85b963d439a33a3e678c8d325cb7cad46869",
+      "src/contracts/vault.ts": "d0cae9779a5ab3d612750286eb7a0cc40278d379a75ac17552b698391f42a880",
+      "src/server/effects.ts": "f1e2493f92ae778a1a4a236c2a06ca0a00d0fe38b738225dcf0348b85d09d47c",
+      "reference/node/vault-grants.ts": "f3cc9917da9de9f391e63cd1476ac903a7498f67df13aea46858a4e01c429e4a",
+      "reference/node/effects.ts": "2d2b9ef481db85e948727b09d26aa10e1769db6e6855c9dd28e7f61fe77ec6e9",
+      "reference/node/vault-store.ts": "714e135d831b41c5bf6eafb37d95c478770f984d3a0c619b5f8209f8863bf464",
+      "reference/node/db/schema.ts": "816b835a1a05006293a2581e20054b9da0a9449f14eedbc3bf7295a09e88aa23",
+      "reference/node/db/migrations/meta/_journal.json": "bd0b6176ed915dc088e57cb763a06d80bc9213685d285b77be56f3d310573038",
+      "tests/server/vault-request.test.ts": "607aa5fafe5ccd09061454e5d3b35580a94f2b29ad1a0ecd805e16ea8175f8f0",
+      "tests/tsconfig.vault-request.json": "613df3d8cf0b4446e45b9eaf180d79d21fe4bcd7a2f85951591735ff17d3b8e1",
+      "tests/fixtures/consumer.mts": "44c073ff7166d6d2c5d9c547bf58c124ac01b69331044776e21be749358ea848",
+      "tests/packaging.test.mjs": "b587204de529ca8807c5ee9d9d21daa32bca6b6f0829da1ad8261e0ad829cf08",
+      "tests/run-local-postgres.mjs": "24d027483f781937b1a58747421a050de50171f8431217b35c27aac57128d16c",
+      "tests/helpers/postgres.ts": "2ef4b2a8b2765b11a2e8dceaed6d85983ab03cc3d77a9e37ba3ccba55c356040",
+      "tests/helpers/migrations.mjs": "5da670f44c598605df43da514493026c3578b22096e9397e75e8d138b5f2cda8",
+      "package.json": "accb4740d8e5ee2b8193a3862d718599be4449e0f1d8f0c9fac6f4e70b6b8082",
+      "docs/vault-request.md": "f1a03f2841574ea7f88e98fcfb2573639162da3afbe900d9e5f5664c0f1fa4f7"
+    }
+  },
+  "contract": {
+    "kbSlug": "handrail-ai-sdk-implementation-contract",
+    "publishedRevision": 1,
+    "entryId": "664f7487-aeda-476a-8aed-35d93426b07b",
+    "hostOwned": [
+      "authority",
+      "custody",
+      "HTTP/provider client",
+      "idempotency",
+      "reconciliation",
+      "action gates",
+      "retry budgets"
+    ]
+  },
+  "harness": {
+    "engine": "PostgreSQL 15",
+    "runner": "tests/run-local-postgres.mjs",
+    "isolation": "Owned temporary cluster and database, non-superuser fixture role, per-case schemas, checked-in migrations, independent SQL connections; never reads DATABASE_URL. Two HTTP servers bound only to 127.0.0.1 on ephemeral ports. Synthetic random token stays inside private fixture custody.",
+    "cleanup": "Owned cluster stopped and removed; HTTP sockets and servers closed by test teardown."
+  },
+  "checks": [
+    {
+      "command": "node tests/run-local-postgres.mjs test:vault-request test:vault-use",
+      "result": "passed",
+      "suites": [
+        {
+          "name": "vault-request",
+          "tests": 15,
+          "pass": 15,
+          "fail": 0,
+          "skipped": 0,
+          "cancelled": 0
+        },
+        {
+          "name": "vault-use regression",
+          "tests": 41,
+          "pass": 41,
+          "fail": 0,
+          "skipped": 0,
+          "cancelled": 0
+        }
+      ],
+      "transcriptSha256": "894325aed12445266f3cfe8e3d75e6b46e5bcf9ac484c3d97ea8577fe05364bb"
+    },
+    {
+      "command": "node node_modules/typescript/bin/tsc -p tsconfig.json",
+      "result": "passed"
+    },
+    {
+      "command": "node node_modules/typescript/bin/tsc -p tests/fixtures/tsconfig.json",
+      "result": "passed"
+    },
+    {
+      "command": "node --test --test-concurrency=1 --test-reporter=tap tests/contracts/vault.test.mjs tests/packaging.test.mjs",
+      "result": "passed",
+      "tests": 365,
+      "pass": 365,
+      "fail": 0,
+      "skipped": 0,
+      "cancelled": 0,
+      "transcriptSha256": "79e6d20e495283f2790f1378702e486f22a6b33df18249fa8628a3d8255f67e4"
+    },
+    {
+      "command": "git diff --check",
+      "result": "passed"
+    }
+  ],
+  "receipts": [
+    {
+      "scenario": "registered request and reconstructed-executor replay",
+      "effectRef": "request-effect",
+      "outcome": "verified",
+      "authorizedRequests": 1,
+      "redirectTargetRequests": 0,
+      "replayRequests": 0,
+      "rawOutputFields": 0
+    },
+    {
+      "scenario": "cross-origin redirect",
+      "effectRef": "request-effect",
+      "initialOutcome": "unknown",
+      "authorizedRequests": 1,
+      "redirectTargetRequests": 0,
+      "duplicateRequests": 0,
+      "reconciledAfterRevoke": "verified"
+    },
+    {
+      "scenario": "grant revoke between admission and dispatch",
+      "privateReads": 0,
+      "httpRequests": 0,
+      "admission": "committed unknown"
+    },
+    {
+      "scenario": "reflected body/header/error withholding",
+      "effectRef": "request-effect",
+      "publicOutput": "fixed outcome and bound receipt only",
+      "sqlAndResultSecretScans": "passed for raw and base64 token; transport URLs also withheld"
+    },
+    {
+      "scenario": "failed status, lost connection, timeout, oversized body",
+      "initialOutcome": "unknown",
+      "requestsPerCase": 1,
+      "duplicateRequests": 0,
+      "reconciledAfterRevoke": "verified"
+    },
+    {
+      "scenario": "private/metadata/mixed/noncanonical address answers",
+      "networkConnections": 0
+    },
+    {
+      "scenario": "public IPv4 acceptance and peer change",
+      "qualification": "injected transport policy test only; no public network connection",
+      "sends": 1,
+      "changedPeerSends": 0
+    },
+    {
+      "scenario": "expiry during DNS and timeout awaiting DNS",
+      "lateHttpRequests": 0
+    }
+  ],
+  "limits": [
+    "Public canonical HTTPS schema unchanged; loopback exception is host registered and environment bound.",
+    "V1 production address policy conservatively denies IPv6.",
+    "Host HTTP adapter must enforce TLS hostname/certificate validation, DNS/socket pinning, no proxy/reconnect/redirect/retry, request/header/decompression limits, abort cleanup and private telemetry suppression.",
+    "Bearer token requests only; payment execution and provider-specific capability mapping remain separate tasks.",
+    "Existing independent boundary/conformance and live-provider tasks retain their acceptance requirements."
+  ],
+  "qaCampaignId": null
+}

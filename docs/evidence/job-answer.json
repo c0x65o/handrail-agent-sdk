@@ -1,0 +1,47 @@
+{
+  "schema_version": 1,
+  "proof_class": "local_disposable_postgresql_fixture",
+  "recorded_at": "2026-09-28T04:48:22Z",
+  "item_id": "e028a57e-085a-4078-bd31-0f156b694a42",
+  "source": {
+    "branch": "lane/agent-sdk-v1",
+    "baseline_commit": "2b18d55046af43a1ed80c3cc07b17e98c7519cc1",
+    "delivery": "uncommitted SDK lane patch"
+  },
+  "fixture": "owned temporary PostgreSQL 15 cluster, isolated schema, distinct completion connections, synthetic opaque references",
+  "post_change_ci_repair": {
+    "failed_check_log_id": "56eb72c4-01d2-4390-9be1-81cd60915eda",
+    "cause": "The vault upgrade fixture rewound the migration ledger but retained the new answer tables, causing migration replay to fail.",
+    "repair": "Remove job_answer_deliveries and job_challenges only inside the owned disposable upgrade fixture before replaying migrations; preserve existing envelope and lifecycle assertions.",
+    "verification": { "command": "node tests/run-local-postgres.mjs", "tests": 84, "pass": 84, "fail": 0, "exit_code": 0 },
+    "typed_validation": "The full runner compiled reference code and PostgreSQL/reference tests successfully."
+  },
+  "checks": [
+    { "command": "node tests/run-local-postgres.mjs test:answer", "tests": 6, "pass": 6, "fail": 0 },
+    { "command": "node tests/run-local-postgres.mjs test:cancel test:journal", "tests": 18, "pass": 18, "fail": 0 },
+    { "command": "npm test", "tests": 771, "pass": 771, "fail": 0 },
+    { "command": "node node_modules/typescript/bin/tsc -p tests/fixtures/tsconfig.json", "exit_code": 0 },
+    { "command": "git diff --check", "exit_code": 0 }
+  ],
+  "durable_events": {
+    "original_job_id": "answer-job",
+    "original_task_ref": "original-task",
+    "original_route_ref": "original-route",
+    "revisions": [
+      { "revision": 1, "kind": "submitted" },
+      { "revision": 2, "kind": "started" },
+      { "revision": 3, "kind": "waiting" },
+      { "revision": 4, "kind": "answered" }
+    ],
+    "concurrent_completion_result": "one new receipt at cursor 4, one replayed receipt at cursor 4, one answered event and one delivery row",
+    "authorized_cursor_replay": "after revision 2 with limit 2 returns waiting revision 3 and answered revision 4; after revision 4 returns empty"
+  },
+  "denied_cases": [
+    "changed content under the same delivery key conflicts",
+    "new key after consumption and expired unconsumed challenge denied",
+    "wrong resolver, tenant, account, environment, changed grant and revoked host authority denied",
+    "superseded requirement revision and Stop denied with unchanged answered-event count",
+    "a consumed challenge is replaced only after the same job resumes and reaches a later waiting revision"
+  ],
+  "limits": "Fixture evidence only. Host adapters must supply authenticated, stable authority and safe opaque references. No vault capture, provider OAuth endpoint, live bridge or deployment is included."
+}

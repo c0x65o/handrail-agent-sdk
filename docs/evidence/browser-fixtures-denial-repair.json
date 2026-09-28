@@ -1,0 +1,223 @@
+{
+  "schema_version": 1,
+  "recorded_at": "2026-09-28T20:14:35.266146+00:00",
+  "owner_item_id": "9a6a2d4d-4c5e-494e-ae1e-cbbb4c6bd17a",
+  "work_request_id": "662a59df-6862-4ee4-92ac-7a446603e814",
+  "codex_run_id": "68c56ddc-0525-4f26-8984-e6adf7ebeb12",
+  "branch": "lane/agent-sdk-v1",
+  "repo_id": "e22dd818-166e-4646-b83f-423861de18a6",
+  "change_lane_id": "convergence-loop-9689ef5f-b976-42ca-97a7-278658db473e",
+  "candidate": {
+    "base_head": "2b18d55046af43a1ed80c3cc07b17e98c7519cc1",
+    "files": {
+      ".gitignore": "7a1fe62c452a15cd9a487f9a2d3f8b25d273d4c9b96650829be290a5968768dc",
+      "docs/local-browser-testing.md": "dab339291d0a542951fb9008211b05bd3eec029ffadc4c5b47f7dffb08ab42c6",
+      "package-lock.json": "521a8f9e0a25ec015b878a49881e314100f4cde9044e76ea7010e7056d8655a7",
+      "package.json": "1e94e19613d33c5d0cd8b212afaaa37f4e025c71d96aff789bca291757d81938",
+      "tests/browser-boundary.test.mjs": "041ec8f5d3e3043d0c89e9f26fa7625b66da35626a727cc25040df5b64f6eda8",
+      "tests/browser.test.mjs": "0c8c9765a6e2face7c4d58788955d6399e059e6189114822d482c2797c9b3708",
+      "tests/fixtures/protected-page.html": "5b93449ccf691b410c151797ded898426d20cca12234c3dba83bd608fec7de62",
+      "tests/helpers/browser-private.ts": "d2e50674f3750e29217ebbfa59c9a051c1f0f689d3bf286867ec17da2614dc5b",
+      "tests/helpers/browser.ts": "68f7d871640fbbfd528a27c9f4e255ac64497b7775bd51d199c4da95845352d4",
+      "tests/tsconfig.browser.json": "d77ac5fc313cc90eeb8fc8db59bd34a0a735755ca2900fd47a6f4842ccf84210",
+      "tsconfig.json": "b632554574c04df2d36df403e65b62b39e0ac3d7cc4f62f9d2e5afc2a77c478f"
+    },
+    "sha256": "719a79e8d987f24de412e6f20fb78455781915d444da9b1e62a65e08f88a9dac"
+  },
+  "candidate_scope": "Complete scoped browser test inputs, compiler configuration, package scripts/lock and procedure; unrelated dirty sources are preserved, not validated.",
+  "source_status": "uncommitted",
+  "acceptance": "pending_real_browser_and_independent_native_dev_qa",
+  "baseline": {
+    "tracked_modifications": 15,
+    "untracked_entries": 58,
+    "all_preexisting_dirty_file_hashes_preserved": true
+  },
+  "repair_files": [
+    "tests/helpers/browser-private.ts",
+    "docs/local-browser-testing.md",
+    "docs/evidence/browser-fixtures-denial-repair.json"
+  ],
+  "diagnosis": {
+    "source_confirmed": "Original B01 demanded a destination-specific proxy denial increment for unsafe port 1. Chromium may reject it before proxy admission.",
+    "fresh_real_browser_reproduction": false,
+    "change": "Browser-eligible loopback port 80, external hostname and host alias require the same proxy deny counter. Port 1 separately requires the exact private Chromium unsafe-port request failure and unchanged proxy counter. F01 sends both ports through the proxy and requires 403 with no fixture hits. Redirect/frame checks and allowlist are unchanged."
+  },
+  "toolchain": {
+    "node": "v22.23.1",
+    "npm": "10.9.8",
+    "typescript": "5.9.3",
+    "playwright_core": "1.63.0",
+    "platform": "linux",
+    "expected_chromium_revision": "1243",
+    "expected_chromium_version": "153.0.8010.12",
+    "expected_executable": "/opt/handrail/.cache/ms-playwright/chromium-1243/chrome-linux64/chrome",
+    "actual_browser_version": null,
+    "browser_executable_available": false,
+    "browser_downloaded": false
+  },
+  "execution": {
+    "working_directory": "Disposable tempfile.TemporaryDirectory with prefix browser-denial-repair- inside the run-owned tmp directory; removed on exit.",
+    "copied_inputs": [
+      "package.json",
+      "package-lock.json",
+      "tsconfig.json",
+      "tests/tsconfig.browser.json",
+      "tests/helpers/browser.ts",
+      "tests/helpers/browser-private.ts",
+      "tests/browser.test.mjs",
+      "tests/browser-boundary.test.mjs",
+      "tests/fixtures/protected-page.html"
+    ],
+    "dependencies": "Symlink to existing repository node_modules; no installation or lockfile change.",
+    "environment": "TMPDIR set to a mode-0700 scratch/tmp directory. Neither HANDRAIL_TEST_BROWSER_EXECUTABLE nor PLAYWRIGHT_BROWSERS_PATH was set. Private runner retains its original environment allowlist.",
+    "sequencing": "Commands below ran sequentially in scratch against copied final source. Only safe receipt fields and TAP counts retained.",
+    "cleanup": [
+      {
+        "caseId": "SCRATCH_ARTIFACT_CLEANUP",
+        "status": "passed",
+        "privateFixtureEntries": 0,
+        "npmCompileCacheEntries": 1
+      },
+      {
+        "caseId": "SCRATCH_CLEANUP",
+        "status": "passed",
+        "remainingEntries": 0
+      }
+    ],
+    "cleanup_observation": "An initial scratch-wide emptiness check saw one entry. A compile-only reproduction identified node-compile-cache, not a private fixture artifact. Final validation had zero private fixture entries; scratch removal also removed the compile cache."
+  },
+  "checks": [
+    {
+      "command": "npm run build:test-browser",
+      "exit_code": 0,
+      "cases": [],
+      "tap": {}
+    },
+    {
+      "command": "npm run test:browser-boundary",
+      "exit_code": 0,
+      "cases": [
+        {
+          "caseId": "F01_NETWORK_POLICY",
+          "status": "passed",
+          "checks": 16,
+          "contextsClosed": 0,
+          "browsersClosed": 0,
+          "listenersClosed": 3,
+          "artifactsRemoved": 1
+        },
+        {
+          "caseId": "F02_PARTIAL_LISTENER",
+          "status": "passed",
+          "checks": 2,
+          "contextsClosed": 0,
+          "browsersClosed": 0,
+          "listenersClosed": 1,
+          "artifactsRemoved": 1
+        },
+        {
+          "caseId": "F03_OUTPUT_GATE",
+          "status": "passed",
+          "checks": 1,
+          "contextsClosed": 0,
+          "browsersClosed": 0,
+          "listenersClosed": 0,
+          "artifactsRemoved": 1
+        }
+      ],
+      "tap": {
+        "tests": 3,
+        "suites": 0,
+        "pass": 3,
+        "fail": 0,
+        "cancelled": 0,
+        "skipped": 0,
+        "todo": 0
+      }
+    },
+    {
+      "command": "npm run test:browser",
+      "exit_code": 1,
+      "cases": [
+        {
+          "caseId": "B01_ISOLATION",
+          "status": "unverified_browser_prerequisite",
+          "checks": 4,
+          "contextsClosed": 0,
+          "browsersClosed": 0,
+          "listenersClosed": 3,
+          "artifactsRemoved": 1
+        },
+        {
+          "caseId": "B02_PARTIAL_BROWSER",
+          "status": "unverified_browser_prerequisite",
+          "checks": 4,
+          "contextsClosed": 0,
+          "browsersClosed": 0,
+          "listenersClosed": 3,
+          "artifactsRemoved": 1
+        },
+        {
+          "caseId": "B03_PARTIAL_CONTEXT",
+          "status": "unverified_browser_prerequisite",
+          "checks": 4,
+          "contextsClosed": 0,
+          "browsersClosed": 0,
+          "listenersClosed": 3,
+          "artifactsRemoved": 1
+        },
+        {
+          "caseId": "B04_TEST_FAILURE",
+          "status": "unverified_browser_prerequisite",
+          "checks": 4,
+          "contextsClosed": 0,
+          "browsersClosed": 0,
+          "listenersClosed": 3,
+          "artifactsRemoved": 1
+        }
+      ],
+      "tap": {
+        "tests": 4,
+        "suites": 0,
+        "pass": 0,
+        "fail": 4,
+        "cancelled": 0,
+        "skipped": 0,
+        "todo": 0
+      }
+    },
+    {
+      "command": "git diff --check",
+      "exit_code": 0
+    }
+  ],
+  "historical_evidence": {
+    "initial_receipt": "docs/evidence/browser-fixtures.json",
+    "initial_receipt_sha256": "0082141766d1cca328568cf136803bd2c73c38f163adcf682784fb5db65b23c8",
+    "implementation_work_request_id": "8737bc1f-720e-4b24-bcc9-7b8099a9940d",
+    "source_qa_campaign_id": "957efda0-6e3c-4081-837e-3ddbac55e732",
+    "zero_run_validation_work_request_id": "873a8260-1587-462c-9584-aba546c29d6b",
+    "overwritten": false
+  },
+  "limitations": [
+    "No Chromium executable is accessible in this worker. Fresh B01 reproduction and actual browser verification, including injected browser/context failure cleanup, remain unverified. All four original B cases failed explicitly with unverified_browser_prerequisite and zero skips.",
+    "Passing F cases prove proxy transport, partial-listener cleanup and private output boundaries only. Every B prerequisite failure closed three listeners and removed its owned artifact directory.",
+    "No mocks, browser downloads, generated canary artifacts, raw browser diagnostics, provider operations, Handrail repair, commit, push, deployment or QA launch."
+  ],
+  "native_same_item_qa_handoff": {
+    "owner_task_id": "7ccb807a-4e38-42c7-bf23-73d62adec118",
+    "item_id": "9a6a2d4d-4c5e-494e-ae1e-cbbb4c6bd17a",
+    "change_lane_id": "convergence-loop-9689ef5f-b976-42ca-97a7-278658db473e",
+    "environment": "dev",
+    "source_qa_campaign_id": "957efda0-6e3c-4081-837e-3ddbac55e732",
+    "use_mobile_app": false,
+    "local_fixture": {
+      "repo_id": "e22dd818-166e-4646-b83f-423861de18a6",
+      "fixture_path": "tests/fixtures/protected-page.html",
+      "procedure_path": "tests/helpers/browser.ts"
+    },
+    "procedure": "docs/local-browser-testing.md",
+    "required": "Fresh exact-source attribution, all three boundary and four actual browser cases passing with zero skips and required cleanup counts, then native structured independent acceptance.",
+    "launched_by_worker": false
+  }
+}
