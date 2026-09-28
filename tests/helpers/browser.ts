@@ -10,9 +10,23 @@ export const browserCases = ['B01_ISOLATION', 'B02_PARTIAL_BROWSER', 'B03_PARTIA
 export const boundaryCases = ['F01_NETWORK_POLICY', 'F02_PARTIAL_LISTENER', 'F03_OUTPUT_GATE'] as const;
 export type BrowserCase = typeof browserCases[number] | typeof boundaryCases[number];
 const statuses = ['passed', 'failed', 'unverified_browser_prerequisite', 'unverified_dependency_prerequisite'] as const;
+// Fixed control-flow labels only: never derive these from a URL, error or page.
+export const browserDiagnosticStages = [
+  'unreported', 'setup', 'fixtures', 'network_policy', 'browser_launch',
+  'context_creation', 'context_seed', 'context_readback', 'reflection',
+  'allowed_redirect', 'denied_redirect', 'denied_external', 'denied_alias',
+  'denied_loopback', 'unsafe_port', 'protected_reload', 'denied_frame_load',
+  'denied_frame_assertion', 'complete', 'cleanup', 'output_gate',
+] as const;
+export type BrowserDiagnosticStage = typeof browserDiagnosticStages[number];
+export function readBrowserDiagnosticStage(value: unknown): BrowserDiagnosticStage | undefined {
+  return typeof value === 'string' && browserDiagnosticStages.includes(value as BrowserDiagnosticStage)
+    ? value as BrowserDiagnosticStage : undefined;
+}
 export interface BrowserReceipt {
   caseId: BrowserCase;
   status: typeof statuses[number];
+  stage: BrowserDiagnosticStage;
   checks: number;
   contextsClosed: number;
   browsersClosed: number;
@@ -24,7 +38,7 @@ export interface BrowserReceipt {
 export async function runPrivateBrowserCase(caseId: BrowserCase): Promise<BrowserReceipt> {
   if (![...browserCases, ...boundaryCases].includes(caseId)) throw new Error('BROWSER_CASE_INVALID');
   const result: BrowserReceipt = {
-    caseId, status: 'failed', checks: 0, contextsClosed: 0,
+    caseId, status: 'failed', stage: 'unreported', checks: 0, contextsClosed: 0,
     browsersClosed: 0, listenersClosed: 0, artifactsRemoved: 0,
   };
   if (process.platform !== 'linux') return result;
@@ -60,6 +74,9 @@ export async function runPrivateBrowserCase(caseId: BrowserCase): Promise<Browse
         const m = message as Record<string, unknown>;
         if (m.kind === 'browser_pid' && Number.isSafeInteger(m.pid) && (m.pid as number) > 1) {
           browserPid = m.pid as number;
+        } else if (m.kind === 'stage') {
+          const stage = readBrowserDiagnosticStage(m.stage);
+          if (stage) result.stage = stage;
         } else if (m.kind === 'receipt') receipt = m;
       });
       child.on('error', kill);
@@ -68,6 +85,9 @@ export async function runPrivateBrowserCase(caseId: BrowserCase): Promise<Browse
         // No child content, arbitrary fields, error strings or labels cross here.
         if (code === 0 && !forced && receipt && statuses.includes(receipt.status as typeof statuses[number])) {
           result.status = receipt.status as typeof statuses[number];
+          const stage = readBrowserDiagnosticStage(receipt.stage);
+          if (stage) result.stage = stage;
+          else result.status = 'failed';
           for (const key of ['checks', 'contextsClosed', 'browsersClosed', 'listenersClosed'] as const) {
             const value = receipt[key];
             if (!Number.isSafeInteger(value) || (value as number) < 0 || (value as number) > 100) {

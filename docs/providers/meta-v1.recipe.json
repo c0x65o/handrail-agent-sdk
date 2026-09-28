@@ -1,0 +1,478 @@
+{
+  "schemaVersion": 1,
+  "recipeVersion": "meta-v1.2026-09-28",
+  "provider": "meta",
+  "status": "documentation_only",
+  "graphApiVersion": "v25.0",
+  "reviewedAt": "2026-09-28",
+  "authority": {
+    "ownerGoalId": "1b13c4ab-38c2-4d78-a5cb-238e2f257c62",
+    "ownerTaskId": "7ccb807a-4e38-42c7-bf23-73d62adec118",
+    "itemId": "10a00f02-f34d-4680-856c-a54c7a0687d5"
+  },
+  "provenance": {
+    "kind": "source_review",
+    "sdkBaseCommit": "34a21d6673d940bd59fb9800d4ddeef6b3d7e051",
+    "branch": "lane/agent-sdk-v1",
+    "localSources": [
+      {
+        "path": "docs/connection-contract.md",
+        "sha256": "9f9762353d6327d449feff27d49fd7832de114c0083ec54b6d3b03550bda8e09"
+      },
+      {
+        "path": "src/contracts/connection.ts",
+        "sha256": "7df5d28ff2969d11ad4e926c7522e69ab174012225199f8fc1e58c3cc50d020c"
+      },
+      {
+        "path": "docs/agent-security-boundary.md",
+        "sha256": "87321e141bc4712d3fedae6342acdaee88f49643ac35536f8cadfde9a6058825"
+      },
+      {
+        "path": "fixtures/convergence-v1.json",
+        "sha256": "6d4a95b7d3c57568f763bc665c4f8f855330a307bf529eb8851c8a615899d95e"
+      }
+    ],
+    "hostSource": {
+      "status": "unavailable",
+      "projectId": "07b11eec-aac0-4ec4-a1a6-d5be88b41948",
+      "repoId": "4d92b94f-7234-4318-99ab-c19b0bb65855",
+      "currentRevision": null,
+      "dirtySourceDigests": null,
+      "inventoryWorkRequestId": "c08b2fdf-888d-4d37-bc75-26f66a2c48c0",
+      "reportedInventoryBaseline": "847c632b0718f52669f5adcbf3a377d6d0b4187e",
+      "reportedInventorySha256": "b1bd9b24fee983cb2dc03b26e5a25f42fac72900f68408d47b381eac86ca122b",
+      "unresolvedPaths": [
+        "docs/agent-sdk-native-ownership.md",
+        "marketing-sdk/server/agent.ts",
+        "marketing-sdk/server/providers.ts",
+        "marketing-sdk/server/ports.ts",
+        "marketing-sdk/server/service.ts",
+        "actual Marketing SDK callers"
+      ],
+      "reason": "source_reader_inherits_sdk_lane"
+    }
+  },
+  "publicSources": [
+    {
+      "id": "insights",
+      "url": "https://developers.facebook.com/docs/marketing-api/insights/",
+      "retrievedUrl": "https://developers.facebook.com/documentation/ads-commerce/marketing-api/insights",
+      "reviewedAt": "2026-09-28",
+      "sha256": "047a4706f04b50d9799eb3272f046a579f6c1dd6a065ec05c7d2b73f434876ec",
+      "httpStatus": 200
+    },
+    {
+      "id": "get-started",
+      "url": "https://developers.facebook.com/docs/marketing-api/get-started/",
+      "retrievedUrl": "https://developers.facebook.com/documentation/ads-commerce/marketing-api/get-started",
+      "reviewedAt": "2026-09-28",
+      "sha256": "417d2f474ceb07dc0cba4488036ce3b0f80af277732f4179c549696780748db0",
+      "httpStatus": 200
+    },
+    {
+      "id": "authorization",
+      "url": "https://developers.facebook.com/docs/marketing-api/access/",
+      "retrievedUrl": "https://developers.facebook.com/documentation/ads-commerce/marketing-api/get-started/authorization",
+      "reviewedAt": "2026-09-28",
+      "sha256": "7baef3752573fa02055024f402d5cdfb6465f84bfa8fc6c8c83830680ef1939d",
+      "httpStatus": 200
+    },
+    {
+      "id": "authentication",
+      "url": "https://developers.facebook.com/documentation/ads-commerce/marketing-api/get-started/authentication",
+      "retrievedUrl": "https://developers.facebook.com/documentation/ads-commerce/marketing-api/get-started/authentication",
+      "reviewedAt": "2026-09-28",
+      "sha256": "788c92462368de97a68599da7878340fa6c334b90fec594d194fe36bb4ede727",
+      "httpStatus": 200
+    },
+    {
+      "id": "manual-flow",
+      "url": "https://developers.facebook.com/docs/facebook-login/guides/advanced/manual-flow/",
+      "retrievedUrl": "https://developers.facebook.com/documentation/facebook-login/guides/advanced/manual-flow",
+      "reviewedAt": "2026-09-28",
+      "sha256": "b1e2eb3539e966c149a19f805a9fce347ccb3e1aa47dde67b2396116bb0ff55a",
+      "httpStatus": 200
+    },
+    {
+      "id": "access-tokens",
+      "url": "https://developers.facebook.com/docs/facebook-login/guides/access-tokens/",
+      "retrievedUrl": "https://developers.facebook.com/documentation/facebook-login/guides/access-tokens",
+      "reviewedAt": "2026-09-28",
+      "sha256": "75d1e797938854186457d031ed55df7fd0dcf0057edbe6c7c5439b6e5a2b812a",
+      "httpStatus": 200
+    },
+    {
+      "id": "long-lived",
+      "url": "https://developers.facebook.com/docs/facebook-login/guides/access-tokens/get-long-lived/",
+      "retrievedUrl": "https://developers.facebook.com/documentation/facebook-login/guides/access-tokens/get-long-lived",
+      "reviewedAt": "2026-09-28",
+      "sha256": "79dd4faa183682d2c7b62a9e49936d0a6273ca32309e320b955fe5327eee6fb5",
+      "httpStatus": 200
+    },
+    {
+      "id": "revocation",
+      "url": "https://developers.facebook.com/docs/facebook-login/permissions/requesting-and-revoking/",
+      "retrievedUrl": "https://developers.facebook.com/documentation/facebook-login/guides/permissions/request-revoke",
+      "reviewedAt": "2026-09-28",
+      "sha256": "4b0afac7243857b88c10fb9ca212c74065d9c3a9cf1c52bac95d7e54dfde133e",
+      "httpStatus": 200
+    },
+    {
+      "id": "ad-account",
+      "url": "https://developers.facebook.com/documentation/ads-commerce/marketing-api/reference/ad-account",
+      "retrievedUrl": "https://developers.facebook.com/documentation/ads-commerce/marketing-api/reference/ad-account",
+      "reviewedAt": "2026-09-28",
+      "sha256": "754ed4f940ca7a0636b7a1a153018ca55f6f604ae06b32b9c1c3d28290de5042",
+      "httpStatus": 200
+    },
+    {
+      "id": "account-insights",
+      "url": "https://developers.facebook.com/documentation/ads-commerce/marketing-api/reference/ad-account/insights",
+      "retrievedUrl": "https://developers.facebook.com/documentation/ads-commerce/marketing-api/reference/ad-account/insights",
+      "reviewedAt": "2026-09-28",
+      "sha256": "027551106e3d9cffe11bc3c3bcb58f718e4953e98882443567bd9ba79dda5547",
+      "httpStatus": 200
+    }
+  ],
+  "tokenPolicy": {
+    "class": "user",
+    "requestedScopes": [
+      "ads_read"
+    ],
+    "implicitLoginPermission": "public_profile",
+    "lifetime": "provider_metadata_and_finite_host_deadline",
+    "extension": "valid_short_lived_user_token_server_exchange",
+    "refresh": "no_background_refresh_contract",
+    "reconnect": "human_reauthorization_then_fresh_verification",
+    "revocation": "deny_immediately_and_invalidate_receipts"
+  },
+  "account": {
+    "status": "unresolved",
+    "reference": null,
+    "environment": null,
+    "authorityRef": null,
+    "ready": false,
+    "metadataSearch": "2026-09-28 scoped current context plus SDK and Handrail dev auth profile metadata; no approved Meta account mapping found"
+  },
+  "adapters": [
+    {
+      "id": "marketing-agent",
+      "seam": "marketing-sdk/server/agent.ts; AgentPort in ports.ts; service.ts callers unresolved",
+      "qualification": "pending",
+      "selected": false
+    },
+    {
+      "id": "marketing-provider",
+      "seam": "marketing-sdk/server/providers.ts; ports.ts and service.ts callers unresolved; native Vault custody candidate from M1 via SDK security document",
+      "qualification": "pending",
+      "selected": false
+    }
+  ],
+  "prerequisites": [
+    {
+      "id": "app",
+      "owner": "host_app_owner",
+      "sourceRefs": [
+        "get-started",
+        "manual-flow"
+      ],
+      "localRefs": [
+        "docs/connection-contract.md",
+        "docs/agent-security-boundary.md"
+      ],
+      "requirement": "Registered developer/app, Marketing API and Facebook Login configured; approved HTTPS redirect exactly matched at authorization and exchange; app secret stays private."
+    },
+    {
+      "id": "account",
+      "owner": "account_owner",
+      "sourceRefs": [
+        "get-started",
+        "authorization",
+        "ad-account"
+      ],
+      "localRefs": [
+        "docs/connection-contract.md",
+        "docs/agent-security-boundary.md"
+      ],
+      "requirement": "Approved mapping of tenant/user/project/account/environment/purpose to exact Meta ad account and app-scoped user; current role and read authority required."
+    },
+    {
+      "id": "access",
+      "owner": "meta_and_app_owner",
+      "sourceRefs": [
+        "authorization",
+        "insights"
+      ],
+      "localRefs": [
+        "docs/connection-contract.md",
+        "docs/agent-security-boundary.md"
+      ],
+      "requirement": "ads_read permission access level and Marketing API Access Tier separately approved for this use case; review/business verification when required; no assumed sandbox."
+    },
+    {
+      "id": "consent",
+      "owner": "user",
+      "sourceRefs": [
+        "manual-flow",
+        "revocation"
+      ],
+      "localRefs": [
+        "docs/connection-contract.md",
+        "docs/agent-security-boundary.md"
+      ],
+      "requirement": "Human grants only requested permission; human handles login, MFA, checkpoint and consent; denial is a wait, never a bypass."
+    },
+    {
+      "id": "callback",
+      "owner": "host_authorization_owner",
+      "sourceRefs": [
+        "manual-flow"
+      ],
+      "localRefs": [
+        "docs/connection-contract.md",
+        "docs/agent-security-boundary.md"
+      ],
+      "requirement": "One-time state and callback bound to authenticated user, exact redirect, original work, challenge revision and expiry."
+    },
+    {
+      "id": "custody",
+      "owner": "host_vault_owner",
+      "sourceRefs": [
+        "authentication",
+        "manual-flow"
+      ],
+      "localRefs": [
+        "docs/connection-contract.md",
+        "docs/agent-security-boundary.md"
+      ],
+      "requirement": "Qualified encrypted Vault capture/use and redacted private executor required for app secret, code and tokens."
+    },
+    {
+      "id": "token",
+      "owner": "host_provider_owner",
+      "sourceRefs": [
+        "manual-flow",
+        "access-tokens",
+        "long-lived",
+        "revocation"
+      ],
+      "localRefs": [
+        "docs/connection-contract.md",
+        "docs/agent-security-boundary.md"
+      ],
+      "requirement": "Verify USER type, app/user binding, current validity, granted ads_read and actual expiration; token presence is insufficient."
+    },
+    {
+      "id": "fences",
+      "owner": "host_job_owner",
+      "sourceRefs": [],
+      "localRefs": [
+        "docs/connection-contract.md",
+        "docs/agent-security-boundary.md"
+      ],
+      "requirement": "Recheck canonical admission, grant and instruction revisions, cancellation, lease, expiry, revocation and scope at dispatch and release; preserve original work and effect identities."
+    }
+  ],
+  "operations": [
+    {
+      "id": "authorize",
+      "capability": "meta.setup.consent",
+      "method": "GET",
+      "endpoint": "https://www.facebook.com/v25.0/dialog/oauth",
+      "parameters": "response_type=code&scope=ads_read",
+      "authorizationOwner": "user",
+      "adapterRef": "marketing-agent",
+      "prerequisiteRefs": [
+        "app",
+        "account",
+        "access",
+        "consent",
+        "callback",
+        "fences"
+      ],
+      "sourceRefs": [
+        "manual-flow",
+        "authorization"
+      ],
+      "enabled": false
+    },
+    {
+      "id": "exchange",
+      "capability": "meta.setup.exchange",
+      "method": "GET",
+      "endpoint": "https://graph.facebook.com/v25.0/oauth/access_token",
+      "parameters": "authorization_code_private",
+      "authorizationOwner": "host_authorization_owner",
+      "adapterRef": "marketing-agent",
+      "prerequisiteRefs": [
+        "app",
+        "account",
+        "access",
+        "consent",
+        "callback",
+        "custody",
+        "fences"
+      ],
+      "sourceRefs": [
+        "manual-flow",
+        "authentication"
+      ],
+      "enabled": false
+    },
+    {
+      "id": "extend",
+      "capability": "meta.setup.extend",
+      "method": "GET",
+      "endpoint": "https://graph.facebook.com/v25.0/oauth/access_token",
+      "parameters": "grant_type=fb_exchange_token",
+      "authorizationOwner": "host_provider_owner",
+      "adapterRef": "marketing-provider",
+      "prerequisiteRefs": [
+        "app",
+        "account",
+        "consent",
+        "custody",
+        "token",
+        "fences"
+      ],
+      "sourceRefs": [
+        "long-lived"
+      ],
+      "enabled": false
+    },
+    {
+      "id": "inspect-token",
+      "capability": "meta.setup.inspect",
+      "method": "GET",
+      "endpoint": "https://graph.facebook.com/v25.0/debug_token",
+      "parameters": "input_token_private",
+      "authorizationOwner": "host_provider_owner",
+      "adapterRef": "marketing-provider",
+      "prerequisiteRefs": [
+        "app",
+        "account",
+        "custody",
+        "fences"
+      ],
+      "sourceRefs": [
+        "manual-flow"
+      ],
+      "enabled": false
+    },
+    {
+      "id": "permissions",
+      "capability": "meta.setup.permissions",
+      "method": "GET",
+      "endpoint": "https://graph.facebook.com/v25.0/me/permissions",
+      "parameters": "none",
+      "authorizationOwner": "host_provider_owner",
+      "adapterRef": "marketing-provider",
+      "prerequisiteRefs": [
+        "app",
+        "account",
+        "custody",
+        "token",
+        "fences"
+      ],
+      "sourceRefs": [
+        "manual-flow",
+        "revocation"
+      ],
+      "enabled": false
+    },
+    {
+      "id": "account-read",
+      "capability": "meta.account.read",
+      "method": "GET",
+      "endpoint": "https://graph.facebook.com/v25.0/act_{ad_account_id}",
+      "parameters": "fields=id,account_id",
+      "authorizationOwner": "account_owner",
+      "adapterRef": "marketing-provider",
+      "prerequisiteRefs": [
+        "app",
+        "account",
+        "access",
+        "consent",
+        "custody",
+        "token",
+        "fences"
+      ],
+      "sourceRefs": [
+        "ad-account",
+        "authorization"
+      ],
+      "enabled": false
+    },
+    {
+      "id": "report-read",
+      "capability": "meta.report.read",
+      "method": "GET",
+      "endpoint": "https://graph.facebook.com/v25.0/act_{ad_account_id}/insights",
+      "parameters": "fields=account_id,impressions&date_preset=yesterday&level=account&limit=1",
+      "authorizationOwner": "account_owner",
+      "adapterRef": "marketing-provider",
+      "prerequisiteRefs": [
+        "app",
+        "account",
+        "access",
+        "consent",
+        "custody",
+        "token",
+        "fences"
+      ],
+      "sourceRefs": [
+        "insights",
+        "account-insights",
+        "authorization"
+      ],
+      "enabled": false
+    },
+    {
+      "id": "revoke",
+      "capability": "meta.setup.revoke",
+      "method": "DELETE",
+      "endpoint": "https://graph.facebook.com/v25.0/{app_scoped_user_id}/permissions",
+      "parameters": "none",
+      "authorizationOwner": "user",
+      "adapterRef": "marketing-provider",
+      "prerequisiteRefs": [
+        "app",
+        "account",
+        "consent",
+        "custody",
+        "token",
+        "fences"
+      ],
+      "sourceRefs": [
+        "revocation"
+      ],
+      "enabled": false
+    }
+  ],
+  "boundaries": {
+    "browserFallback": "disabled_no_permitted_gap",
+    "readiness": "fresh_scoped_api_receipt_only",
+    "fixtureEvidence": "never_provider_proof",
+    "originalIdentity": "preserve_job_task_native_route_action_operation_effect",
+    "cancellation": "deny_dispatch_and_release",
+    "expiry": "deny_and_reauthorize",
+    "revocation": "deny_and_reauthorize",
+    "scopeChange": "deny_no_silent_widening",
+    "staleAnswer": "reject_revision_mismatch",
+    "duplicate": "canonical_receipt_only_no_new_effect",
+    "unknownExchange": "retain_original_unknown_effect_no_retry",
+    "reconciliation": "qualified_domain_receipt_only_no_contract_transition",
+    "secretOutput": "deny_including_errors_urls_traces"
+  },
+  "liveProofRequired": [
+    "approved_account_environment_authority_mapping",
+    "app_redirect_version_and_access_review",
+    "current_host_sources_and_adapter_qualification",
+    "installed_runtime_scoped_provider_receipts",
+    "same_original_task_recovery_evidence"
+  ],
+  "minimumCapabilities": [
+    "meta.account.read",
+    "meta.report.read"
+  ]
+}

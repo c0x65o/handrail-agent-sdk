@@ -47,7 +47,7 @@ verification is explicitly `npm run test:browser`.
 
 Both commands use Node's test runner with `--test-concurrency=1` and
 `--test-reporter=tap`. Each case produces only its fixed ID, fixed status and
-counts. Assertions operate only on those receipts. Browser objects, temporary
+counts, plus one fixed diagnostic stage. Assertions operate only on those receipts. Browser objects, temporary
 paths, URLs, cookies, storage and page text never cross the private subprocess
 boundary. Child stdout/stderr are discarded, IPC fields are allowlisted, and
 inherited debug/inspector options, credentials and proxy settings are excluded.
@@ -144,3 +144,45 @@ implementation WR `8737bc1f-720e-4b24-bcc9-7b8099a9940d` and zero-run validation
 WR `873a8260-1587-462c-9584-aba546c29d6b`; neither is fresh passing acceptance.
 Require fresh source attribution, actual browser execution and structured
 passing acceptance before settling the item.
+
+## B01 diagnostic continuation
+
+The safe receipt's `stage` is an exact member of `browserDiagnosticStages` in
+`tests/helpers/browser.ts`. It identifies the last operation entered, not a raw
+error or a confirmed root cause. B01 distinguishes `protected_reload`,
+`denied_frame_load` and `denied_frame_assertion`; the earlier context, reflection,
+redirect, destination-denial and unsafe-port steps also have fixed labels.
+Successful teardown preserves that operation label. Failed teardown reports
+`cleanup`; supervisor timeouts retain only the last allowlisted stage and remain
+failed. Successful B01 must report `complete`. Expected injected failures retain
+their injection stage. The stage adds no browser assertion or acceptance credit.
+
+F03 exercises every allowed label and rejects generated canary strings, label
+suffixes and non-string values without coercion. It also sends a tainted IPC
+stage with arbitrary fields; the supervisor filters them. Boundary tests check
+the exact returned receipt keys and expected stages. No stage may contain a
+destination, page value, exception, stack, or dynamically constructed label.
+
+Submit this diagnostic candidate through a separately admitted native read-only
+validation request for the **same item**, using `handrail_run_read_only_tests`
+with `profile=sdk`. An implementation request must not invoke that tool under
+the wrong request kind. Inspect then run the exact returned candidate hash in
+the disposable executor. Verify the installed executable and Node, TypeScript,
+Playwright and Chromium versions **inside that executor**, without downloads or
+filesystem-permission changes. Keep only safe receipts and TAP output. Run:
+
+```sh
+npm run build:test-browser
+npm run test:browser-boundary
+HANDRAIL_TEST_BROWSER_EXECUTABLE=/absolute/path/to/authorized/chromium npm run test:browser
+HANDRAIL_TEST_BROWSER_EXECUTABLE=/absolute/path/to/authorized/chromium node --test --test-concurrency=1 --test-reporter=tap --test-name-pattern='^B01_ISOLATION$' tests/browser.test.mjs
+```
+
+The diagnostic run is not acceptance, even if it passes. Use the returned stage
+and fresh source-bound evidence to guide the smallest supported correction,
+then rerun the scoped checks and require fresh independent same-item native dev
+QA. Preserve campaign `327025b3-141b-44db-86b8-a142adc398b3` and finding
+`1ce783dc-1f1a-4821-822b-1c66692034f6`, in addition to the older identities above.
+The diagnostic handoff is recorded in
+`docs/evidence/browser-fixtures-b01-diagnostics.json`; it is not a browser pass
+or a claim that a native validation request has been admitted.

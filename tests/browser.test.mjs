@@ -9,6 +9,10 @@ for (const caseId of browserCases) {
     const result = await runPrivateBrowserCase(caseId);
     t.diagnostic(JSON.stringify(result));
     assert.equal(result.status, 'passed', result.status);
+    assert.equal(result.stage, {
+      B01_ISOLATION: 'complete', B02_PARTIAL_BROWSER: 'browser_launch',
+      B03_PARTIAL_CONTEXT: 'context_creation', B04_TEST_FAILURE: 'reflection',
+    }[caseId]);
     assert.equal(result.contextsClosed, caseId === 'B02_PARTIAL_BROWSER' ? 0 : caseId === 'B03_PARTIAL_CONTEXT' ? 1 : 2);
     assert.equal(result.browsersClosed, 1);
     assert.equal(result.listenersClosed, 3);

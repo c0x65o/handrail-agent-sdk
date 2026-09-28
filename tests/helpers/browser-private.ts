@@ -8,9 +8,16 @@ import type { Server, IncomingMessage, ServerResponse } from 'node:http';
 import type { Socket } from 'node:net';
 import { join } from 'node:path';
 import type { Browser, BrowserContext, BrowserServer } from 'playwright-core';
+import { browserDiagnosticStages, readBrowserDiagnosticStage } from './browser.js';
+import type { BrowserDiagnosticStage } from './browser.js';
 
 const [caseId, root] = process.argv.slice(2);
-const report = { kind: 'receipt', status: 'failed', checks: 0, contextsClosed: 0, browsersClosed: 0, listenersClosed: 0 };
+const report = { kind: 'receipt', status: 'failed', stage: 'setup' as BrowserDiagnosticStage, checks: 0, contextsClosed: 0, browsersClosed: 0, listenersClosed: 0 };
+function stage(value: BrowserDiagnosticStage): void {
+  report.stage = value;
+  // Allows a supervisor timeout to retain the last fixed stage, never raw errors.
+  process.send?.({ kind: 'stage', stage: value });
+}
 const servers: Server[] = [];
 const sockets = new Set<Socket>();
 const contexts: BrowserContext[] = [];
@@ -159,6 +166,7 @@ async function context(): Promise<BrowserContext> {
 }
 
 async function isolation(): Promise<void> {
+  stage('context_creation');
   const first = await context();
   const second = await context();
   check(first !== second && browser!.contexts().length === 2);
@@ -166,6 +174,7 @@ async function isolation(): Promise<void> {
   const values = [randomBytes(32).toString('hex'), randomBytes(32).toString('hex')];
   check(values[0] !== values[1]);
   for (let i = 0; i < 2; i++) {
+    stage('context_seed');
     const page = pages[i];
     await page.goto(origins[0] + '/protected');
     check(await page.evaluate(() => !document.cookie && localStorage.length === 0 && sessionStorage.length === 0));
@@ -207,6 +216,7 @@ async function isolation(): Promise<void> {
     check(await page.evaluate(() => localStorage.getItem('frame-only') === null));
   }
   // Read back BOTH after all writes: catches shared contexts and storage.
+  stage('context_readback');
   for (let i = 0; i < 2; i++) {
     check(await pages[i].evaluate(async value => {
       const stored = await new Promise<unknown>((resolve, reject) => {
@@ -224,11 +234,13 @@ async function isolation(): Promise<void> {
     }, values[i]));
   }
   const page = pages[0];
+  stage('reflection');
   const reflected = await first.newPage();
   await reflected.goto(origins[0] + '/reflect?value=' + values[0]);
   check(await reflected.evaluate(value => document.querySelector('#network-reflection')!.textContent === value, values[0]));
   await reflected.close();
   if (caseId === 'B04_TEST_FAILURE') inject();
+  stage('allowed_redirect');
   await page.goto(origins[0] + '/redirect-ok');
   check(page.url() === origins[1] + '/frame');
   // No route abort can mask a proxy bypass: each request must reach the proxy's
@@ -239,16 +251,23 @@ async function isolation(): Promise<void> {
     await page.goto(target).catch(() => {});
     check((deniedDestinations.get(key) ?? 0) > before);
   }
+  stage('denied_redirect');
   await deniedNavigation(origins[0] + '/redirect-denied?value=' + values[0], forbidden + '/');
   // Port 80 is browser-eligible and cannot be either ephemeral fixture port.
   // Both this wrong-port destination and the unrelated hostname must reach the
   // same proxy deny branch; a navigation error alone proves nothing about it.
-  for (const target of [forbidden + '/?value=' + values[0], origins[0].replace('127.0.0.1', 'localhost') + '/', 'http://127.0.0.1:80/']) {
+  for (const [label, target] of [
+    ['denied_external', forbidden + '/?value=' + values[0]],
+    ['denied_alias', origins[0].replace('127.0.0.1', 'localhost') + '/'],
+    ['denied_loopback', 'http://127.0.0.1:80/'],
+  ] as const) {
+    stage(label);
     await deniedNavigation(target);
   }
   // Chromium rejects unsafe ports before proxy admission. Keep the triggering
   // case, but require its exact private browser-policy failure and no proxy hit.
   // F01 separately sends port 1 through the proxy and requires a 403 response.
+  stage('unsafe_port');
   const unsafeTarget = 'http://127.0.0.1:1/';
   const unsafeKey = destinationKey(new URL(unsafeTarget));
   const unsafeBefore = deniedDestinations.get(unsafeKey) ?? 0;
@@ -260,14 +279,17 @@ async function isolation(): Promise<void> {
   ]);
   check(unsafeRequest.failure()?.errorText === 'net::ERR_UNSAFE_PORT');
   check((deniedDestinations.get(unsafeKey) ?? 0) === unsafeBefore);
+  stage('protected_reload');
   await page.goto(origins[0] + '/protected');
   const frameDestination = forbidden + '/';
   const before = deniedDestinations.get(frameDestination) ?? 0;
+  stage('denied_frame_load');
   await page.evaluate(target => new Promise<void>(resolve => {
     const frame = document.createElement('iframe');
     frame.onload = () => resolve(); frame.onerror = () => resolve();
     frame.src = target; document.body.append(frame);
   }), forbidden + '/?value=' + values[0]);
+  stage('denied_frame_assertion');
   check((deniedDestinations.get(frameDestination) ?? 0) > before);
 }
 
@@ -310,23 +332,35 @@ async function cleanup(): Promise<boolean> {
 async function main(): Promise<void> {
   process.umask(0o077);
   try {
+    stage('setup');
     check((await stat(root)).mode % 0o1000 === 0o700);
     // Nonsecret marker verifies owned artifact cleanup without retaining canaries.
     await writeFile(join(root, 'owned-marker'), 'private-fixture', { mode: 0o600 });
     if (caseId === 'F03_OUTPUT_GATE') {
+      stage('output_gate');
       // Raw stdout/stderr and thrown canaries are intentionally discarded.
       const value = randomBytes(32).toString('hex');
+      for (const label of browserDiagnosticStages) check(readBrowserDiagnosticStage(label) === label);
+      for (const tainted of [value, 'protected_reload' + value, '', null, 1, [value],
+        { stage: value }, { toString: () => 'protected_reload' }]) {
+        check(readBrowserDiagnosticStage(tainted) === undefined);
+      }
+      // The real IPC boundary must ignore unknown labels and arbitrary fields.
+      process.send?.({ kind: 'stage', stage: value, rawError: value, url: value });
       console.log(value); console.error(value); inject();
     }
+    stage('fixtures');
     const proxy = await fixtures();
-    if (caseId === 'F01_NETWORK_POLICY') await policyChecks(proxy);
-    else { await launch(proxy); await isolation(); }
+    if (caseId === 'F01_NETWORK_POLICY') { stage('network_policy'); await policyChecks(proxy); }
+    else { stage('browser_launch'); await launch(proxy); await isolation(); }
+    stage('complete');
     report.status = 'passed';
   } catch {
     if (injected) report.status = 'passed';
     // All other raw failures are discarded, preserving only fixed prerequisite codes.
   } finally {
-    if (!await cleanup()) report.status = 'failed';
+    // Preserve the operation stage on failure; distinguish teardown failures.
+    if (!await cleanup()) { stage('cleanup'); report.status = 'failed'; }
   }
   process.send?.(report);
   process.disconnect?.();

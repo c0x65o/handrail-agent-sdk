@@ -1,0 +1,203 @@
+{
+  "schema_version": 1,
+  "recorded_at": "2026-09-28T20:41:06.580079+00:00",
+  "owner_task_id": "7ccb807a-4e38-42c7-bf23-73d62adec118",
+  "owner_item_id": "9a6a2d4d-4c5e-494e-ae1e-cbbb4c6bd17a",
+  "work_request_id": "8e38d3ce-96f6-4888-bac6-0dae41e1f3a6",
+  "codex_run_id": "d6574b77-a9d3-4e2e-bb56-2cc576356671",
+  "branch": "lane/agent-sdk-v1",
+  "checkout": "/opt/handrail/repos/handrail/handrail-agent-sdk/.handrail/worktrees/convergence-loop-9689ef5f-b976-42ca-97a7-278658db473e/handrail-agent-sdk",
+  "baseline": "clean; previous runtime-access receipt is now tracked",
+  "candidate": {
+    "base_head": "34a21d6673d940bd59fb9800d4ddeef6b3d7e051",
+    "files": {
+      ".gitignore": "7a1fe62c452a15cd9a487f9a2d3f8b25d273d4c9b96650829be290a5968768dc",
+      "docs/local-browser-testing.md": "b1587d52188c59e10c7a2b3fa4fce331549a20959bf3e274bf3137046bed37d7",
+      "package-lock.json": "3f3f30850aaad8ae334706bc92298b5d752e616dcd935d66af3e476e7a6cdeed",
+      "package.json": "5effbda005cd7a9819e1803000fb9cb9b12aa0c1faecd6fcbf81496bb941768e",
+      "tests/browser-boundary.test.mjs": "7412e136e83fe7a736898cef6a18bbad643959917ad528e7f444ab4c51d62528",
+      "tests/browser.test.mjs": "dc73d096c098db0055c371819d9fdfc2d9b7bb1aab8ba3b406ba344e4dfa00ad",
+      "tests/fixtures/protected-page.html": "5b93449ccf691b410c151797ded898426d20cca12234c3dba83bd608fec7de62",
+      "tests/helpers/browser-private.ts": "a3cb7f4a75d815a398dcc324d843c8e94a92be323807ac2699c0ebaa210c6fcd",
+      "tests/helpers/browser.ts": "afac43fda36abfbb83f84c0655c027196e1ba14d26dba6e53442002d622af31d",
+      "tests/tsconfig.browser.json": "d77ac5fc313cc90eeb8fc8db59bd34a0a735755ca2900fd47a6f4842ccf84210",
+      "tsconfig.json": "b632554574c04df2d36df403e65b62b39e0ac3d7cc4f62f9d2e5afc2a77c478f"
+    },
+    "sha256": "a4b6b9b2f5a66486774f5537d1ce3b6bcab0044c7c9c378211bf65e69841392c"
+  },
+  "candidate_kind": "uncommitted diagnostic instrumentation; no browser behavior correction",
+  "acceptance": "incomplete; diagnostic browser execution and supported repair still required",
+  "prior_writer": {
+    "work_request_id": "e62c5c91-4dc1-4e7b-bb7f-545c2935715b",
+    "status": "done",
+    "updated_at": "2026-09-28T20:34:47.014Z",
+    "source": "get_work_request"
+  },
+  "toolchain": {
+    "node": "v22.23.1",
+    "npm": "10.9.8",
+    "typescript": "5.9.3",
+    "playwright_core": "1.63.0",
+    "browser_version_verified": false
+  },
+  "checks": [
+    {
+      "command": "npm run build:test-browser",
+      "exit_code": 0,
+      "scope": "tests/tsconfig.browser.json"
+    },
+    {
+      "command": "npm run test:browser-boundary",
+      "exit_code": 0,
+      "cases": [
+        {
+          "caseId": "F01_NETWORK_POLICY",
+          "status": "passed",
+          "stage": "complete",
+          "checks": 16,
+          "contextsClosed": 0,
+          "browsersClosed": 0,
+          "listenersClosed": 3,
+          "artifactsRemoved": 1
+        },
+        {
+          "caseId": "F02_PARTIAL_LISTENER",
+          "status": "passed",
+          "stage": "fixtures",
+          "checks": 2,
+          "contextsClosed": 0,
+          "browsersClosed": 0,
+          "listenersClosed": 1,
+          "artifactsRemoved": 1
+        },
+        {
+          "caseId": "F03_OUTPUT_GATE",
+          "status": "passed",
+          "stage": "output_gate",
+          "checks": 30,
+          "contextsClosed": 0,
+          "browsersClosed": 0,
+          "listenersClosed": 0,
+          "artifactsRemoved": 1
+        }
+      ],
+      "tap": {
+        "tests": 3,
+        "suites": 0,
+        "pass": 3,
+        "fail": 0,
+        "cancelled": 0,
+        "skipped": 0,
+        "todo": 0
+      }
+    },
+    {
+      "command": "git diff --check",
+      "exit_code": 0
+    }
+  ],
+  "browser_execution": {
+    "performed": false,
+    "b01_reproduced_here": false,
+    "all_four_browser_cases_executed_here": false,
+    "native_diagnostic_admitted": false,
+    "native_acceptance_qa_launched": false
+  },
+  "executor_evidence": {
+    "current_context": {
+      "read_only": false,
+      "kind": "owner_goal_owner_task_list",
+      "publication_denied": true
+    },
+    "browser_access": [
+      {
+        "path": "/opt/handrail/.cache/handrail-ms-playwright/chromium-1243/chrome-linux64/chrome",
+        "accessible": false,
+        "code": "ENOENT"
+      },
+      {
+        "path": "/usr/bin/chromium",
+        "accessible": false,
+        "code": "ENOENT"
+      },
+      {
+        "path": "/usr/bin/chromium-browser",
+        "accessible": false,
+        "code": "ENOENT"
+      },
+      {
+        "path": "/usr/bin/google-chrome",
+        "accessible": false,
+        "code": "ENOENT"
+      }
+    ],
+    "registered_dev_operation_tools": [],
+    "configured_project_tasks": [],
+    "validation_tool_invoked": false,
+    "admission_gap": "This implementation request is not an active read-only validation request. Exposed tools include the validation-only SDK runner and Owner Task proposal/ledger tools, but no tool to admit a native diagnostic request or launch same-item QA. No admission bypass attempted."
+  },
+  "diagnostic_contract": {
+    "output": "one fixed allowlisted stage plus existing safe status and counts",
+    "root_cause_confirmed": false,
+    "stage_is_not_acceptance": true,
+    "assertions_preserved": true,
+    "generated_canaries_and_raw_errors_private": true,
+    "boundary_gate_checks": 30
+  },
+  "historical_evidence": {
+    "receipt_hashes": {
+      "docs/evidence/browser-fixtures.json": "0082141766d1cca328568cf136803bd2c73c38f163adcf682784fb5db65b23c8",
+      "docs/evidence/browser-fixtures-denial-repair.json": "26e2996e88912cb3d793a9288c02576a2f08e155a05a44f866dc5216ac512e3c",
+      "docs/evidence/browser-fixtures-b01-runtime-access.json": "c9aa960caba7bf6c064ff1c3daeddb643eaa04d2f53db2cf6372f8359b724548"
+    },
+    "implementation_work_request_id": "8737bc1f-720e-4b24-bcc9-7b8099a9940d",
+    "prior_repair_work_request_id": "662a59df-6862-4ee4-92ac-7a446603e814",
+    "historical_campaign_id": "957efda0-6e3c-4081-837e-3ddbac55e732",
+    "zero_run_validation_work_request_id": "873a8260-1587-462c-9584-aba546c29d6b",
+    "source_qa_campaign_id": "327025b3-141b-44db-86b8-a142adc398b3",
+    "validation_work_request_id": "b0414f97-159a-4c6f-8d87-7c8d824ff662",
+    "validation_run_id": "47cf22dd-c9ab-4d43-8412-8ab6508a62e0",
+    "acceptance_artifact_id": "869f85a2-285b-4bed-be4b-f43f8f40e447",
+    "acceptance_artifact_sha256": "61aed96fb52838c47e2bdc589bde0efbda7071cb0de59c3bf29d1445a0463aae",
+    "disposition": "not_fixed",
+    "finding_id": "1ce783dc-1f1a-4821-822b-1c66692034f6",
+    "overwritten": false
+  },
+  "next_step": {
+    "same_item": true,
+    "kind": "separately admitted native read-only diagnostic validation",
+    "profile": "sdk",
+    "candidate_path": "/opt/handrail/repos/handrail/handrail-agent-sdk/.handrail/worktrees/convergence-loop-9689ef5f-b976-42ca-97a7-278658db473e/handrail-agent-sdk",
+    "source_qa_campaign_id": "327025b3-141b-44db-86b8-a142adc398b3",
+    "finding_id": "1ce783dc-1f1a-4821-822b-1c66692034f6",
+    "environment": "dev",
+    "use_mobile_app": false,
+    "local_fixture": {
+      "repo_id": "e22dd818-166e-4646-b83f-423861de18a6",
+      "fixture_path": "tests/fixtures/protected-page.html",
+      "procedure_path": "tests/helpers/browser.ts"
+    },
+    "commands": [
+      "npm run build:test-browser",
+      "npm run test:browser-boundary",
+      "HANDRAIL_TEST_BROWSER_EXECUTABLE=/absolute/path/to/authorized/chromium npm run test:browser",
+      "HANDRAIL_TEST_BROWSER_EXECUTABLE=/absolute/path/to/authorized/chromium node --test --test-concurrency=1 --test-reporter=tap --test-name-pattern='^B01_ISOLATION$' tests/browser.test.mjs"
+    ],
+    "requirements": [
+      "Verify existing installed browser access and identity inside the actual disposable executor; no download or permissions change.",
+      "Inspect candidate, retain the native candidate_sha256 and use it for run. The scoped content hash in this receipt is distinct from the native executor fingerprint.",
+      "Retain exact-source safe TAP receipts and stages, including failures and complete cleanup counts. Do not collect browser artifacts or raw errors.",
+      "Use diagnostic evidence to support the smallest SDK repair; do not infer cause from check counts.",
+      "After repair rerun all scoped checks and fresh B01, then obtain independent same-item native dev QA with zero skips and matching cleanup counts. Diagnostic runs and worker success do not accept this item."
+    ]
+  },
+  "native_handoff_proposal": {
+    "id": "80c18077-59bc-4998-88a7-4d0f4366a201",
+    "tool": "handrail_owner_task_suggest_list_change",
+    "kind": "update_item",
+    "status": "pending",
+    "same_item": true,
+    "native_validation_launched": false,
+    "owner_review_required_by_tool": true
+  }
+}
