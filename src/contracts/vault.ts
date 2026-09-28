@@ -10,16 +10,17 @@ import type { VaultEntryContext, VaultUseContext } from '../server/vault-policy.
 export interface VaultSecretReference {
   readonly kind: 'secret'; readonly itemRef: string; readonly revision: number;
 }
-/** Deliberately incompatible with generic secret custody. No provider token here. */
+/** Opaque card reference, incompatible with generic secret references. No card fields here. */
 export interface VaultPaymentReference {
   readonly kind: 'payment_method'; readonly paymentRef: string; readonly revision: number;
 }
+export type VaultCardField = 'card_number' | 'cardholder_name' | 'card_expiry_month' | 'card_expiry_year';
 export type VaultIdentityField = 'ssn' | 'legal_name' | 'date_of_birth' | 'tax_id';
 export type VaultMetadata =
   | { readonly kind: 'login'; readonly credential: 'password' }
   | { readonly kind: 'token'; readonly tokenType: 'api' | 'refresh' }
   | { readonly kind: 'identity'; readonly field: VaultIdentityField; readonly classification: 'synthetic'; readonly provenanceRef: string }
-  | { readonly kind: 'payment_method'; readonly providerRef: string; readonly customerRef: string; readonly paymentAccountRef: string };
+  | { readonly kind: 'payment_method'; readonly instrument: 'credit_card' };
 export type VaultItem =
   | { readonly metadata: Exclude<VaultMetadata, { kind: 'payment_method' }>; readonly reference: VaultSecretReference }
   | { readonly metadata: Extract<VaultMetadata, { kind: 'payment_method' }>; readonly reference: VaultPaymentReference };
@@ -55,7 +56,7 @@ export interface VaultBrowserDestination {
   /** Ordered, complete ancestry including the top document and target frame. */
   readonly frames: readonly { readonly frameRef: string; readonly origin: string }[];
   readonly fieldRef: string;
-  readonly fieldKind: 'password' | 'token' | VaultIdentityField;
+  readonly fieldKind: 'password' | 'token' | VaultIdentityField | VaultCardField;
   readonly formEndpoint: string;
 }
 export interface VaultRequestDestination {
@@ -64,18 +65,9 @@ export interface VaultRequestDestination {
   readonly resourceRef: string;
   readonly redirects: 'deny';
 }
-export interface VaultPaymentDestination {
-  readonly endpoint: string;
-  readonly method: 'POST';
-  readonly redirects: 'deny';
-  readonly providerRef: string;
-  readonly customerRef: string;
-  readonly paymentAccountRef: string;
-  readonly merchantRef: string;
-  readonly payeeRef: string;
+export interface VaultPaymentDestination extends VaultBrowserDestination {
+  readonly fieldKind: VaultCardField;
   readonly purposeRef: string;
-  /** Purchasing is outside this contract and requires a separate domain approval. */
-  readonly action: 'verify' | 'attach';
 }
 interface VaultOperationBase {
   readonly identity: JobIdentity;
@@ -94,7 +86,7 @@ export type VaultOperation = VaultOperationBase & (
   | { readonly operation: 'fill'; readonly item: ItemOf<'identity'>; readonly destination: VaultBrowserDestination & {
       readonly recipientRef: string; readonly purposeRef: string; readonly identityField: VaultIdentityField } }
   | { readonly operation: 'server_request'; readonly item: ItemOf<'token'>; readonly destination: VaultRequestDestination }
-  | { readonly operation: 'server_request'; readonly item: ItemOf<'payment_method'>; readonly destination: VaultPaymentDestination }
+  | { readonly operation: 'fill'; readonly item: ItemOf<'payment_method'>; readonly destination: VaultPaymentDestination }
 );
 export type VaultErrorCode = 'invalid_payload' | 'binding_mismatch' | 'not_authorized' | 'not_current'
   | 'stale_completion' | 'duplicate_conflict' | 'operation_denied' | 'unavailable' | 'observation_withheld';
@@ -164,7 +156,7 @@ function metadata(v: unknown): boolean {
     case 'login': return shape(v, { kind: oneOf('login'), credential: oneOf('password') });
     case 'token': return shape(v, { kind: oneOf('token'), tokenType: oneOf('api', 'refresh') });
     case 'identity': return shape(v, { kind: oneOf('identity'), field: identityField, classification: oneOf('synthetic'), provenanceRef: ref });
-    case 'payment_method': return shape(v, { kind: oneOf('payment_method'), providerRef: ref, customerRef: ref, paymentAccountRef: ref });
+    case 'payment_method': return shape(v, { kind: oneOf('payment_method'), instrument: oneOf('credit_card') });
     default: return false;
   }
 }
@@ -193,11 +185,11 @@ function completion(v: unknown): v is VaultEntryCompletion {
   return same(c.item.metadata, c.request.metadata) && c.answer.requirementRef === c.request.requirement.requirementRef
     && c.answer.requirementRevision === c.request.requirement.revision;
 }
-function browserDestination(v: unknown, identityDisclosure: boolean): boolean {
+function browserDestination(v: unknown, identityDisclosure: boolean, card: boolean): boolean {
   if (!shape(v, { origin, profileRef: ref, leaseEpoch: positive, documentRef: ref, navigationRevision: positive,
     frames: v => list(v, f => shape(f, { frameRef: ref, origin })), fieldRef: ref,
-    fieldKind: oneOf('password', 'token', 'ssn', 'legal_name', 'date_of_birth', 'tax_id'), formEndpoint: endpoint,
-    ...(identityDisclosure ? { recipientRef: ref, purposeRef: ref, identityField } : {}) })) return false;
+    fieldKind: oneOf('password', 'token', 'ssn', 'legal_name', 'date_of_birth', 'tax_id', 'card_number', 'cardholder_name', 'card_expiry_month', 'card_expiry_year'), formEndpoint: endpoint,
+    ...(identityDisclosure ? { recipientRef: ref, purposeRef: ref, identityField } : card ? { purposeRef: ref } : {}) })) return false;
   const d = v as VaultBrowserDestination;
   return d.frames[0].origin === d.origin && new Set(d.frames.map(f => f.frameRef)).size === d.frames.length;
 }
@@ -206,25 +198,22 @@ function operation(v: unknown): v is VaultOperation {
     effect: v => shape(v, effectFields), operation: oneOf('capture', 'fill', 'server_request'), item,
     destination: d => {
       const kind = field(field(field(v, 'item'), 'metadata'), 'kind');
-      if (field(v, 'operation') !== 'server_request') return browserDestination(d, kind === 'identity');
-      return kind === 'payment_method'
-        ? shape(d, { endpoint, method: oneOf('POST'), redirects: oneOf('deny'), providerRef: ref, customerRef: ref,
-          paymentAccountRef: ref, merchantRef: ref, payeeRef: ref, purposeRef: ref, action: oneOf('verify', 'attach') })
-        : shape(d, { endpoint, method: oneOf('GET', 'POST', 'PUT', 'PATCH', 'DELETE'), resourceRef: ref, redirects: oneOf('deny') });
+      if (field(v, 'operation') !== 'server_request') return browserDestination(d, kind === 'identity', kind === 'payment_method');
+      return shape(d, { endpoint, method: oneOf('GET', 'POST', 'PUT', 'PATCH', 'DELETE'), resourceRef: ref, redirects: oneOf('deny') });
     } })) return false;
   const r = v as VaultOperation, m = r.item.metadata;
   if (!effectBinding(r)) return false;
   if (r.operation === 'capture' || r.operation === 'fill') {
     if (m.kind === 'login') return r.destination.fieldKind === 'password';
     if (m.kind === 'token') return r.operation === 'capture' && r.destination.fieldKind === 'token';
+    if (m.kind === 'payment_method') return r.operation === 'fill'
+      && ['card_number', 'cardholder_name', 'card_expiry_month', 'card_expiry_year'].includes(r.destination.fieldKind)
+      && (r.destination as VaultPaymentDestination).purposeRef === r.identity.host.purposeRef;
     const d = r.destination as VaultBrowserDestination & { identityField: VaultIdentityField; purposeRef: string };
     return r.operation === 'fill' && m.kind === 'identity' && d.identityField === m.field
       && d.fieldKind === m.field && d.purposeRef === r.identity.host.purposeRef;
   }
-  if (m.kind === 'token') return true;
-  const d = r.destination as VaultPaymentDestination;
-  return m.kind === 'payment_method' && m.providerRef === d.providerRef && m.customerRef === d.customerRef
-    && m.paymentAccountRef === d.paymentAccountRef && d.purposeRef === r.identity.host.purposeRef;
+  return m.kind === 'token';
 }
 function same(a: unknown, b: unknown): boolean {
   if (a === b) return true;

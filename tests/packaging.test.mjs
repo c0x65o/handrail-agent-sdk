@@ -27,7 +27,7 @@ for (const specifier of ['handrail-agent-sdk', 'handrail-agent-sdk/server']) {
       const entry = await import(${JSON.stringify(specifier)});
       console.log(JSON.stringify(Object.keys(entry)));
     `]);
-    assert.deepEqual(JSON.parse(output), specifier.endsWith('/server') ? ['createEffects', 'createJobAdmission', 'createJobAnswer', 'createJobCancellation', 'createJobLease', 'createPaymentVault', 'createVaultEntry', 'createVaultRequestExecutor', 'createVaultUse'] : [
+    assert.deepEqual(JSON.parse(output), specifier.endsWith('/server') ? ['createEffects', 'createJobAdmission', 'createJobAnswer', 'createJobCancellation', 'createJobLease', 'createPaymentFillExecutor', 'createPaymentVault', 'createVaultEntry', 'createVaultRequestExecutor', 'createVaultUse', 'validateVaultCardValue'] : [
       'validateBrowserLease', 'validateBrowserLeaseSuccessor', 'validateBrowserObservation',
       'validateBrowserOperation', 'validateBrowserOperationSchema', 'validateBrowserProfile',
       'validateBrowserRevocationResult', 'validateBrowserTakeover', 'validateBrowserTakeoverTransition',
@@ -147,7 +147,7 @@ test('lease and reference factories are inert on import and construction', () =>
     const untouched = new Proxy({}, { get() { throw Error('FACTORY_STARTED_WORK'); } });
     createJobLease(untouched, untouched);
     createVaultEntry(untouched, untouched);
-    createPaymentVault(untouched, untouched, { adapterRef: 'fixture', version: '1', environmentRef: 'fixture', qualification: 'synthetic_boundary_only' }, untouched);
+    createPaymentVault(untouched, untouched);
     createJobLeaseStore(untouched);
     createJobJournal(untouched);
     createVaultStore(untouched, untouched, untouched);

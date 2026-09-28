@@ -1,3 +1,4 @@
+import { validateVaultCardValue } from '../../src/server/payment-vault.js';
 // Internal reference-host helpers, never exported by the SDK.
 import { KeyObject } from 'node:crypto';
 import { seal, open } from './private-envelope.js';
@@ -48,11 +49,9 @@ export function itemId(item: VaultItem): string {
   return item.reference.kind === 'secret' ? item.reference.itemRef : item.reference.paymentRef;
 }
 export function valueValid(item: VaultItem, value: any): value is VaultValue {
-  const field = { login: 'password', token: 'token', identity: 'value', payment_method: 'adapterRef' }[item.metadata.kind];
+  if (item.metadata.kind === 'payment_method') return validateVaultCardValue(value);
+  const field = { login: 'password', token: 'token', identity: 'value' }[item.metadata.kind];
   if (!exact(value, [field]) || typeof value[field] !== 'string') return false;
-  // Payment custody accepts only host-approved opaque UUID aliases to a specialized
-  // adapter, never a provider token, card object, PAN, CVV or generic secret value.
-  if (field === 'adapterRef') return /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(value[field]);
   return Buffer.byteLength(value[field], 'utf8') <= 16_384;
 }
 export function keyReference(value: any): value is VaultKeyReference {
@@ -64,15 +63,15 @@ export function inputItem(input: VaultItem): VaultItem {
   catch { return reject('invalid_payload'); }
 }
 export function authority(host: VaultStorageHost) {
-  async function authorize(operation: VaultStorageOperation, item: VaultItem, adapterRef?: string) {
+  async function authorize(operation: VaultStorageOperation, item: VaultItem) {
     try {
-      const scope = copy(await host.authorize(operation, copy(item), adapterRef));
+      const scope = copy(await host.authorize(operation, copy(item)));
       if (!validScope(scope)) throw Error();
       return scope;
     } catch { return reject('not_authorized'); }
   }
-  return { authorize, async recheck(operation: VaultStorageOperation, item: VaultItem, scope: VaultScope, adapterRef?: string) {
-    if (canonical(await authorize(operation, item, adapterRef)) !== canonical(scope)) reject('not_authorized');
+  return { authorize, async recheck(operation: VaultStorageOperation, item: VaultItem, scope: VaultScope) {
+    if (canonical(await authorize(operation, item)) !== canonical(scope)) reject('not_authorized');
   } };
 }
 export async function resolveKey(keys: VaultKeyService, scope: VaultScope, reference: VaultKeyReference) {

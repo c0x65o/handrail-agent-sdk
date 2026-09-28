@@ -17,13 +17,13 @@ Every request retains the full existing `JobIdentity`: original SDK job/task/req
 | Login/password | Password classification and a generic secret item/version reference; no username or password value | Capture or password fill |
 | API/refresh token | Explicit token subtype and generic secret item/version reference | Capture or bounded server request |
 | Synthetic identity field | Exact field (`ssn`, `legal_name`, `date_of_birth`, `tax_id`), `synthetic` classification and provenance reference; no identity value | Single-field fill with explicit recipient and purpose |
-| Payment method | Specialized payment/version reference plus host-approved provider/customer/payment-account aliases | Specialized server request for verification or attachment only |
+| Credit card | Opaque payment/version reference with credit_card classification | Private browser fill of one exact card field under the current destination grant |
 
-Payment references cannot be substituted for generic secret references in either TypeScript or schemas. The aliases are nonsecret host IDs, never provider handles. Provider-managed payment material and encryption key material stay host-owned. Raw PAN, CVV/security codes and identity bundles have no public fields or general storage representation. A payment reference cannot authorize a purchase; no purchasing operation is defined.
+Payment references cannot be substituted for generic secret references in either TypeScript or schemas. Public card metadata has no provider or card fields. Authenticated private entry stores the exact card record in encrypted host custody; security codes are unsupported and rejected even in ciphertext. No purchase, charge, payment-network, reveal or export operation is defined. See [card integration](payment-vault.md).
 
 Browser capture/fill binds normalized HTTPS top origin, profile, lease epoch, document, navigation revision, ordered complete frame ancestry (frame IDs and origins), field identity/type and form endpoint. Identity disclosure additionally binds field, recipient and purpose. The host-admitted grant must match every field; an approved cross-origin frame receives no implied authorization for another frame or form. Capture uses a host-reserved item/version reference, not a model-supplied value.
 
-Server requests bind an exact canonical HTTPS endpoint, HTTP method and resource, with redirects denied. Specialized payment requests also bind provider/customer/payment account, merchant/payee, purpose and exact permitted action. There are no public bodies, headers, arbitrary scripts, raw responses or secrets in these operations. Endpoint paths and references still require host approval; syntax cannot prove arbitrary text secret-free.
+Server requests bind an exact canonical HTTPS endpoint, HTTP method and resource, with redirects denied. Card fill binds purpose, browser profile/lease/document/navigation, complete frame ancestry, field kind/reference and form endpoint; cards cannot use server requests. There are no public bodies, headers, arbitrary scripts, raw responses or secrets in these operations. Endpoint paths and references still require host approval; syntax cannot prove arbitrary text secret-free.
 
 ## Entry, revision and replay rules
 

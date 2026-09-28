@@ -170,11 +170,11 @@ acceptance('token, identity and payment metadata and key identifiers are cryptog
     const metadata = f.item.metadata;
     const changes = metadata.kind === 'token' ? [{ ...metadata, tokenType: metadata.tokenType === 'api' ? 'refresh' : 'api' }]
       : metadata.kind === 'identity' ? [{ ...metadata, field: metadata.field === 'ssn' ? 'tax_id' : 'ssn' }, { ...metadata, provenanceRef: 'other-fixture' }]
-      : metadata.kind === 'payment_method' ? ['providerRef', 'customerRef', 'paymentAccountRef'].map(k => ({ ...metadata, [k]: 'other' })) : [];
+      : metadata.kind === 'payment_method' ? ['instrument'].map(k => ({ ...metadata, [k]: 'other' })) : [];
     for (const changed of changes) {
       const item = { ...f.item, metadata: changed } as VaultItem;
       await s.client.database().update(s.tables.items).set({ item }).where(eq(s.tables.items.itemId, id));
-      denied(await s.store.readForExecutor(item), 'unavailable');
+      denied(await s.store.readForExecutor(metadata.kind === 'payment_method' ? f.item : item), 'unavailable');
     }
     await s.client.database().update(s.tables.items).set(row).where(eq(s.tables.items.itemId, id));
   }
@@ -207,7 +207,7 @@ acceptance('invalid or unavailable active keys never persist a row and need no f
   assert.equal(privateScan(s.seed, errors), true);
 });
 
-acceptance('strict value shapes reject raw payment data, identity bundles and accessor metadata without key access', async t => {
+acceptance('strict value shapes reject incomplete card data and security codes, identity bundles and accessor metadata without key access', async t => {
   const s = await setup(t);
   const payment = fixtures(s.seed)[7], identity = fixtures(s.seed)[3];
   for (const [item, value] of [
@@ -222,7 +222,7 @@ acceptance('strict value shapes reject raw payment data, identity bundles and ac
   Object.defineProperty(input, 'metadata', { enumerable: true, get() { invoked = true; throw Error(); } });
   denied(await s.store.create(input, s.fixture.value), 'invalid_payload');
   assert.equal(invoked, false); assert.equal(s.keys.calls, 0); assert.equal((await s.rows()).length, 0);
-  const host = { authorize: async (_op: unknown, _item: unknown, alias?: string) => alias === Object.values(payment.value)[0] ? scope : null };
+  const host = { authorize: async () => scope };
   passed(await createVaultStore(s.client.database(), host, s.keys, s.tables).create(payment.item, payment.value));
 });
 

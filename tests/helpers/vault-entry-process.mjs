@@ -3,13 +3,13 @@ import pg from 'pg';
 import { randomBytes } from 'node:crypto';
 import { referenceDatabase } from '../../.reference-build/reference/node/db/database.js';
 import { entryState, entryServices } from './vault-entry-fixture.mjs';
-process.once('message', async ({ schema, mode, handle }) => {
+process.once('message', async ({ schema, mode, handle, kind = 'token' }) => {
   let client;
   try {
     if (!/^sdk_test_[a-f0-9]{32}$/.test(schema) || !['capture', 'deliver'].includes(mode)) throw Error();
     client = new pg.Client({ connectionString: process.env.HANDRAIL_TEST_POSTGRES_URL, options: '-c search_path=pg_catalog' });
     await client.connect();
-    const state = entryState();
+    const state = entryState(kind);
     const noKeys = { active: async () => { throw Error(); }, resolve: async () => { throw Error(); } };
     const { entry } = entryServices(referenceDatabase(client), schema, state, mode === 'deliver' ? noKeys : undefined);
     if (mode === 'capture') {

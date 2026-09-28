@@ -12,8 +12,6 @@ export interface VaultEntryBinding {
   readonly source: VaultEntryCompletion['source'];
   /** Exact host-approved future use, including destination, purpose and revision. */
   readonly grant: VaultItemGrant;
-  /** Present only on the specialized payment path; persisted with the session. */
-  readonly paymentAdapter?: import('./payment-vault.js').PaymentAdapterRegistration;
 }
 export interface VaultEntryAuthority extends JobLeaseAuthority {
   readonly actorRef: string;
@@ -26,7 +24,7 @@ export interface VaultEntryHost {
    * item ACL/consent and destination from trusted host state, never request facts.
    * New-input item aliases must be host-issued, unique and nonsecret. Preserve the
    * approved binding on retry; hold authority stable through callback AND commit.
-   * Payment capture belongs to a specialized adapter, not this generic service. */
+   * Authenticate private entry origin/CSRF independently; never accept card data from model input. */
   withAuthority<T>(request: VaultEntryRequest, phase: VaultEntryPhase,
     run: (authority: VaultEntryAuthority) => Promise<JobStoreResult<T>>): Promise<JobStoreResult<T>>;
   now(): number;
@@ -55,9 +53,15 @@ export function createVaultEntry<PrivateValue>(host: VaultEntryHost, store: Vaul
     try {
       return await host.withAuthority(copy(request), phase, async input => {
         const a = copy(input), grant = a.grant;
+        if (!grant || Object.keys(grant).sort().join(',') !== 'expiresAt,issuedAt,itemExpiresAt,permissions,request,state,taskExpiresAt'
+          || !grant.permissions || Object.keys(grant.permissions).sort().join(',') !== 'export,reveal,use'
+          || grant.state !== 'active'
+          || ![grant.issuedAt, grant.expiresAt, grant.itemExpiresAt, grant.taskExpiresAt].every(v => Number.isSafeInteger(v) && v >= 0)
+          || grant.expiresAt <= grant.issuedAt || grant.expiresAt - grant.issuedAt > 300_000
+          || request.expiresAt > Math.min(grant.expiresAt, grant.itemExpiresAt, grant.taskExpiresAt)
+          || grant.permissions.use !== true || grant.permissions.reveal !== false || grant.permissions.export !== false) return denied();
         if (!validLeaseAuthority({ host: a.host, grantRevision: a.grantRevision, cancellationRevision: a.cancellationRevision }, request.identity) || a.actorRef !== request.requirement.actor.actorRef
           || !['new_input', 'existing_item'].includes(a.source) || !validateVaultOperationSchema(grant?.request).ok
-          || grant.request.item.metadata.kind === 'payment_method'
           || !sameLeaseValue(grant.request.identity, request.identity)
           || !sameLeaseValue(grant.request.effect, request.effect)
           || !sameLeaseValue(grant.request.item.metadata, request.metadata)
@@ -79,7 +83,7 @@ export function createVaultEntry<PrivateValue>(host: VaultEntryHost, store: Vaul
   }
   return {
     issue(request: VaultEntryRequest): Promise<JobStoreResult<VaultEntryHandle>> {
-      if (!validateVaultEntryRequest(request).ok || request.metadata.kind === 'payment_method')
+      if (!validateVaultEntryRequest(request).ok)
         return Promise.resolve({ ok: false, code: 'invalid_payload' });
       return authorized(copy(request), 'issue', undefined, (b, a) => store.issue(b, a, () => host.now()));
     },

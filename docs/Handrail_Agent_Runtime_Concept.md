@@ -1,3 +1,5 @@
+> Historical concept. The September 28, 2026 owner correction supersedes the payment-provider and no-card-custody assumptions below. Current v1 card scope is [secure Vault entry and scoped private fill](payment-vault.md), without charging or a provider prerequisite.
+
 # Handrail Agent Runtime
 ## Concept note — September 23, 2026
 

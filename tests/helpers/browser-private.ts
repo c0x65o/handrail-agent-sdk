@@ -1,5 +1,6 @@
 // PRIVATE child entrypoint: do not import into tests or public SDK exports.
 // No screenshots, traces, HAR, video, dumps, console forwarding or raw errors.
+import { cardFixture } from './browser-card.js';
 import { randomBytes } from 'node:crypto';
 import { access, readFile, stat, writeFile } from 'node:fs/promises';
 import { constants } from 'node:fs';
@@ -352,7 +353,9 @@ async function main(): Promise<void> {
     stage('fixtures');
     const proxy = await fixtures();
     if (caseId === 'F01_NETWORK_POLICY') { stage('network_policy'); await policyChecks(proxy); }
-    else { stage('browser_launch'); await launch(proxy); await isolation(); }
+    else { stage('browser_launch'); await launch(proxy);
+      if (caseId === 'C01_CARD_FILL') { stage('context_creation'); await cardFixture(await context(), check); }
+      else await isolation(); }
     stage('complete');
     report.status = 'passed';
   } catch {

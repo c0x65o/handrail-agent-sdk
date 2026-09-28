@@ -9,7 +9,7 @@ HTTP or public SDK getter. Its private result is not a use grant or receipt.
 
 `VaultStorageHost.authorize` must resolve current authenticated ownership and the
 exact item/version ACL from trusted server state. It approves nonsecret item and
-metadata aliases, synthetic provenance, and payment adapter aliases, and derives
+metadata aliases and synthetic identity provenance, and derives
 all six existing scope dimensions: tenant, user, project, account, environment
 and purpose. Callers supply no scope or authorization booleans. A null result,
 throw or invalid scope denies access. Stored scope is compared before key access;
@@ -27,12 +27,14 @@ field (`ssn`, `legal_name`, `date_of_birth`, `tax_id`), with a 16 KiB UTF-8 limi
 Passwords have no minimum length. Identity bundles and unrecognized fields are
 rejected. Metadata matches the existing public vault contract.
 
-Payment custody accepts only `{ adapterRef }`, a host-approved opaque UUIDv4
-alias to a specialized payment adapter. It never accepts raw card fields, PAN,
-CVV, provider tokens, or generic payment secret payloads. The alias is encrypted
-too. Syntax alone cannot prove a reference's provenance or distinguish a password
-from deliberately mislabeled data; authenticated host admission must approve
-classification and aliases. No payment provider operation is implemented.
+Credit-card custody accepts exactly `pan`, `cardholderName`, `expiryMonth` and
+`expiryYear` through authenticated private entry. These fields are encrypted in
+the same authenticated envelope and are never metadata or public results.
+Security codes and unknown fields are rejected, including encrypted retention.
+No provider, tokenization adapter, payment network, charge or purchase operation
+is required or exposed. See [card integration](payment-vault.md). Old synthetic
+adapter-alias rows/sessions fail closed under the corrected schema; no live
+provider data or automatic migration of legacy aliases is supported.
 
 Encryption uses Node's AES-256-GCM, random 96-bit nonces, 128-bit tags, envelope
 version 1, and explicit algorithm, opaque key handle and positive key version.

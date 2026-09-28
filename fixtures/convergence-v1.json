@@ -425,9 +425,9 @@
     {
       "id": "ASDK-V1-M3-PAYMENT",
       "milestone": "M3",
-      "title": "Specialized payment references",
+      "title": "Scoped credit-card Vault entry and private use",
       "owner": {
-        "surface": "Specialized payment custodian and domain approval owner",
+        "surface": "Native Vault secure-entry, custody and browser authority",
         "hosts": [
           "handrail",
           "reference-node"
@@ -435,16 +435,17 @@
       },
       "expected": {
         "proofClass": "synthetic_runtime",
-        "outcome": "Keep payment references separate from generic secrets and allow only separately authorized verification/attachment.",
+        "outcome": "User securely adds or selects an encrypted credit card and authorizes private fill at an exact destination; no payment provider or charging operation.",
         "requiredEvidence": [
-          "Reference-type incompatibility and exact provider/customer/account/merchant/payee/action binding tests",
-          "Negative purchase and generic-fill checks"
+          "Authenticated new entry and existing-item selection with encrypted persistence and fresh-process same-job reference recovery",
+          "Exact actor/tenant/account/project/environment/purpose/origin/frame/field grants; expiry, revoke, cancellation, races and uncertain-effect reconciliation",
+          "Synthetic card secrecy checks and independent native private-browser QA; no provider prerequisite"
         ],
         "failureConditions": [
-          "PAN or CVV is stored or exposed in general custody",
-          "Payment reference substitutes for generic secret",
-          "Reference possession permits purchases or spending",
-          "Wrong payment account or merchant is accepted"
+          "Card values appear in public metadata, observations, events, errors, logs, screenshots or retained evidence",
+          "Security codes are retained, including ciphertext",
+          "Card reference substitutes for generic secret or authorizes purchase, charge or export",
+          "Wrong scope or exact destination is accepted, or stale/duplicate completion causes another effect"
         ]
       },
       "observed": {

@@ -8,7 +8,7 @@ import { setTimeout as delay } from 'node:timers/promises';
 // stderr, inspector, NODE_OPTIONS, DEBUG, proxy credentials or provider env.
 export const browserCases = ['B01_ISOLATION', 'B02_PARTIAL_BROWSER', 'B03_PARTIAL_CONTEXT', 'B04_TEST_FAILURE'] as const;
 export const boundaryCases = ['F01_NETWORK_POLICY', 'F02_PARTIAL_LISTENER', 'F03_OUTPUT_GATE'] as const;
-export type BrowserCase = typeof browserCases[number] | typeof boundaryCases[number];
+export type BrowserCase = typeof browserCases[number] | typeof boundaryCases[number] | 'C01_CARD_FILL';
 const statuses = ['passed', 'failed', 'unverified_browser_prerequisite', 'unverified_dependency_prerequisite'] as const;
 // Fixed control-flow labels only: never derive these from a URL, error or page.
 export const browserDiagnosticStages = [
@@ -36,7 +36,7 @@ export interface BrowserReceipt {
 
 /** Trusted tests only. Never returns a browser, URL, profile, DOM or raw error. */
 export async function runPrivateBrowserCase(caseId: BrowserCase): Promise<BrowserReceipt> {
-  if (![...browserCases, ...boundaryCases].includes(caseId)) throw new Error('BROWSER_CASE_INVALID');
+  if (!([...browserCases, ...boundaryCases, 'C01_CARD_FILL'] as readonly string[]).includes(caseId)) throw new Error('BROWSER_CASE_INVALID');
   const result: BrowserReceipt = {
     caseId, status: 'failed', stage: 'unreported', checks: 0, contextsClosed: 0,
     browsersClosed: 0, listenersClosed: 0, artifactsRemoved: 0,

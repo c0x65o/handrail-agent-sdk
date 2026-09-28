@@ -1,10 +1,10 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { randomBytes, randomUUID } from 'node:crypto';
+import { randomBytes } from 'node:crypto';
+import { fork } from 'node:child_process';
+import { once } from 'node:events';
 import { createPostgresHarness } from '../.postgres-build/postgres.js';
 import { createPaymentVault } from '../.reference-build/src/server/payment-vault.js';
-import { createVaultEntry } from '../.reference-build/src/server/vault-entry.js';
-import { createVaultEntryStore } from '../.reference-build/reference/node/vault-entry.js';
 import { createVaultStore } from '../.reference-build/reference/node/vault-store.js';
 import { createVaultLifecycle } from '../.reference-build/reference/node/vault-lifecycle.js';
 import { createJobCancellationStore } from '../.reference-build/reference/node/job-cancellation.js';
@@ -13,55 +13,9 @@ import { validateVaultEntryRequest, validateVaultItem, validateVaultOperationSch
 import { migrations } from './helpers/migrations.mjs';
 import { services, start, ok } from './helpers/effect-fixture.mjs';
 import { identity, requirement, entryState, entryServices } from './helpers/vault-entry-fixture.mjs';
-
-const denied = result => assert.equal(result.ok, false, 'operation denied without private details');
-const registration = { adapterRef: 'synthetic-payment-boundary', version: 'fixture-1',
-  environmentRef: identity.host.environmentRef, qualification: 'synthetic_boundary_only' };
-
-// Explicit external-service fake. This is NOT a selected provider adapter and
-// cannot establish its authentication, retention or production guarantees.
-function syntheticAdapter(state) {
-  const sessions = new Map();
-  let authenticated;
-  const custody = { adapterRef: randomUUID() };
-  // Disposable canaries exist only in fixture memory, never in retained receipts.
-  const pan = `9${Array.from(randomBytes(15), b => b % 10).join('')}`;
-  const cvv = `0${Array.from(randomBytes(3), b => b % 10).join('')}`;
-  const providerToken = randomBytes(32).toString('hex');
-  const adapter = {
-    async open(session) {
-      const previous = sessions.get(session.handle.sessionRef);
-      if (previous) assert.deepEqual(previous, session);
-      sessions.set(session.handle.sessionRef, structuredClone(session));
-    },
-    async withCompletion(_session, run) {
-      if (state.throwPrivate) throw Error(`${pan}/${cvv}/${providerToken}`);
-      if (state.returnPrivate) return { ok: false, code: providerToken, pan, cvv };
-      if (!authenticated || state.adapterRevoked) return { ok: false, code: 'not_authorized' };
-      await state.completionHook?.();
-      const result = await run(structuredClone(authenticated));
-      if (state.mutateResult && result.ok) result.value.pan = pan;
-      return result;
-    },
-    async withReference(_session, run) {
-      return state.adapterRevoked ? { ok: false, code: 'not_authorized' } : run();
-    },
-  };
-  return { adapter, custody,
-    authenticate(handle, mutate = () => {}) {
-      authenticated = { session: structuredClone(sessions.get(handle.sessionRef)),
-        origin: state.request.origin, custody: structuredClone(custody) };
-      mutate(authenticated);
-    },
-    poison(field) { return { [field]: field === 'cvv' ? cvv : field === 'providerToken' ? providerToken : pan }; },
-    scan(value) {
-      const serialized = JSON.stringify(value);
-      // CVV is short: scan JSON values, not incidental random ID substrings.
-      assert.equal(serialized.includes(pan) || serialized.includes(providerToken)
-        || serialized.includes(JSON.stringify(cvv)), false, 'private canaries absent from sinks');
-    },
-  };
-}
+const denied = r => assert.equal(r.ok, false, 'private operation denied');
+const card = () => ({ pan: `9${Array.from(randomBytes(15), b => b % 10).join('')}`,
+  cardholderName: randomBytes(24).toString('hex'), expiryMonth: '12', expiryYear: '2099' });
 async function setup(t, source = 'new_input') {
   const harness = await createPostgresHarness(); t.after(() => harness.cleanup());
   const client = await harness.client(), other = await harness.client();
@@ -72,175 +26,166 @@ async function setup(t, source = 'new_input') {
   const fence = await start(jobs, 60_000);
   ok(await jobs.lease.append({ kind: 'waiting', previousRevision: 2,
     snapshot: { identity, state: 'waiting', revision: 3, requirement, effects: [] } }, fence));
-  await jobs.lease.release(fence);
-  const state = entryState('token', source);
-  const metadata = { kind: 'payment_method', providerRef: 'fixture-provider', customerRef: 'fixture-customer', paymentAccountRef: 'fixture-account' };
-  state.request.metadata = metadata;
-  state.grant.request.item = { metadata, reference: { kind: 'payment_method', paymentRef: 'host-payment-alias', revision: 1 } };
-  state.grant.request.destination = { endpoint: 'https://fixture.invalid/payment', method: 'POST', redirects: 'deny',
-    providerRef: metadata.providerRef, customerRef: metadata.customerRef, paymentAccountRef: metadata.paymentAccountRef,
-    merchantRef: 'merchant', payeeRef: 'payee', purposeRef: identity.host.purposeRef, action: 'verify' };
-  const base = entryServices(client.database(), harness.schema, state);
-  base.host.paymentMode = 'synthetic_sandbox';
-  const fixture = syntheticAdapter(state);
-  base.storage.authorize = async (op, _item, alias) => state.ownerAllowed
-    && (op !== 'create' || alias === fixture.custody.adapterRef) ? identity.host : null;
-  const outputs = [];
-  const api = (host = base.host, db = client.database(), reg = registration) => {
-    const store = createVaultEntryStore(db, base.storage, base.owner, base.keys, harness.schema);
-    const payment = createPaymentVault(host, store, reg, fixture.adapter);
-    return Object.fromEntries(Object.entries(payment).map(([key, call]) => [key, async (...args) => {
-      const result = await call(...args); outputs.push(result); return result;
-    }]));
-  };
-  const rows = async table => (await other.query(`SELECT * FROM ${harness.table(table)}`)).rows;
-  const counts = async () => ({ items: (await rows('vault_items')).length,
-    completions: (await rows('vault_entry_sessions')).filter(r => r.completion).length,
-    answers: (await rows('job_answer_deliveries')).length, jobs: (await rows('jobs')).length });
-  const scan = async (...extra) => {
-    const durable = [];
-    for (const table of ['vault_items', 'vault_states', 'vault_entry_sessions', 'vault_item_grants',
-      'job_events', 'job_challenges', 'job_answer_deliveries']) durable.push(await rows(table));
-    fixture.scan([durable, outputs, extra]);
-  };
+  const state = entryState('payment_method', source), base = entryServices(client.database(), harness.schema, state);
+  const second = entryServices(other.database(), harness.schema, state, base.keys);
+  base.storage.authorize = async () => state.ownerAllowed ? state.scope : null;
+  const value = card(), item = state.grant.request.item;
   const custody = createVaultStore(client.database(), base.storage, base.keys, vaultTables(harness.schema));
-  if (source === 'existing_item') ok(await custody.create(state.grant.request.item, fixture.custody));
-  return { ...base, ...jobs, host: base.host, state, fixture, api, payment: api(), second: api(base.host, other.database()),
-    rows, counts, scan, custody, harness, client, other };
+  const rows = async table => (await other.query(`SELECT * FROM ${harness.table(table)}`)).rows;
+  const scan = async (...outputs) => {
+    const durable = [];
+    for (const table of ['vault_items', 'vault_states', 'vault_entry_sessions', 'vault_item_grants', 'job_events', 'job_challenges', 'job_answer_deliveries', 'job_effects', 'vault_access']) durable.push(await rows(table));
+    const text = JSON.stringify([durable, outputs]);
+    for (const v of [value.pan, value.cardholderName]) for (const encoded of [v, Buffer.from(v).toString('hex'), Buffer.from(v).toString('base64')])
+      assert.equal(text.includes(encoded), false, 'card canary absent from public and persisted sinks');
+  };
+  if (source === 'existing_item') ok(await custody.create(item, value));
+  return { ...base, ...jobs, state, fence, harness, client, other, rows, scan, custody, value, item,
+    payment: createPaymentVault(base.host, base.store), second: createPaymentVault(second.host, second.store),
+    lifecycle: createVaultLifecycle(other.database(), base.storage, base.keys, vaultTables(harness.schema)) };
 }
-
-for (const source of ['new_input', 'existing_item']) test(`${source}: synthetic reference handoff, durable selection and original-job answer`, async t => {
+for (const source of ['new_input', 'existing_item']) test(`${source}: encrypted card entry, concurrent one-shot completion and same-job delivery`, async t => {
   const s = await setup(t, source), h = ok(await s.payment.issue(s.state.request));
   assert.deepEqual(ok(await s.second.issue(s.state.request)), h);
-  denied(await s.payment.complete(h)); // Client handle alone confers no authority.
-  s.fixture.authenticate(h);
-  const c = ok(await s.payment.complete(h));
-  assert.deepEqual(c.item, s.state.grant.request.item);
-  assert.equal(c.source, source);
-  denied(await s.second.complete(h)); // Completion is one-shot, including after restart.
-  const receipts = await Promise.all([s.payment.deliver(h), s.second.deliver(h)]);
-  assert.deepEqual(receipts.map(r => ok(r).replayed).sort(), [false, true]);
-  assert.deepEqual(await s.counts(), { items: 1, completions: 1, answers: 1, jobs: 1 });
-  const job = ok(await s.journal.load(identity));
-  assert.deepEqual(job.identity, identity); assert.equal(job.answer.responseRef, h.sessionRef);
-  assert.equal((await s.rows('vault_item_grants')).length, 1);
-  assert.deepEqual((await s.rows('vault_entry_sessions'))[0].binding.paymentAdapter, registration);
-  await s.scan(receipts);
+  s.state.denied = true; denied(await s.payment.capture(h, source === 'new_input' ? s.value : undefined));
+  s.state.denied = false;
+  if (source === 'existing_item') denied(await s.payment.capture(h, s.value));
+  const captures = await Promise.all([s.payment.capture(h, source === 'new_input' ? s.value : undefined), s.second.capture(h, source === 'new_input' ? s.value : undefined)]);
+  assert.equal(captures.filter(r => r.ok).length, 1);
+  denied(await s.payment.capture(h, card()));
+  const deliveries = await Promise.all([s.payment.deliver(h), s.second.deliver(h)]);
+  assert.deepEqual(deliveries.map(r => ok(r).replayed).sort(), [false, true]);
+  assert.equal((await s.rows('vault_items')).length, 1);
+  assert.equal((await s.rows('job_answer_deliveries')).length, 1);
+  assert.equal((await s.rows('jobs')).length, 1);
+  assert.equal(ok(await s.custody.readForExecutor(s.item)).pan === s.value.pan, true, 'encrypted value recovered privately');
+  const resume = { kind: 'resumed', previousRevision: 4,
+    command: { command: 'resume', identity, expectedRevision: 4, requirementRef: requirement.requirementRef, requirementRevision: 1, resolutionReceiptRef: h.sessionRef },
+    snapshot: { identity, state: 'queued', revision: 5, effects: [] } };
+  ok(await s.lease.append(resume, s.fence)); ok(await s.lease.append(resume, s.fence));
+  assert.equal((await s.rows('job_events')).filter(r => r.event.kind === 'resumed').length, 1);
+  denied(await s.payment.deliver(h)); // No stale completion into a resumed task.
+  ok(await s.lease.release(s.fence));
+  const useFence = await start(s, 60_000);
+  const { createVaultUse } = await import('../.reference-build/src/server/vault-use.js');
+  const { createPaymentFillExecutor } = await import('../.reference-build/src/server/payment-vault.js');
+  const { createVaultGrants, vaultEffectRequest } = await import('../.reference-build/reference/node/vault-grants.js');
+  const grants = createVaultGrants(s.client.database(), s.owner, s.keys, s.harness.schema);
+  let fills = 0;
+  const executor = createPaymentFillExecutor({ operationRef: s.state.grant.request.effect.operationRef,
+    bind: r => vaultEffectRequest(r, 'private-card-fixture'), reconcile: async () => 'not_applied',
+  }, { withTarget: async (_r, signal, run) => run({ destination: structuredClone(s.state.grant.request.destination),
+    fill: async (value, isCurrent) => {
+      assert.equal(!signal.aborted && isCurrent(), true);
+      assert.equal(value === s.value.pan, true, 'same-job private card fill'); fills++; return 'verified';
+    } }) });
+  const use = createVaultUse({ now: () => s.state.now, withAuthority: async (_r, _phase, run) => run({
+    host: s.state.scope, grantRevision: s.state.grantRevision, cancellationRevision: s.state.cancellationRevision, actorRef: s.state.actorRef,
+  }) }, grants.use, [executor]);
+  const used = ok(await use.execute(s.state.grant.request, useFence));
+  assert.equal(used.outcome, 'verified');
+  assert.deepEqual(ok(await use.execute(s.state.grant.request, useFence)), used);
+  assert.equal(fills, 1);
+  await s.scan(captures, deliveries, used);
 });
 
-const mismatch = {
-  account: c => { c.session.binding.request.identity.host.accountRef = 'other'; },
-  environment: c => { c.session.binding.request.identity.host.environmentRef = 'other'; },
-  tenant: c => { c.session.binding.request.identity.host.tenantRef = 'other'; },
-  purpose: c => { c.session.binding.request.identity.host.purposeRef = 'other'; },
-  customer: c => { c.session.binding.grant.request.destination.customerRef = 'other'; },
-  merchant: c => { c.session.binding.grant.request.destination.merchantRef = 'other'; },
-  origin: c => { c.origin = 'https://other.invalid'; },
-  session: c => { c.session.handle.sessionRef = 'a'.repeat(64); },
-  revision: c => { c.session.handle.revision++; },
-  adapter: c => { c.session.adapter.version = 'other'; },
-  token: c => { c.custody = { providerToken: 'untrusted' }; },
-  alias: c => { c.custody.adapterRef = randomUUID(); },
-};
-for (const [name, mutate] of Object.entries(mismatch)) test(`authenticated completion rejects wrong ${name}`, async t => {
-  const s = await setup(t), h = ok(await s.payment.issue(s.state.request));
-  s.fixture.authenticate(h, mutate); denied(await s.payment.complete(h));
-  assert.deepEqual(await s.counts(), { items: 0, completions: 0, answers: 0, jobs: 1 }); await s.scan();
-});
-
-test('concurrent adapter completions consume one session on PostgreSQL locks', async t => {
-  const s = await setup(t), h = ok(await s.payment.issue(s.state.request)); s.fixture.authenticate(h);
-  const results = await Promise.all([s.payment.complete(h), s.second.complete(h)]);
-  assert.equal(results.filter(r => r.ok).length, 1);
-  assert.deepEqual(await s.counts(), { items: 1, completions: 1, answers: 0, jobs: 1 }); await s.scan();
-});
-
-const stale = {
-  expired: async s => { s.state.now = 2000; },
-  'expired during adapter await': async s => { s.state.completionHook = () => { s.state.now = 2000; }; },
-  withdrawn: async (s, h) => { ok(await s.payment.withdraw(h)); },
+const changes = {
+  actor: s => { s.state.actorRef = 'other'; },
+  ...Object.fromEntries(['tenantRef', 'userRef', 'projectRef', 'accountRef', 'environmentRef', 'purposeRef'].map(k => [k, s => { s.state.scope[k] = 'other'; }])),
+  origin: s => { s.state.request.origin = 'https://other.invalid'; },
+  field: s => { s.state.grant.request.destination.fieldRef = 'other'; },
+  frame: s => { s.state.grant.request.destination.frames[0].frameRef = 'other'; },
+  revision: s => { s.state.grantRevision++; },
+  expiry: s => { s.state.now = 2000; },
   cancelled: async s => { ok(await createJobCancellationStore(s.other.database(), s.tables).cancel(
     { command: 'cancel', identity, expectedRevision: 3, reason: 'explicit_stop' }, identity.host.userRef,
     { host: identity.host, grantRevision: 1, cancellationRevision: 0 })); },
-  'host authority revoked': async s => { s.state.denied = true; },
-  'adapter reference revoked': async s => { s.state.adapterRevoked = true; },
-  'scope revision changed': async s => { s.state.grantRevision++; },
-  'consent changed': async s => { s.state.grant.request.destination.action = 'attach'; },
 };
-for (const [name, change] of Object.entries(stale)) test(`${name}: no late completion`, async t => {
-  const s = await setup(t), h = ok(await s.payment.issue(s.state.request)); s.fixture.authenticate(h);
-  await change(s, h); denied(await s.payment.complete(h)); denied(await s.payment.deliver(h));
-  assert.deepEqual(await s.counts(), { items: 0, completions: 0, answers: 0, jobs: 1 }); await s.scan();
+for (const [name, mutate] of Object.entries(changes)) test(`card entry rejects changed ${name}`, async t => {
+  const s = await setup(t), h = ok(await s.payment.issue(s.state.request)); await mutate(s);
+  denied(await s.payment.capture(h, s.value)); denied(await s.payment.deliver(h));
+  assert.equal((await s.rows('vault_items')).length, 0); await s.scan();
 });
-
-test('revocation and expiry fence delivery of a captured reference', async t => {
-  for (const kind of ['adapter', 'lifecycle', 'expiry']) await t.test(kind, async t => {
-    const s = await setup(t), h = ok(await s.payment.issue(s.state.request)); s.fixture.authenticate(h);
-    ok(await s.payment.complete(h));
-    if (kind === 'adapter') s.state.adapterRevoked = true;
-    else if (kind === 'expiry') { s.state.now = 2000; ok(await s.payment.expire(h)); }
-    else ok(await createVaultLifecycle(s.other.database(), s.storage, s.keys, vaultTables(s.harness.schema))
-      .terminate(s.state.grant.request.item, 'revoked'));
-    denied(await s.payment.deliver(h)); assert.equal((await s.counts()).answers, 0); await s.scan();
-  });
-});
-
-test('selection rejects a substituted custody alias', async t => {
-  const s = await setup(t, 'existing_item'), h = ok(await s.payment.issue(s.state.request));
-  s.fixture.authenticate(h, c => { c.custody = { adapterRef: randomUUID() }; });
-  denied(await s.payment.complete(h)); assert.equal((await s.counts()).completions, 0); await s.scan();
-});
-
-test('adapter registration is pinned durably and production remains unsupported', async t => {
-  const s = await setup(t), h = ok(await s.payment.issue(s.state.request)); s.fixture.authenticate(h);
-  denied(await s.api(s.host, s.client.database(), { ...registration, version: 'fixture-2' }).complete(h));
-  denied(await s.api({ ...s.host, paymentMode: 'unsupported' }).issue(s.state.request));
-  denied(await s.api(s.host, s.client.database(), { ...registration, qualification: 'production' }).complete(h));
-  denied(await s.api(s.host, s.client.database(), { ...registration, environmentRef: 'other' }).complete(h));
-  assert.equal((await s.counts()).completions, 0); await s.scan();
-});
-
-test('raw card, CVV and provider token fields are rejected without sink retention', async t => {
+for (const change of ['expiry', 'scope', 'revocation']) test(`card capture ${change} during key await rolls back`, async t => {
   const s = await setup(t), h = ok(await s.payment.issue(s.state.request));
-  const generic = createVaultEntry(s.host, s.store), outputs = [];
-  outputs.push(await generic.issue(s.state.request), await generic.capture(h, s.fixture.poison('pan')));
-  for (const field of ['pan', 'cvv', 'providerToken']) {
-    const extra = s.fixture.poison(field);
-    const request = { ...s.state.request, ...extra }, item = { ...s.state.grant.request.item, ...extra };
-    outputs.push(validateVaultEntryRequest(request), validateVaultItem(item),
-      validateVaultOperationSchema({ ...s.state.grant.request, ...extra }),
-      await s.payment.issue(request), await s.payment.complete({ ...h, ...extra }),
-      await s.custody.create(s.state.grant.request.item, extra));
+  s.state.resolveHook = () => { if (change === 'expiry') s.state.now = 2000; else if (change === 'scope') s.state.scope.accountRef = 'other'; else s.state.ownerAllowed = false; };
+  denied(await s.payment.capture(h, s.value)); assert.equal((await s.rows('vault_items')).length, 0); await s.scan();
+});
+for (const change of ['revoke', 'expiry', 'withdraw']) test(`${change} prevents card reference delivery`, async t => {
+  const s = await setup(t), h = ok(await s.payment.issue(s.state.request)); ok(await s.payment.capture(h, s.value));
+  if (change === 'revoke') ok(await s.lifecycle.terminate(s.item, 'revoked'));
+  else if (change === 'expiry') { s.state.now = 2000; ok(await s.payment.expire(h)); }
+  else ok(await s.payment.withdraw(h));
+  denied(await s.payment.deliver(h)); assert.equal((await s.rows('job_answer_deliveries')).length, 0); await s.scan();
+});
+test('card codes, extra private fields and public card payloads are rejected without retention', async t => {
+  const s = await setup(t), h = ok(await s.payment.issue(s.state.request));
+  for (const field of ['cvv', 'cvc', 'securityCode', 'providerToken']) {
+    const bad = { ...s.value, [field]: randomBytes(16).toString('hex') };
+    denied(await s.payment.capture(h, bad)); denied(await s.custody.create(s.item, bad));
   }
-  const purchase = structuredClone(s.state.grant.request); purchase.destination.action = 'purchase';
-  outputs.push(validateVaultOperationSchema(purchase));
-  outputs.forEach(denied);
-  s.state.returnPrivate = true; denied(await s.payment.complete(h));
-  s.state.throwPrivate = true; denied(await s.payment.complete(h));
-  assert.deepEqual(await s.counts(), { items: 0, completions: 0, answers: 0, jobs: 1 }); await s.scan(outputs);
+  for (const v of [s.state.request, s.item, s.state.grant.request]) {
+    const check = v === s.item ? validateVaultItem : v === s.state.request ? validateVaultEntryRequest : validateVaultOperationSchema;
+    denied(check({ ...v, ...s.value }));
+  }
+  s.state.grant.pan = s.value.pan; denied(await s.payment.issue(s.state.request));
+  assert.equal((await s.rows('vault_items')).length, 0); await s.scan();
 });
-
-test('outbox failure rolls back reference custody and consent; fresh instance can retry', async t => {
-  const s = await setup(t), h = ok(await s.payment.issue(s.state.request)); s.fixture.authenticate(h);
+test('fresh process recovers reference and delivers with no card or key access', async t => {
+  const s = await setup(t), h = ok(await s.payment.issue(s.state.request)); ok(await s.payment.capture(h, s.value));
+  const child = fork(new URL('./helpers/vault-entry-process.mjs', import.meta.url), [], { execArgv: [], stdio: ['ignore', 'ignore', 'ignore', 'ipc'] });
+  t.after(() => { if (child.exitCode === null) child.kill('SIGKILL'); });
+  const received = once(child, 'message'), closed = once(child, 'exit');
+  child.send({ schema: s.harness.schema, mode: 'deliver', handle: h, kind: 'payment_method' });
+  const [message] = await received; await closed;
+  assert.equal(message.event, 'delivered'); assert.equal(message.receipt.replayed, false);
+  await s.scan(message);
+});
+test('capture outbox failure rolls back card ciphertext and consent atomically', async t => {
+  const s = await setup(t), h = ok(await s.payment.issue(s.state.request));
   const table = s.harness.table('vault_entry_sessions');
-  await s.client.query(`ALTER TABLE ${table} ADD CONSTRAINT fixture_payment_rollback CHECK (state != 'captured')`);
-  denied(await s.payment.complete(h));
-  assert.deepEqual(await s.counts(), { items: 0, completions: 0, answers: 0, jobs: 1 });
+  await s.client.query(`ALTER TABLE ${table} ADD CONSTRAINT fixture_card_rollback CHECK (state != 'captured')`);
+  denied(await s.payment.capture(h, s.value)); assert.equal((await s.rows('vault_items')).length, 0);
   assert.equal((await s.rows('vault_item_grants')).length, 0);
-  await s.client.query(`ALTER TABLE ${table} DROP CONSTRAINT fixture_payment_rollback`);
-  ok(await s.second.complete(h)); ok(await s.second.deliver(h)); await s.scan();
+  await s.client.query(`ALTER TABLE ${table} DROP CONSTRAINT fixture_card_rollback`);
+  ok(await s.second.capture(h, s.value)); ok(await s.second.deliver(h)); await s.scan();
 });
 
-test('unknown private fields in host consent cannot enter session persistence', async t => {
-  const s = await setup(t);
-  Object.assign(s.state.grant, s.fixture.poison('pan'));
-  denied(await s.payment.issue(s.state.request));
-  assert.equal((await s.rows('vault_entry_sessions')).length, 0); await s.scan();
-});
-
-test('adapter cannot append private data to an SDK completion result', async t => {
-  const s = await setup(t), h = ok(await s.payment.issue(s.state.request)); s.fixture.authenticate(h);
-  s.state.mutateResult = true; denied(await s.payment.complete(h));
-  assert.equal((await s.counts()).completions, 1);
-  ok(await s.payment.deliver(h)); await s.scan();
+test('card executor selects one field and fences live destination, expiry, abort and output spoofing', async () => {
+  const { createPaymentFillExecutor } = await import('../.reference-build/src/server/payment-vault.js');
+  const state = entryState('payment_method'), value = card(), request = state.grant.request;
+  let current = true, calls = 0, hook = () => {}, changed = d => d;
+  const observed = [];
+  let expected;
+  const registration = { operationRef: request.effect.operationRef, bind: () => { throw Error('UNUSED_BIND'); }, reconcile: async () => 'unknown' };
+  const boundary = { withTarget: async (r, signal, run) => {
+    hook();
+    return run({ destination: changed(structuredClone(r.destination)), fill: async (field, isCurrent) => {
+      if (signal.aborted || !isCurrent()) return 'unknown';
+      assert.equal(field === expected, true, 'only selected private field'); calls++; return 'verified';
+    } });
+  } };
+  const executor = createPaymentFillExecutor(registration, boundary);
+  for (const [field, key] of Object.entries({ card_number: 'pan', cardholder_name: 'cardholderName', card_expiry_month: 'expiryMonth', card_expiry_year: 'expiryYear' })) {
+    request.destination.fieldKind = field; expected = value[key];
+    const result = await executor.dispatch(request, value, new AbortController().signal, () => current);
+    assert.equal(result, 'verified'); observed.push(result);
+  }
+  const before = calls;
+  for (const mutate of [d => { d.origin = 'https://wrong.invalid'; }, d => { d.frames[0].frameRef = 'wrong'; },
+    d => { d.fieldRef = 'wrong'; }, d => { d.fieldKind = 'card_number'; }, d => { d.leaseEpoch++; },
+    d => { d.navigationRevision++; }, d => { d.documentRef = 'wrong'; }, d => { d.formEndpoint = 'https://wrong.invalid/'; }]) {
+    changed = d => { mutate(d); return d; };
+    assert.equal(await executor.dispatch(request, value, new AbortController().signal, () => current), 'unknown');
+  }
+  changed = d => d; hook = () => { current = false; };
+  assert.equal(await executor.dispatch(request, value, new AbortController().signal, () => current), 'unknown');
+  current = true; hook = () => {};
+  const abort = new AbortController(); hook = () => abort.abort();
+  assert.equal(await executor.dispatch(request, value, abort.signal, () => current), 'unknown');
+  const spoof = createPaymentFillExecutor(registration, { withTarget: async () => 'verified' });
+  assert.equal(await spoof.dispatch(request, value, new AbortController().signal, () => current), 'unknown');
+  const failure = createPaymentFillExecutor(registration, { withTarget: async () => { throw Error(value.pan); } });
+  observed.push(await failure.dispatch(request, value, new AbortController().signal, () => current));
+  assert.equal(calls, before); assert.equal(JSON.stringify(observed).includes(value.pan), false);
 });

@@ -8,13 +8,13 @@ export function fixtures(seed: string, suffix = ''): { item: VaultItem; value: V
   const metadata: VaultItem['metadata'][] = [
     { kind: 'login', credential: 'password' }, { kind: 'token', tokenType: 'api' }, { kind: 'token', tokenType: 'refresh' },
     ...(['ssn', 'legal_name', 'date_of_birth', 'tax_id'] as const).map(field => ({ kind: 'identity' as const, field, classification: 'synthetic' as const, provenanceRef: 'private-fixture' })),
-    { kind: 'payment_method', providerRef: 'provider', customerRef: 'customer', paymentAccountRef: 'payment-account' },
+    { kind: 'payment_method', instrument: 'credit_card' },
   ];
   return metadata.map((m, i) => {
     const item = { metadata: m, reference: m.kind === 'payment_method'
       ? { kind: 'payment_method', paymentRef: `payment-${i}${suffix}`, revision: 1 }
       : { kind: 'secret', itemRef: `secret-${i}${suffix}`, revision: 1 } } as VaultItem;
-    const value = m.kind === 'payment_method' ? { adapterRef: `${secret('adapter').slice(0,8)}-abcd-4123-8123-${secret('adapter').slice(8,20)}` }
+    const value = m.kind === 'payment_method' ? { pan: [...secret('card').slice(0,16)].map(c => parseInt(c, 16) % 10).join(''), cardholderName: secret('cardholder'), expiryMonth: '12', expiryYear: '2099' }
       : m.kind === 'login' ? { password: secret(`canary-${i}`) }
       : m.kind === 'token' ? { token: secret(`canary-${i}`) } : { value: secret(`canary-${i}`) };
     return { item, value };
@@ -43,7 +43,7 @@ export function keyService(seed: string) {
 }
 export function privateScan(seed: string, outputs: unknown): boolean {
   const serialized = JSON.stringify(outputs);
-  const raw = fixtures(seed).flatMap(f => Object.values(f.value));
+  const raw = fixtures(seed).flatMap(f => Object.entries(f.value).filter(([k]) => !k.startsWith('expiry')).map(([,v]) => v));
   const key = keyBytes(seed);
   const versions = [2, 3, 99].flatMap(v => {
     const b = keyBytes(seed, v);

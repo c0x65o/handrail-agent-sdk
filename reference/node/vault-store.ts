@@ -1,3 +1,4 @@
+import type { VaultCardValue } from '../../src/server/payment-vault.js';
 import type { KeyObject } from 'node:crypto';
 import { eq } from 'drizzle-orm';
 import type { JobIdentity } from '../../src/contracts/job.js';
@@ -8,7 +9,7 @@ import { vaultTables } from './db/schema.js';
 export type VaultScope = JobIdentity['host'];
 /** Private host/executor values. Never export these through SDK/model tools. */
 export type VaultValue = { readonly password: string } | { readonly token: string }
-  | { readonly value: string } | { readonly adapterRef: string };
+  | { readonly value: string } | VaultCardValue;
 export interface VaultKeyReference { readonly keyHandle: string; readonly keyVersion: number }
 export interface VaultKeyService {
   /** Host-owned stable opaque handle/version per actual key; no fallback or key discovery. */
@@ -20,8 +21,8 @@ export interface VaultStorageHost {
   /** Resolve the authenticated principal from trusted server context, enforce the
    * exact item/version ACL, approve nonsecret aliases and synthetic provenance,
    * and derive ALL scope dimensions. Never trust client-supplied policy facts.
-   * For payment writes approve the specialized adapter alias as well. */
-  authorize(operation: VaultStorageOperation, item: VaultItem, adapterRef?: string): Promise<VaultScope | null>;
+   * Card values are accepted only through authenticated private entry. */
+  authorize(operation: VaultStorageOperation, item: VaultItem): Promise<VaultScope | null>;
 }
 export type VaultStoreResult<T> = { readonly ok: true; readonly value: T }
   | { readonly ok: false; readonly code: 'invalid_payload' | 'not_authorized' | 'conflict' | 'unavailable' };
@@ -43,8 +44,7 @@ export function createVaultStore(db: ReferenceDatabase, host: VaultStorageHost, 
           value = copy(privateValue);
           if (item.reference.revision !== 1 || !valueValid(item, value)) throw Error();
         } catch { return reject('invalid_payload'); }
-        const adapterRef = 'adapterRef' in value ? value.adapterRef : undefined;
-        const scope = await authorize('create', item, adapterRef), id = itemId(item);
+        const scope = await authorize('create', item), id = itemId(item);
         const [state] = await db.select().from(states).where(eq(states.itemId, id));
         const [existing] = await db.select().from(items).where(eq(items.itemId, id));
         if (state || existing) {
@@ -52,20 +52,20 @@ export function createVaultStore(db: ReferenceDatabase, host: VaultStorageHost, 
           if (state && state.status !== 'active') reject('not_authorized');
           reject('conflict');
         }
-        await recheck('create', item, scope, adapterRef);
+        await recheck('create', item, scope);
         const reference = copy(await keys.active(copy(scope)));
         if (!keyReference(reference)) reject('unavailable');
-        await recheck('create', item, scope, adapterRef);
+        await recheck('create', item, scope);
         const key = await resolveKey(keys, scope, reference);
-        await recheck('create', item, scope, adapterRef);
+        await recheck('create', item, scope);
         const row = encrypt({ itemId: id, revision: item.reference.revision, scope, item,
           envelopeVersion: 1, algorithm: 'aes-256-gcm', ...reference }, value, key);
-        await recheck('create', item, scope, adapterRef);
+        await recheck('create', item, scope);
         await db.transaction(async tx => {
           const saved = await tx.insert(states).values({ itemId: id, scope, revision: row.revision,
             generation: 1, status: 'active', activeNonce: row.nonce }).onConflictDoNothing().returning();
           if (saved.length !== 1) reject('conflict');
-          await recheck('create', item, scope, adapterRef);
+          await recheck('create', item, scope);
           const inserted = await tx.insert(items).values(row).onConflictDoNothing().returning({ id: items.itemId });
           if (inserted.length !== 1) reject('conflict');
         });

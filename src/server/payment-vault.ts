@@ -1,143 +1,95 @@
-import type { VaultEntryRequest } from '../contracts/vault.js';
-import { validateVaultEntryRequest, validateVaultOperationSchema } from '../contracts/vault.js';
-import type { JobStoreResult } from './job-store.js';
-import { sameLeaseValue, validLeaseAuthority } from './job-lease.js';
-import type { JobLeaseAuthority } from './job-lease.js';
-import type { VaultEntryBinding, VaultEntryHandle, VaultEntryHost, VaultEntryPhase, VaultEntryStore } from './vault-entry.js';
+import type { VaultOperation, VaultPaymentDestination } from '../contracts/vault.js';
+import { validateVaultOperationSchema } from '../contracts/vault.js';
+import { createVaultEntry } from './vault-entry.js';
+import type { VaultEntryHost, VaultEntryStore } from './vault-entry.js';
+import type { TrustedVaultExecutor } from './vault-use.js';
+import { sameLeaseValue } from './job-lease.js';
 
-/** Server-owned registration, never a client capability declaration. No production
- * qualification is available. A fixture pass cannot enable production custody. */
-export interface PaymentAdapterRegistration {
-  readonly adapterRef: string;
-  readonly version: string;
-  readonly environmentRef: string;
-  readonly qualification: 'synthetic_boundary_only';
+/** Trusted server custody only. Never a tool argument, observation or public DTO.
+ * Security codes are deliberately unsupported: entry rejects them, including
+ * unknown aliases. They must not be stored, even in encrypted custody. */
+export interface VaultCardValue {
+  readonly pan: string;
+  readonly cardholderName: string;
+  readonly expiryMonth: string;
+  readonly expiryYear: string;
 }
-export interface PaymentSession {
-  readonly handle: VaultEntryHandle;
-  readonly binding: VaultEntryBinding;
-  readonly adapter: PaymentAdapterRegistration;
+export function validateVaultCardValue(value: unknown): value is VaultCardValue {
+  try {
+    if (!value || typeof value !== 'object' || ![Object.prototype, null].includes(Object.getPrototypeOf(value))) return false;
+    const keys = ['pan', 'cardholderName', 'expiryMonth', 'expiryYear'];
+    if (Reflect.ownKeys(value).length !== keys.length) return false;
+    for (const key of keys) {
+      const d = Object.getOwnPropertyDescriptor(value, key);
+      if (!d?.enumerable || !('value' in d) || typeof d.value !== 'string') return false;
+    }
+    const c = value as VaultCardValue;
+    return /^[0-9]{12,19}$/.test(c.pan) && /^(0[1-9]|1[0-2])$/.test(c.expiryMonth)
+      && /^[0-9]{4}$/.test(c.expiryYear) && c.cardholderName.length > 0 && c.cardholderName.length <= 256
+      && !/[\u0000-\u001f\u007f]/.test(c.cardholderName);
+  } catch { return false; }
 }
-export interface PaymentCompletion {
-  readonly session: PaymentSession;
-  /** Authenticated completion origin, independently established by the adapter. */
-  readonly origin: string;
-  /** Host-approved nonsecret UUID alias, NOT a provider token or instrument ID. */
-  readonly custody: { readonly adapterRef: string };
+
+/** Authenticated private-entry facade over the existing session/outbox service.
+ * The host authenticates every phase and origin independently of the handle.
+ * capture accepts values only on that private route; selection takes no value.
+ * Atomic storage consumes card completion once, persists encrypted custody and
+ * exact consent, then delivers the original job's reference-only answer. */
+export function createPaymentVault(host: VaultEntryHost, store: VaultEntryStore<VaultCardValue>) {
+  const scoped: VaultEntryHost = { now: () => host.now(), withAuthority: (request, phase, run) => {
+    if (request.metadata.kind !== 'payment_method') return Promise.resolve({ ok: false, code: 'invalid_payload' });
+    return host.withAuthority(request, phase, run);
+  } };
+  const entry = createVaultEntry(scoped, store);
+  return entry;
 }
-export interface SpecializedPaymentAdapter {
-  /** Idempotently bind hosted/tokenized entry or existing-reference selection.
-   * Card data and transient security codes stay wholly inside this adapter.
-   * No URL, provider handle, raw field, error body or telemetry returns to SDK. */
-  open(session: PaymentSession): Promise<void>;
-  /** Resolve authenticated server-side completion independently of client input.
-   * Authenticate provider callbacks and session/origin/account/environment/purpose;
-   * verify existing-item ownership on selection. Hold reference validity and consent
-   * stable through run AND its storage commit. Never create authority from a token
-   * string supplied by a client. Returned custody alias must be host-approved. */
-  withCompletion<T>(session: PaymentSession,
-    run: (completion: PaymentCompletion) => Promise<JobStoreResult<T>>): Promise<JobStoreResult<T>>;
-  /** Recheck revocation, reference ownership and consent even on delivery retry;
-   * hold that authority until run and commit finish. No provider mutation. */
-  withReference<T>(session: PaymentSession, run: () => Promise<JobStoreResult<T>>): Promise<JobStoreResult<T>>;
+
+/** Registration-only private browser boundary. This is the existing trusted
+ * executor extension point, not a browser controller. The browser owner must
+ * fence lease/document/navigation and complete frame ancestry through the write;
+ * compare the actual origin, frame, field kind and form endpoint again in the
+ * renderer immediately before assignment; check isCurrent after async work.
+ * It must suppress observations/screenshots/traces containing private fields,
+ * never submit the form, and return only the fixed outcome. */
+export interface PrivateCardDestination {
+  withTarget<T>(request: VaultOperation, signal: AbortSignal,
+    run: (target: {
+      readonly destination: VaultPaymentDestination;
+      fill(value: string, isCurrent: () => boolean): Promise<'verified' | 'unknown'>;
+    }) => Promise<T>): Promise<T>;
 }
-export interface PaymentVaultHost extends VaultEntryHost {
-  readonly paymentMode: 'synthetic_sandbox' | 'unsupported';
-}
-const copy = <T>(v: T): T => JSON.parse(JSON.stringify(v)) as T;
-const denied = (): JobStoreResult<never> => ({ ok: false, code: 'not_authorized' });
-const invalid = (): JobStoreResult<never> => ({ ok: false, code: 'invalid_payload' });
-function exact(v: unknown, keys: string[]): v is Record<string, unknown> {
-  if (!v || typeof v !== 'object' || ![Object.prototype, null].includes(Object.getPrototypeOf(v))) return false;
-  return Reflect.ownKeys(v).length === keys.length && keys.every(k => {
-    const d = Object.getOwnPropertyDescriptor(v, k);
-    return d?.enumerable && 'value' in d;
-  });
-}
-function handle(v: unknown): v is VaultEntryHandle {
-  return exact(v, ['sessionRef', 'revision']) && typeof v.sessionRef === 'string'
-    && /^[A-Za-z0-9_-]{32,128}$/.test(v.sessionRef) && Number.isSafeInteger(v.revision) && (v.revision as number) > 0;
-}
-function alias(v: unknown): v is { adapterRef: string } {
-  return exact(v, ['adapterRef']) && typeof v.adapterRef === 'string'
-    && /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(v.adapterRef);
-}
-/** Reference handoff only: no purchase, charge, provider token input or raw capture.
- * Store must consume payment completion once atomically, persist consent and the
- * original-job answer outbox, and fence expiry/cancel/revisions at commit. */
-export function createPaymentVault(host: PaymentVaultHost, store: VaultEntryStore<{ readonly adapterRef: string }>,
-  registration: PaymentAdapterRegistration, adapter: SpecializedPaymentAdapter) {
-  const registered = copy(registration);
-  async function authorized<T>(request: VaultEntryRequest, phase: VaultEntryPhase, expected: VaultEntryBinding | undefined,
-    run: (b: VaultEntryBinding, a: JobLeaseAuthority) => Promise<JobStoreResult<T>>): Promise<JobStoreResult<T>> {
-    if (host.paymentMode !== 'synthetic_sandbox' || registered.qualification !== 'synthetic_boundary_only'
-      || !exact(registered, ['adapterRef', 'version', 'environmentRef', 'qualification'])
-      || ![registered.adapterRef, registered.version, registered.environmentRef].every(v => typeof v === 'string' && /^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/.test(v))
-      || request.identity.host.environmentRef !== registered.environmentRef) return denied();
-    return host.withAuthority(copy(request), phase, async input => {
-      const a = copy(input), g = a.grant, lease = { host: a.host, grantRevision: a.grantRevision, cancellationRevision: a.cancellationRevision };
-      const now = host.now();
-      if (!validLeaseAuthority(lease, request.identity) || a.actorRef !== request.requirement.actor.actorRef
-        || !['new_input', 'existing_item'].includes(a.source)
-        || !exact(g, ['request', 'issuedAt', 'expiresAt', 'state', 'permissions', 'itemExpiresAt', 'taskExpiresAt'])
-        || !exact(g.permissions, ['use', 'reveal', 'export']) || !validateVaultOperationSchema(g.request).ok
-        || g.request.item.metadata.kind !== 'payment_method' || !sameLeaseValue(g.request.identity, request.identity)
-        || !sameLeaseValue(g.request.effect, request.effect) || !sameLeaseValue(g.request.item.metadata, request.metadata)
-        || g.request.jobRevision <= request.jobRevision || g.state !== 'active' || g.permissions.use !== true
-        || g.permissions.reveal !== false || g.permissions.export !== false || !Number.isSafeInteger(now) || now < 0
-        || ![g.issuedAt, g.expiresAt, g.itemExpiresAt, g.taskExpiresAt].every(Number.isSafeInteger)
-        || g.issuedAt < 0 || g.issuedAt > now || request.issuedAt > now || g.expiresAt <= g.issuedAt || g.expiresAt - g.issuedAt > 300_000
-        || request.expiresAt > Math.min(g.expiresAt, g.itemExpiresAt, g.taskExpiresAt)
-        || (phase !== 'expire' && now >= request.expiresAt)) return denied();
-      const b = { request, source: a.source, grant: g, paymentAdapter: registered };
-      if (expected && !sameLeaseValue(b, expected)) return denied();
-      return run(b, lease);
-    });
-  }
-  async function safe<T>(run: () => Promise<JobStoreResult<T>>): Promise<JobStoreResult<T>> {
-    try { return await run(); } catch { return { ok: false, code: 'unavailable' }; }
-  }
-  // Only release the SDK/store's result, never an arbitrary adapter error/body.
-  async function guarded<A, T>(invoke: (run: (arg: A) => Promise<JobStoreResult<T>>) => Promise<JobStoreResult<T>>,
-    run: (arg: A) => Promise<JobStoreResult<T>>): Promise<JobStoreResult<T>> {
-    let result: JobStoreResult<T> | undefined, called = false;
-    const returned = await invoke(async arg => {
-      if (called) return denied();
-      called = true;
-      result = copy(await run(arg));
-      return copy(result);
-    });
-    return result && sameLeaseValue(returned, result) ? result : denied();
-  }
-  async function session<T>(input: VaultEntryHandle, phase: VaultEntryPhase,
-    run: (s: PaymentSession, a: JobLeaseAuthority) => Promise<JobStoreResult<T>>): Promise<JobStoreResult<T>> {
-    return safe(async () => {
-      if (!handle(input)) return invalid();
-      const h = copy(input), found = await store.lookup(h);
-      if (!found.ok) return found;
-      if (!validateVaultEntryRequest(found.value.request).ok || found.value.request.metadata.kind !== 'payment_method') return denied();
-      return authorized(found.value.request, phase, found.value, (b, a) => run({ handle: h, binding: b, adapter: registered }, a));
-    });
-  }
+/** Project only the single authorized card field into a registered private sink.
+ * createVaultUse supplies durable effect identity, grant/cancel/lifecycle locks,
+ * expiry rechecks, at-most-once dispatch and read-only unknown-effect recovery. */
+export function createPaymentFillExecutor<PrivateValue>(
+  registration: Pick<TrustedVaultExecutor<PrivateValue>, 'operationRef' | 'bind' | 'reconcile'>,
+  browser: PrivateCardDestination,
+): TrustedVaultExecutor<PrivateValue> {
   return {
-    issue: (request: VaultEntryRequest) => safe(async () => {
-      if (!validateVaultEntryRequest(request).ok || request.metadata.kind !== 'payment_method') return invalid();
-      return authorized(copy(request), 'issue', undefined, async (b, a) => {
-        const result = await store.issue(b, a, () => host.now());
-        if (result.ok) await adapter.open(copy({ handle: result.value, binding: b, adapter: registered }));
-        return result;
-      });
-    }),
-    complete: (input: VaultEntryHandle) => session(input, 'capture', (s, a) =>
-      guarded<PaymentCompletion, import('../contracts/vault.js').VaultEntryCompletion>(run => adapter.withCompletion(copy(s), run), c => {
-        if (!exact(c, ['session', 'origin', 'custody']) || !alias(c.custody)
-          || c.origin !== s.binding.request.origin || !sameLeaseValue(c.session, s)) return Promise.resolve(denied());
-        return store.capture(s.handle, s.binding, a, () => host.now(), copy(c.custody));
-      })),
-    deliver: (input: VaultEntryHandle) => session(input, 'deliver', (s, a) =>
-      guarded<void, import('./answer.js').JobAnswerReceipt>(run => adapter.withReference(copy(s), () => run()),
-        () => store.deliver(s.handle, s.binding, a, () => host.now()))),
-    withdraw: (input: VaultEntryHandle) => session(input, 'withdraw', (s, a) => store.close(s.handle, s.binding, a, () => host.now(), 'withdraw')),
-    expire: (input: VaultEntryHandle) => session(input, 'expire', (s, a) => store.close(s.handle, s.binding, a, () => host.now(), 'expire')),
+    operationRef: registration.operationRef,
+    bind: registration.bind.bind(registration),
+    reconcile: registration.reconcile.bind(registration),
+    async dispatch(request, value, signal, isCurrent) {
+      if (!validateVaultOperationSchema(request).ok || request.operation !== 'fill'
+        || request.item.metadata.kind !== 'payment_method' || !validateVaultCardValue(value)
+        || signal.aborted || !isCurrent()) return 'unknown';
+      const bound = JSON.parse(JSON.stringify(request)) as VaultOperation;
+      const destination = bound.destination as VaultPaymentDestination;
+      const field = { card_number: 'pan', cardholder_name: 'cardholderName',
+        card_expiry_month: 'expiryMonth', card_expiry_year: 'expiryYear' }[destination.fieldKind] as keyof VaultCardValue;
+      const privateField = value[field];
+      let called = false;
+      let observed: 'verified' | 'unknown' = 'unknown';
+      try {
+        const returned = await browser.withTarget(JSON.parse(JSON.stringify(bound)) as VaultOperation, signal, async target => {
+          if (called || signal.aborted || !isCurrent() || !sameLeaseValue(target.destination, destination)) return 'unknown';
+          called = true;
+          const result = await target.fill(privateField, () => !signal.aborted && isCurrent());
+          observed = result === 'verified' ? 'verified' : 'unknown';
+          return observed;
+        });
+        return called && returned === observed ? observed : 'unknown';
+      } catch { return 'unknown'; }
+    },
   };
 }

@@ -30,8 +30,7 @@ existing services; this reference store is not a competing native controller.
    Ciphertext/lifecycle state, grant revision and the stable completion/outbox fact
    commit in **one transaction**. Any failure rolls all of them back. A retry
    returns the same completion; changed private input conflicts inside the private
-   custody boundary, without storing a secret-derived digest. Payment input is
-   rejected here pending the specialized payment adapter task.
+   custody boundary, without storing a secret-derived digest. Credit-card input uses this same encrypted custody path. Card completion is one-shot; security codes are unsupported and rejected.
 3. `deliver(handle)` needs no private input or encryption key. It authenticates
    again, verifies the current job/challenge and exact persisted item/grant revision,
    and calls `createJobAnswer(...).complete` on the same transaction. The answer

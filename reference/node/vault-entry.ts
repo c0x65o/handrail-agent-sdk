@@ -107,14 +107,8 @@ export function createVaultEntryStore(db: ReferenceDatabase, storage: VaultStora
     capture: (h, b, a, now, privateValue) => locked(h, b, a, now, async (tx, row) => {
       const completion = await current(tx, b, a, now, row), custody = createVaultStore(tx, storage, keys, vt), grant = grants(tx, now);
       const payment = completion.item.metadata.kind === 'payment_method';
-      if (payment && (!b.paymentAdapter || row.completion)) reject('not_authorized');
-      if (b.source === 'existing_item' && privateValue !== undefined && !payment) reject('invalid_payload');
-      if (payment && b.source === 'existing_item') {
-        // The authenticated adapter must select the same host-approved custody
-        // alias already stored for this item, not substitute another instrument.
-        const saved = unwrap(await custody.readForExecutor(completion.item));
-        if (!sameLeaseValue(saved, privateValue)) reject('not_authorized');
-      }
+      if (payment && row.completion) reject('not_authorized');
+      if (b.source === 'existing_item' && privateValue !== undefined) reject('invalid_payload');
       if (row.completion) {
         unwrap(await grant.check(b.grant));
         if (b.source === 'new_input' && privateValue !== undefined) {

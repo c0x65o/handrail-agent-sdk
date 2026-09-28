@@ -67,9 +67,7 @@ checked after private key resolution and immediately before executor entry.
 
 The host must hold authenticated native authority stable through each callback
 and commit. This contract is not a replacement for Handrail's native authority.
-HTTP/browser/payment executor implementations and live-provider proof remain
-separate dependent items; the tests use synthetic credentials and trusted fixture
-executors, with no network effects.
+Card field projection is implemented by `createPaymentFillExecutor`; production browser ownership remains a separate dependent item. The use tests cover tokens and cards with synthetic values and registered private fixture executors. No payment provider or live card operation is required.
 
 ## Focused verification
 

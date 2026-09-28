@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
-import test from 'node:test';
+import nodeTest from 'node:test';
+import { createPaymentFillExecutor } from '../.reference-build/src/server/payment-vault.js';
 import { randomBytes, createSecretKey } from 'node:crypto';
 import { createPostgresHarness } from '../.postgres-build/postgres.js';
 import { migrations } from './helpers/migrations.mjs';
@@ -13,6 +14,8 @@ import { createJobCancellationStore } from '../.reference-build/reference/node/j
 const clone = v => structuredClone(v);
 const denied = r => assert.equal(r.ok, false);
 const gate = () => { let resolve; const promise = new Promise(r => { resolve = r; }); return { promise, resolve }; };
+for (const card of [false, true]) {
+const test = (name, fn) => nodeTest(`${card ? 'card' : 'token'}: ${name}`, fn);
 async function setup(t, shared = false) {
   const harness = await createPostgresHarness(); t.after(() => harness.cleanup());
   const client = await harness.client(); await migrations(t, harness, client);
@@ -21,21 +24,24 @@ async function setup(t, shared = false) {
   ok(await s.journal.append({ kind: 'submitted', previousRevision: 0,
     snapshot: { identity, state: 'queued', revision: 1, effects: [] } }));
   const fence = await start(s, 60_000);
-  const item = { metadata: { kind: 'token', tokenType: 'api' }, reference: { kind: 'secret', itemRef: 'private-item', revision: 1 } };
+  const item = card ? { metadata: { kind: 'payment_method', instrument: 'credit_card' }, reference: { kind: 'payment_method', paymentRef: 'private-card', revision: 1 } } : { metadata: { kind: 'token', tokenType: 'api' }, reference: { kind: 'secret', itemRef: 'private-item', revision: 1 } };
   const request = { identity, jobRevision: 2, grantRef: 'item-grant', grantRevision: 1,
     effect: { effectRef: 'vault-effect', actionRef: 'setup-action', operationRef: 'trusted-token-operation' },
     operation: 'server_request', item, destination: { endpoint: 'https://fixture.invalid/setup', method: 'POST', resourceRef: 'approved-resource', redirects: 'deny' } };
   const scope = { ...identity.host, userRef: shared ? 'item-owner' : identity.host.userRef };
   const state = { actorRef: identity.host.userRef, ownerAllowed: true, hostDenied: false, calls: 0, privateReads: 0,
     reads: 0, resolveHook: undefined, dispatchHook: undefined, reconcileHook: undefined, beforePhase: undefined };
-  const privateValue = randomBytes(24).toString('hex');
+  const privateValue = card ? `9${Array.from(randomBytes(15), b => b % 10).join('')}` : randomBytes(24).toString('hex');
+  if (card) { request.operation = 'fill'; request.destination = { origin: 'https://fixture.invalid', profileRef: 'profile', leaseEpoch: 1,
+    documentRef: 'document', navigationRevision: 1, frames: [{ frameRef: 'top', origin: 'https://fixture.invalid' }],
+    fieldRef: 'card-number', fieldKind: 'card_number', formEndpoint: 'https://fixture.invalid/setup', purposeRef: identity.host.purposeRef }; }
   const key = createSecretKey(randomBytes(32));
   const keys = { active: async () => ({ keyHandle: 'ephemeral-fixture', keyVersion: 1 }), resolve: async () => {
     state.privateReads++; await state.resolveHook?.(); return key;
   } };
   const storageHost = { authorize: async () => scope };
   const custody = createVaultStore(client.database(), storageHost, keys, vaultTables(harness.schema));
-  ok(await custody.create(item, { token: privateValue })); state.privateReads = 0;
+  ok(await custody.create(item, card ? { pan: privateValue, cardholderName: 'Synthetic fixture', expiryMonth: '12', expiryYear: '2099' } : { token: privateValue })); state.privateReads = 0;
   const owner = { now: () => s.state.now, withOwner: async (_item, _action, run) => state.ownerAllowed ? run(scope) : { ok: false, code: 'not_authorized' } };
   const grants = createVaultGrants(client.database(), owner, keys, harness.schema);
   const other = createVaultGrants(second.database(), owner, keys, harness.schema);
@@ -47,12 +53,19 @@ async function setup(t, shared = false) {
     return run({ host: s.state.scope ?? identity.host, grantRevision: s.state.grantRevision,
       cancellationRevision: s.state.cancellationRevision, actorRef: state.actorRef });
   } };
-  const executor = { operationRef: request.effect.operationRef, bind: r => vaultEffectRequest(r, 'fixture-vault-provider'),
+  let executor = { operationRef: request.effect.operationRef, bind: r => vaultEffectRequest(r, 'fixture-vault-provider'),
     reconcile: async () => { state.reads++; return state.reconcileHook ? state.reconcileHook() : 'not_applied'; },
     dispatch: async (_r, value, signal) => {
       state.calls++; assert.equal(value.token === privateValue, true, 'private custody delivered only to registered executor');
       return state.dispatchHook ? state.dispatchHook(signal) : 'verified';
     } };
+  if (card) executor = createPaymentFillExecutor(executor, { withTarget: async (r, signal, run) => run({
+    destination: clone(request.destination), fill: async (value, isCurrent) => {
+      assert.equal(isCurrent(), true); state.calls++;
+      assert.equal(value === privateValue, true, 'only authorized private field delivered');
+      return state.dispatchHook ? state.dispatchHook(signal) : 'verified';
+    },
+  }) });
   const use = createVaultUse(host, grants.use, [executor], 2000);
   const ledger = async () => (await client.query(`SELECT * FROM ${harness.table('job_effects')}`)).rows;
   const history = () => grants.administration.history(item);
@@ -77,8 +90,8 @@ test('table: personal/shared item authorization requires exact actor, item, scop
       [`wrong ${k}`, false, s => { s.request.identity.host[k] = 'other'; }]),
     ['wrong action', false, s => { s.request.effect.actionRef = 'other'; }],
     ['unregistered executor', false, s => { s.request.effect.operationRef = 'arbitrary-callback'; }],
-    ['wrong destination', false, s => { s.request.destination.endpoint = 'https://attacker.invalid/steal'; }],
-    ['wrong method', false, s => { s.request.destination.method = 'DELETE'; }],
+    ['wrong destination', false, s => { s.request.destination[card ? 'formEndpoint' : 'endpoint'] = 'https://attacker.invalid/steal'; }],
+    ['wrong method', false, s => { s.request.destination[card ? 'fieldRef' : 'method'] = 'DELETE'; }],
     ['wrong item version', false, s => { s.request.item.reference.revision = 2; }],
     ['wrong grant revision', false, s => { s.request.grantRevision = 2; }],
     ['expiry', false, s => { s.stateTime = 60_000; }],
@@ -133,7 +146,7 @@ for (const change of ['revoke', 'narrow']) test(`real PostgreSQL race: ${change}
   await paused.promise;
   assert.equal((await s.ledger())[0].observation.outcome, 'unknown');
   if (change === 'revoke') ok(await s.other.administration.revoke(s.item, 'item-grant', 1));
-  else { const narrower = clone(s.grant); narrower.request.grantRevision = 2; narrower.request.destination.method = 'GET'; ok(await s.other.administration.put(narrower, 1)); }
+  else { const narrower = clone(s.grant); narrower.request.grantRevision = 2; narrower.request.destination[card ? 'fieldRef' : 'method'] = 'GET'; ok(await s.other.administration.put(narrower, 1)); }
   resume.resolve(); denied(await execution);
   assert.equal(s.state.calls, 0); assert.equal(s.state.privateReads, 0);
   assert.equal((await s.ledger())[0].observation.outcome, 'unknown');
@@ -212,10 +225,10 @@ test('timeout during custody cannot dispatch later and retains unknown for recon
 test('browser origin/frame binding uses exact grant destination, before any private resolution', async t => {
   for (const field of ['origin', 'frame']) await t.test(field, async t => {
     const s = await setup(t);
-    s.request.operation = 'capture';
+    s.request.operation = card ? 'fill' : 'capture';
     s.request.destination = { origin: 'https://fixture.invalid', profileRef: 'profile', leaseEpoch: 1,
       documentRef: 'document', navigationRevision: 1, frames: [{ frameRef: 'top', origin: 'https://fixture.invalid' }],
-      fieldRef: 'token-field', fieldKind: 'token', formEndpoint: 'https://fixture.invalid/setup' };
+      fieldRef: 'token-field', fieldKind: card ? 'card_number' : 'token', formEndpoint: 'https://fixture.invalid/setup', ...(card ? { purposeRef: identity.host.purposeRef } : {}) };
     s.grant.request = clone(s.request); ok(await s.grants.administration.put(s.grant, 0));
     if (field === 'origin') { s.request.destination.origin = 'https://attacker.invalid'; s.request.destination.frames[0].origin = 'https://attacker.invalid'; }
     else s.request.destination.frames.push({ frameRef: 'cross-frame', origin: 'https://attacker.invalid' });
@@ -232,3 +245,16 @@ test('human reveal/export permissions never confer use and a payload disguised a
   const result = ok(await s.use.execute(s.request, s.fence)); assert.deepEqual(result, { outcome: 'unknown' });
   await s.scan(result, await s.history());
 });
+
+
+test('concurrent clients deliver one private effect and reject conflicting idempotency', async t => {
+  const s = await setup(t); ok(await s.grants.administration.put(s.grant, 0));
+  const other = createVaultUse(s.host, s.other.use, [s.executor], 2000);
+  const results = await Promise.all([s.use.execute(s.request, s.fence), other.execute(s.request, s.fence)]);
+  results.forEach(ok); assert.equal(s.state.calls, 1);
+  const conflict = clone(s.request); conflict.destination[card ? 'fieldRef' : 'resourceRef'] = 'different';
+  denied(await other.execute(conflict, s.fence)); assert.equal(s.state.calls, 1);
+  await s.scan(results);
+});
+
+}

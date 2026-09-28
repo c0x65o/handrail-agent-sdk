@@ -20,7 +20,7 @@ const metadata: Record<string, VaultMetadata> = {
   api: { kind: 'token', tokenType: 'api' },
   refresh: { kind: 'token', tokenType: 'refresh' },
   identity: { kind: 'identity', field: 'ssn', classification: 'synthetic', provenanceRef: 'fixture-1' },
-  payment: { kind: 'payment_method', providerRef: 'provider-1', customerRef: 'customer-1', paymentAccountRef: 'payment-account-1' },
+  payment: { kind: 'payment_method', instrument: 'credit_card' },
 };
 // Mutable synthetic fixtures deliberately support invalid-field injection.
 function item(family = 'login'): any {
@@ -47,15 +47,12 @@ function entryContext(family = 'login', source = 'new_input'): any {
 function browser(family = 'login'): any {
   return { origin: 'https://app.example', profileRef: 'profile-1', leaseEpoch: 3, documentRef: 'document-1', navigationRevision: 4,
     frames: [{ frameRef: 'top', origin: 'https://app.example' }, { frameRef: 'form-frame', origin: 'https://form.example' }],
-    fieldRef: 'field-1', fieldKind: family === 'identity' ? 'ssn' : family === 'login' ? 'password' : 'token', formEndpoint: 'https://form.example/submit',
-    ...(family === 'identity' ? { recipientRef: 'recipient-1', purposeRef: 'purpose-1', identityField: 'ssn' } : {}) };
+    fieldRef: 'field-1', fieldKind: family === 'payment' ? 'card_number' : family === 'identity' ? 'ssn' : family === 'login' ? 'password' : 'token', formEndpoint: 'https://form.example/submit',
+    ...(family === 'payment' ? { purposeRef: 'purpose-1' } : family === 'identity' ? { recipientRef: 'recipient-1', purposeRef: 'purpose-1', identityField: 'ssn' } : {}) };
 }
-function operation(family = 'login', op = family === 'payment' || family === 'api' || family === 'refresh' ? 'server_request' : 'fill'): any {
+function operation(family = 'login', op = family === 'api' || family === 'refresh' ? 'server_request' : 'fill'): any {
   return structuredClone({ identity, jobRevision: 3, grantRef: 'grant-1', grantRevision: 1, effect, operation: op, item: item(family),
-    destination: op !== 'server_request' ? browser(family) : family === 'payment'
-      ? { endpoint: 'https://provider.example/payment-methods', method: 'POST', redirects: 'deny', providerRef: 'provider-1',
-        customerRef: 'customer-1', paymentAccountRef: 'payment-account-1', merchantRef: 'merchant-1', payeeRef: 'payee-1', purposeRef: 'purpose-1', action: 'verify' }
-      : { endpoint: 'https://api.example/resource', method: 'GET', resourceRef: 'resource-1', redirects: 'deny' } });
+    destination: op !== 'server_request' ? browser(family) : { endpoint: 'https://api.example/resource', method: 'GET', resourceRef: 'resource-1', redirects: 'deny' } });
 }
 function useContext(family = 'login', op?): any {
   const c = authority(family);
@@ -204,16 +201,16 @@ test('operation/family and destination rules reject even mutually matching clien
     ['api', v => v.destination.endpoint = 'https://other-api.example/resource'],
     ['api', v => v.destination.method = 'POST'],
     ['identity', v => v.destination.recipientRef = 'other-recipient'],
-    ['payment', v => v.destination.merchantRef = 'other-merchant'],
-    ['payment', v => v.destination.payeeRef = 'other-payee'],
-    ['payment', v => v.destination.action = 'attach'],
+    ['payment', v => v.destination.fieldRef = 'other-field'],
+    ['payment', v => v.destination.frames[1].frameRef = 'other-frame'],
+    ['payment', v => v.destination.fieldKind = 'cardholder_name'],
   ]) {
     const v = operation(family); mutate(v);
     const independentlyAdmitted = useContext(family); independentlyAdmitted.grant.request = structuredClone(v);
     valid(validateVaultOperation(v, independentlyAdmitted, now));
     invalid(validateVaultOperation(v, useContext(family), now), 'binding_mismatch');
   }
-  for (const [family, op] of [['payment', 'fill'], ['payment', 'capture'], ['identity', 'capture'], ['identity', 'server_request'], ['login', 'server_request'], ['api', 'fill']]) {
+  for (const [family, op] of [['payment', 'server_request'], ['payment', 'capture'], ['identity', 'capture'], ['identity', 'server_request'], ['login', 'server_request'], ['api', 'fill']]) {
     const v = operation(family, op), c = useContext(family, op); invalid(validateVaultOperation(v, c, now));
   }
   for (const [family, mutate] of [

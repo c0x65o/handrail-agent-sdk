@@ -4,7 +4,7 @@ import * as server from 'handrail-agent-sdk/server';
 import { validateConnectionEnsureInput, validateConnectionEnsureResult, validateConnectionReconnect } from 'handrail-agent-sdk';
 import type { ConnectionEnsureInput, ConnectionEnsureResult, ConnectionState } from 'handrail-agent-sdk';
 type AssertEmpty<T extends never> = T;
-type ServerExports = AssertEmpty<Exclude<keyof typeof server, 'createJobAdmission' | 'createJobLease' | 'createJobCancellation' | 'createJobAnswer' | 'createEffects' | 'createVaultUse' | 'createVaultEntry' | 'createPaymentVault' | 'createVaultRequestExecutor'>>;
+type ServerExports = AssertEmpty<Exclude<keyof typeof server, 'createJobAdmission' | 'createJobLease' | 'createJobCancellation' | 'createJobAnswer' | 'createEffects' | 'createVaultUse' | 'createVaultEntry' | 'createPaymentVault' | 'createPaymentFillExecutor' | 'validateVaultCardValue' | 'createVaultRequestExecutor'>>;
 const states: Record<JobState, boolean> = { queued: true, running: true, waiting: true, succeeded: true, failed: true, cancelled: true };
 declare const identity: JobIdentity;
 const command: JobCommand = { command: 'cancel', identity, expectedRevision: 2, reason: 'explicit_stop' };
@@ -93,7 +93,7 @@ vaultCompletion.item.value;
 // @ts-expect-error Public operations cannot export values.
 const exportOperation: VaultOperation = { ...vaultOperation, operation: 'export' };
 if (vaultOperation.operation === 'fill') {
-  // @ts-expect-error Browser fill never accepts specialized payment references.
+  // @ts-expect-error Generic secret references cannot substitute for opaque card references.
   const browserReference: VaultSecretReference = payment;
   broker.fill(vaultOperation);
 }
@@ -221,21 +221,19 @@ entry.close(entryHandle);
 entry.read(entryHandle);
 
 import { createPaymentVault } from 'handrail-agent-sdk/server';
-import type { PaymentVaultHost, PaymentAdapterRegistration, SpecializedPaymentAdapter } from 'handrail-agent-sdk/server';
-declare const paymentHost: PaymentVaultHost;
-declare const paymentStore: VaultEntryStore<{ readonly adapterRef: string }>;
-declare const paymentAdapter: SpecializedPaymentAdapter;
-declare const paymentRegistration: PaymentAdapterRegistration;
-const payments = createPaymentVault(paymentHost, paymentStore, paymentRegistration, paymentAdapter);
-void payments.complete(entryHandle);
-// @ts-expect-error No client token or raw card input on payment completion.
-payments.complete({ ...entryHandle, pan: 'synthetic' });
-// @ts-expect-error No CVV argument or provider token string creates authority.
-payments.complete(entryHandle, { cvv: 'synthetic' });
+import type { VaultCardValue } from 'handrail-agent-sdk/server';
+declare const paymentHost: VaultEntryHost;
+declare const paymentStore: VaultEntryStore<VaultCardValue>;
+const payments = createPaymentVault(paymentHost, paymentStore);
+void payments.capture(entryHandle);
+// @ts-expect-error No card fields on public session handles.
+payments.capture({ ...entryHandle, pan: 'synthetic' });
+// @ts-expect-error Security codes cannot enter custody.
+payments.capture(entryHandle, { cvv: 'synthetic' });
 // @ts-expect-error Payment factory exposes no purchase operation.
 payments.purchase(entryHandle);
-// @ts-expect-error Specialized payment adapters are not public client contracts.
-import type { SpecializedPaymentAdapter as PublicPaymentAdapter } from 'handrail-agent-sdk';
+// @ts-expect-error Private card values are not public client contracts.
+import type { VaultCardValue as PublicCardValue } from 'handrail-agent-sdk';
 
 import { createVaultRequestExecutor } from 'handrail-agent-sdk/server';
 import type { VaultHttpClient, VaultRequestRecipe } from 'handrail-agent-sdk/server';
