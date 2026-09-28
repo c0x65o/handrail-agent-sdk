@@ -1,0 +1,89 @@
+{
+  "schema_version": 1,
+  "baseline_sha": "e3c0e6d5790cf02fcd9fbc005c705d09148ba3e3",
+  "branch": "lane/agent-sdk-v1",
+  "publication": "uncommitted candidate; native worker owns commit and push",
+  "aggregate_algorithm": "SHA-256 of sorted UTF-8 lines: file SHA-256 + two spaces + relative path + newline",
+  "candidate_sha256": "6a9a2e2326bdb5e8980d04ff175b5e313074351b2281644427f5d0da1acb814b",
+  "implementation_sha256": "2804715c5ec17a8927e27f7bc26d8243eba1e3a3ac89861f134f91a39843a543",
+  "files": [
+    {
+      "path": "package.json",
+      "sha256": "2af906826cac0201efb2c2fe821bc814c8b282b1f61acddcc8fdd5512fd0cb76"
+    },
+    {
+      "path": "reference/node/connection-store.ts",
+      "sha256": "17475fd718e9c978f397da91dcc6e31e330eb3a0c99e0375f259cb6d296f9932"
+    },
+    {
+      "path": "reference/node/db/migrations/0012_connection_store.sql",
+      "sha256": "e39a7d3b94324d54cbd5dc59f722d02e6fefda8c1b61b2546876acccf0f7cf75"
+    },
+    {
+      "path": "reference/node/db/migrations/meta/0012_snapshot.json",
+      "sha256": "7b13dd23275fe068c095e119c6f03cfb884531c4dafeb1ea2269063f9560adfb"
+    },
+    {
+      "path": "reference/node/db/migrations/meta/_journal.json",
+      "sha256": "99cbbb29e2c7091dc3402f753622d9d3511c1fbb5566821294728409406d41b0"
+    },
+    {
+      "path": "reference/node/db/schema.ts",
+      "sha256": "fa6e3a8ff2ead3828f032b6690443b4e01dec3b2d052fc67e9c22106f907a250"
+    },
+    {
+      "path": "src/server/connection-store.ts",
+      "sha256": "ff56db1177abda01d46b4eff8aefe80b85e1ab80a0ea1625882cfb327ea9e21e"
+    },
+    {
+      "path": "src/server/index.ts",
+      "sha256": "eea480c5681c022828479428644d2390dcde1425885d0c76a45646b61c54a101"
+    },
+    {
+      "path": "tests/reference/connection-store.test.ts",
+      "sha256": "1c3108268c5bd977a03b628360c113e96917846207d959e1e9751d4e867476d1"
+    },
+    {
+      "path": "tests/run-local-postgres.mjs",
+      "sha256": "32c241af058b9948425d7f11de044e9385de6921d61acbb6a3a00cffc8e03f17"
+    }
+  ],
+  "receipts": [
+    {
+      "path": "docs/evidence/connection-store/disposable-run.txt",
+      "sha256": "844327ddca5b8b875d35d36b4e6fa8a675699395a69979ea43420eff61296ada"
+    },
+    {
+      "path": "docs/evidence/connection-store/final-connection-run.txt",
+      "sha256": "de23a39bdc31ce4951a31b84c2c1e510333659f3128ebcade793515cb5643df8"
+    }
+  ],
+  "checks": {
+    "build": "passed",
+    "build:reference": "passed",
+    "build:test-reference": "passed",
+    "diff_check": "passed"
+  },
+  "final_distinct_tests": {
+    "connection_store": 23,
+    "connection_contract": 63,
+    "journal": 14,
+    "vault_use": 41,
+    "total": 141,
+    "failed": 0,
+    "skipped": 0
+  },
+  "migrations": {
+    "count": 13,
+    "rerun": "passed",
+    "constraints": "passed",
+    "late_failure_rollback": "passed"
+  },
+  "cleanup": {
+    "both_owned_clusters_stopped": true,
+    "remaining_postgres_directories": 0,
+    "remaining_migration_directories": 0,
+    "sentinel_preserved": true
+  },
+  "proof_kind": "synthetic disposable PostgreSQL persistence, no live provider or installed QA proof"
+}

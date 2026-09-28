@@ -217,3 +217,37 @@ export function browserProfileTables(namespace = referenceSchemaName) {
   return { snapshots, states };
 }
 export const { snapshots: browserProfileSnapshots, states: browserProfileStates } = browserProfileTables();
+
+/** Immutable admissions, current private revisions, and canonical receipt history. */
+export function connectionTables(namespace = referenceSchemaName) {
+  const schema = pgSchema(namespace);
+  const connections = schema.table('connections', {
+    connectionRef: text('connection_ref').primaryKey(),
+    scope: jsonb('scope').$type<JobIdentity['host']>().notNull(),
+    providerRef: text('provider_ref').notNull(),
+    capabilityDigest: text('capability_digest').notNull(),
+    recipeVersion: text('recipe_version').notNull(),
+    evidenceMode: text('evidence_mode').$type<'fixture' | 'provider'>().notNull(),
+    request: jsonb('request').$type<import('../../../src/contracts/connection.js').ConnectionEnsureInput>().notNull(),
+    revision: bigint('revision', { mode: 'number' }).notNull(),
+    snapshot: jsonb('snapshot').$type<import('../../../src/server/connection-store.js').ConnectionSnapshot>().notNull(),
+  }, t => [unique('connections_logical_identity').on(t.scope, t.providerRef, t.capabilityDigest, t.recipeVersion, t.evidenceMode),
+    check('connections_revision', sql`${t.revision} between 1 and 9007199254740991`),
+    check('connections_mode', sql`${t.evidenceMode} in ('fixture', 'provider')`)]);
+  const revisions = schema.table('connection_revisions', {
+    connectionRef: text('connection_ref').notNull().references(() => connections.connectionRef),
+    revision: bigint('revision', { mode: 'number' }).notNull(),
+    command: jsonb('command').$type<import('../connection-store.js').ConnectionMutation>().notNull(),
+    snapshot: jsonb('snapshot').$type<import('../../../src/server/connection-store.js').ConnectionSnapshot>().notNull(),
+  }, t => [primaryKey({ columns: [t.connectionRef, t.revision] }),
+    check('connection_revisions_positive', sql`${t.revision} between 1 and 9007199254740991`)]);
+  const receipts = schema.table('connection_receipts', {
+    receiptRef: text('receipt_ref').primaryKey(),
+    connectionRef: text('connection_ref').notNull().references(() => connections.connectionRef),
+    credentialRevision: bigint('credential_revision', { mode: 'number' }).notNull(),
+    grantRevision: bigint('grant_revision', { mode: 'number' }).notNull(),
+    evidence: jsonb('evidence').$type<import('../../../src/contracts/connection.js').ConnectionEvidence>().notNull(),
+  }, t => [check('connection_receipt_revisions', sql`${t.credentialRevision} between 1 and 9007199254740991 and ${t.grantRevision} between 1 and 9007199254740991`)]);
+  return { connections, revisions, receipts };
+}
+export const { connections, revisions: connectionRevisions, receipts: connectionReceipts } = connectionTables();

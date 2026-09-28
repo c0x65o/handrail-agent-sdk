@@ -36,7 +36,7 @@ try {
   for (const key of Object.keys(env)) if (key.startsWith('PG') || key === 'NODE_PG_FORCE_NATIVE') delete env[key];
   console.log('Fresh isolated PostgreSQL 15 cluster initialized; dedicated disposable database and non-superuser fixture role; connection values withheld.');
   const suites = process.argv.slice(2);
-  const allowed = ['test:browser-profile', 'test:vault-request', 'test:payment-vault', 'test:vault-entry', 'test:vault-use', 'test:vault-lifecycle', 'test:vault', 'test:lease', 'test:effects', 'test:cancel', 'test:answer', 'test:worker', 'test:submit', 'test:journal', 'test:postgres'];
+  const allowed = ['test:connection-store', 'test:browser-profile', 'test:vault-request', 'test:payment-vault', 'test:vault-entry', 'test:vault-use', 'test:vault-lifecycle', 'test:vault', 'test:lease', 'test:effects', 'test:cancel', 'test:answer', 'test:worker', 'test:submit', 'test:journal', 'test:postgres'];
   if (suites.some(suite => !allowed.includes(suite))) throw Error('INVALID_FIXTURE_SUITE');
   for (const command of suites.length ? suites : allowed) {
     result = spawnSync('npm', ['run', command], { env, stdio: 'inherit' });

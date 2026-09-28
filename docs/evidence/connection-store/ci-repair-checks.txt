@@ -1,0 +1,405 @@
+
+> handrail-agent-sdk@0.0.0.17 build
+> tsc -p tsconfig.json
+
+npm notice
+npm notice New major version of npm available! 10.9.8 -> 12.1.0
+npm notice Changelog: https://github.com/npm/cli/releases/tag/v12.1.0
+npm notice To update run: npm install -g npm@12.1.0
+npm notice
+
+> handrail-agent-sdk@0.0.0.17 build:reference
+> tsc -p reference/tsconfig.json
+
+
+> handrail-agent-sdk@0.0.0.17 build:test-reference
+> tsc -p tests/tsconfig.reference.json
+
+TAP version 13
+# Subtest: fixture: requested
+ok 1 - fixture: requested
+  ---
+  duration_ms: 3.194547
+  type: 'test'
+  ...
+# Subtest: fixture: inspecting
+ok 2 - fixture: inspecting
+  ---
+  duration_ms: 0.558662
+  type: 'test'
+  ...
+# Subtest: fixture: authenticating
+ok 3 - fixture: authenticating
+  ---
+  duration_ms: 0.356422
+  type: 'test'
+  ...
+# Subtest: fixture: configuring
+ok 4 - fixture: configuring
+  ---
+  duration_ms: 0.376999
+  type: 'test'
+  ...
+# Subtest: fixture: verifying
+ok 5 - fixture: verifying
+  ---
+  duration_ms: 0.498918
+  type: 'test'
+  ...
+# Subtest: fixture: waiting_for_user
+ok 6 - fixture: waiting_for_user
+  ---
+  duration_ms: 0.480211
+  type: 'test'
+  ...
+# Subtest: fixture: waiting_for_provider
+ok 7 - fixture: waiting_for_provider
+  ---
+  duration_ms: 0.346751
+  type: 'test'
+  ...
+# Subtest: fixture: reauthorization_required
+ok 8 - fixture: reauthorization_required
+  ---
+  duration_ms: 1.124318
+  type: 'test'
+  ...
+# Subtest: fixture: unknown_effect
+ok 9 - fixture: unknown_effect
+  ---
+  duration_ms: 0.666502
+  type: 'test'
+  ...
+# Subtest: fixture: ready
+ok 10 - fixture: ready
+  ---
+  duration_ms: 0.916993
+  type: 'test'
+  ...
+# Subtest: provider: requested
+ok 11 - provider: requested
+  ---
+  duration_ms: 0.371958
+  type: 'test'
+  ...
+# Subtest: provider: inspecting
+ok 12 - provider: inspecting
+  ---
+  duration_ms: 0.22223
+  type: 'test'
+  ...
+# Subtest: provider: authenticating
+ok 13 - provider: authenticating
+  ---
+  duration_ms: 0.207958
+  type: 'test'
+  ...
+# Subtest: provider: configuring
+ok 14 - provider: configuring
+  ---
+  duration_ms: 0.158299
+  type: 'test'
+  ...
+# Subtest: provider: verifying
+ok 15 - provider: verifying
+  ---
+  duration_ms: 0.15653
+  type: 'test'
+  ...
+# Subtest: provider: waiting_for_user
+ok 16 - provider: waiting_for_user
+  ---
+  duration_ms: 0.195986
+  type: 'test'
+  ...
+# Subtest: provider: waiting_for_provider
+ok 17 - provider: waiting_for_provider
+  ---
+  duration_ms: 0.17664
+  type: 'test'
+  ...
+# Subtest: provider: reauthorization_required
+ok 18 - provider: reauthorization_required
+  ---
+  duration_ms: 0.293207
+  type: 'test'
+  ...
+# Subtest: provider: unknown_effect
+ok 19 - provider: unknown_effect
+  ---
+  duration_ms: 0.304631
+  type: 'test'
+  ...
+# Subtest: provider: ready
+ok 20 - provider: ready
+  ---
+  duration_ms: 0.320431
+  type: 'test'
+  ...
+# Subtest: input uses existing job scope, optional custody references and distinct stable effect identity
+ok 21 - input uses existing job scope, optional custody references and distinct stable effect identity
+  ---
+  duration_ms: 0.714488
+  type: 'test'
+  ...
+# Subtest: ready rejects wrong evidence scope: tenantRef
+ok 22 - ready rejects wrong evidence scope: tenantRef
+  ---
+  duration_ms: 0.333086
+  type: 'test'
+  ...
+# Subtest: ready rejects wrong evidence scope: userRef
+ok 23 - ready rejects wrong evidence scope: userRef
+  ---
+  duration_ms: 0.242917
+  type: 'test'
+  ...
+# Subtest: ready rejects wrong evidence scope: projectRef
+ok 24 - ready rejects wrong evidence scope: projectRef
+  ---
+  duration_ms: 0.222093
+  type: 'test'
+  ...
+# Subtest: ready rejects wrong evidence scope: accountRef
+ok 25 - ready rejects wrong evidence scope: accountRef
+  ---
+  duration_ms: 0.210742
+  type: 'test'
+  ...
+# Subtest: ready rejects wrong evidence scope: environmentRef
+ok 26 - ready rejects wrong evidence scope: environmentRef
+  ---
+  duration_ms: 0.223728
+  type: 'test'
+  ...
+# Subtest: ready rejects wrong evidence scope: purposeRef
+ok 27 - ready rejects wrong evidence scope: purposeRef
+  ---
+  duration_ms: 0.281815
+  type: 'test'
+  ...
+# Subtest: ready rejects provider
+ok 28 - ready rejects provider
+  ---
+  duration_ms: 0.349332
+  type: 'test'
+  ...
+# Subtest: ready rejects prerequisite version
+ok 29 - ready rejects prerequisite version
+  ---
+  duration_ms: 0.258915
+  type: 'test'
+  ...
+# Subtest: ready rejects missing capability
+ok 30 - ready rejects missing capability
+  ---
+  duration_ms: 0.344306
+  type: 'test'
+  ...
+# Subtest: ready rejects unrelated capability
+ok 31 - ready rejects unrelated capability
+  ---
+  duration_ms: 0.798727
+  type: 'test'
+  ...
+# Subtest: ready rejects duplicate capability
+ok 32 - ready rejects duplicate capability
+  ---
+  duration_ms: 0.215877
+  type: 'test'
+  ...
+# Subtest: ready rejects absent evidence
+ok 33 - ready rejects absent evidence
+  ---
+  duration_ms: 0.182742
+  type: 'test'
+  ...
+# Subtest: ready rejects browser login
+ok 34 - ready rejects browser login
+  ---
+  duration_ms: 0.178305
+  type: 'test'
+  ...
+# Subtest: ready rejects token presence
+ok 35 - ready rejects token presence
+  ---
+  duration_ms: 0.350669
+  type: 'test'
+  ...
+# Subtest: ready rejects setup grant
+ok 36 - ready rejects setup grant
+  ---
+  duration_ms: 0.34185
+  type: 'test'
+  ...
+# Subtest: ready rejects spending authority
+ok 37 - ready rejects spending authority
+  ---
+  duration_ms: 0.292239
+  type: 'test'
+  ...
+# Subtest: ready rejects ads authority
+ok 38 - ready rejects ads authority
+  ---
+  duration_ms: 0.295077
+  type: 'test'
+  ...
+# Subtest: ready rejects unverified authorization
+ok 39 - ready rejects unverified authorization
+  ---
+  duration_ms: 0.292619
+  type: 'test'
+  ...
+# Subtest: ready rejects expired authorization
+ok 40 - ready rejects expired authorization
+  ---
+  duration_ms: 0.275308
+  type: 'test'
+  ...
+# Subtest: ready rejects revoked authorization
+ok 41 - ready rejects revoked authorization
+  ---
+  duration_ms: 0.20885
+  type: 'test'
+  ...
+# Subtest: ready rejects elapsed active expiry
+ok 42 - ready rejects elapsed active expiry
+  ---
+  duration_ms: 0.245341
+  type: 'test'
+  ...
+# Subtest: ready rejects elapsed evidence expiry
+ok 43 - ready rejects elapsed evidence expiry
+  ---
+  duration_ms: 0.342102
+  type: 'test'
+  ...
+# Subtest: ready rejects future evidence
+ok 44 - ready rejects future evidence
+  ---
+  duration_ms: 0.364827
+  type: 'test'
+  ...
+# Subtest: ready rejects inverted interval
+ok 45 - ready rejects inverted interval
+  ---
+  duration_ms: 0.339983
+  type: 'test'
+  ...
+# Subtest: ready rejects fixture evidence for provider
+ok 46 - ready rejects fixture evidence for provider
+  ---
+  duration_ms: 0.331873
+  type: 'test'
+  ...
+# Subtest: expiry/revocation are valid non-ready reauthorization states, never renewed by validation
+ok 47 - expiry/revocation are valid non-ready reauthorization states, never renewed by validation
+  ---
+  duration_ms: 3.443588
+  type: 'test'
+  ...
+# Subtest: typed missing requirement: credentials_required
+ok 48 - typed missing requirement: credentials_required
+  ---
+  duration_ms: 0.362845
+  type: 'test'
+  ...
+# Subtest: typed missing requirement: authentication_challenge
+ok 49 - typed missing requirement: authentication_challenge
+  ---
+  duration_ms: 0.259304
+  type: 'test'
+  ...
+# Subtest: typed missing requirement: consent_required
+ok 50 - typed missing requirement: consent_required
+  ---
+  duration_ms: 0.390727
+  type: 'test'
+  ...
+# Subtest: typed missing requirement: account_selection
+ok 51 - typed missing requirement: account_selection
+  ---
+  duration_ms: 0.311998
+  type: 'test'
+  ...
+# Subtest: typed missing requirement: authority_required
+ok 52 - typed missing requirement: authority_required
+  ---
+  duration_ms: 0.344388
+  type: 'test'
+  ...
+# Subtest: typed missing requirement: review_pending
+ok 53 - typed missing requirement: review_pending
+  ---
+  duration_ms: 0.398725
+  type: 'test'
+  ...
+# Subtest: typed missing requirement: access_level_required
+ok 54 - typed missing requirement: access_level_required
+  ---
+  duration_ms: 0.348589
+  type: 'test'
+  ...
+# Subtest: typed missing requirement: account_role_required
+ok 55 - typed missing requirement: account_role_required
+  ---
+  duration_ms: 0.331079
+  type: 'test'
+  ...
+# Subtest: typed missing requirement: prerequisite_unavailable
+ok 56 - typed missing requirement: prerequisite_unavailable
+  ---
+  duration_ms: 0.305529
+  type: 'test'
+  ...
+# Subtest: typed missing requirement: capability_missing
+ok 57 - typed missing requirement: capability_missing
+  ---
+  duration_ms: 0.295683
+  type: 'test'
+  ...
+# Subtest: waits require precise, bound, nonempty outstanding requirements
+ok 58 - waits require precise, bound, nonempty outstanding requirements
+  ---
+  duration_ms: 1.267979
+  type: 'test'
+  ...
+# Subtest: result correlation and reconnect preserve every original job/task, scope, native, route and request leaf
+ok 59 - result correlation and reconnect preserve every original job/task, scope, native, route and request leaf
+  ---
+  duration_ms: 10.381622
+  type: 'test'
+  ...
+# Subtest: fixture receipts cannot be promoted through result binding, reconnect, intermediate states or replay
+ok 60 - fixture receipts cannot be promoted through result binding, reconnect, intermediate states or replay
+  ---
+  duration_ms: 1.864829
+  type: 'test'
+  ...
+# Subtest: unknown effects require the original logical effect and reconciliation reference; reconnect cannot clear or replay them
+ok 61 - unknown effects require the original logical effect and reconciliation reference; reconnect cannot clear or replay them
+  ---
+  duration_ms: 2.575183
+  type: 'test'
+  ...
+# Subtest: pure validation returns original values and leaves frozen inputs unchanged
+ok 62 - pure validation returns original values and leaves frozen inputs unchanged
+  ---
+  duration_ms: 0.733055
+  type: 'test'
+  ...
+# Subtest: nested payloads, errors, getters, hidden keys and malformed arrays fail without raw output
+ok 63 - nested payloads, errors, getters, hidden keys and malformed arrays fail without raw output
+  ---
+  duration_ms: 15.829793
+  type: 'test'
+  ...
+1..63
+# tests 63
+# suites 0
+# pass 63
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 167.58213

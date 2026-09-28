@@ -1,6 +1,6 @@
 {
   "name": "handrail-agent-sdk",
-  "version": "0.0.0.17",
+  "version": "0.0.0.18",
   "private": true,
   "description": "Handrail Agent SDK packaging bootstrap",
   "type": "module",
@@ -53,7 +53,8 @@
     "test:payment-vault": "npm run build:reference && npm run build:test-postgres && node --test --test-concurrency=1 --test-reporter=tap tests/payment-vault.test.mjs",
     "test:vault-entry": "npm run build:reference && npm run build:test-postgres && node --test --test-concurrency=1 --test-reporter=tap tests/vault-entry.test.mjs",
     "test:vault-request": "tsc -p tests/tsconfig.vault-request.json && node --test --test-concurrency=1 --test-reporter=tap .reference-build/tests/server/vault-request.test.js",
-    "test:browser-profile": "npm run build:test-reference && node --test --test-concurrency=1 --test-reporter=tap .reference-build/tests/reference/browser-profile-store.test.js"
+    "test:browser-profile": "npm run build:test-reference && node --test --test-concurrency=1 --test-reporter=tap .reference-build/tests/reference/browser-profile-store.test.js",
+    "test:connection-store": "npm run build:test-reference && node --test --test-concurrency=1 --test-reporter=tap .reference-build/tests/reference/connection-store.test.js"
   },
   "devDependencies": {
     "@types/node": "22.20.4",

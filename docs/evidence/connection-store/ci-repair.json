@@ -1,0 +1,258 @@
+{
+  "schema_version": 1,
+  "baseline_sha": "e3c0e6d5790cf02fcd9fbc005c705d09148ba3e3",
+  "branch": "lane/agent-sdk-v1",
+  "publication": "uncommitted candidate; native worker owns commit and push",
+  "repair": "Only tests/reference/vault-lifecycle.test.ts changed beyond the original candidate: remove three connection tables before rewinding the disposable migration ledger.",
+  "aggregate_algorithm": "SHA-256 of sorted UTF-8 lines: file SHA-256 + two spaces + relative path + newline",
+  "candidate_sha256": "2ca1b5afae1432f1125d99cd61023061e68d70f59b535d7d5a6a7691718f450c",
+  "original_candidate_sha256": "6a9a2e2326bdb5e8980d04ff175b5e313074351b2281644427f5d0da1acb814b",
+  "original_candidate_files_unchanged": true,
+  "files": [
+    {
+      "path": "package.json",
+      "sha256": "2af906826cac0201efb2c2fe821bc814c8b282b1f61acddcc8fdd5512fd0cb76"
+    },
+    {
+      "path": "reference/node/connection-store.ts",
+      "sha256": "17475fd718e9c978f397da91dcc6e31e330eb3a0c99e0375f259cb6d296f9932"
+    },
+    {
+      "path": "reference/node/db/migrations/0012_connection_store.sql",
+      "sha256": "e39a7d3b94324d54cbd5dc59f722d02e6fefda8c1b61b2546876acccf0f7cf75"
+    },
+    {
+      "path": "reference/node/db/migrations/meta/0012_snapshot.json",
+      "sha256": "7b13dd23275fe068c095e119c6f03cfb884531c4dafeb1ea2269063f9560adfb"
+    },
+    {
+      "path": "reference/node/db/migrations/meta/_journal.json",
+      "sha256": "99cbbb29e2c7091dc3402f753622d9d3511c1fbb5566821294728409406d41b0"
+    },
+    {
+      "path": "reference/node/db/schema.ts",
+      "sha256": "fa6e3a8ff2ead3828f032b6690443b4e01dec3b2d052fc67e9c22106f907a250"
+    },
+    {
+      "path": "src/server/connection-store.ts",
+      "sha256": "ff56db1177abda01d46b4eff8aefe80b85e1ab80a0ea1625882cfb327ea9e21e"
+    },
+    {
+      "path": "src/server/index.ts",
+      "sha256": "eea480c5681c022828479428644d2390dcde1425885d0c76a45646b61c54a101"
+    },
+    {
+      "path": "tests/reference/connection-store.test.ts",
+      "sha256": "1c3108268c5bd977a03b628360c113e96917846207d959e1e9751d4e867476d1"
+    },
+    {
+      "path": "tests/reference/vault-lifecycle.test.ts",
+      "sha256": "2c20cf7153cd879ae2f9a31867e487d405aebb54819003de2ba8ef8f956fee38"
+    },
+    {
+      "path": "tests/run-local-postgres.mjs",
+      "sha256": "32c241af058b9948425d7f11de044e9385de6921d61acbb6a3a00cffc8e03f17"
+    }
+  ],
+  "receipts": [
+    {
+      "path": "docs/evidence/connection-store/ci-repair-before.txt",
+      "sha256": "3a6d93333d7d1fd719984c7fe66737333a9041a505b92bdb585397b35232aeac"
+    },
+    {
+      "path": "docs/evidence/connection-store/ci-repair-checks.txt",
+      "sha256": "40ac92f20e2afdaeb3e8922c50e52466d610e34add3b4c118251d0d6a0fd8e95"
+    },
+    {
+      "path": "docs/evidence/connection-store/ci-repair-disposable-run.txt",
+      "sha256": "7ac61c07066620773ab97b59d13967b231e0ff8228fa0a7be9acd604539378e0"
+    },
+    {
+      "path": "docs/evidence/connection-store/ci-repair-focused.txt",
+      "sha256": "6a2102f613696d2fb4235046bc6bc7bd4e677b2c4eb4df199444284873791c27"
+    }
+  ],
+  "commands": [
+    {
+      "command": "node tests/run-local-postgres.mjs test:vault-lifecycle",
+      "stage": "before repair",
+      "exit_code": 1,
+      "passed": 17,
+      "failed": 1,
+      "skipped": 0
+    },
+    {
+      "command": "node tests/run-local-postgres.mjs test:vault-lifecycle",
+      "stage": "after repair",
+      "exit_code": 0,
+      "passed": 18,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "command": "node tests/run-local-postgres.mjs",
+      "exit_code": 0,
+      "passed": 273,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "command": "npm run build",
+      "exit_code": 0,
+      "kind": "compile check"
+    },
+    {
+      "command": "npm run build:reference",
+      "exit_code": 0,
+      "kind": "compile check"
+    },
+    {
+      "command": "npm run build:test-reference",
+      "exit_code": 0,
+      "kind": "compile check"
+    },
+    {
+      "command": "node --test --test-concurrency=1 --test-reporter=tap tests/contracts/connection.test.mjs",
+      "exit_code": 0,
+      "passed": 63,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "command": "git diff --check",
+      "exit_code": 0
+    }
+  ],
+  "full_runner_suites": [
+    {
+      "suite": "test:connection-store",
+      "tests": 23,
+      "pass": 23,
+      "fail": 0,
+      "skipped": 0
+    },
+    {
+      "suite": "test:browser-profile",
+      "tests": 16,
+      "pass": 16,
+      "fail": 0,
+      "skipped": 0
+    },
+    {
+      "suite": "test:vault-request",
+      "tests": 15,
+      "pass": 15,
+      "fail": 0,
+      "skipped": 0
+    },
+    {
+      "suite": "test:payment-vault",
+      "tests": 33,
+      "pass": 33,
+      "fail": 0,
+      "skipped": 0
+    },
+    {
+      "suite": "test:vault-entry",
+      "tests": 50,
+      "pass": 50,
+      "fail": 0,
+      "skipped": 0
+    },
+    {
+      "suite": "test:vault-use",
+      "tests": 41,
+      "pass": 41,
+      "fail": 0,
+      "skipped": 0
+    },
+    {
+      "suite": "test:vault-lifecycle",
+      "tests": 18,
+      "pass": 18,
+      "fail": 0,
+      "skipped": 0
+    },
+    {
+      "suite": "test:vault",
+      "tests": 13,
+      "pass": 13,
+      "fail": 0,
+      "skipped": 0
+    },
+    {
+      "suite": "test:lease",
+      "tests": 9,
+      "pass": 9,
+      "fail": 0,
+      "skipped": 0
+    },
+    {
+      "suite": "test:effects",
+      "tests": 11,
+      "pass": 11,
+      "fail": 0,
+      "skipped": 0
+    },
+    {
+      "suite": "test:cancel",
+      "tests": 4,
+      "pass": 4,
+      "fail": 0,
+      "skipped": 0
+    },
+    {
+      "suite": "test:answer",
+      "tests": 6,
+      "pass": 6,
+      "fail": 0,
+      "skipped": 0
+    },
+    {
+      "suite": "test:worker",
+      "tests": 8,
+      "pass": 8,
+      "fail": 0,
+      "skipped": 0
+    },
+    {
+      "suite": "test:submit",
+      "tests": 11,
+      "pass": 11,
+      "fail": 0,
+      "skipped": 0
+    },
+    {
+      "suite": "test:journal",
+      "tests": 14,
+      "pass": 14,
+      "fail": 0,
+      "skipped": 0
+    },
+    {
+      "suite": "test:postgres",
+      "tests": 1,
+      "pass": 1,
+      "fail": 0,
+      "skipped": 0
+    }
+  ],
+  "final_distinct_tests": {
+    "passed": 336,
+    "failed": 0,
+    "skipped": 0
+  },
+  "migrations": {
+    "count": 13,
+    "rerun": "passed",
+    "v1_upgrade": "passed",
+    "sentinel_preserved": true,
+    "rollback": "passed"
+  },
+  "cleanup": {
+    "all_three_owned_clusters_stopped": true,
+    "remaining_postgres_directories": 0,
+    "remaining_migration_directories": 0
+  },
+  "proof_kind": "synthetic disposable PostgreSQL persistence, no live provider or installed QA proof"
+}

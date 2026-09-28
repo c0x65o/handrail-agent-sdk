@@ -21,3 +21,4 @@ export { createPaymentVault } from './payment-vault.js';
 export type { PaymentAdapterRegistration, PaymentSession, PaymentCompletion, SpecializedPaymentAdapter, PaymentVaultHost } from './payment-vault.js';
 export { createVaultRequestExecutor } from './vault-request.js';
 export type { VaultTokenRequest, VaultRequestBinding, VaultRequestRecipe, VaultHttpResponse, VaultHttpConnection, VaultHttpClient } from './vault-request.js';
+export type { ConnectionStore, ConnectionStoreHost, ConnectionStoreAuthority, ConnectionStoreOperation, ConnectionStoreResult, ConnectionStoreCode, ConnectionSnapshot, ConnectionCredentials, ConnectionVerificationBinding } from './connection-store.js';

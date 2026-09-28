@@ -85,6 +85,13 @@
       "when": 1790621397907,
       "tag": "0011_browser_profiles",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1790630000140,
+      "tag": "0012_connection_store",
+      "breakpoints": true
     }
   ]
 }
