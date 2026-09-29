@@ -1,0 +1,30 @@
+{
+  "name": "handrail-agent-sdk",
+  "version": "0.2.0",
+  "private": true,
+  "description": "Handrail Agent job contracts and host admission facade",
+  "type": "module",
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "files": [
+    "dist"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./server": {
+      "types": "./dist/server/index.d.ts",
+      "import": "./dist/server/index.js"
+    }
+  },
+  "scripts": {
+    "build": "node ./node_modules/typescript/bin/tsc -p tsconfig.json",
+    "prepare": "npm run build"
+  },
+  "devDependencies": {
+    "typescript": "5.9.3"
+  }
+}
