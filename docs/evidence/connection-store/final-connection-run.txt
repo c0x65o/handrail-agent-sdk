@@ -1,0 +1,164 @@
+Fresh isolated PostgreSQL 15 cluster initialized; dedicated disposable database and non-superuser fixture role; connection values withheld.
+
+> handrail-agent-sdk@0.0.0.17 test:connection-store
+> npm run build:test-reference && node --test --test-concurrency=1 --test-reporter=tap .reference-build/tests/reference/connection-store.test.js
+
+
+> handrail-agent-sdk@0.0.0.17 build:test-reference
+> tsc -p tests/tsconfig.reference.json
+
+TAP version 13
+# Subtest: current verification persists private revisions and restores the same reference through a fresh SQL connection
+ok 1 - current verification persists private revisions and restores the same reference through a fresh SQL connection
+  ---
+  duration_ms: 245.353408
+  type: 'test'
+  ...
+# Subtest: identical admission and CAS retries preserve the original fact; changed content conflicts
+ok 2 - identical admission and CAS retries preserve the original fact; changed content conflicts
+  ---
+  duration_ms: 241.205701
+  type: 'test'
+  ...
+# Subtest: verification racing revoke cannot publish stale readiness
+ok 3 - verification racing revoke cannot publish stale readiness
+  ---
+  duration_ms: 236.897777
+  type: 'test'
+  ...
+# Subtest: verification racing rotate cannot publish stale readiness
+ok 4 - verification racing rotate cannot publish stale readiness
+  ---
+  duration_ms: 212.197731
+  type: 'test'
+  ...
+# Subtest: rotation and revocation fence already-ready reads before any asynchronous cleanup
+ok 5 - rotation and revocation fence already-ready reads before any asynchronous cleanup
+  ---
+  duration_ms: 225.263618
+  type: 'test'
+  ...
+# Subtest: independent connections contend at a deterministic barrier: one CAS winner and one conflict
+ok 6 - independent connections contend at a deterministic barrier: one CAS winner and one conflict
+  ---
+  duration_ms: 210.244707
+  type: 'test'
+  ...
+# Subtest: concurrent identical admission has one durable logical identity; alias and immutable request changes are denied
+ok 7 - concurrent identical admission has one durable logical identity; alias and immutable request changes are denied
+  ---
+  duration_ms: 201.188343
+  type: 'test'
+  ...
+# Subtest: wrong tenantRef is denied on lookup and writes even with host scope supplied
+ok 8 - wrong tenantRef is denied on lookup and writes even with host scope supplied
+  ---
+  duration_ms: 202.063782
+  type: 'test'
+  ...
+# Subtest: wrong userRef is denied on lookup and writes even with host scope supplied
+ok 9 - wrong userRef is denied on lookup and writes even with host scope supplied
+  ---
+  duration_ms: 203.17647
+  type: 'test'
+  ...
+# Subtest: wrong projectRef is denied on lookup and writes even with host scope supplied
+ok 10 - wrong projectRef is denied on lookup and writes even with host scope supplied
+  ---
+  duration_ms: 195.098664
+  type: 'test'
+  ...
+# Subtest: wrong accountRef is denied on lookup and writes even with host scope supplied
+ok 11 - wrong accountRef is denied on lookup and writes even with host scope supplied
+  ---
+  duration_ms: 211.080576
+  type: 'test'
+  ...
+# Subtest: wrong environmentRef is denied on lookup and writes even with host scope supplied
+ok 12 - wrong environmentRef is denied on lookup and writes even with host scope supplied
+  ---
+  duration_ms: 212.830265
+  type: 'test'
+  ...
+# Subtest: wrong purposeRef is denied on lookup and writes even with host scope supplied
+ok 13 - wrong purposeRef is denied on lookup and writes even with host scope supplied
+  ---
+  duration_ms: 196.62537
+  type: 'test'
+  ...
+# Subtest: expiry is rechecked for ready reads and identical retries; stale grant bindings fail
+ok 14 - expiry is rechecked for ready reads and identical retries; stale grant bindings fail
+  ---
+  duration_ms: 217.25668
+  type: 'test'
+  ...
+# Subtest: credential, grant, authorization and evidence expiry are independently enforced
+ok 15 - credential, grant, authorization and evidence expiry are independently enforced
+  ---
+  duration_ms: 191.076841
+  type: 'test'
+  ...
+# Subtest: canonical receipt contents and revision bindings survive intermediate states and fresh stores
+ok 16 - canonical receipt contents and revision bindings survive intermediate states and fresh stores
+  ---
+  duration_ms: 228.059026
+  type: 'test'
+  ...
+# Subtest: receipt identity cannot be relabelled as provider evidence under a new admission
+ok 17 - receipt identity cannot be relabelled as provider evidence under a new admission
+  ---
+  duration_ms: 195.651518
+  type: 'test'
+  ...
+# Subtest: unresolved effects retain their original identity across reconnect, rotation and revocation
+ok 18 - unresolved effects retain their original identity across reconnect, rotation and revocation
+  ---
+  duration_ms: 191.542131
+  type: 'test'
+  ...
+# Subtest: composed SQL job cancellation and lease fences deny reads and stale verification
+ok 19 - composed SQL job cancellation and lease fences deny reads and stale verification
+  ---
+  duration_ms: 203.641142
+  type: 'test'
+  ...
+# Subtest: host denials, thrown diagnostics, malformed private metadata and SQL rollback return only fixed failures
+ok 20 - host denials, thrown diagnostics, malformed private metadata and SQL rollback return only fixed failures
+  ---
+  duration_ms: 199.092529
+  type: 'test'
+  ...
+# Subtest: migrations rerun, SQL constraints reject duplicates, and owned schema cleanup preserves an unrelated sentinel
+ok 21 - migrations rerun, SQL constraints reject duplicates, and owned schema cleanup preserves an unrelated sentinel
+  ---
+  duration_ms: 215.908993
+  type: 'test'
+  ...
+# All 13 migrations applied and rerun; logical uniqueness and revision constraints enforced; owned schema absent after cleanup; unrelated sentinel intact.
+# Subtest: fresh verification after local revocation requires a new grant revision and new canonical receipt
+ok 22 - fresh verification after local revocation requires a new grant revision and new canonical receipt
+  ---
+  duration_ms: 199.254587
+  type: 'test'
+  ...
+# Subtest: mutable caller input is detached before authority waits; expiry is checked after a SQL lock wait
+ok 23 - mutable caller input is detached before authority waits; expiry is checked after a SQL lock wait
+  ---
+  duration_ms: 211.945782
+  type: 'test'
+  ...
+1..23
+# tests 23
+# suites 0
+# pass 23
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 5313.215142
+npm notice
+npm notice New major version of npm available! 10.9.8 -> 12.1.0
+npm notice Changelog: https://github.com/npm/cli/releases/tag/v12.1.0
+npm notice To update run: npm install -g npm@12.1.0
+npm notice
+Owned temporary PostgreSQL cluster stopped.

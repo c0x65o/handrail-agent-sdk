@@ -1,0 +1,166 @@
+{
+  "schemaVersion": 1,
+  "itemId": "edcef128-4aba-4761-988f-025ad921986f",
+  "workRequestId": "86dafaaa-329e-47d7-829a-cab4fc59d868",
+  "ownerGoalId": "1b13c4ab-38c2-4d78-a5cb-238e2f257c62",
+  "recordedAt": "2026-09-28T06:01:08.741157+00:00",
+  "classification": "Local reference-host fixture using synthetic private values and real disposable PostgreSQL 15; no live-provider or deployed-host proof",
+  "source": {
+    "baseCommit": "2b18d55046af43a1ed80c3cc07b17e98c7519cc1",
+    "branch": "lane/agent-sdk-v1",
+    "candidateTreeSha": "cb7a7a4d0f4e72f39af57ebd8c8b58f7a513a025",
+    "candidateCommitSha": null,
+    "binding": "All nonignored tracked/untracked workspace files captured using a temporary Git index; excludes this evidence file to avoid self-reference. HEAD and lane index unchanged. Preserves the initial 13 tracked modifications and 31 untracked prerequisite files. No commit, push or deployment.",
+    "sha256": {
+      "src/server/vault-entry.ts": "3202e6063594245b087a5613b3ea8bb20d69c14aaf9c230a73914880baca4412",
+      "reference/node/vault-entry.ts": "170f4b45dace91f031883bc7d449d5b3532db1be01244982a5a903b70bb2fb88",
+      "src/server/vault-use.ts": "2fde896b388232bc34c09128c367e33ffbd401fa287eb54970918d1aec38af56",
+      "reference/node/vault-grants.ts": "f3cc9917da9de9f391e63cd1476ac903a7498f67df13aea46858a4e01c429e4a",
+      "src/server/index.ts": "5bd3684314b0779eb14e278a11faeef2a806745f48e7a3836f7df25209a4dbd6",
+      "reference/node/db/schema.ts": "816b835a1a05006293a2581e20054b9da0a9449f14eedbc3bf7295a09e88aa23",
+      "reference/node/db/migrations/0010_vault_entry.sql": "ccb607b2e46924cd3498f3afa59cf1a7ba91a6a1c8e22d28935d1a10020b5f6d",
+      "reference/node/db/migrations/meta/0010_snapshot.json": "f577b8bf303c3a0e53f035c16bb59b78e3eeaac302fed6ded4e1cba2253d4cd0",
+      "reference/node/db/migrations/meta/_journal.json": "bd0b6176ed915dc088e57cb763a06d80bc9213685d285b77be56f3d310573038",
+      "tests/vault-entry.test.mjs": "85b7ecd6d597e6d3e951f0c0a1530dd1e7b8278ed772dc606b3de211f3a45169",
+      "tests/helpers/vault-entry-fixture.mjs": "18136c36471c8cb15eb8c080c596e03cedcf0ce31031a0bdb90b142b1fb95fa1",
+      "tests/helpers/vault-entry-process.mjs": "251516ba77d3e728b0ee487eb52b478e5ce83d8b60aebf7a1e96b341379406cc",
+      "tests/reference/vault-lifecycle.test.ts": "413ad541e545551a36fab1c877517f396c23b1071d06bd15a07155014fdffbeb",
+      "tests/fixtures/consumer.mts": "778b371f5118654b886785caa9a4267366b80fb800656d2655ec7fd2006832ab",
+      "tests/packaging.test.mjs": "9aa4c356d3fd5c41ed2a868840335f33df271182d8febcf886c00a89bb0301f0",
+      "tests/run-local-postgres.mjs": "69be20e2a2e1ffa6898b9b6980a9a1d5aa6c1fd64863c67e11fd703290b9b311",
+      "package.json": "34de3246ae6153d7da06939bf5665b4cb800e8fa9b9bf4313d34894afc27197a",
+      "docs/vault-entry.md": "321da6152131ded98a8b079fc740ac41af8ac7c8d0d2abab16293b3925ae5323",
+      "src/contracts/vault.ts": "d0cae9779a5ab3d612750286eb7a0cc40278d379a75ac17552b698391f42a880",
+      "src/server/answer.ts": "f6fb25498f537a2872474729a983e9a1f31dcfaad92aafebd52fd9214dd44c10",
+      "reference/node/job-answer.ts": "762288cfc1e36302441fe4a10cb22fe3f5568e1496593bda63784bb13b714f1c",
+      "reference/node/vault-store.ts": "714e135d831b41c5bf6eafb37d95c478770f984d3a0c619b5f8209f8863bf464",
+      "reference/node/vault-private.ts": "424de7c5ee5d115ac28a0d5f4d8d84aafad3b5b8c049a81a07b1ec510f47e624",
+      "tests/helpers/postgres.ts": "2ef4b2a8b2765b11a2e8dceaed6d85983ab03cc3d77a9e37ba3ccba55c356040",
+      "tests/helpers/migrations.mjs": "5da670f44c598605df43da514493026c3578b22096e9397e75e8d138b5f2cda8"
+    }
+  },
+  "harness": {
+    "engine": "PostgreSQL 15",
+    "isolation": "Fresh owned temporary cluster; dedicated disposable database and non-superuser fixture role; per-case owned schemas; checked-in Drizzle migrations; independent SQL connections. No DATABASE_URL discovery.",
+    "cleanup": "Owned clusters stopped and removed by tests/run-local-postgres.mjs."
+  },
+  "checks": [
+    {
+      "command": "node tests/run-local-postgres.mjs test:vault-entry test:vault-lifecycle",
+      "exitCode": 0,
+      "suites": [
+        "vault-entry",
+        "vault-lifecycle"
+      ],
+      "tap": [
+        {
+          "tests": 50,
+          "pass": 50,
+          "fail": 0,
+          "cancelled": 0,
+          "skipped": 0
+        },
+        {
+          "tests": 18,
+          "pass": 18,
+          "fail": 0,
+          "cancelled": 0,
+          "skipped": 0
+        }
+      ],
+      "transcriptSha256": "55712dd4a5c7bc090557690b17d83ba324bb4f859310f7c45c7e3277d548a87b"
+    },
+    {
+      "command": "node tests/run-local-postgres.mjs test:vault-entry test:vault-use test:answer",
+      "exitCode": 0,
+      "suites": [
+        "vault-entry",
+        "vault-use",
+        "answer"
+      ],
+      "tap": [
+        {
+          "tests": 50,
+          "pass": 50,
+          "fail": 0,
+          "cancelled": 0,
+          "skipped": 0
+        },
+        {
+          "tests": 41,
+          "pass": 41,
+          "fail": 0,
+          "cancelled": 0,
+          "skipped": 0
+        },
+        {
+          "tests": 6,
+          "pass": 6,
+          "fail": 0,
+          "cancelled": 0,
+          "skipped": 0
+        }
+      ],
+      "transcriptSha256": "355f36f57170dc7dda3526e6c6e20814cace4ed1457b786ca4febc0d78ed4914",
+      "note": "Pre-final expiry-check run. Final entry source was rerun above; grant and answer regression source unchanged."
+    },
+    {
+      "command": "npm run build",
+      "result": "passed"
+    },
+    {
+      "command": "node node_modules/typescript/bin/tsc -p tests/fixtures/tsconfig.json",
+      "result": "passed"
+    },
+    {
+      "command": "npm run build:reference; npm run build:test-postgres; npm run build:test-reference",
+      "result": "passed via the sequential named SQL suite scripts"
+    },
+    {
+      "command": "node --test --test-concurrency=1 --test-reporter=tap tests/packaging.test.mjs",
+      "exitCode": 0,
+      "tap": [
+        {
+          "tests": 6,
+          "pass": 6,
+          "fail": 0,
+          "cancelled": 0,
+          "skipped": 0
+        }
+      ],
+      "transcriptSha256": "ec852e079213389133554624aa48685a983ae88719c71c66ab02ad49aad4de2f"
+    },
+    {
+      "command": "git diff --check",
+      "result": "passed"
+    }
+  ],
+  "receipt": {
+    "kind": "local_disposable_sql_acceptance",
+    "id": "vault-entry-86dafaaa-329e-47d7-829a-cab4fc59d868",
+    "candidateTreeSha": "cb7a7a4d0f4e72f39af57ebd8c8b58f7a513a025",
+    "uniquePassingTests": 121,
+    "failed": 0,
+    "skipped": 0,
+    "qaCampaignId": null,
+    "nativeVerifierReceipt": null
+  },
+  "acceptance": {
+    "concurrentCompletion": "For token, password and synthetic identity, independent SQL connections commit one encrypted item, one consent revision, one completion and one answered event. Duplicate separately authorized resume appends one original-job resumed event. Delivery itself leaves waiting.",
+    "conflict": "Changed private input returns fixed conflict; changed binding/item alias fails without an extra item.",
+    "crashRecovery": "Capture in a child process; SIGKILL after capture commit before delivery. Different fresh process with unavailable keys delivers event cursor 4; third fresh process replays the same answer. Counts: items=1, completions=1, answers=1, jobs=1.",
+    "rollback": "Actual SQL CHECK failures on captured/delivered session writes roll back ciphertext/lifecycle/consent or answer/challenge consumption respectively. Retry succeeds against the same original session.",
+    "fences": "Wrong actor/tenant/account/environment/purpose, native scope revision, destination/origin/frame, session revision, expiry, withdrawal, cancellation, superseded challenge/job, item lifecycle revoke and narrowed/revoked grant prevent capture or delivery.",
+    "lockContention": "Observed pg_stat_activity wait_event_type=Lock: withdrawal waits behind active delivery and cannot withdraw an already delivered session. Withdrawal-first cases prevent all delivery.",
+    "selection": "Existing-item selection uses the existing owner-grant CAS/check port and records the permitted-use revision before completion. Incorrect stored metadata and revoked lifecycle nonce deny grants.",
+    "secrecy": "Synthetic random private values stay in custody/fixture memory and encrypted rows; scanned session, grant, journal, challenge and answer outputs contain no canary. No child logs or key/plaintext IPC; fixed exception codes only.",
+    "migrations": "Drizzle Kit custom journal/snapshot plus generated schema-export SQL; one-time v1 migration replay and idempotent rerun tested in owned schemas."
+  },
+  "limits": [
+    "No independent QA campaign or native verifier receipt claimed.",
+    "HTTP/UI, payment adapter and delivery scheduling remain separately scoped tasks.",
+    "Host callbacks must authenticate and hold native authority stable through transaction commit.",
+    "A future permitted-use job revision is host-derived; answer delivery never supplies resume authorization.",
+    "No Handrail database/provider configuration changes, production/staging mutations, commits or pushes."
+  ]
+}

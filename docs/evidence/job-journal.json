@@ -1,0 +1,237 @@
+{
+  "schema_version": 1,
+  "recorded_date": "2026-09-27",
+  "item_id": "9aa6dbab-d7af-4c42-a24f-0c629e66c41e",
+  "work_request_id": "a1d24104-1262-4297-9745-eae7a37e6c2f",
+  "repository_id": "e22dd818-166e-4646-b83f-423861de18a6",
+  "change_lane_id": "convergence-loop-9689ef5f-b976-42ca-97a7-278658db473e",
+  "source": {
+    "branch": "lane/agent-sdk-v1",
+    "baseline_head": "fb216c20822b756bbeb2aee98d2d368dd175789d",
+    "initial_status": "clean",
+    "candidate": "uncommitted working-tree source; no version bump, commit, push or PR performed",
+    "candidate_sha256": "2ed44842b020d18e3ab9842d1cd84bdab1fedce5f72e77e1af7260e4ffa44c4d",
+    "fingerprint_algorithm": "SHA-256 of UTF-8 JSON file list, sorted by path, sort_keys=True, separators=(comma,colon); each file has path and SHA-256 bytes digest. This evidence file itself is excluded.",
+    "files": [
+      {
+        "path": ".gitignore",
+        "sha256": "0b28bf32783b249b32a3060e3644a5bd2bcdbfe9b6cc009a0a722a13d13f9727"
+      },
+      {
+        "path": "docs/job-journal.md",
+        "sha256": "0ce387674dfebc595231ad92a43267c7f867c873b5aa21db54bd20d13e57065f"
+      },
+      {
+        "path": "docs/local-postgres-testing.md",
+        "sha256": "c399c1b5a80f343124a1e4ac708987dedcfce2f924aa5858efd989778aee8af4"
+      },
+      {
+        "path": "drizzle.config.ts",
+        "sha256": "33c8215d50c51bc6ebe833f096f16cd91076e11e0311dbd0630db894ef4edfb0"
+      },
+      {
+        "path": "package-lock.json",
+        "sha256": "dd9c63fdef116371184393cfa9b2a721bea6935eb18ec077c4bd7cc6df6e185e"
+      },
+      {
+        "path": "package.json",
+        "sha256": "78a5d7d34e028f1c9bc180fd07b8e4d0db15f0aa6efd0ff43e4ce34972e76c25"
+      },
+      {
+        "path": "reference/node/db/database.ts",
+        "sha256": "f25725f09a88e3778271f9e12eac10b7130a6c317b8b5769e7f96f2d3f14e1ae"
+      },
+      {
+        "path": "reference/node/db/migrate.ts",
+        "sha256": "bb6472260286dd4382fde91548d8de944996c8d2190f2d35f95cf8a1f67be7ed"
+      },
+      {
+        "path": "reference/node/db/migrations/0000_brainy_wraith.sql",
+        "sha256": "a139d522f8a2b32fa937414f917c3a30a5a11db134553cbe0f5556f66bdb5d64"
+      },
+      {
+        "path": "reference/node/db/migrations/meta/0000_snapshot.json",
+        "sha256": "dc8dab3c200ae746a99b7b22044338b9fca2d807540539bb0b5f0886a061e364"
+      },
+      {
+        "path": "reference/node/db/migrations/meta/_journal.json",
+        "sha256": "334b4efe4c13ef37a48c58bfc95d90020f331ce36f014f6dd406e0a2c4925a03"
+      },
+      {
+        "path": "reference/node/db/schema.ts",
+        "sha256": "2927db4dc130c78af56ad080e6e51a2dd3e5e6dd4477d058f137bb546b8325d8"
+      },
+      {
+        "path": "reference/node/job-journal.ts",
+        "sha256": "5905e96ef89af0758e97259f3015914aa26a512e907905d6b0bd6ab4753934ea"
+      },
+      {
+        "path": "reference/tsconfig.json",
+        "sha256": "99bdda3052ba8a2f63f9911784bcb1d499411fb7213b0b860bd6737d91f903f2"
+      },
+      {
+        "path": "src/server/index.ts",
+        "sha256": "61850c5fae36d11a414e0dba4bda45b5e3b6c75a605d293a8a5db623ea08ae1d"
+      },
+      {
+        "path": "src/server/job-store.ts",
+        "sha256": "cd7f0a39de70f35a059cc2af9742360353a34a5d590ab94f86dfc1a31f8546ae"
+      },
+      {
+        "path": "tests/fixtures/consumer.mts",
+        "sha256": "3122ce5d881925617986a994712c7bec7c66c9a10fcb264242f34bcc2aadfd20"
+      },
+      {
+        "path": "tests/helpers/postgres.ts",
+        "sha256": "2ef4b2a8b2765b11a2e8dceaed6d85983ab03cc3d77a9e37ba3ccba55c356040"
+      },
+      {
+        "path": "tests/job-journal.test.mjs",
+        "sha256": "d347d55e6aa28ed64eb86ef023b2e3146c264c6ab24ca35db288dbc5045ea825"
+      },
+      {
+        "path": "tests/packaging.test.mjs",
+        "sha256": "b5588e8cfdba3b62e3cafe0c6fdfde04d616f5dcb4926e24f2d2dd5b5c269faf"
+      },
+      {
+        "path": "tests/run-local-postgres.mjs",
+        "sha256": "ed3231d6d6a162a6a6ae296710d17c106aed31580a5124d2d87ff46a5e0788a2"
+      },
+      {
+        "path": "tests/tsconfig.postgres.json",
+        "sha256": "8fe395af675665d14e123516a030ffcc8a446b0c0e311e6f7ec482c32479821d"
+      }
+    ]
+  },
+  "contracts_consulted": [
+    {
+      "slug": "handrail-node-postgres-drizzle-contract",
+      "published_revision": 1
+    },
+    {
+      "slug": "handrail-ai-sdk-implementation-contract",
+      "published_revision": 1
+    }
+  ],
+  "environment": {
+    "node": "22.23.1",
+    "postgresql": "15.19 (Debian 15.19-0+deb12u1)",
+    "drizzle_orm": "0.45.3",
+    "drizzle_kit": "0.31.11",
+    "pg": "8.23.0",
+    "connection_supply": "No preconfigured disposable variables. tests/run-local-postgres.mjs created a fresh private temporary PostgreSQL cluster, dedicated disposable database, and non-superuser role; injected its own connection only into the existing harness; stopped and removed the cluster. No shared database or control-plane SQL used. Connection values omitted."
+  },
+  "commands": [
+    {
+      "command": "npm install --save-exact drizzle-orm pg@8.23.0 && npm install --save-dev --save-exact drizzle-kit",
+      "result": "Installed locked Drizzle dependencies. pg moved from devDependencies to application dependencies for the Drizzle driver."
+    },
+    {
+      "command": "npm install --include=dev --ignore-scripts",
+      "result": "pass; final package-lock matches manifest"
+    },
+    {
+      "command": "npm run db:generate",
+      "result": "pass; generated four tables, SQL migration and metadata; final rerun reports no schema changes"
+    },
+    {
+      "command": "npm run build:reference && npm run build:test-postgres",
+      "result": "pass; strict repository source compilation, third-party declarations use skipLibCheck"
+    },
+    {
+      "command": "node tests/run-local-postgres.mjs",
+      "result": "pass; real PostgreSQL; fresh cluster cleaned",
+      "invoked": [
+        "npm run test:journal",
+        "npm run test:postgres"
+      ],
+      "tap": [
+        {
+          "suite": "tests/job-journal.test.mjs",
+          "tests": 14,
+          "pass": 14,
+          "fail": 0,
+          "skip": 0
+        },
+        {
+          "suite": "tests/postgres.test.mjs",
+          "tests": 1,
+          "pass": 1,
+          "fail": 0,
+          "skip": 0
+        }
+      ]
+    },
+    {
+      "command": "npm test",
+      "result": "pass; compiles SDK, acceptance fixtures, PostgreSQL helper and reference host",
+      "tap": {
+        "tests": 770,
+        "pass": 770,
+        "fail": 0,
+        "skip": 0
+      }
+    },
+    {
+      "command": "node node_modules/typescript/bin/tsc -p tests/fixtures/tsconfig.json",
+      "result": "pass; public JobStore type consumer and existing consumers"
+    },
+    {
+      "command": "git diff --check",
+      "result": "pass"
+    },
+    {
+      "command": "npm audit --omit=dev --json",
+      "result": "0 production vulnerabilities"
+    },
+    {
+      "command": "npm audit --include=dev --json",
+      "result": "4 moderate development-tool advisories (drizzle-kit -> @esbuild-kit/esm-loader -> @esbuild-kit/core-utils -> esbuild development-server advisory). No development server is launched. No forced or unrelated dependency upgrades performed."
+    }
+  ],
+  "sql_evidence": [
+    "Generated SQL applied using stock Drizzle migrator; only quoted namespace relocated to harness-owned UUID schema; ledger rerun retained one row; search_path stayed pg_catalog.",
+    "Distinct pg_backend_pid values verified for two simultaneous appends at revision 2; exactly one committed and one returned conflict; exactly two canonical events remained.",
+    "Concurrent identical admission returned one new fact and one replay; old-revision retry after advancement returned original canonical event; new delivery added only a separate delivery row.",
+    "Changed canonical content and reused delivery identity with changed content conflicted; complete before/after storage comparison proved no changes.",
+    "Original client closed; new clients reconstructed identical revision 3 state from missing and stale checkpoints and repaired projections.",
+    "Ahead, incompatible, malformed and fabricated checkpoints were rejected on reads and writes without mutation; canonical transition corruption was rejected even with a matching checkpoint.",
+    "All original/host/native/origin identity leaves except jobId (lookup key) fenced on append and load; invalid lifecycle transitions, skipped/unsafe revisions and unsupported raw/hidden/accessor fields left all tables unchanged.",
+    "Unknown-effect accounting survived terminal cancellation; removal and success with unknown effects rejected.",
+    "Injected checkpoint CHECK failure occurred after event/head/delivery writes; independent observer saw all four tables unchanged; subsequent valid append succeeded.",
+    "Injected final migration failure rolled back four generated application tables and ledger insertion; only empty migration ledger remained.",
+    "Database constraints rejected duplicate canonical keys and unsafe integer revisions.",
+    "Owned schema and table-owned migration sequence were removed using harness RESTRICT/OID ownership rules; independent schema sentinel remained intact.",
+    "Synchronous detachment prevented caller mutation after append invocation from changing stored identity or adding unsupported payload."
+  ],
+  "resolved_iteration_failures": [
+    {
+      "command": "node .reference-build/run-disposable-postgres.mjs (initial temporary runner)",
+      "journal_tap": {
+        "tests": 12,
+        "pass": 11,
+        "fail": 1,
+        "skip": 0
+      },
+      "cause": "Test attempted harness.table(__drizzle_migrations), rejected by existing qualified-identifier allowlist. Changed application/test migration ledger name to journal_migrations; did not weaken harness restrictions."
+    },
+    {
+      "command": "npm test (first regression run)",
+      "tap": {
+        "tests": 770,
+        "pass": 769,
+        "fail": 1,
+        "skip": 0
+      },
+      "cause": "Packaging assertion hard-coded two server type exports. Updated expected three type-only exports for JobStore and added typed consumer coverage. Final full suite passes."
+    }
+  ],
+  "unmet_acceptance_conditions": [],
+  "limits": [
+    "Reference-host storage only; no native Handrail adapter or runtime/provider qualification claimed.",
+    "Full canonical history is revalidated on every operation; checkpoints do not currently reduce validation cost.",
+    "Host must authorize all access and supply nonsecret references; shape/identity checks are not authorization.",
+    "Development-only Drizzle Kit transitive audit advisories recorded above."
+  ],
+  "publication": "No deployment, runtime configuration change, automatic publication setup, commit, push or PR performed; intended changes remain uncommitted."
+}

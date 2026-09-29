@@ -1,0 +1,144 @@
+Fresh isolated PostgreSQL 15 cluster initialized; dedicated disposable database and non-superuser fixture role; connection values withheld.
+
+> handrail-agent-sdk@0.0.0.17 test:vault-lifecycle
+> npm run build:test-reference && node --test --test-concurrency=1 --test-reporter=tap .reference-build/tests/reference/vault-lifecycle.test.js
+
+
+> handrail-agent-sdk@0.0.0.17 build:test-reference
+> tsc -p tests/tsconfig.reference.json
+
+TAP version 13
+# Subtest: fresh processes resume durable preparation for eight variants with unchanged references and exact target keys
+ok 1 - fresh processes resume durable preparation for eight variants with unchanged references and exact target keys
+  ---
+  duration_ms: 1420.996404
+  type: 'test'
+  ...
+# Writer exited after preparation; fresh reader recovered all 8 variants without source key access; references unchanged; captured diagnostics and SQL scans passed.
+# Subtest: concurrent commits have one winner; stale preparations and receipts cannot replace newer key state
+ok 2 - concurrent commits have one winner; stale preparations and receipts cannot replace newer key state
+  ---
+  duration_ms: 218.293437
+  type: 'test'
+  ...
+# Subtest: deleted fences pending recovery, reads, recreation and replayed backups before and after cleanup
+ok 3 - deleted fences pending recovery, reads, recreation and replayed backups before and after cleanup
+  ---
+  duration_ms: 206.861505
+  type: 'test'
+  ...
+# Subtest: revoked fences pending recovery, reads, recreation and replayed backups before and after cleanup
+ok 4 - revoked fences pending recovery, reads, recreation and replayed backups before and after cleanup
+  ---
+  duration_ms: 212.847418
+  type: 'test'
+  ...
+# Subtest: durable tombstone during read key resolution prevents decryption/output or persistence
+ok 5 - durable tombstone during read key resolution prevents decryption/output or persistence
+  ---
+  duration_ms: 200.428374
+  type: 'test'
+  ...
+# Subtest: durable tombstone during prepare key resolution prevents decryption/output or persistence
+ok 6 - durable tombstone during prepare key resolution prevents decryption/output or persistence
+  ---
+  duration_ms: 198.476293
+  type: 'test'
+  ...
+# Subtest: durable tombstone during prepare-target key resolution prevents decryption/output or persistence
+ok 7 - durable tombstone during prepare-target key resolution prevents decryption/output or persistence
+  ---
+  duration_ms: 189.14156
+  type: 'test'
+  ...
+# Subtest: durable tombstone during resume key resolution prevents decryption/output or persistence
+ok 8 - durable tombstone during resume key resolution prevents decryption/output or persistence
+  ---
+  duration_ms: 209.800668
+  type: 'test'
+  ...
+# Subtest: durable tombstone during create key resolution prevents decryption/output or persistence
+ok 9 - durable tombstone during create key resolution prevents decryption/output or persistence
+  ---
+  duration_ms: 189.672305
+  type: 'test'
+  ...
+# Subtest: final private output fence observes a deletion after decryption during authorization
+ok 10 - final private output fence observes a deletion after decryption during authorization
+  ---
+  duration_ms: 197.455624
+  type: 'test'
+  ...
+# Subtest: cleanup SQL interruption rolls back private removal but leaves committed tombstone retryable
+ok 11 - cleanup SQL interruption rolls back private removal but leaves committed tombstone retryable
+  ---
+  duration_ms: 203.205971
+  type: 'test'
+  ...
+# Subtest: missing and wrong exact keys fail closed; target-only recovery is retryable without key retirement
+ok 12 - missing and wrong exact keys fail closed; target-only recovery is retryable without key retirement
+  ---
+  duration_ms: 266.838227
+  type: 'test'
+  ...
+# Subtest: all six scopes and current host denial fence preparation/recovery/cleanup; changed scope during key access fails closed
+ok 13 - all six scopes and current host denial fence preparation/recovery/cleanup; changed scope during key access fails closed
+  ---
+  duration_ms: 216.142193
+  type: 'test'
+  ...
+# Subtest: missing/unavailable authoritative ledger and stale ciphertext fail closed without reconstruction
+ok 14 - missing/unavailable authoritative ledger and stale ciphertext fail closed without reconstruction
+  ---
+  duration_ms: 229.335166
+  type: 'test'
+  ...
+# Subtest: tampered prepared bindings cannot authenticate even with current host authorization
+ok 15 - tampered prepared bindings cannot authenticate even with current host authorization
+  ---
+  duration_ms: 228.45793
+  type: 'test'
+  ...
+# Subtest: generated migrations rerun safely; owned lifecycle schemas removed with independent sentinel intact
+ok 16 - generated migrations rerun safely; owned lifecycle schemas removed with independent sentinel intact
+  ---
+  duration_ms: 274.871594
+  type: 'test'
+  ...
+# Owned migrated lifecycle schema removed; independent sentinel preserved; migration reruns did not clear tombstones.
+# Subtest: one-time generated upgrade preserves existing v1 envelopes and initializes their durable fence
+not ok 17 - one-time generated upgrade preserves existing v1 envelopes and initializes their durable fence
+  ---
+  duration_ms: 250.627214
+  type: 'test'
+  location: '/opt/handrail/repos/handrail/handrail-agent-sdk/.handrail/worktrees/convergence-loop-9689ef5f-b976-42ca-97a7-278658db473e/handrail-agent-sdk/.reference-build/tests/reference/vault-lifecycle.test.js:13:5'
+  failureType: 'testCodeFailure'
+  error: 'VAULT_LIFECYCLE_ACCEPTANCE_FAILED'
+  code: 'ERR_TEST_FAILURE'
+  stack: |-
+    TestContext.<anonymous> (file:///opt/handrail/repos/handrail/handrail-agent-sdk/.handrail/worktrees/convergence-loop-9689ef5f-b976-42ca-97a7-278658db473e/handrail-agent-sdk/.reference-build/tests/reference/vault-lifecycle.test.js:17:15)
+    process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: failed rotation commit rolls back envelope and generation together; preparation remains retryable
+ok 18 - failed rotation commit rolls back envelope and generation together; preparation remains retryable
+  ---
+  duration_ms: 188.212416
+  type: 'test'
+  ...
+1..18
+# tests 18
+# suites 0
+# pass 17
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 5598.516327
+npm notice
+npm notice New major version of npm available! 10.9.8 -> 12.1.0
+npm notice Changelog: https://github.com/npm/cli/releases/tag/v12.1.0
+npm notice To update run: npm install -g npm@12.1.0
+npm notice
+Owned temporary PostgreSQL cluster stopped.

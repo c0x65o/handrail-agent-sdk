@@ -4,3 +4,11 @@
 *.env.*
 !.env.example
 !*.env.example
+
+node_modules/
+dist/
+.acceptance-build/
+.postgres-build/
+*.tsbuildinfo
+.reference-build/
+.browser-build/

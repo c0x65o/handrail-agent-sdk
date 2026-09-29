@@ -1,0 +1,4 @@
+{
+  "extends": "./tsconfig.reference.json",
+  "include": ["server/vault-request.test.ts", "helpers/postgres.ts", "helpers/migrations.mjs", "../reference/node/**/*.ts", "../src/**/*.ts"]
+}

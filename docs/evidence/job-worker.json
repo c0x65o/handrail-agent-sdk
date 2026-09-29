@@ -1,0 +1,46 @@
+{
+  "schema_version": 1,
+  "proof_class": "local_disposable_postgresql_fixture",
+  "recorded_at": "2026-09-28T04:18:32Z",
+  "item_id": "3fb08329-77bd-4f1a-9321-f3d7c0ec3b0c",
+  "source": {
+    "branch": "lane/agent-sdk-v1",
+    "baseline_commit": "2b18d55046af43a1ed80c3cc07b17e98c7519cc1",
+    "delivery": "uncommitted SDK lane patch"
+  },
+  "fixture": "owned temporary PostgreSQL 15 cluster, isolated schema, synthetic identities, no provider dispatch",
+  "fresh_process_recovery": {
+    "first_child_pid": 107,
+    "second_child_pid": 119,
+    "first_child_terminated_after_committed_revision": 3,
+    "job_id": "worker-job",
+    "origin_task_ref": "original-task",
+    "request_key": "original-request",
+    "correlation_ref": "original-correlation",
+    "journal": [
+      { "revision": 1, "kind": "submitted" },
+      { "revision": 2, "kind": "started" },
+      { "revision": 3, "kind": "effects_recorded", "deterministic_checkpoint": true },
+      { "revision": 4, "kind": "succeeded" }
+    ],
+    "checkpoint_count": 1,
+    "success_count": 1,
+    "final_lease_epoch": 2,
+    "final_lease_owner": null,
+    "identity_equal_on_all_revisions": true
+  },
+  "checks": [
+    { "command": "node tests/run-local-postgres.mjs test:worker", "tap": { "tests": 8, "pass": 8, "fail": 0, "skipped": 0 } },
+    { "command": "node tests/run-local-postgres.mjs test:journal test:lease", "tap": { "tests": 23, "pass": 23, "fail": 0, "skipped": 0 } },
+    { "command": "npm test", "tap": { "tests": 771, "pass": 771, "fail": 0, "skipped": 0 } },
+    { "command": "git diff --check", "exit_code": 0 }
+  ],
+  "other_worker_cases": [
+    "waiting state does not dispatch or spin",
+    "step, retry and elapsed-time exhaustion produce execution_failed with original correlation",
+    "graceful stop releases lease",
+    "changed authority denies dispatch",
+    "unknown effect remains for separate reconciliation"
+  ],
+  "limits": "Synthetic fixture evidence only; no native Handrail worker, provider effect, Preview integration or deployment."
+}

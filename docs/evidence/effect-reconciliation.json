@@ -1,0 +1,138 @@
+{
+  "schemaVersion": 1,
+  "itemId": "c4939c5e-7f79-40b7-9444-619ece425c77",
+  "workRequestId": "2df4f64f-a07a-4816-9bfa-55c83b808301",
+  "recordedAt": "2026-09-28T05:10:49.646098+00:00",
+  "classification": "synthetic-provider fixture recovery on real PostgreSQL; not live provider proof",
+  "source": {
+    "baseCommit": "2b18d55046af43a1ed80c3cc07b17e98c7519cc1",
+    "branch": "lane/agent-sdk-v1",
+    "binding": "Uncommitted lane workspace; exact tested file SHA-256 hashes below. Existing worker/cancellation/answer changes preserved. No commit, push or deployment performed.",
+    "sha256": {
+      "src/server/effects.ts": "f1e2493f92ae778a1a4a236c2a06ca0a00d0fe38b738225dcf0348b85d09d47c",
+      "src/server/index.ts": "9a449d407baaf4abfbde1944fde6ad089d773a9e1fc1b8a132aa955d8911ab66",
+      "reference/node/effects.ts": "2d2b9ef481db85e948727b09d26aa10e1769db6e6855c9dd28e7f61fe77ec6e9",
+      "reference/node/effect-resolution.ts": "d1152fd53e5108200afb2383a70c44e42e3e0c1a1f2420fa4ed668a7916f1515",
+      "reference/node/job-journal.ts": "f6269ba1df0b9f139644bb2bfe50436317e88fccd6ee3ef23f15d49424b7a501",
+      "reference/node/db/schema.ts": "1ed3603abbdd8dd663f66366b2b388f81f473ddcdee0782faeef9a2b784633a0",
+      "reference/node/db/migrations/0008_job_effects.sql": "b0a98bd65793b437a329c6ee3c7c298b485642537df38d8282eb1ec96387f222",
+      "reference/node/db/migrations/meta/_journal.json": "95d0445a165c97039720505f81b76674c5f4bad01391b1b29d21069d56e6b6cb",
+      "tests/effects.test.mjs": "0f68988a4bff5e535a254d8e693ded7b040251ef1c8c23635a1e43ae92370845",
+      "tests/helpers/effect-fixture.mjs": "3aff52bb1965450fc6d6515d6d8ceca6b28f46edbd0e247005e413d7deb5c283",
+      "tests/helpers/effect-process.mjs": "3c5ca3669de2d2358f14a1533a2bccc000a020a26304bb3c8ce1a1489859435c",
+      "tests/helpers/postgres.ts": "2ef4b2a8b2765b11a2e8dceaed6d85983ab03cc3d77a9e37ba3ccba55c356040",
+      "tests/helpers/migrations.mjs": "5da670f44c598605df43da514493026c3578b22096e9397e75e8d138b5f2cda8",
+      "tests/run-local-postgres.mjs": "b6cffac36064f7c0ccdbd37b6c67a4317a4ece505e9c8fcac24d3ffccee51096",
+      "tests/fixtures/consumer.mts": "2d67e59f40aa25476799910e6ec905ca165684c7d9f07a35009a227a7b5716a6",
+      "tests/packaging.test.mjs": "f10434fff1bd76e0957b11df892698d3076803e23dc438711207b02bfb68a0e6",
+      "package.json": "6b5ff9b70ed51f4de763068235056fd7653e2a48e3304f0f2f6d682128cc9ab5",
+      "docs/effect-reconciliation.md": "f51400a9c70ae19b89eb71b776fe923db935c774dcfc2eb1f6427ab021f90ab9"
+    }
+  },
+  "harness": {
+    "engine": "PostgreSQL 15",
+    "runner": "tests/run-local-postgres.mjs",
+    "isolation": "fresh temporary cluster, dedicated disposable database, non-superuser fixture role, unique schema per case; checked-in Drizzle migrations; independent provider connection",
+    "cleanup": "owned temporary cluster stopped and removed"
+  },
+  "checks": [
+    {
+      "command": "node tests/run-local-postgres.mjs test:effects test:journal test:lease test:cancel test:answer test:worker",
+      "result": "passed",
+      "passed": 52,
+      "failed": 0,
+      "skipped": 0,
+      "suites": {
+        "effects": 11,
+        "journal": 14,
+        "lease": 9,
+        "cancel": 4,
+        "answer": 6,
+        "worker": 8
+      }
+    },
+    {
+      "command": "npm test",
+      "result": "passed",
+      "passed": 771,
+      "failed": 0,
+      "skipped": 0,
+      "includes": [
+        "SDK build",
+        "acceptance consumer typecheck",
+        "PostgreSQL harness compile",
+        "reference host compile",
+        "contract tests",
+        "packaging/export tests",
+        "acceptance fixture tests"
+      ]
+    },
+    {
+      "command": "node node_modules/typescript/bin/tsc -p tests/fixtures/tsconfig.json",
+      "result": "passed"
+    },
+    {
+      "command": "git diff --check",
+      "result": "passed"
+    }
+  ],
+  "crashRecovery": {
+    "failurePoint": "synthetic provider success committed on separate PostgreSQL connection; worker killed before returning its receipt to SDK journal",
+    "signal": "SIGKILL",
+    "firstWorkerPid": 110,
+    "recoveryWorkerPid": 123,
+    "leaseEpochs": [
+      1,
+      2
+    ],
+    "jobId": "effect-job",
+    "originTaskRef": "original-task",
+    "effectRef": "original-effect",
+    "providerIdempotencyRef": "original-provider-key",
+    "originalReceiptRef": "original-provider-receipt",
+    "providerDispatchCount": 1,
+    "providerEffectCount": 1,
+    "logicalLedgerCount": 1,
+    "stateAfterCrash": "unknown",
+    "finalJobState": "succeeded",
+    "fullOriginalIdentityPreserved": true
+  },
+  "negativeEvidence": [
+    "Changed digest/action/operation/provider/idempotency identity rejected without dispatch",
+    "Provider idempotency key cannot be rebound across original jobs",
+    "Ambiguous/unavailable reconciliation never redispatches",
+    "Definitive not-applied read permits same-identity retry only under current authority",
+    "Cancelled jobs reconcile facts without reopening journal or dispatching",
+    "Dispatch authorization denied after committed admission leaves unknown",
+    "Changed grant/account and expired lease deny dispatch",
+    "Timeout/late results and adapter exception messages remain secret-safe",
+    "Concurrent callers return one original receipt with one dispatch",
+    "Generic lifecycle append and forged resolution without ledger proof are rejected"
+  ],
+  "limits": [
+    "No live-provider action or proof",
+    "No independent QA campaign launched",
+    "Deterministic reference worker remains effect-free; explicit host composition uses the new injected port",
+    "Handrail native recovery adapter and runnable-host composition remain their existing separate owner tasks"
+  ],
+  "ciRepair": {
+    "recordedAt": "2026-09-28T05:16:09.393870+00:00",
+    "reason": "Full PostgreSQL runner reproduced one failure: the pre-lifecycle upgrade fixture rewound the migration ledger but retained job_effects, causing migration 0008 replay to collide with the existing table.",
+    "change": "Drop job_effects inside the owned disposable schema before rewinding the ledger. Runtime and migration code unchanged.",
+    "file": "tests/reference/vault-lifecycle.test.ts",
+    "sha256": "9ae99559ed86264405555071a47d92c534d9f77893aaa26f54f1de9042f25702",
+    "command": "node tests/run-local-postgres.mjs",
+    "result": "passed",
+    "exitCode": 0,
+    "counts": {
+      "tests": 95,
+      "pass": 95,
+      "fail": 0,
+      "skipped": 0
+    },
+    "compilation": "test-reference, reference and PostgreSQL harness TypeScript builds passed within the runner",
+    "crashRecovery": "killed_pid=444; recovery_pid=457; job=effect-job; effect=original-effect; dispatches=1; provider_effects=1; receipt=original-provider-receipt; lease_epochs=1,2.",
+    "cleanup": "Owned temporary PostgreSQL cluster stopped and removed",
+    "classification": "Synthetic-provider fixture recovery on real PostgreSQL; not live provider proof"
+  }
+}

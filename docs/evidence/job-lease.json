@@ -1,0 +1,211 @@
+{
+  "schema_version": 1,
+  "proof_class": "local_disposable_postgresql_fixture",
+  "recorded_at": "2026-09-27T18:43:44.652830+00:00",
+  "owner_goal_id": "1b13c4ab-38c2-4d78-a5cb-238e2f257c62",
+  "owner_task_id": "7ccb807a-4e38-42c7-bf23-73d62adec118",
+  "item_id": "dc538b60-fe77-4f84-8c32-c7f9cdd37f00",
+  "selected_item_result": "implementation and local fixture acceptance passed; uncommitted patch",
+  "source": {
+    "branch": "lane/agent-sdk-v1",
+    "baseline_commit": "2d74fc93714d5c49487f976732a19a276c717b26",
+    "initial_worktree": "clean; tracked and untracked state rechecked before editing",
+    "delivery": "uncommitted source patch; no version bump, commit, push or PR",
+    "file_sha256": {
+      "docs/job-admission.md": "7a6c7e4d06e3db9cdfc02185a4d3841db8b4c4f9ce5679d455d19b4758e716dc",
+      "docs/job-journal.md": "fcbc25810664393012c2b562d205c633cf5342420faf7fde499b361cc12b9149",
+      "docs/job-lease.md": "1882e981a14688796f3e5d98d04211a745431c0b1e6b124096ab8d49f83d9dfb",
+      "docs/local-postgres-testing.md": "ebf0f65ea10e58f0ce2fe92fb64c02da15137174455b1047a00a609565601f43",
+      "package.json": "f99f5cb7c9c818381c00a4fe6c4c7dd44831d4545116a71dad2e01cd52e269ce",
+      "reference/node/db/migrations/0002_outgoing_night_thrasher.sql": "8f67560970841da2d258cc8d1052e37edc08bb74aee9d4bbd4e773b2a2174de4",
+      "reference/node/db/migrations/meta/0002_snapshot.json": "38128896689e524017e6d5977a890ed13595549d95fd17f8e470a1c47eb07b84",
+      "reference/node/db/migrations/meta/_journal.json": "5b0391ee46746ac489358e92f72df80ad9174e12e8f0e513ed26623326a0e58f",
+      "reference/node/db/schema.ts": "756701bcfd03a03d977f680d1bc320581f6b6f2a5076b015ba07b3246246fd88",
+      "reference/node/job-journal.ts": "83d8f3c8e14be4ae48ffad06064c2bf7f4536253cbfc7ef15fb78761b8fb18ac",
+      "reference/node/job-lease-fence.ts": "a765aed4ca9a786633a77d491688ae3f7648543be6160bf428df449048f1f421",
+      "reference/node/job-lease.ts": "a9ee40b54a918a3dfcf92e7c391f4064e7d237289ef6f809a5c2b099cb27ad53",
+      "src/server/index.ts": "086de7031c373ca7e9d0a8b93cc9aa605ccbb6797c5a6a9635e9bbdb4ff3f7db",
+      "src/server/job-lease.ts": "0db5d33f456009f63f79c05eb30f3615eb4145a3bbf5eb29199139cd1015dc11",
+      "src/server/job-store.ts": "3c8f1274f7f9bde3eb2b812745b11064e599506778ee66d32ded79727eede9e9",
+      "tests/fixtures/consumer.mts": "4503d8170889c8a389a5abbd279d279c5c1af2aecf830355ab5797951b4dd4fe",
+      "tests/helpers/job-lease.mjs": "0ae744e24d52adb17b782a4c6c00a49ac5f04660946fedac7793921536836533",
+      "tests/job-journal.test.mjs": "4603ef78e9591b264f8153bb998f0a4f2eccf30e7005373e12aaf6333759a0fa",
+      "tests/job-lease.test.mjs": "84b575e739791355dea530fa0018898127e4585e98f6afc11afcc0769d572a83",
+      "tests/packaging.test.mjs": "019223e0a5548b7149fca3717290d15b78f61d6808421f280003ff1f0f0244da",
+      "tests/run-local-postgres.mjs": "1af7c773d75282e863db5c2fe4b58cd7c1c9acf2f1d9594ba8a6dddfbd5ebdd7",
+      "tests/submit.test.mjs": "a2a81e7eef827e390f6b6ff3356de18ccc7b39c57562264c1d2ab45fbc956b1b"
+    }
+  },
+  "environment": {
+    "node": "22.23.1",
+    "postgresql": "15.19",
+    "fixture": "new owned temporary PostgreSQL cluster, dedicated disposable database, generated private credentials and non-superuser fixture role; no existing application credentials discovered or used"
+  },
+  "migration": "reference/node/db/migrations/0002_outgoing_night_thrasher.sql",
+  "executed_tests": [
+    {
+      "command": "node tests/run-local-postgres.mjs",
+      "exit_code": 0,
+      "passed": 35,
+      "failed": 0,
+      "skipped": 0,
+      "suites": [
+        {
+          "command": "npm run test:lease",
+          "passed": 9,
+          "failed": 0,
+          "skipped": 0
+        },
+        {
+          "command": "npm run test:submit",
+          "passed": 11,
+          "failed": 0,
+          "skipped": 0
+        },
+        {
+          "command": "npm run test:journal",
+          "passed": 14,
+          "failed": 0,
+          "skipped": 0
+        },
+        {
+          "command": "npm run test:postgres",
+          "passed": 1,
+          "failed": 0,
+          "skipped": 0
+        }
+      ],
+      "cleanup": "owned schemas/tables removed with RESTRICT, independent sentinel preserved, owned temporary cluster stopped and removed"
+    },
+    {
+      "command": "npm test",
+      "exit_code": 0,
+      "passed": 771,
+      "failed": 0,
+      "skipped": 0,
+      "coverage": "contract, acceptance, package exports, natural-exit import checks, reference and core factory construction without IO"
+    }
+  ],
+  "compilation_separate_from_database_execution": [
+    {
+      "command": "npm run build",
+      "exit_code": 0
+    },
+    {
+      "command": "npm run build:reference",
+      "exit_code": 0
+    },
+    {
+      "command": "npm run build:test-postgres",
+      "exit_code": 0
+    },
+    {
+      "command": "npm run typecheck:acceptance",
+      "exit_code": 0
+    },
+    {
+      "command": "node node_modules/typescript/bin/tsc -p tests/fixtures/tsconfig.json",
+      "exit_code": 0
+    }
+  ],
+  "other_checks": [
+    {
+      "command": "npm run db:generate",
+      "exit_code": 0,
+      "result": "additive generated Drizzle migration, snapshot and journal metadata"
+    },
+    {
+      "command": "git diff --check",
+      "exit_code": 0
+    }
+  ],
+  "acceptance_evidence": [
+    {
+      "case": "exclusive claim",
+      "test": "distinct PostgreSQL backends race one admitted job; expiry replaces epoch and fences every old operation",
+      "observed": "pg_backend_pid values differ; two simultaneous claims return exactly one fence and one null"
+    },
+    {
+      "case": "same-job recovery",
+      "observed": "injected clock advanced to exact expiry rejects renewal before replacement; beyond expiry claim has epoch old+1; complete original identity, admission row/digest and original unknown effect preserved"
+    },
+    {
+      "case": "stale owner rejection",
+      "observed": "renew, release, check, append and complete reject the old fence after replacement; full before/after comparisons of jobs, events, deliveries, checkpoints and admissions show rejected operations made no durable changes"
+    },
+    {
+      "case": "current owner progress",
+      "observed": "current owner renews and checks; completion atomically commits terminal history and releases ownership; voluntary release/reclaim retains monotonically increasing epoch; verified success is accepted"
+    },
+    {
+      "case": "scope and authority",
+      "observed": "wrong owner, epoch and original request binding rejected; all six host scope dimensions fail closed; changed grant and cancellation revisions reject old fences; denied/throwing host authority sanitized; authorized replacement captures new revisions"
+    },
+    {
+      "case": "eligibility and execution boundary",
+      "observed": "waiting, succeeded, failed and cancelled jobs reject execution checks while lease is live and remain ineligible for claims after expiry"
+    },
+    {
+      "case": "stale-write race",
+      "test": "stale append waits behind replacement transaction and cannot commit with a current journal revision",
+      "observed": "replacement transaction holds real job row lock; pg_stat_activity confirms stale writer Lock wait on distinct backend; replacement commits, stale append rejects at unchanged journal revision 1; current owner then appends successfully"
+    },
+    {
+      "case": "expiry under contention and during write",
+      "observed": "writer blocked on row lock samples clock after lock acquisition and rejects expiry; injected expiry after event/head/delivery/checkpoint writes rolls all changes back"
+    },
+    {
+      "case": "atomic completion",
+      "observed": "injected jobs ownership-release constraint fails after journal append; outer transaction rolls back event, head, delivery, checkpoint and lease changes"
+    },
+    {
+      "case": "no unfenced runtime bypass",
+      "observed": "bare journal runtime append rejected both before first claim and after replacement; stale canonical runtime retries cannot add delivery rows; current fenced retries retain canonical replay behavior"
+    },
+    {
+      "case": "constraints and safe errors",
+      "observed": "malformed storage, unsafe epoch values and partial ownership rejected by PostgreSQL; epoch exhaustion and unsafe clock arithmetic fail closed; malformed fences, getters and clock failures return fixed codes"
+    },
+    {
+      "case": "regression preservation",
+      "observed": "all admission, journal and harness tests pass using real generated migrations; idempotency, immutable identity, canonical validation, checkpoints and bounded ownership cleanup retained"
+    },
+    {
+      "case": "server boundary and import behavior",
+      "observed": "lease exports available only from server entrypoint; import graph has no startup calls or external runtime imports; core/reference constructors do not access injected host/store/database and process exits naturally"
+    }
+  ],
+  "synthetic_identity_evidence": {
+    "jobId": "lease-job",
+    "originTaskRef": "original-task",
+    "requestKey": "original-request",
+    "instructionRevision": 7,
+    "effect": {
+      "actionRef": "original-action",
+      "operationRef": "original-operation",
+      "effectRef": "original-effect",
+      "outcome": "unknown"
+    },
+    "ownership_data": "owner tokens and connection values intentionally omitted"
+  },
+  "earlier_iteration": {
+    "package_tests_passed": 770,
+    "package_tests_failed": 1,
+    "cause": "consumer fixture asserted only the previous server export; updated allowlist for createJobLease. Final package suite passes 771/771.",
+    "first_postgres_run": "8 lease, 11 admission, 14 journal and 1 harness tests passed; final run additionally covers safe epoch bounds and strengthened boundary checks"
+  },
+  "unrelated_preexisting_failures": [],
+  "handrail_workflow": {
+    "context_verification": "handrail_current_context absent from callable tool catalog; Handrail plugin discovery returned no match; used supplied work-request context and verified repository identity",
+    "owner_task_ledger": "handrail_owner_task_update_item and list-change tools unavailable; start/progress/complete could not be recorded externally; no direct database or queue mutations attempted",
+    "published_kb": "no callable Handrail KB reader; inspected repository job, journal, admission, security and PostgreSQL contracts plus supplied KB guidance",
+    "qa_campaign_id": null
+  },
+  "limitations": [
+    "Local real PostgreSQL fixture proof only; no deployed Handrail/native-adapter or live-provider acceptance and no broader SDK completion claim.",
+    "Host must implement withAuthority as a native authority critical section through callback and transaction commit, not a detached ACL lookup. Native cancellation, grant storage and task ownership remain external.",
+    "Execution check is point-in-time; it cannot undo a transmitted external request. Expiry never authorizes replay of an unknown effect; downstream execution/reconciliation remains separate work.",
+    "No polling worker, scheduler, browser takeover, full cancellation runtime or effect runtime added.",
+    "No independent QA campaign, deployment, live provider call, production migration or application runtime configuration change performed."
+  ]
+}

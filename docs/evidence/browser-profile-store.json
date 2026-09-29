@@ -1,0 +1,883 @@
+{
+  "schema_version": 1,
+  "proof_class": "local_disposable_postgresql_reference_host",
+  "recorded_at": "2026-09-28T18:59:42.401617+00:00",
+  "item_id": "61fbfd09-2617-4b36-91a3-2f3bae1d55c1",
+  "work_request_id": "ec4a382a-d971-40e3-84d6-a12c993ae9ce",
+  "qa_campaign_id": null,
+  "candidate": {
+    "branch": "lane/agent-sdk-v1",
+    "head": "2b18d55046af43a1ed80c3cc07b17e98c7519cc1",
+    "state": "verified uncommitted candidate; HEAD alone does not contain this implementation",
+    "manifest_sha256": "3ed878f2e0395663483cbd6d24729f41d96acc6f7f04f200eb51832bf19737b0",
+    "hash_definition": "SHA256 of compact sorted-key JSON of the path-sorted files array, UTF-8 without trailing newline. All tracked and nonignored untracked files included, excluding this evidence file to avoid self-reference. Build outputs, dependencies and private fixture logs excluded. This is a local digest, not a native verifier receipt.",
+    "dirty_candidate_manifest_sha256": "34e16eaafa5b6f7fda189c3d968ee980d4d4d5a92bdbd12b758755963452e667",
+    "dirty_paths": [
+      "docs/browser-profile-store.md",
+      "docs/effect-reconciliation.md",
+      "docs/evidence/effect-reconciliation.json",
+      "docs/evidence/job-answer.json",
+      "docs/evidence/job-worker.json",
+      "docs/evidence/payment-vault.json",
+      "docs/evidence/vault-entry.json",
+      "docs/evidence/vault-request.json",
+      "docs/evidence/vault-use.json",
+      "docs/job-answer.md",
+      "docs/job-cancellation.md",
+      "docs/job-worker.md",
+      "docs/local-postgres-testing.md",
+      "docs/payment-vault.md",
+      "docs/vault-entry.md",
+      "docs/vault-request.md",
+      "docs/vault-use.md",
+      "package.json",
+      "reference/node/browser-profile-store.ts",
+      "reference/node/db/migrations/0006_job_cancellation.sql",
+      "reference/node/db/migrations/0007_job_answers.sql",
+      "reference/node/db/migrations/0008_job_effects.sql",
+      "reference/node/db/migrations/0009_vault_item_grants.sql",
+      "reference/node/db/migrations/0010_vault_entry.sql",
+      "reference/node/db/migrations/0011_browser_profiles.sql",
+      "reference/node/db/migrations/meta/0010_snapshot.json",
+      "reference/node/db/migrations/meta/0011_snapshot.json",
+      "reference/node/db/migrations/meta/_journal.json",
+      "reference/node/db/schema.ts",
+      "reference/node/effect-resolution.ts",
+      "reference/node/effects.ts",
+      "reference/node/job-answer.ts",
+      "reference/node/job-cancellation.ts",
+      "reference/node/job-journal.ts",
+      "reference/node/job-lease-fence.ts",
+      "reference/node/job-lease.ts",
+      "reference/node/private-envelope.ts",
+      "reference/node/vault-entry.ts",
+      "reference/node/vault-grants.ts",
+      "reference/node/vault-private.ts",
+      "reference/node/worker.ts",
+      "src/contracts/vault.ts",
+      "src/server/answer.ts",
+      "src/server/cancel.ts",
+      "src/server/effects.ts",
+      "src/server/index.ts",
+      "src/server/job-lease.ts",
+      "src/server/payment-vault.ts",
+      "src/server/vault-entry.ts",
+      "src/server/vault-request.ts",
+      "src/server/vault-use.ts",
+      "tests/effects.test.mjs",
+      "tests/fixtures/consumer.mts",
+      "tests/helpers/effect-fixture.mjs",
+      "tests/helpers/effect-process.mjs",
+      "tests/helpers/vault-entry-fixture.mjs",
+      "tests/helpers/vault-entry-process.mjs",
+      "tests/helpers/worker-process.mjs",
+      "tests/job-answer.test.mjs",
+      "tests/job-cancel.test.mjs",
+      "tests/job-worker.test.mjs",
+      "tests/packaging.test.mjs",
+      "tests/payment-vault.test.mjs",
+      "tests/reference/browser-profile-fixture.ts",
+      "tests/reference/browser-profile-process.ts",
+      "tests/reference/browser-profile-store.test.ts",
+      "tests/reference/vault-lifecycle.test.ts",
+      "tests/run-local-postgres.mjs",
+      "tests/server/vault-request.test.ts",
+      "tests/tsconfig.vault-request.json",
+      "tests/vault-entry.test.mjs",
+      "tests/vault-use.test.mjs"
+    ],
+    "files": [
+      {
+        "path": ".gitignore",
+        "sha256": "7a1fe62c452a15cd9a487f9a2d3f8b25d273d4c9b96650829be290a5968768dc"
+      },
+      {
+        "path": "README.md",
+        "sha256": "bd88d2605ebda3c9c3ea141068045fe8084d613ee2e4a6bcff1c34d596f8c623"
+      },
+      {
+        "path": "docs/Handrail_Agent_Runtime_Concept.md",
+        "sha256": "0f9d10ad42049140cc36fb67955e8f44b5efb67c2dc05d77a88534493dcfa95c"
+      },
+      {
+        "path": "docs/agent-security-boundary.md",
+        "sha256": "87321e141bc4712d3fedae6342acdaee88f49643ac35536f8cadfde9a6058825"
+      },
+      {
+        "path": "docs/agent-v1-acceptance.md",
+        "sha256": "aef9667ca077cef450e73cc69478648d31f3cc1b83ad3fd5d7c1c5d268a14695"
+      },
+      {
+        "path": "docs/browser-contract.md",
+        "sha256": "abd2881b5a9188683dded6ae76b38448c9acaca523998a2b6ac9e94ab7d60938"
+      },
+      {
+        "path": "docs/browser-profile-store.md",
+        "sha256": "5c8cb216f44c2f02d256bb364fff43075cbf7df18a663b4c980af84b2786d408"
+      },
+      {
+        "path": "docs/connection-contract.md",
+        "sha256": "9f9762353d6327d449feff27d49fd7832de114c0083ec54b6d3b03550bda8e09"
+      },
+      {
+        "path": "docs/effect-reconciliation.md",
+        "sha256": "f51400a9c70ae19b89eb71b776fe923db935c774dcfc2eb1f6427ab021f90ab9"
+      },
+      {
+        "path": "docs/evidence/browser-contract.md",
+        "sha256": "e1f2ddff838d45f9a4c10288b409fdf60ca940509214cb779280a08e30c21b87"
+      },
+      {
+        "path": "docs/evidence/browser-fixtures.json",
+        "sha256": "0082141766d1cca328568cf136803bd2c73c38f163adcf682784fb5db65b23c8"
+      },
+      {
+        "path": "docs/evidence/connection-contract.md",
+        "sha256": "3237df3d0e251b634d1c5c6696c71099b710fae7f65e7e75c594793a6aa29762"
+      },
+      {
+        "path": "docs/evidence/effect-reconciliation.json",
+        "sha256": "cae468421efc25ab76776b6d2913488490a1513f02883607a1cb7ae145016bab"
+      },
+      {
+        "path": "docs/evidence/job-admission.json",
+        "sha256": "fb256bba308cedf172a68fe6452d1a6513c19829e3ea00e563205c6915453646"
+      },
+      {
+        "path": "docs/evidence/job-answer.json",
+        "sha256": "860e62fa09ecd61240f60ceae4ebc32b8b075a0889c0f2cc0743e72e35caecf4"
+      },
+      {
+        "path": "docs/evidence/job-contract.md",
+        "sha256": "2a9c4b4029b9a215732b593cee37df10b80e7c631055c66314d2c0c7bb03a1c7"
+      },
+      {
+        "path": "docs/evidence/job-journal.json",
+        "sha256": "90ceae346a1337269434308580275832e78422d564c1448322c0bb3d7aa83605"
+      },
+      {
+        "path": "docs/evidence/job-lease.json",
+        "sha256": "077fe852f22a8b6a4e224201cd79668683bb1d027676685887261845d1cbbfdb"
+      },
+      {
+        "path": "docs/evidence/job-worker.json",
+        "sha256": "89bd91686b23b8dc47497ab975dcda4e9c57bbf28dbade33ebd7d2e6a21eec5c"
+      },
+      {
+        "path": "docs/evidence/packaging-bootstrap.md",
+        "sha256": "2596a67b76ca5d1fd52caa4079edd3252c353e38e6c52911b6446337424b84a6"
+      },
+      {
+        "path": "docs/evidence/payment-vault.json",
+        "sha256": "439dcc1acc6cecb2cb82bf2641df7a9d64dda7c7142b9d1a65912ce7a97eccf3"
+      },
+      {
+        "path": "docs/evidence/vault-contract.md",
+        "sha256": "ae90e9ac08161bb227c39a81915e6edcb968d51cfeee6466eb9b02fb2cf30423"
+      },
+      {
+        "path": "docs/evidence/vault-entry.json",
+        "sha256": "1126b9cf18d718180e23c488bd1f2916ba285469f4c4d594872f81681208ba26"
+      },
+      {
+        "path": "docs/evidence/vault-lifecycle.json",
+        "sha256": "bc3fe1a0e19a3519999139a080cbec6c659ca0f56a1a08264b6057a0fcd4cc6a"
+      },
+      {
+        "path": "docs/evidence/vault-request.json",
+        "sha256": "80536d7dcdf2a65b0fdae0f78ee15e21632d474e1871e7187c1038e09e45d6bb"
+      },
+      {
+        "path": "docs/evidence/vault-store.json",
+        "sha256": "ecccf93b720022e53e5a6d65425bb2cae3f0366e5db640070ac41eea48157474"
+      },
+      {
+        "path": "docs/evidence/vault-use.json",
+        "sha256": "f0d04d1b725d11126e60d1580d5b63c320e9581ea674c6ffb30b0f03fad334ad"
+      },
+      {
+        "path": "docs/job-admission.md",
+        "sha256": "7a6c7e4d06e3db9cdfc02185a4d3841db8b4c4f9ce5679d455d19b4758e716dc"
+      },
+      {
+        "path": "docs/job-answer.md",
+        "sha256": "b122905a04e72f0a4346b538073223cee1ac130147f663558a9a7ee76ad3ac8c"
+      },
+      {
+        "path": "docs/job-cancellation.md",
+        "sha256": "35e669bd6f7184bdb8829decabc124276b651887ef0a65f28684a3af3d5079c8"
+      },
+      {
+        "path": "docs/job-contract.md",
+        "sha256": "0bb619b42b1186e54bbc7e65bd7e2b9283ccb3ea3dfb0409b85431f9d5dee155"
+      },
+      {
+        "path": "docs/job-journal.md",
+        "sha256": "fcbc25810664393012c2b562d205c633cf5342420faf7fde499b361cc12b9149"
+      },
+      {
+        "path": "docs/job-lease.md",
+        "sha256": "1882e981a14688796f3e5d98d04211a745431c0b1e6b124096ab8d49f83d9dfb"
+      },
+      {
+        "path": "docs/job-worker.md",
+        "sha256": "5310ca2b8362bda3db9514a5f2596885aaffc12c2234c23e05ab4cd5de68ad07"
+      },
+      {
+        "path": "docs/local-browser-testing.md",
+        "sha256": "0f5b71d2a89827232610c21cc0825ecdb48d2cbadcba5bac76ceecd934b2ea16"
+      },
+      {
+        "path": "docs/local-postgres-testing.md",
+        "sha256": "992ebadc856e8f1c7e44493779912067c7fe27bb5899c49c745ef910f48e168d"
+      },
+      {
+        "path": "docs/payment-vault.md",
+        "sha256": "8e95ba4a3278c4620dbd51219d3f2ce91865104834ece61d937141501b17a552"
+      },
+      {
+        "path": "docs/vault-contract.md",
+        "sha256": "ef3c7038a560f6908da2f3f3bb5c08a0520c8d82c27f8a714c0f0687c84e7a3b"
+      },
+      {
+        "path": "docs/vault-entry.md",
+        "sha256": "321da6152131ded98a8b079fc740ac41af8ac7c8d0d2abab16293b3925ae5323"
+      },
+      {
+        "path": "docs/vault-request.md",
+        "sha256": "f1a03f2841574ea7f88e98fcfb2573639162da3afbe900d9e5f5664c0f1fa4f7"
+      },
+      {
+        "path": "docs/vault-store.md",
+        "sha256": "f766c9cc4db5be2f1f60ca064d8d4e9d11d21a6a07419c3b13010aa6f98c1890"
+      },
+      {
+        "path": "docs/vault-use.md",
+        "sha256": "1fdf007e82769835b81688dc6cb05a960a0c13b35b5d73b0e2b7f95d21eec073"
+      },
+      {
+        "path": "drizzle.config.ts",
+        "sha256": "33c8215d50c51bc6ebe833f096f16cd91076e11e0311dbd0630db894ef4edfb0"
+      },
+      {
+        "path": "fixtures/convergence-v1.json",
+        "sha256": "6d4a95b7d3c57568f763bc665c4f8f855330a307bf529eb8851c8a615899d95e"
+      },
+      {
+        "path": "package-lock.json",
+        "sha256": "521a8f9e0a25ec015b878a49881e314100f4cde9044e76ea7010e7056d8655a7"
+      },
+      {
+        "path": "package.json",
+        "sha256": "1e94e19613d33c5d0cd8b212afaaa37f4e025c71d96aff789bca291757d81938"
+      },
+      {
+        "path": "reference/node/browser-profile-store.ts",
+        "sha256": "190398b6d10a8f41b1f8d6c92a1e494678190092135fafb36145c59594df10cd"
+      },
+      {
+        "path": "reference/node/db/database.ts",
+        "sha256": "f25725f09a88e3778271f9e12eac10b7130a6c317b8b5769e7f96f2d3f14e1ae"
+      },
+      {
+        "path": "reference/node/db/migrate.ts",
+        "sha256": "bb6472260286dd4382fde91548d8de944996c8d2190f2d35f95cf8a1f67be7ed"
+      },
+      {
+        "path": "reference/node/db/migrations/0000_brainy_wraith.sql",
+        "sha256": "a139d522f8a2b32fa937414f917c3a30a5a11db134553cbe0f5556f66bdb5d64"
+      },
+      {
+        "path": "reference/node/db/migrations/0001_round_garia.sql",
+        "sha256": "109d200d5b77287350bb9d90fecf749a3553e1a606cac4f0c5036d3d7b8f4211"
+      },
+      {
+        "path": "reference/node/db/migrations/0002_outgoing_night_thrasher.sql",
+        "sha256": "8f67560970841da2d258cc8d1052e37edc08bb74aee9d4bbd4e773b2a2174de4"
+      },
+      {
+        "path": "reference/node/db/migrations/0003_vault_items.sql",
+        "sha256": "52fbb59a9dac81a9664cf2b584e8d15b549f4fa85eb4cf48d700c5d035e2753f"
+      },
+      {
+        "path": "reference/node/db/migrations/0004_vault_lifecycle.sql",
+        "sha256": "acd25ae34cacaedca2317ed09169c2a78b6316941def8cbb9ac02ce3a93950ae"
+      },
+      {
+        "path": "reference/node/db/migrations/0005_vault_lifecycle_backfill.sql",
+        "sha256": "a61d7c6a6013c02159bf3a0e000f129dd52a1f7bb20b208a370e65d4e6f2c406"
+      },
+      {
+        "path": "reference/node/db/migrations/0006_job_cancellation.sql",
+        "sha256": "a9658974ca38dc2290e10ee312885027ac8612724e0133334000a50926103048"
+      },
+      {
+        "path": "reference/node/db/migrations/0007_job_answers.sql",
+        "sha256": "2be6a4dffee75c8fbb72511bd83b3f5709c1536b40c5dcf36327274ba78aaa24"
+      },
+      {
+        "path": "reference/node/db/migrations/0008_job_effects.sql",
+        "sha256": "b0a98bd65793b437a329c6ee3c7c298b485642537df38d8282eb1ec96387f222"
+      },
+      {
+        "path": "reference/node/db/migrations/0009_vault_item_grants.sql",
+        "sha256": "feaee98eae0a82250979726ed23521d3099bb643dc1e229900d0c593ee2fcf2e"
+      },
+      {
+        "path": "reference/node/db/migrations/0010_vault_entry.sql",
+        "sha256": "ccb607b2e46924cd3498f3afa59cf1a7ba91a6a1c8e22d28935d1a10020b5f6d"
+      },
+      {
+        "path": "reference/node/db/migrations/0011_browser_profiles.sql",
+        "sha256": "6b39f03b21560dadbbc6c3411323d62c65b8dfda22b6df1c1a7dcf836ea2a8c5"
+      },
+      {
+        "path": "reference/node/db/migrations/meta/0000_snapshot.json",
+        "sha256": "dc8dab3c200ae746a99b7b22044338b9fca2d807540539bb0b5f0886a061e364"
+      },
+      {
+        "path": "reference/node/db/migrations/meta/0001_snapshot.json",
+        "sha256": "9e7c36bfe6d1934abe2b57b50e3fea601df7556204be1b5972cacbec91100b12"
+      },
+      {
+        "path": "reference/node/db/migrations/meta/0002_snapshot.json",
+        "sha256": "38128896689e524017e6d5977a890ed13595549d95fd17f8e470a1c47eb07b84"
+      },
+      {
+        "path": "reference/node/db/migrations/meta/0003_snapshot.json",
+        "sha256": "f087cfc18713c4afbe86569732e296208b9955cae9b2ae99df533808dcc1f980"
+      },
+      {
+        "path": "reference/node/db/migrations/meta/0004_snapshot.json",
+        "sha256": "266b3a2da7cb8fc8dcafbf4e6179963229f4d60dc070c5765e6b1795ab628832"
+      },
+      {
+        "path": "reference/node/db/migrations/meta/0005_snapshot.json",
+        "sha256": "06133f548871456518b8d624cece7d8355cd4cabd9dfe9dba763e4eb827dcb6f"
+      },
+      {
+        "path": "reference/node/db/migrations/meta/0010_snapshot.json",
+        "sha256": "f577b8bf303c3a0e53f035c16bb59b78e3eeaac302fed6ded4e1cba2253d4cd0"
+      },
+      {
+        "path": "reference/node/db/migrations/meta/0011_snapshot.json",
+        "sha256": "30a7a101941e15923143dd50802feb41abaac644f8af7e06a636e70df2295ef0"
+      },
+      {
+        "path": "reference/node/db/migrations/meta/_journal.json",
+        "sha256": "15087af7cda96a1900a77d13d4997b72896f1728229ab860f6ca33bc00110bfb"
+      },
+      {
+        "path": "reference/node/db/schema.ts",
+        "sha256": "2af1108be0b46ca32fbf20e1c2962a1cc1a74b9e4bab7101661bdfc874607aee"
+      },
+      {
+        "path": "reference/node/effect-resolution.ts",
+        "sha256": "d1152fd53e5108200afb2383a70c44e42e3e0c1a1f2420fa4ed668a7916f1515"
+      },
+      {
+        "path": "reference/node/effects.ts",
+        "sha256": "2d2b9ef481db85e948727b09d26aa10e1769db6e6855c9dd28e7f61fe77ec6e9"
+      },
+      {
+        "path": "reference/node/job-admission.ts",
+        "sha256": "70f9edaaf19d823cb8432c88b732cb3e9fcb5f416f34b448133e4f3fb7c1efef"
+      },
+      {
+        "path": "reference/node/job-answer.ts",
+        "sha256": "762288cfc1e36302441fe4a10cb22fe3f5568e1496593bda63784bb13b714f1c"
+      },
+      {
+        "path": "reference/node/job-cancellation.ts",
+        "sha256": "6f61f74c2987428bd1a71fdcb69fdb049186963b48da2d4779e1a0e6ed9486c4"
+      },
+      {
+        "path": "reference/node/job-journal.ts",
+        "sha256": "f6269ba1df0b9f139644bb2bfe50436317e88fccd6ee3ef23f15d49424b7a501"
+      },
+      {
+        "path": "reference/node/job-lease-fence.ts",
+        "sha256": "a8f1c4772523c3302f88197f2a3a73fdf608b1b28616bacf2e6de0eb4566f826"
+      },
+      {
+        "path": "reference/node/job-lease.ts",
+        "sha256": "f5142e308f31ea87c981d2c78ee5a540c24f8e1a9e5ebfc51657b18e73b61611"
+      },
+      {
+        "path": "reference/node/private-envelope.ts",
+        "sha256": "141e032da37b2eb2ed30d73641567a38cd34ba58f4cb072d5c6b7262ee32ebf3"
+      },
+      {
+        "path": "reference/node/vault-entry.ts",
+        "sha256": "2bca81691e61c3f80a0070b8c598f9b0488283811178746006c6f68ec086c1c7"
+      },
+      {
+        "path": "reference/node/vault-grants.ts",
+        "sha256": "f3cc9917da9de9f391e63cd1476ac903a7498f67df13aea46858a4e01c429e4a"
+      },
+      {
+        "path": "reference/node/vault-lifecycle.ts",
+        "sha256": "728bcd5dc9bdb0b50616a725c82dd6824de276cb5d746e4a57209b5195bbf49b"
+      },
+      {
+        "path": "reference/node/vault-private.ts",
+        "sha256": "aa775802a1e9e540031251f667c07dd0746b4aa850d95d28546e804638b8f3da"
+      },
+      {
+        "path": "reference/node/vault-store.ts",
+        "sha256": "714e135d831b41c5bf6eafb37d95c478770f984d3a0c619b5f8209f8863bf464"
+      },
+      {
+        "path": "reference/node/worker.ts",
+        "sha256": "c4fa778b0007ede903799b974a6e31640d7e0327107dbedfb3dbca1d8bef60f5"
+      },
+      {
+        "path": "reference/tsconfig.json",
+        "sha256": "99bdda3052ba8a2f63f9911784bcb1d499411fb7213b0b860bd6737d91f903f2"
+      },
+      {
+        "path": "scripts/validate-convergence-v1.mjs",
+        "sha256": "42651122b29c7c5ded7f55f4a2975f67ddde479a0083bfad7bd97e648a598135"
+      },
+      {
+        "path": "src/contracts/browser.ts",
+        "sha256": "eea74706815e4b85b42ac8d27b44f8d6c403d1dfd0836c5087cfb91cce18bb36"
+      },
+      {
+        "path": "src/contracts/connection.ts",
+        "sha256": "7df5d28ff2969d11ad4e926c7522e69ab174012225199f8fc1e58c3cc50d020c"
+      },
+      {
+        "path": "src/contracts/job.ts",
+        "sha256": "bebe191f63cc6a0709c507dd6fc6f9e852329e5aa423e3b74ca20b1793da20f2"
+      },
+      {
+        "path": "src/contracts/vault.ts",
+        "sha256": "d0cae9779a5ab3d612750286eb7a0cc40278d379a75ac17552b698391f42a880"
+      },
+      {
+        "path": "src/index.ts",
+        "sha256": "ef9242941d31db80ec4fb97a6466c438b1fb644ba16afe18e4c1ccf8512e1fc0"
+      },
+      {
+        "path": "src/server/answer.ts",
+        "sha256": "f6fb25498f537a2872474729a983e9a1f31dcfaad92aafebd52fd9214dd44c10"
+      },
+      {
+        "path": "src/server/browser-policy.ts",
+        "sha256": "3fb19ed0140fb40d7a1b0577f5bbbee866768883eb5f61166bfd82fbac164cc7"
+      },
+      {
+        "path": "src/server/cancel.ts",
+        "sha256": "fd816a92660443d7d5c00cdfc9b9946810c8905f26218dbf9ec8f98e668dde7e"
+      },
+      {
+        "path": "src/server/effects.ts",
+        "sha256": "f1e2493f92ae778a1a4a236c2a06ca0a00d0fe38b738225dcf0348b85d09d47c"
+      },
+      {
+        "path": "src/server/index.ts",
+        "sha256": "e02bb4f4ebb46a28d18251bd41ec85b963d439a33a3e678c8d325cb7cad46869"
+      },
+      {
+        "path": "src/server/job-lease.ts",
+        "sha256": "96ee19e34987b1748b9d19d9eec7e87c95bbdb27b51f2aab2a20f5203d7e4239"
+      },
+      {
+        "path": "src/server/job-store.ts",
+        "sha256": "3c8f1274f7f9bde3eb2b812745b11064e599506778ee66d32ded79727eede9e9"
+      },
+      {
+        "path": "src/server/payment-vault.ts",
+        "sha256": "2b759a3db5e61eda2230f30dfe7738bb2436b1e4dc54f3ac6498819aea894471"
+      },
+      {
+        "path": "src/server/submit.ts",
+        "sha256": "def18c74ca1d4b16b4c457899ef132100829c9d48977cfd9acd1803c2f909fa5"
+      },
+      {
+        "path": "src/server/vault-entry.ts",
+        "sha256": "11d57cbde0136031d96ff68a9f92a6e0767601b1e38997d05d6c44f14ee67a6d"
+      },
+      {
+        "path": "src/server/vault-policy.ts",
+        "sha256": "105a733b2ef6bcd4ed758823419f2a476f7619cad5e5730497aee17cc203bc0a"
+      },
+      {
+        "path": "src/server/vault-request.ts",
+        "sha256": "1a609f75a9dbf4c87704ee9d7a5a7d252a1e1194caab457d21325c933ff41605"
+      },
+      {
+        "path": "src/server/vault-use.ts",
+        "sha256": "39205d50836608ab6cfd466cb48d9420e81eafe33d3748940de45df01c03a2a6"
+      },
+      {
+        "path": "tests/acceptance.test.mjs",
+        "sha256": "e4fd9a7ba833910e458398c5da6ea76073ec336d800ce76fa8035ac0a3ea2296"
+      },
+      {
+        "path": "tests/browser-boundary.test.mjs",
+        "sha256": "041ec8f5d3e3043d0c89e9f26fa7625b66da35626a727cc25040df5b64f6eda8"
+      },
+      {
+        "path": "tests/browser.test.mjs",
+        "sha256": "0c8c9765a6e2face7c4d58788955d6399e059e6189114822d482c2797c9b3708"
+      },
+      {
+        "path": "tests/contracts/browser.test.mjs",
+        "sha256": "f4b5c89b299d3671641ee08b1923fabf4252663688e4c05762cbd682683ef2a3"
+      },
+      {
+        "path": "tests/contracts/connection.test.mjs",
+        "sha256": "7d5afb089ea9d008a8966faeed8b358d6c582e1221276f401b9090329655abc7"
+      },
+      {
+        "path": "tests/contracts/job.test.mjs",
+        "sha256": "47589ff6abc178c208203a5709c587304f20f88fc5072bec62ac84d741896c58"
+      },
+      {
+        "path": "tests/contracts/vault.test.mjs",
+        "sha256": "6159b81bfa948ca0edd5a200efc21db73fe0c3e048053bd378f74d77ea9a96c6"
+      },
+      {
+        "path": "tests/contracts/vault.test.ts",
+        "sha256": "379c32d190ab67d1bbecfc6efba93e75c15397d59b814b4ef2932965ce5daa0d"
+      },
+      {
+        "path": "tests/effects.test.mjs",
+        "sha256": "0f68988a4bff5e535a254d8e693ded7b040251ef1c8c23635a1e43ae92370845"
+      },
+      {
+        "path": "tests/fixtures/consumer.mts",
+        "sha256": "44c073ff7166d6d2c5d9c547bf58c124ac01b69331044776e21be749358ea848"
+      },
+      {
+        "path": "tests/fixtures/convergence-v1.ts",
+        "sha256": "d439a5c42e1b6a0b3103e88689d940fb9498e01ffc9c225830b4baa1f675e318"
+      },
+      {
+        "path": "tests/fixtures/protected-page.html",
+        "sha256": "5b93449ccf691b410c151797ded898426d20cca12234c3dba83bd608fec7de62"
+      },
+      {
+        "path": "tests/fixtures/tsconfig.acceptance.json",
+        "sha256": "b87184493bdb71ba1477d693a6c80763042648c8c39fd54efc51682da4930701"
+      },
+      {
+        "path": "tests/fixtures/tsconfig.json",
+        "sha256": "39131db76e5d5087b473047ae91510134536dabb1cbee21d0c337ac8147ef5a6"
+      },
+      {
+        "path": "tests/helpers/browser-private.ts",
+        "sha256": "9f95203672d9828c32bc5e411aa25020e3b1ab9438a689473b2ed057b69e697c"
+      },
+      {
+        "path": "tests/helpers/browser.ts",
+        "sha256": "68f7d871640fbbfd528a27c9f4e255ac64497b7775bd51d199c4da95845352d4"
+      },
+      {
+        "path": "tests/helpers/effect-fixture.mjs",
+        "sha256": "3aff52bb1965450fc6d6515d6d8ceca6b28f46edbd0e247005e413d7deb5c283"
+      },
+      {
+        "path": "tests/helpers/effect-process.mjs",
+        "sha256": "3c5ca3669de2d2358f14a1533a2bccc000a020a26304bb3c8ce1a1489859435c"
+      },
+      {
+        "path": "tests/helpers/job-lease.mjs",
+        "sha256": "0ae744e24d52adb17b782a4c6c00a49ac5f04660946fedac7793921536836533"
+      },
+      {
+        "path": "tests/helpers/migrations.mjs",
+        "sha256": "5da670f44c598605df43da514493026c3578b22096e9397e75e8d138b5f2cda8"
+      },
+      {
+        "path": "tests/helpers/postgres.ts",
+        "sha256": "2ef4b2a8b2765b11a2e8dceaed6d85983ab03cc3d77a9e37ba3ccba55c356040"
+      },
+      {
+        "path": "tests/helpers/vault-entry-fixture.mjs",
+        "sha256": "18136c36471c8cb15eb8c080c596e03cedcf0ce31031a0bdb90b142b1fb95fa1"
+      },
+      {
+        "path": "tests/helpers/vault-entry-process.mjs",
+        "sha256": "251516ba77d3e728b0ee487eb52b478e5ce83d8b60aebf7a1e96b341379406cc"
+      },
+      {
+        "path": "tests/helpers/worker-process.mjs",
+        "sha256": "b48fe634a235cdba72784ffa85d1efde4f6a36d4f6a25a0f2762a3c5d77cffee"
+      },
+      {
+        "path": "tests/job-answer.test.mjs",
+        "sha256": "11a82df76fca9e65b5156a60307e80ca8a7688e4a8e1ca0c3a77296ef7dcabcf"
+      },
+      {
+        "path": "tests/job-cancel.test.mjs",
+        "sha256": "682499afc43db366a21994779150299537a5db241ebb95796b69b743ef6f6062"
+      },
+      {
+        "path": "tests/job-journal.test.mjs",
+        "sha256": "d8c4841174d38067281f4910bcadd987d59aac0f6dcc682e3ff75acab3c76e16"
+      },
+      {
+        "path": "tests/job-lease.test.mjs",
+        "sha256": "84b575e739791355dea530fa0018898127e4585e98f6afc11afcc0769d572a83"
+      },
+      {
+        "path": "tests/job-worker.test.mjs",
+        "sha256": "724cda68bca3591d8925a26eff63884092f7f73bdd77d05213689efa2ff74b08"
+      },
+      {
+        "path": "tests/packaging.test.mjs",
+        "sha256": "b587204de529ca8807c5ee9d9d21daa32bca6b6f0829da1ad8261e0ad829cf08"
+      },
+      {
+        "path": "tests/payment-vault.test.mjs",
+        "sha256": "ab64ecf0eae6fa26bee7e04297a3e8538da79dd77590cf7adb8e8040ff9848e2"
+      },
+      {
+        "path": "tests/postgres.test.mjs",
+        "sha256": "e22c117169e944852469515eb6386cebea0f7139232fd24790c29561b946c2ab"
+      },
+      {
+        "path": "tests/reference/browser-profile-fixture.ts",
+        "sha256": "197db334c4023b367b7f62da66adcc23747a7a3fb73a0581f412b0e09d5973c1"
+      },
+      {
+        "path": "tests/reference/browser-profile-process.ts",
+        "sha256": "ecc77b3e5bc60266d6b0aadb12ff8efd86f251ca0796705afe24137f30a4c06a"
+      },
+      {
+        "path": "tests/reference/browser-profile-store.test.ts",
+        "sha256": "b59edabaccf8a57ab6dbd15ac4ad964a4869720dc96c6fbc509b854161bb6e07"
+      },
+      {
+        "path": "tests/reference/vault-fixture.ts",
+        "sha256": "42435f5b3691a6f7380bf6a728bbdf4c7bafd703bed5c16e0364c8d3cd8ff38c"
+      },
+      {
+        "path": "tests/reference/vault-lifecycle.test.ts",
+        "sha256": "bdc9438e7e4be917bb9f5e167cc2db4b6242bc6f83ba848dbc22df93bbfc0223"
+      },
+      {
+        "path": "tests/reference/vault-process.ts",
+        "sha256": "b4c12ff3d42c11c0c0e64ad56671ba2fddd2ba6909b75b672c6483e7728460f8"
+      },
+      {
+        "path": "tests/reference/vault-store.test.ts",
+        "sha256": "53dee78bb6ffacac9e6121ade68be31eeba5a38679739f48196466e7c8a63c61"
+      },
+      {
+        "path": "tests/run-local-postgres.mjs",
+        "sha256": "c6e2017e2a1976127bdd599734bab0f1a05138cf2913cfd271cac11e74b618fe"
+      },
+      {
+        "path": "tests/server/vault-request.test.ts",
+        "sha256": "607aa5fafe5ccd09061454e5d3b35580a94f2b29ad1a0ecd805e16ea8175f8f0"
+      },
+      {
+        "path": "tests/submit.test.mjs",
+        "sha256": "a2a81e7eef827e390f6b6ff3356de18ccc7b39c57562264c1d2ab45fbc956b1b"
+      },
+      {
+        "path": "tests/tsconfig.browser.json",
+        "sha256": "d77ac5fc313cc90eeb8fc8db59bd34a0a735755ca2900fd47a6f4842ccf84210"
+      },
+      {
+        "path": "tests/tsconfig.postgres.json",
+        "sha256": "8fe395af675665d14e123516a030ffcc8a446b0c0e311e6f7ec482c32479821d"
+      },
+      {
+        "path": "tests/tsconfig.reference.json",
+        "sha256": "ef80c8e0347b1125d82120e1dbcda25edcf7e33c6e705a26269c22e46333dfdb"
+      },
+      {
+        "path": "tests/tsconfig.vault-request.json",
+        "sha256": "613df3d8cf0b4446e45b9eaf180d79d21fe4bcd7a2f85951591735ff17d3b8e1"
+      },
+      {
+        "path": "tests/vault-entry.test.mjs",
+        "sha256": "85b7ecd6d597e6d3e951f0c0a1530dd1e7b8278ed772dc606b3de211f3a45169"
+      },
+      {
+        "path": "tests/vault-use.test.mjs",
+        "sha256": "80b9c09f192492c0ae62da8095f5f411beb8be0185c3bce709be581c46f8b3e4"
+      },
+      {
+        "path": "tsconfig.json",
+        "sha256": "b632554574c04df2d36df403e65b62b39e0ac3d7cc4f62f9d2e5afc2a77c478f"
+      }
+    ]
+  },
+  "preservation": {
+    "initial_manifest_sha256": "f11ec10f21c59f5422042859094005848b6afc1e5ed7115a6113d15d85dc6fac",
+    "initial_file_count": 147,
+    "initial_head": "2b18d55046af43a1ed80c3cc07b17e98c7519cc1",
+    "baseline_files_unchanged": 140,
+    "modified_baseline_paths": [
+      "docs/local-postgres-testing.md",
+      "package.json",
+      "reference/node/db/migrations/meta/_journal.json",
+      "reference/node/db/schema.ts",
+      "reference/node/vault-private.ts",
+      "tests/reference/vault-lifecycle.test.ts",
+      "tests/run-local-postgres.mjs"
+    ],
+    "new_task_paths": [
+      "docs/browser-profile-store.md",
+      "reference/node/browser-profile-store.ts",
+      "reference/node/db/migrations/0011_browser_profiles.sql",
+      "reference/node/db/migrations/meta/0011_snapshot.json",
+      "reference/node/private-envelope.ts",
+      "tests/reference/browser-profile-fixture.ts",
+      "tests/reference/browser-profile-process.ts",
+      "tests/reference/browser-profile-store.test.ts"
+    ],
+    "note": "All 140 other baseline files retain exact initial hashes. Existing dirty edits in shared files retained; this task appends profile schema/migration/script entries and two upgrade-fixture teardown lines."
+  },
+  "validation": [
+    {
+      "command": "npm run db:generate -- --name browser_profiles",
+      "exit_status": 0,
+      "result": "Generated only the two profile tables, migration 0011, journal entry and snapshot."
+    },
+    {
+      "command": "npm run build:test-reference",
+      "exit_status": 0,
+      "result": "Strict reference and TypeScript test compilation."
+    },
+    {
+      "command": "node tests/run-local-postgres.mjs test:browser-profile test:vault-lifecycle test:vault",
+      "exit_status": 0,
+      "capture": ".reference-build/browser-profile-sql.log",
+      "output_sha256": "7626076e879f41ef782df4252759dea1a9efed4b88200db8b16c886a5af49c26",
+      "suites": [
+        {
+          "suite": "test:browser-profile",
+          "tests": 16,
+          "pass": 16,
+          "fail": 0,
+          "skip": 0
+        },
+        {
+          "suite": "test:vault-lifecycle",
+          "tests": 18,
+          "pass": 18,
+          "fail": 0,
+          "skip": 0
+        },
+        {
+          "suite": "test:vault",
+          "tests": 13,
+          "pass": 13,
+          "fail": 0,
+          "skip": 0
+        }
+      ],
+      "postgres": "PostgreSQL 15; fresh owned cluster, dedicated disposable database and non-superuser role; per-test migrated schemas; owned cluster stopped and removed"
+    },
+    {
+      "command": "npm test",
+      "exit_status": 0,
+      "capture": ".reference-build/browser-profile-contracts.log",
+      "output_sha256": "8d020c116763bb989904567f4edbb71f5bfc53962db373c3201b37001264b491",
+      "tests": 771,
+      "pass": 771,
+      "fail": 0,
+      "skip": 0,
+      "includes": "Public build, acceptance fixture typecheck, PostgreSQL helper compile, reference compile, contract/packaging/acceptance TAP suites"
+    },
+    {
+      "command": "node node_modules/typescript/bin/tsc -p tests/fixtures/tsconfig.json",
+      "exit_status": 0,
+      "result": "Consumer typecheck; no output"
+    },
+    {
+      "command": "git diff --check",
+      "exit_status": 0
+    }
+  ],
+  "redacted_receipts": {
+    "fresh_process_exact_restoration": {
+      "values": 3,
+      "cookie_values": 1,
+      "local_storage_values": 1,
+      "session_storage_values": 1,
+      "digest_equal": true,
+      "writer_and_reader_exited": true,
+      "distinct_pids_verified": true
+    },
+    "private_scan": {
+      "needles": 27,
+      "matches": 0,
+      "captured_child_output_bytes": 0,
+      "journal_tables_scanned": [
+        "jobs",
+        "job_events",
+        "job_deliveries",
+        "job_checkpoints",
+        "job_admissions",
+        "job_effects"
+      ],
+      "also_scanned": [
+        "profile ciphertext and metadata rows",
+        "profile authority ledger",
+        "reference receipts",
+        "captured child stdout/stderr",
+        "injected secret-bearing service-error results"
+      ],
+      "raw_state_and_keys_retained": false
+    },
+    "scope": {
+      "dimensions_rejected": 6,
+      "disallowed_origin_variants_rejected": 3
+    },
+    "save_cas": {
+      "distinct_postgresql_backends": 2,
+      "key_resolution_barrier_participants": 2,
+      "winners": 1,
+      "conflicts": 1,
+      "failed_sql_save_rolled_back_snapshot_and_revision": true
+    },
+    "terminal_fences": {
+      "statuses": [
+        "revoked",
+        "deleted"
+      ],
+      "epoch_before": 7,
+      "epoch_after": 8,
+      "survive_restart": true,
+      "interrupted_cleanup_remains_fenced": true,
+      "restored_ciphertext_rejected": true,
+      "stale_create_save_load_rejected": true,
+      "remote_state": "not_requested"
+    },
+    "recovery": [
+      "expired including equality/during key resolution",
+      "tampered ciphertext/nonce/tag/encoding",
+      "tampered six-dimensional scope and policy metadata",
+      "unsupported state/envelope/algorithm versions",
+      "authenticated malformed plaintext",
+      "cross-profile envelope swap",
+      "missing/wrong exact key without alternate profile/key fallback",
+      "missing authority ledger"
+    ],
+    "vault_envelope_compatibility": "Legacy v1 encrypt to current decrypt and current encrypt to legacy v1 decrypt both passed; distinct-domain authentication fails as expected."
+  },
+  "development_findings_resolved": [
+    "Drizzle requires ordinary object prototypes at JSON insert boundaries; detached validated objects now use frozen ordinary objects.",
+    "Vault migration rewind fixture now removes both new profile tables before replaying the forward migration."
+  ],
+  "boundaries": {
+    "browser_launched": false,
+    "application_service_started": false,
+    "host_database_mutated": false,
+    "provider_operation_executed": false,
+    "public_exports_added": false,
+    "commit_or_push": false,
+    "deployment": false,
+    "native_publication_denied": true,
+    "production_hold_preserved": true
+  },
+  "remaining_acceptance": "Independent runtime/boundary QA and browser session/control integration remain on their existing separate checklist items. Full authoritative-ledger rollback requires host freshness attestation; ciphertext-backup recovery never replaces the ledger."
+}

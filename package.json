@@ -1,0 +1,70 @@
+{
+  "name": "handrail-agent-sdk",
+  "version": "0.1.1",
+  "private": true,
+  "description": "Handrail Agent SDK packaging bootstrap",
+  "type": "module",
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/c0x65o/handrail-agent-sdk.git"
+  },
+  "files": [
+    "dist"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./server": {
+      "types": "./dist/server/index.d.ts",
+      "import": "./dist/server/index.js"
+    }
+  },
+  "scripts": {
+    "build:test-browser": "tsc -p tests/tsconfig.browser.json",
+    "test:browser": "npm run build:test-browser && node --test --test-concurrency=1 --test-reporter=tap tests/browser.test.mjs",
+    "test:browser-boundary": "npm run build:test-browser && node --test --test-concurrency=1 --test-reporter=tap tests/browser-boundary.test.mjs",
+    "build": "tsc -p tsconfig.json",
+    "prepare": "npm run build",
+    "pretest": "npm run build && npm run typecheck:acceptance && npm run build:test-postgres && npm run build:reference",
+    "test": "node --test --test-concurrency=1 --test-reporter=tap tests/contracts/job.test.mjs tests/contracts/connection.test.mjs tests/contracts/vault.test.mjs tests/contracts/browser.test.mjs tests/packaging.test.mjs tests/acceptance.test.mjs",
+    "build:test-postgres": "tsc -p tests/tsconfig.postgres.json",
+    "test:postgres": "npm run build:test-postgres && node --test --test-concurrency=1 --test-reporter=tap tests/postgres.test.mjs",
+    "typecheck:acceptance": "tsc -p tests/fixtures/tsconfig.acceptance.json",
+    "check:acceptance": "npm run build && npm run typecheck:acceptance && node scripts/validate-convergence-v1.mjs && node --test --test-concurrency=1 tests/acceptance.test.mjs",
+    "build:reference": "tsc -p reference/tsconfig.json",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "npm run build:reference && node .reference-build/reference/node/db/migrate.js",
+    "test:journal": "npm run build:reference && npm run build:test-postgres && node --test --test-concurrency=1 --test-reporter=tap tests/job-journal.test.mjs",
+    "test:submit": "npm run build:reference && npm run build:test-postgres && node --test --test-concurrency=1 --test-reporter=tap tests/submit.test.mjs",
+    "test:lease": "npm run build:reference && npm run build:test-postgres && node --test --test-concurrency=1 --test-reporter=tap tests/job-lease.test.mjs",
+    "test:cancel": "npm run build:reference && npm run build:test-postgres && node --test --test-concurrency=1 --test-reporter=tap tests/job-cancel.test.mjs",
+    "test:answer": "npm run build:reference && npm run build:test-postgres && node --test --test-concurrency=1 --test-reporter=tap tests/job-answer.test.mjs",
+    "test:worker": "npm run build:reference && npm run build:test-postgres && node --test --test-concurrency=1 --test-reporter=tap tests/job-worker.test.mjs",
+    "build:test-reference": "tsc -p tests/tsconfig.reference.json",
+    "test:vault-lifecycle": "npm run build:test-reference && node --test --test-concurrency=1 --test-reporter=tap .reference-build/tests/reference/vault-lifecycle.test.js",
+    "test:vault": "npm run build:test-reference && node --test --test-concurrency=1 --test-reporter=tap .reference-build/tests/reference/vault-store.test.js",
+    "test:effects": "npm run build:reference && npm run build:test-postgres && node --test --test-concurrency=1 --test-reporter=tap tests/effects.test.mjs",
+    "test:vault-use": "npm run build:reference && npm run build:test-postgres && node --test --test-concurrency=1 --test-reporter=tap tests/vault-use.test.mjs",
+    "test:payment-vault": "npm run build:reference && npm run build:test-postgres && node --test --test-concurrency=1 --test-reporter=tap tests/payment-vault.test.mjs",
+    "test:vault-entry": "npm run build:reference && npm run build:test-postgres && node --test --test-concurrency=1 --test-reporter=tap tests/vault-entry.test.mjs",
+    "test:vault-request": "tsc -p tests/tsconfig.vault-request.json && node --test --test-concurrency=1 --test-reporter=tap .reference-build/tests/server/vault-request.test.js",
+    "test:browser-profile": "npm run build:test-reference && node --test --test-concurrency=1 --test-reporter=tap .reference-build/tests/reference/browser-profile-store.test.js",
+    "test:connection-store": "npm run build:test-reference && node --test --test-concurrency=1 --test-reporter=tap .reference-build/tests/reference/connection-store.test.js"
+  },
+  "devDependencies": {
+    "@types/node": "22.20.4",
+    "@types/pg": "8.23.1",
+    "drizzle-kit": "0.31.11",
+    "playwright-core": "1.63.0",
+    "typescript": "5.9.3"
+  },
+  "dependencies": {
+    "drizzle-orm": "0.45.3",
+    "pg": "8.23.0"
+  }
+}

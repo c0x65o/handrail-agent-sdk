@@ -1,0 +1,179 @@
+{
+  "schema_version": 1,
+  "proof_class": "local_disposable_postgresql_fixture",
+  "recorded_at": "2026-09-27T18:26:10.245541+00:00",
+  "owner_goal_id": "1b13c4ab-38c2-4d78-a5cb-238e2f257c62",
+  "owner_task_id": "7ccb807a-4e38-42c7-bf23-73d62adec118",
+  "item_id": "e6a851fd-4cf9-48d2-aa8a-c973199ed97f",
+  "work_request_id": "03f01735-daf7-4163-8433-f151e10006b4",
+  "source": {
+    "branch": "lane/agent-sdk-v1",
+    "baseline_commit": "a0c88b378fc6627674857f7cbb302a4723ac96ba",
+    "initial_worktree": "clean",
+    "delivery": "uncommitted source patch; no version bump, commit or push",
+    "file_sha256": {
+      "docs/job-admission.md": "ec3b386d8cb5f9a931145df129951ece98d0309323e38d8315194be23699a23a",
+      "docs/job-journal.md": "0499a6a559c5482231d43efc84d8d2c7a96ee8f0ca5942bd69b28d5701e1114a",
+      "docs/local-postgres-testing.md": "40e26b678d906419958adf089418f1f4d851168aef5f25d68bb2ec5b994c7ee6",
+      "package.json": "181f5563da0c21e0367383db17f37630435d9425fdfd16f4849ae26127b287b6",
+      "reference/node/db/migrations/0001_round_garia.sql": "109d200d5b77287350bb9d90fecf749a3553e1a606cac4f0c5036d3d7b8f4211",
+      "reference/node/db/migrations/meta/0001_snapshot.json": "9e7c36bfe6d1934abe2b57b50e3fea601df7556204be1b5972cacbec91100b12",
+      "reference/node/db/migrations/meta/_journal.json": "4a0ad752e512bb54e657d9f638a6b33d72434ea4cda9ec7673cbf088559f84e2",
+      "reference/node/db/schema.ts": "960b7b526a1bea79e34e9b12106471620787b333b97630a43c2bf5b1980d32df",
+      "reference/node/job-admission.ts": "70f9edaaf19d823cb8432c88b732cb3e9fcb5f416f34b448133e4f3fb7c1efef",
+      "src/server/index.ts": "12f710f66ec7444a3095c8af97db592d12142975e787ebd0172f8841bd2dc72a",
+      "src/server/job-store.ts": "1e1f074cece1cc5bbdccfe60cb467e4d82d5243f04d7b913f193fa051f055641",
+      "src/server/submit.ts": "def18c74ca1d4b16b4c457899ef132100829c9d48977cfd9acd1803c2f909fa5",
+      "tests/fixtures/consumer.mts": "180878c8c4d59bb681256d4c32b3bdfba947e74c70e76148600023493fc0125e",
+      "tests/helpers/migrations.mjs": "5da670f44c598605df43da514493026c3578b22096e9397e75e8d138b5f2cda8",
+      "tests/job-journal.test.mjs": "9fc4da07612f6dd764c938931226e047fe6ef53e3e99be60d1f20d92274f937d",
+      "tests/packaging.test.mjs": "d63f40f341c8ee63a95c2641b5563f1da29eae78baee037911f939130b59453a",
+      "tests/run-local-postgres.mjs": "be21745a6d65aa97dd73bb5ee4666ea198618fc2df185363a54cad44a1e35e98",
+      "tests/submit.test.mjs": "120124a566b823f854014dfb78b7821109da73f50dbed580091eb341a874f0f6"
+    }
+  },
+  "contract": {
+    "knowledge_base": "handrail-node-postgres-drizzle-contract",
+    "published_revision": 1,
+    "migration": "reference/node/db/migrations/0001_round_garia.sql"
+  },
+  "executed_tests": [
+    {
+      "command": "node tests/run-local-postgres.mjs",
+      "exit_code": 0,
+      "fixture": "new temporary PostgreSQL 15 cluster; runner-generated credentials withheld; isolated disposable database and non-superuser role; no ambient/live database selected",
+      "suites": [
+        {
+          "command": "npm run test:submit",
+          "passed": 11,
+          "failed": 0,
+          "skipped": 0
+        },
+        {
+          "command": "npm run test:journal",
+          "passed": 14,
+          "failed": 0,
+          "skipped": 0
+        },
+        {
+          "command": "npm run test:postgres",
+          "passed": 1,
+          "failed": 0,
+          "skipped": 0
+        }
+      ],
+      "cleanup": "owned schemas/tables removed with RESTRICT; independent sentinel preserved; owned cluster stopped and removed"
+    },
+    {
+      "command": "npm test",
+      "exit_code": 0,
+      "passed": 770,
+      "failed": 0,
+      "skipped": 0,
+      "coverage": "contract, acceptance and packaging regressions; includes import-only natural exit checks"
+    }
+  ],
+  "compilation_separate_from_tests": [
+    {
+      "command": "npm run build",
+      "result": "passed; also executed by npm test pretest and npm pack prepare"
+    },
+    {
+      "command": "npm run build:reference",
+      "result": "passed; also executed by fixture test commands"
+    },
+    {
+      "command": "npm run build:test-postgres",
+      "result": "passed; helper compilation, not DB execution"
+    },
+    {
+      "command": "npm run typecheck:acceptance",
+      "result": "passed through npm test pretest"
+    },
+    {
+      "command": "node node_modules/typescript/bin/tsc -p tests/fixtures/tsconfig.json",
+      "result": "passed; public package consumer"
+    }
+  ],
+  "packaging": [
+    {
+      "command": "npm pack --dry-run --json",
+      "result": "passed; 22 files, includes dist/server/submit.js and declarations, excludes reference host and tests; no package published"
+    },
+    {
+      "command": "git diff --check",
+      "result": "passed"
+    }
+  ],
+  "sanitized_receipts": [
+    {
+      "jobId": "job-submit-2",
+      "originTaskRef": "original-task-submit-1",
+      "instructionRevision": 7,
+      "state": "queued",
+      "eventCursor": 1,
+      "replayed": true
+    },
+    {
+      "jobId": "job-submit-2",
+      "originTaskRef": "original-task-submit-1",
+      "instructionRevision": 7,
+      "state": "queued",
+      "eventCursor": 1,
+      "replayed": false
+    }
+  ],
+  "additional_recovery_receipts": [
+    {
+      "jobId": "job-submit-1",
+      "originTaskRef": "original-task-submit-1",
+      "instructionRevision": 7,
+      "state": "queued",
+      "eventCursor": 1,
+      "replayed": true,
+      "scenario": "new client canonical retry after original client close"
+    },
+    {
+      "jobId": "job-submit-2",
+      "originTaskRef": "original-task-submit-1",
+      "instructionRevision": 7,
+      "state": "queued",
+      "eventCursor": 1,
+      "replayed": false,
+      "scenario": "retry after injected late reservation failure left all tables empty"
+    },
+    {
+      "jobId": "job-release-fence-1",
+      "originTaskRef": "original-task-submit-1",
+      "instructionRevision": 7,
+      "state": "queued",
+      "eventCursor": 1,
+      "replayed": true,
+      "scenario": "reauthorized retry recovers committed job after output-release authorization denial"
+    }
+  ],
+  "coverage": [
+    "Two distinct PostgreSQL backend PIDs race identical submissions; one job/reservation/event/checkpoint and one original/one replay receipt.",
+    "Operation and input-reference changes, original task/instruction, account/project/environment/purpose, native/origin and grant revision conflicts leave durable rows unchanged.",
+    "Independent tenant/actor/account/environment/project host namespaces remain isolated; wrong-scope and unauthorized inspection denied.",
+    "Caller identity and grant claims, raw fields, getters, hidden fields, symbols, cycles, unsupported arrays/objects/values fail before authority or persistence.",
+    "Fresh host authority on retries/inspection and before output release; revoked or changed authority withholds output without undoing durable work.",
+    "Canonical object-key order retries and client replacement recover original identity; closed connections return safe errors without modifying work.",
+    "Late SQL constraint failure rolls back job/event/checkpoint/reservation; retry succeeds; sanitized errors have no driver causes.",
+    "Current state/event cursor inspection excludes raw events, scope, effects, requirements, answers and internal references; submit replay remains initial revision after advancement.",
+    "Inputs detach before asynchronous authorization; caller and callback argument mutations cannot change binding.",
+    "Generated migrations and sentinel cleanup use shared Drizzle/harness ownership boundaries."
+  ],
+  "earlier_iteration": {
+    "admission_passed": 9,
+    "admission_failed": 1,
+    "admission_skipped": 0,
+    "cause": "Test compared detached null-prototype decoded records with ordinary-object prototypes. Assertion now compares decoded JSON content. Final suite passes, including the subsequent output-release authorization test."
+  },
+  "limitations": [
+    "Local PostgreSQL fixture proof only; no deployed Handrail or live provider acceptance.",
+    "Trusted host callbacks must authenticate and approve nonsecret references; schema validation is not secret detection.",
+    "Host-native transaction/dispatch fencing, claims, worker scheduling, cancellation orchestration and effect dispatch remain their own checklist items.",
+    "No independent QA campaign was created; no publication, release, deployment, CI/CD mutation, runtime configuration change or live migration performed."
+  ]
+}

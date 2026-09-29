@@ -1,0 +1,5 @@
+{
+  "extends": "../reference/tsconfig.json",
+  "compilerOptions": { "allowJs": true, "checkJs": false },
+  "include": ["reference/**/*.ts", "helpers/postgres.ts", "helpers/migrations.mjs", "../reference/node/**/*.ts", "../src/**/*.ts"]
+}

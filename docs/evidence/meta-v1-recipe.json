@@ -1,0 +1,123 @@
+{
+  "schemaVersion": 1,
+  "recordedAt": "2026-09-28",
+  "proof": "local_recipe_consistency_only",
+  "ownerGoalId": "1b13c4ab-38c2-4d78-a5cb-238e2f257c62",
+  "ownerTaskId": "7ccb807a-4e38-42c7-bf23-73d62adec118",
+  "itemId": "10a00f02-f34d-4680-856c-a54c7a0687d5",
+  "workRequestId": "74698d79-f208-4888-83b9-7914ecab6f18",
+  "sdkBaseCommit": "34a21d6673d940bd59fb9800d4ddeef6b3d7e051",
+  "branch": "lane/agent-sdk-v1",
+  "candidate": {
+    "files": {
+      "docs/providers/meta-v1.md": "8b2ad9257c9f06ae46b68d24fd811035188b13f9d16ce4b968150f4415482af4",
+      "docs/providers/meta-v1.recipe.json": "da1e49ff8209aaa5703c652620e381b85ebf8da5482e6e0ae21285fa197d3b2f",
+      "scripts/validate-meta-v1.mjs": "1bfdb338b0a7775ce449662ff8f28918b7ff91a4eb3c41763f4cd5bf49cf61d3",
+      "tests/meta-recipe.test.mjs": "c783970510c30ba8b4c94cfbab9ec8c527cd1c6e82af988de716a9411f567a01"
+    },
+    "sha256": "0d85f01dd9e2cacc1aed6ef541d969606d28303e2f5f0f5567ad1bfa47a6e2c2",
+    "algorithm": "SHA256 of UTF-8 lines sorted by path: <file sha256><two spaces><path><LF>; excludes this evidence record to avoid self-reference"
+  },
+  "validation": [
+    {
+      "command": "node scripts/validate-meta-v1.mjs",
+      "exitCode": 0,
+      "result": {
+        "ok": true,
+        "operationCount": 8,
+        "proof": "recipe_consistency_only"
+      }
+    },
+    {
+      "command": "node --test --test-concurrency=1 --test-reporter=tap tests/meta-recipe.test.mjs",
+      "exitCode": 0,
+      "tests": 47,
+      "passed": 47,
+      "failed": 0,
+      "cancelled": 0,
+      "skipped": 0,
+      "todo": 0,
+      "scope": "Synthetic in-process manifest mutation fixtures; no persistence, provider or installed-runtime proof"
+    },
+    {
+      "command": "node --check scripts/validate-meta-v1.mjs",
+      "exitCode": 0,
+      "kind": "syntax_check_not_tests"
+    },
+    {
+      "command": "node --check tests/meta-recipe.test.mjs",
+      "exitCode": 0,
+      "kind": "syntax_check_not_tests"
+    },
+    {
+      "command": "node node_modules/typescript/bin/tsc --noEmit --strict --target ES2022 --module NodeNext --moduleResolution NodeNext --skipLibCheck src/contracts/connection.ts",
+      "exitCode": 0,
+      "kind": "scoped_existing_contract_typecheck_not_tests"
+    },
+    {
+      "command": "git diff --check",
+      "exitCode": 0,
+      "kind": "tracked_workspace_whitespace_check"
+    },
+    {
+      "command": "git diff --no-index --check /dev/null docs/providers/meta-v1.md",
+      "exitCode": 1,
+      "result": "no whitespace errors; --no-index returns 1 for added-file differences"
+    },
+    {
+      "command": "git diff --no-index --check /dev/null docs/providers/meta-v1.recipe.json",
+      "exitCode": 1,
+      "result": "no whitespace errors; --no-index returns 1 for added-file differences"
+    },
+    {
+      "command": "git diff --no-index --check /dev/null scripts/validate-meta-v1.mjs",
+      "exitCode": 1,
+      "result": "no whitespace errors; --no-index returns 1 for added-file differences"
+    },
+    {
+      "command": "git diff --no-index --check /dev/null tests/meta-recipe.test.mjs",
+      "exitCode": 1,
+      "result": "no whitespace errors; --no-index returns 1 for added-file differences"
+    }
+  ],
+  "publicSourceEvidence": "docs/providers/meta-v1.recipe.json#publicSources: 10 public documentation responses, HTTP 200 on 2026-09-28; requested and resolved URLs plus exact SHA256 bytes; no live API calls",
+  "hostSource": {
+    "status": "unavailable",
+    "currentRevision": null,
+    "dirtySourceDigests": null,
+    "attempts": [
+      "read_source_files(source=handrail, repo_name=handrail, change_lane_id=null), five exact prerequisite/source files",
+      "read_source_files(source=handrail, repo_name=handrail), change_lane_id omitted, same files",
+      "grep_source_code(source=handrail, roots=[marketing-sdk]), caller search"
+    ],
+    "error": "Change Lane 'convergence-loop-9689ef5f-b976-42ca-97a7-278658db473e' was not found for project 'handrail'.",
+    "consequence": "Reported historical inventory provenance retained separately; current inventory, implementations and callers were not independently verified. No adapter selected or qualified."
+  },
+  "approvedMetadataSearch": {
+    "sdkDevProfileCount": 0,
+    "handrailDevProfileCount": 2,
+    "metaAccountMappingFound": false,
+    "scope": "Current context and approved dev auth metadata only; no assertion of global absence; no secret reads"
+  },
+  "unresolvedLiveProofPrerequisites": [
+    "Approved six-dimensional host account/environment/authority mapping to Meta app, user and ad account plus role and consent",
+    "App/redirect/API version and actual permission/review/access tier approvals",
+    "Current Handrail inventory/implementation/caller citations with exact revision and dirty-source digests",
+    "Qualified custody, authorization, provider and reconciliation adapters",
+    "Separately authorized installed-runtime receipts and original-task recovery evidence"
+  ],
+  "preservedUnrelatedFiles": {
+    "docs/local-browser-testing.md": "b1587d52188c59e10c7a2b3fa4fce331549a20959bf3e274bf3137046bed37d7",
+    "tests/browser-boundary.test.mjs": "7412e136e83fe7a736898cef6a18bbad643959917ad528e7f444ab4c51d62528",
+    "tests/browser.test.mjs": "dc73d096c098db0055c371819d9fdfc2d9b7bb1aab8ba3b406ba344e4dfa00ad",
+    "tests/helpers/browser-private.ts": "a3cb7f4a75d815a398dcc324d843c8e94a92be323807ac2699c0ebaa210c6fcd",
+    "tests/helpers/browser.ts": "afac43fda36abfbb83f84c0655c027196e1ba14d26dba6e53442002d622af31d",
+    "docs/evidence/browser-fixtures-b01-diagnostics.json": "7b324fb19e7f83fe6ba112de212810d966c160021b8fca4f1d3541256a7bca2d"
+  },
+  "persistenceExercised": false,
+  "disposableRunReceipt": null,
+  "qaCampaignId": null,
+  "providerOperations": 0,
+  "publicationEvidence": null,
+  "sourceChangesUncommitted": true
+}
