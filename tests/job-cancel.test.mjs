@@ -8,7 +8,6 @@ import { createJobLeaseStore } from '../.reference-build/reference/node/job-leas
 import { createJobCancellationStore } from '../.reference-build/reference/node/job-cancellation.js';
 import { createJobJournal } from '../.reference-build/reference/node/job-journal.js';
 import { createJobAdmissionStore } from '../.reference-build/reference/node/job-admission.js';
-import { createReferenceWorker } from '../.reference-build/reference/node/worker.js';
 import { journalTables } from '../.reference-build/reference/node/db/schema.js';
 
 const identity = {
@@ -142,24 +141,4 @@ test('changed, revoked, expired or held authority denies progress at admission',
   state.held = false;
   assert.equal(ok(await cancel.stop(stop, 'actor')).state, 'cancelled');
   assert.deepEqual(ok(await journal.load(identity)).effects, []);
-});
-
-test('late deterministic callback cannot append or reopen work after Stop', async t => {
-  const { first, observer, admission, journal, lease, cancel } = await setup(t);
-  const entered = gate(), finish = gate();
-  const worker = createReferenceWorker({
-    host: { recover: async () => [], authorize: async () => ({ namespaceRef: 'fixture', host: identity.host, grantRevision: 1 }) },
-    admission, journal,
-    lease: lease(first),
-    step: async () => { entered.release(); await finish.promise; return { kind: 'checkpoint' }; },
-    limits: { maxSteps: 2, maxElapsedMs: 5_000, maxStepMs: 1_000, maxRetries: 0, leaseTtlMs: 2_000 },
-  });
-  await worker.start();
-  const pending = worker.wake(identity);
-  await entered.promise;
-  const cancelled = ok(await cancel.stop(stop, 'actor'));
-  finish.release();
-  denied(await pending, 'lease_lost');
-  assert.deepEqual(ok(await journal.load(identity)), cancelled);
-  await worker.stop();
 });

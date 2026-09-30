@@ -1,0 +1,1 @@
+{"status":"passed","sha":"32ac1c88d02c3e5434ec1094e1e0e5724fdbce9c","mode":"baseline-channel-only","checks":["normal Git install/prepare","manifest and lock SHA equality","installed package export","installed consumer TypeScript"],"fixture":"/opt/handrail/repos/handrail/handrail-agent-sdk/handrail-agent-sdk/.reference-build/git-consumer-Jez1ze"}

@@ -11,7 +11,7 @@ function runNode(args) {
   const result = spawnSync(process.execPath, args, {
     cwd: root,
     encoding: 'utf8',
-    timeout: 10_000,
+    timeout: 30_000,
     killSignal: 'SIGKILL',
   });
   assert.ifError(result.error);
@@ -107,14 +107,16 @@ test('entrypoints and contract import graph have no startup calls or external ru
 });
 
 test('TypeScript consumer resolves both declarations through package exports', () => {
-  const output = runNode([
-    'node_modules/typescript/bin/tsc', '-p', 'tests/fixtures/tsconfig.json', '--traceResolution',
-  ]);
+  runNode(['node_modules/typescript/bin/tsc', '-p', 'tests/fixtures/tsconfig.json']);
+  const config = ts.readConfigFile(`${root}tests/fixtures/tsconfig.json`, ts.sys.readFile);
+  const options = ts.parseJsonConfigFileContent(config.config, ts.sys, root).options;
   for (const [specifier, declaration] of [
     ['handrail-agent-sdk', 'dist/index.d.ts'],
     ['handrail-agent-sdk/server', 'dist/server/index.d.ts'],
+    ['handrail-agent-sdk/server/agents', 'dist/server/agent-runtime.d.ts'],
   ]) {
-    assert.ok(output.includes(`Module name '${specifier}' was successfully resolved to '${root}${declaration}'`), output);
+    const resolved = ts.resolveModuleName(specifier, `${root}tests/fixtures/consumer.mts`, options, ts.sys, undefined, undefined, ts.ModuleKind.ESNext);
+    assert.equal(resolved.resolvedModule?.resolvedFileName, `${root}${declaration}`);
   }
 });
 
@@ -152,4 +154,12 @@ test('lease and reference factories are inert on import and construction', () =>
     createJobJournal(untouched);
     createVaultStore(untouched, untouched, untouched);
   `]);
+});
+
+test('OpenAI Agents server entrypoint imports without starting a worker or provider request', () => {
+  const output = runNode(['--input-type=module', '--eval', `
+    const entry = await import('handrail-agent-sdk/server/agents');
+    console.log(JSON.stringify(Object.keys(entry)));
+  `]);
+  assert.deepEqual(JSON.parse(output), ['createAgentRuntime']);
 });

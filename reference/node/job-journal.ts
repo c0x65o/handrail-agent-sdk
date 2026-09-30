@@ -39,7 +39,6 @@ function identityInput(value: JobIdentity): JobIdentity {
 export function createJobJournal(db: ReferenceDatabase, tables = journalTables()): JobStore & {
   load(identity: JobIdentity, repair?: boolean): Promise<JobStoreResult<JobSnapshot>>;
   appendEffectResolution(event: JobEvent, fence: import('../../src/server/job-lease.js').JobAppendFence): ReturnType<JobStore['append']>;
-  countCheckpoints(identity: JobIdentity): Promise<JobStoreResult<number>>;
 } {
   const { jobs, events, deliveries, checkpoints } = tables;
   type Transaction = Parameters<Parameters<ReferenceDatabase['transaction']>[0]>[0];
@@ -142,17 +141,6 @@ export function createJobJournal(db: ReferenceDatabase, tables = journalTables()
         });
       });
     },
-    countCheckpoints(input: JobIdentity): Promise<JobStoreResult<number>> {
-      return safe(async () => {
-        const identity = identityInput(input);
-        return db.transaction(async tx => {
-          const [head] = await tx.select().from(jobs).where(eq(jobs.jobId, identity.jobId)).for('update');
-          if (!head) reject('not_found');
-          if (!same(head.identity, identity)) reject('identity_mismatch');
-          const { rows } = await history(tx, head);
-          return rows.filter(row => row.event.kind === 'effects_recorded').length;
-        });
-      });
-    },
+
   };
 }

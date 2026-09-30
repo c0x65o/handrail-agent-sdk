@@ -1,0 +1,242 @@
+Fresh isolated PostgreSQL 15 cluster initialized; dedicated disposable database and non-superuser fixture role; connection values withheld.
+
+> handrail-agent-sdk@0.1.2 test:agents
+> npm run build:reference && npm run build:test-postgres && node --test --test-concurrency=1 --test-reporter=tap tests/agent-runtime.test.mjs
+
+
+> handrail-agent-sdk@0.1.2 build:reference
+> tsc -p reference/tsconfig.json
+
+
+> handrail-agent-sdk@0.1.2 build:test-postgres
+> tsc -p tests/tsconfig.postgres.json
+
+TAP version 13
+# Subtest: real Runner executes inventory -> protected reservation -> verification; duplicate delivery has one effect
+ok 1 - real Runner executes inventory -> protected reservation -> verification; duplicate delivery has one effect
+  ---
+  duration_ms: 676.567867
+  type: 'test'
+  ...
+# Subtest: different research task recovers from deliberate read-tool failure and computes a quote
+ok 2 - different research task recovers from deliberate read-tool failure and computes a quote
+  ---
+  duration_ms: 431.246082
+  type: 'test'
+  ...
+# Subtest: durable approval, answer and new input resume same job in a separate process
+ok 3 - durable approval, answer and new input resume same job in a separate process
+  ---
+  duration_ms: 1620.19964
+  type: 'test'
+  ...
+# Subtest: SIGKILL after provider mutation reconciles across processes without duplicate execution
+ok 4 - SIGKILL after provider mutation reconciles across processes without duplicate execution
+  ---
+  duration_ms: 3783.797471
+  type: 'test'
+  ...
+# Subtest: unknown external effect waits for reconciliation; schedule wake cannot authorize replay
+ok 5 - unknown external effect waits for reconciliation; schedule wake cannot authorize replay
+  ---
+  duration_ms: 619.842576
+  type: 'test'
+  ...
+# Subtest: tenant isolation, revoked and changed grants deny private state and execution
+ok 6 - tenant isolation, revoked and changed grants deny private state and execution
+  ---
+  duration_ms: 332.388466
+  type: 'test'
+  ...
+# Subtest: provider failure retains checkpoint and retry recovers without repeating completed tools
+ok 7 - provider failure retains checkpoint and retry recovers without repeating completed tools
+  ---
+  duration_ms: 462.122989
+  type: 'test'
+  ...
+# Subtest: process stop resumes checkpoint; explicit durable Stop fences late output and remains terminal
+ok 8 - process stop resumes checkpoint; explicit durable Stop fences late output and remains terminal
+  ---
+  duration_ms: 257.539219
+  type: 'test'
+  ...
+# Subtest: process shutdown aborts model transport and fresh runtime recovers same job
+ok 9 - process shutdown aborts model transport and fresh runtime recovers same job
+  ---
+  duration_ms: 438.886004
+  type: 'test'
+  ...
+# Subtest: invalid tool schema cannot mutate and repeated provider failure is bounded
+ok 10 - invalid tool schema cannot mutate and repeated provider failure is bounded
+  ---
+  duration_ms: 302.02545
+  type: 'test'
+  ...
+# Subtest: lost lease during a pending read prevents tool result and terminal writes
+ok 11 - lost lease during a pending read prevents tool result and terminal writes
+  ---
+  duration_ms: 512.232419
+  type: 'test'
+  ...
+# Subtest: model context bound fails durably and oversized private state is not committed
+ok 12 - model context bound fails durably and oversized private state is not committed
+  ---
+  duration_ms: 243.256202
+  type: 'test'
+  ...
+# Subtest: concurrent delivery is lease fenced; a second worker cannot execute tools
+ok 13 - concurrent delivery is lease fenced; a second worker cannot execute tools
+  ---
+  duration_ms: 490.518619
+  type: 'test'
+  ...
+# Subtest: Runner Vault tool composes real custody/grants/effects and never exposes the private token
+ok 14 - Runner Vault tool composes real custody/grants/effects and never exposes the private token
+  ---
+  duration_ms: 464.52955
+  type: 'test'
+  ...
+# Subtest: revocation after model approval is checked immediately before mutation dispatch
+ok 15 - revocation after model approval is checked immediately before mutation dispatch
+  ---
+  duration_ms: 301.3495
+  type: 'test'
+  ...
+# Subtest: unknown first effect stops other tools emitted in the same model response
+ok 16 - unknown first effect stops other tools emitted in the same model response
+  ---
+  duration_ms: 309.227289
+  type: 'test'
+  ...
+# Subtest: official OpenAI Responses provider/client drive Runner through simulated HTTP SSE transport
+ok 17 - official OpenAI Responses provider/client drive Runner through simulated HTTP SSE transport
+  ---
+  duration_ms: 500.393987
+  type: 'test'
+  ...
+1..17
+# tests 17
+# suites 0
+# pass 17
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 12608.979213
+npm notice
+npm notice New major version of npm available! 10.9.8 -> 12.2.0
+npm notice Changelog: https://github.com/npm/cli/releases/tag/v12.2.0
+npm notice To update run: npm install -g npm@12.2.0
+npm notice
+
+> handrail-agent-sdk@0.1.2 test:journal
+> npm run build:reference && npm run build:test-postgres && node --test --test-concurrency=1 --test-reporter=tap tests/job-journal.test.mjs
+
+
+> handrail-agent-sdk@0.1.2 build:reference
+> tsc -p reference/tsconfig.json
+
+
+> handrail-agent-sdk@0.1.2 build:test-postgres
+> tsc -p tests/tsconfig.postgres.json
+
+TAP version 13
+# Subtest: migration isolation, rerun and owned cleanup preserve independent sentinel
+ok 1 - migration isolation, rerun and owned cleanup preserve independent sentinel
+  ---
+  duration_ms: 321.189186
+  type: 'test'
+  ...
+# Real SQL: generated migration and ledger applied twice; restricted search_path; owned tables/sequence/schema removed; independent sentinel survived.
+# Subtest: independent concurrent appenders cannot claim one revision
+ok 2 - independent concurrent appenders cannot claim one revision
+  ---
+  duration_ms: 229.441201
+  type: 'test'
+  ...
+# Real SQL: distinct backends raced at revision 2; one committed, one conflicted; exactly two canonical events.
+# Subtest: concurrent identical admission and delivery retries return original canonical fact
+ok 3 - concurrent identical admission and delivery retries return original canonical fact
+  ---
+  duration_ms: 227.228883
+  type: 'test'
+  ...
+# Subtest: changed canonical content conflicts without persisting a new delivery
+ok 4 - changed canonical content conflicts without persisting a new delivery
+  ---
+  duration_ms: 215.944348
+  type: 'test'
+  ...
+# Subtest: fresh connections recover missing and stale checkpoints from validated events
+ok 5 - fresh connections recover missing and stale checkpoints from validated events
+  ---
+  duration_ms: 244.377135
+  type: 'test'
+  ...
+# Real SQL: original connection closed; new backends reconstructed exact revision 3 after missing and stale checkpoints.
+# Subtest: ahead, incompatible and fabricated checkpoints fail closed on reads and writes
+ok 6 - ahead, incompatible and fabricated checkpoints fail closed on reads and writes
+  ---
+  duration_ms: 241.098793
+  type: 'test'
+  ...
+# Subtest: all host, original, native and origin identity leaves are fenced
+ok 7 - all host, original, native and origin identity leaves are fenced
+  ---
+  duration_ms: 289.82583
+  type: 'test'
+  ...
+# Subtest: invalid transitions, revisions and unsupported raw fields leave all tables unchanged
+ok 8 - invalid transitions, revisions and unsupported raw fields leave all tables unchanged
+  ---
+  duration_ms: 212.324168
+  type: 'test'
+  ...
+# Subtest: cancellation remains terminal and unknown effects cannot disappear or authorize success
+ok 9 - cancellation remains terminal and unknown effects cannot disappear or authorize success
+  ---
+  duration_ms: 231.148546
+  type: 'test'
+  ...
+# Subtest: late SQL failure rolls back event, head, delivery and checkpoint with safe errors
+ok 10 - late SQL failure rolls back event, head, delivery and checkpoint with safe errors
+  ---
+  duration_ms: 230.412877
+  type: 'test'
+  ...
+# Real SQL: checkpoint constraint failed after event/head/delivery writes; independent observer verified complete rollback; subsequent append succeeded.
+# Subtest: database constraints reject duplicate event keys and unsafe integer revisions
+ok 11 - database constraints reject duplicate event keys and unsafe integer revisions
+  ---
+  duration_ms: 206.75469
+  type: 'test'
+  ...
+# Subtest: canonical history is validated even when a current checkpoint claims success
+ok 12 - canonical history is validated even when a current checkpoint claims success
+  ---
+  duration_ms: 203.716299
+  type: 'test'
+  ...
+# Subtest: a failed migration rolls back every generated application table
+ok 13 - a failed migration rolls back every generated application table
+  ---
+  duration_ms: 71.446204
+  type: 'test'
+  ...
+# Real SQL: injected final migration failure rolled back all generated tables and ledger insertion.
+# Subtest: append detaches validated input before awaiting SQL
+ok 14 - append detaches validated input before awaiting SQL
+  ---
+  duration_ms: 190.907392
+  type: 'test'
+  ...
+1..14
+# tests 14
+# suites 0
+# pass 14
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 3696.405094
+Owned temporary PostgreSQL cluster stopped.

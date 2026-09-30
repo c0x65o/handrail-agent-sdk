@@ -251,3 +251,17 @@ export function connectionTables(namespace = referenceSchemaName) {
   return { connections, revisions, receipts };
 }
 export const { connections, revisions: connectionRevisions, receipts: connectionReceipts } = connectionTables();
+
+/** OpenAI RunState is private encrypted custody, never public journal payload. */
+export function agentStateTables(namespace = referenceSchemaName) {
+  const { jobs } = journalTables(namespace);
+  return { states: pgSchema(namespace).table('agent_run_states', {
+    jobId: text('job_id').primaryKey().references(() => jobs.jobId),
+    version: bigint('version', { mode: 'number' }).notNull(),
+    grantRevision: bigint('grant_revision', { mode: 'number' }).notNull(),
+    keyRef: text('key_ref').notNull(),
+    envelope: jsonb('envelope').$type<import('../private-envelope.js').PrivateEnvelope>().notNull(),
+  }, t => [check('agent_run_states_version', sql`${t.version} between 1 and 9007199254740991`),
+    check('agent_run_states_grant_revision', sql`${t.grantRevision} between 1 and 9007199254740991`)]) };
+}
+export const { states: agentRunStates } = agentStateTables();

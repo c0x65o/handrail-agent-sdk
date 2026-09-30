@@ -1,0 +1,1540 @@
+{
+  "id": "0837cb39-23da-472c-95f7-4e139055c3dd",
+  "prevId": "ed5cb9a0-64f3-4305-a7b9-b7983f45bc59",
+  "version": "7",
+  "dialect": "postgresql",
+  "tables": {
+    "agent_reference.job_admissions": {
+      "name": "job_admissions",
+      "schema": "agent_reference",
+      "columns": {
+        "tenant_ref": {
+          "name": "tenant_ref",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "user_ref": {
+          "name": "user_ref",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "namespace_ref": {
+          "name": "namespace_ref",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "request_key": {
+          "name": "request_key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "digest": {
+          "name": "digest",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "job_id": {
+          "name": "job_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "job_admissions_job_id_jobs_job_id_fk": {
+          "name": "job_admissions_job_id_jobs_job_id_fk",
+          "tableFrom": "job_admissions",
+          "tableTo": "jobs",
+          "schemaTo": "agent_reference",
+          "columnsFrom": [
+            "job_id"
+          ],
+          "columnsTo": [
+            "job_id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "job_admissions_tenant_ref_user_ref_namespace_ref_request_key_pk": {
+          "name": "job_admissions_tenant_ref_user_ref_namespace_ref_request_key_pk",
+          "columns": [
+            "tenant_ref",
+            "user_ref",
+            "namespace_ref",
+            "request_key"
+          ]
+        }
+      },
+      "uniqueConstraints": {
+        "admissions_job_id_unique": {
+          "name": "admissions_job_id_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "job_id"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "agent_reference.agent_run_states": {
+      "name": "agent_run_states",
+      "schema": "agent_reference",
+      "columns": {
+        "job_id": {
+          "name": "job_id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "version": {
+          "name": "version",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "grant_revision": {
+          "name": "grant_revision",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "key_ref": {
+          "name": "key_ref",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "envelope": {
+          "name": "envelope",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "agent_run_states_job_id_jobs_job_id_fk": {
+          "name": "agent_run_states_job_id_jobs_job_id_fk",
+          "tableFrom": "agent_run_states",
+          "tableTo": "jobs",
+          "schemaTo": "agent_reference",
+          "columnsFrom": [
+            "job_id"
+          ],
+          "columnsTo": [
+            "job_id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "agent_run_states_version": {
+          "name": "agent_run_states_version",
+          "value": "\"agent_reference\".\"agent_run_states\".\"version\" between 1 and 9007199254740991"
+        },
+        "agent_run_states_grant_revision": {
+          "name": "agent_run_states_grant_revision",
+          "value": "\"agent_reference\".\"agent_run_states\".\"grant_revision\" between 1 and 9007199254740991"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "agent_reference.job_answer_deliveries": {
+      "name": "job_answer_deliveries",
+      "schema": "agent_reference",
+      "columns": {
+        "job_id": {
+          "name": "job_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "delivery_key": {
+          "name": "delivery_key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "digest": {
+          "name": "digest",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "event_cursor": {
+          "name": "event_cursor",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "job_answer_deliveries_job_id_jobs_job_id_fk": {
+          "name": "job_answer_deliveries_job_id_jobs_job_id_fk",
+          "tableFrom": "job_answer_deliveries",
+          "tableTo": "jobs",
+          "schemaTo": "agent_reference",
+          "columnsFrom": [
+            "job_id"
+          ],
+          "columnsTo": [
+            "job_id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "job_answer_deliveries_job_id_delivery_key_pk": {
+          "name": "job_answer_deliveries_job_id_delivery_key_pk",
+          "columns": [
+            "job_id",
+            "delivery_key"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "agent_reference.browser_profile_snapshots": {
+      "name": "browser_profile_snapshots",
+      "schema": "agent_reference",
+      "columns": {
+        "profile_ref": {
+          "name": "profile_ref",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "metadata": {
+          "name": "metadata",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "envelope_version": {
+          "name": "envelope_version",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "algorithm": {
+          "name": "algorithm",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "key_handle": {
+          "name": "key_handle",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "key_version": {
+          "name": "key_version",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "nonce": {
+          "name": "nonce",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "ciphertext": {
+          "name": "ciphertext",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "tag": {
+          "name": "tag",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "browser_profile_key_nonce_unique": {
+          "name": "browser_profile_key_nonce_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "key_handle",
+            "key_version",
+            "nonce"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "agent_reference.browser_profile_states": {
+      "name": "browser_profile_states",
+      "schema": "agent_reference",
+      "columns": {
+        "profile_ref": {
+          "name": "profile_ref",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "scope": {
+          "name": "scope",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "revision": {
+          "name": "revision",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "authority_epoch": {
+          "name": "authority_epoch",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "status": {
+          "name": "status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "active_nonce": {
+          "name": "active_nonce",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "browser_profile_revision": {
+          "name": "browser_profile_revision",
+          "value": "\"agent_reference\".\"browser_profile_states\".\"revision\" between 1 and 9007199254740991"
+        },
+        "browser_profile_epoch": {
+          "name": "browser_profile_epoch",
+          "value": "\"agent_reference\".\"browser_profile_states\".\"authority_epoch\" between 1 and 9007199254740991"
+        },
+        "browser_profile_state": {
+          "name": "browser_profile_state",
+          "value": "(\"agent_reference\".\"browser_profile_states\".\"status\" = 'active' and \"agent_reference\".\"browser_profile_states\".\"active_nonce\" is not null) or\n      (\"agent_reference\".\"browser_profile_states\".\"status\" in ('revoked', 'deleted') and \"agent_reference\".\"browser_profile_states\".\"active_nonce\" is null)"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "agent_reference.job_cancellation_evidence": {
+      "name": "job_cancellation_evidence",
+      "schema": "agent_reference",
+      "columns": {
+        "job_id": {
+          "name": "job_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "effect_ref": {
+          "name": "effect_ref",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "evidence_ref": {
+          "name": "evidence_ref",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "outcome": {
+          "name": "outcome",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "actor_ref": {
+          "name": "actor_ref",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "job_cancellation_evidence_job_id_jobs_job_id_fk": {
+          "name": "job_cancellation_evidence_job_id_jobs_job_id_fk",
+          "tableFrom": "job_cancellation_evidence",
+          "tableTo": "jobs",
+          "schemaTo": "agent_reference",
+          "columnsFrom": [
+            "job_id"
+          ],
+          "columnsTo": [
+            "job_id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "job_cancellation_evidence_job_id_effect_ref_evidence_ref_pk": {
+          "name": "job_cancellation_evidence_job_id_effect_ref_evidence_ref_pk",
+          "columns": [
+            "job_id",
+            "effect_ref",
+            "evidence_ref"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "cancellation_evidence_outcome": {
+          "name": "cancellation_evidence_outcome",
+          "value": "\"agent_reference\".\"job_cancellation_evidence\".\"outcome\" in ('unknown', 'verified', 'not_applied')"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "agent_reference.job_challenges": {
+      "name": "job_challenges",
+      "schema": "agent_reference",
+      "columns": {
+        "job_id": {
+          "name": "job_id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "requirement_ref": {
+          "name": "requirement_ref",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "requirement_revision": {
+          "name": "requirement_revision",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "job_revision": {
+          "name": "job_revision",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "expires_at": {
+          "name": "expires_at",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "resolver_ref": {
+          "name": "resolver_ref",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "grant_revision": {
+          "name": "grant_revision",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "cancellation_revision": {
+          "name": "cancellation_revision",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "consumed": {
+          "name": "consumed",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "job_challenges_job_id_jobs_job_id_fk": {
+          "name": "job_challenges_job_id_jobs_job_id_fk",
+          "tableFrom": "job_challenges",
+          "tableTo": "jobs",
+          "schemaTo": "agent_reference",
+          "columnsFrom": [
+            "job_id"
+          ],
+          "columnsTo": [
+            "job_id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "agent_reference.job_checkpoints": {
+      "name": "job_checkpoints",
+      "schema": "agent_reference",
+      "columns": {
+        "job_id": {
+          "name": "job_id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "version": {
+          "name": "version",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "revision": {
+          "name": "revision",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "snapshot": {
+          "name": "snapshot",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "job_checkpoints_job_id_jobs_job_id_fk": {
+          "name": "job_checkpoints_job_id_jobs_job_id_fk",
+          "tableFrom": "job_checkpoints",
+          "tableTo": "jobs",
+          "schemaTo": "agent_reference",
+          "columnsFrom": [
+            "job_id"
+          ],
+          "columnsTo": [
+            "job_id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "checkpoints_safe_revision": {
+          "name": "checkpoints_safe_revision",
+          "value": "\"agent_reference\".\"job_checkpoints\".\"revision\" between 1 and 9007199254740991"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "agent_reference.connection_receipts": {
+      "name": "connection_receipts",
+      "schema": "agent_reference",
+      "columns": {
+        "receipt_ref": {
+          "name": "receipt_ref",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "connection_ref": {
+          "name": "connection_ref",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "credential_revision": {
+          "name": "credential_revision",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "grant_revision": {
+          "name": "grant_revision",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "evidence": {
+          "name": "evidence",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "connection_receipts_connection_ref_connections_connection_ref_fk": {
+          "name": "connection_receipts_connection_ref_connections_connection_ref_fk",
+          "tableFrom": "connection_receipts",
+          "tableTo": "connections",
+          "schemaTo": "agent_reference",
+          "columnsFrom": [
+            "connection_ref"
+          ],
+          "columnsTo": [
+            "connection_ref"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "connection_receipt_revisions": {
+          "name": "connection_receipt_revisions",
+          "value": "\"agent_reference\".\"connection_receipts\".\"credential_revision\" between 1 and 9007199254740991 and \"agent_reference\".\"connection_receipts\".\"grant_revision\" between 1 and 9007199254740991"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "agent_reference.connection_revisions": {
+      "name": "connection_revisions",
+      "schema": "agent_reference",
+      "columns": {
+        "connection_ref": {
+          "name": "connection_ref",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "revision": {
+          "name": "revision",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "command": {
+          "name": "command",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "snapshot": {
+          "name": "snapshot",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "connection_revisions_connection_ref_connections_connection_ref_fk": {
+          "name": "connection_revisions_connection_ref_connections_connection_ref_fk",
+          "tableFrom": "connection_revisions",
+          "tableTo": "connections",
+          "schemaTo": "agent_reference",
+          "columnsFrom": [
+            "connection_ref"
+          ],
+          "columnsTo": [
+            "connection_ref"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "connection_revisions_connection_ref_revision_pk": {
+          "name": "connection_revisions_connection_ref_revision_pk",
+          "columns": [
+            "connection_ref",
+            "revision"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "connection_revisions_positive": {
+          "name": "connection_revisions_positive",
+          "value": "\"agent_reference\".\"connection_revisions\".\"revision\" between 1 and 9007199254740991"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "agent_reference.connections": {
+      "name": "connections",
+      "schema": "agent_reference",
+      "columns": {
+        "connection_ref": {
+          "name": "connection_ref",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "scope": {
+          "name": "scope",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "provider_ref": {
+          "name": "provider_ref",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "capability_digest": {
+          "name": "capability_digest",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "recipe_version": {
+          "name": "recipe_version",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "evidence_mode": {
+          "name": "evidence_mode",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "request": {
+          "name": "request",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "revision": {
+          "name": "revision",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "snapshot": {
+          "name": "snapshot",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "connections_logical_identity": {
+          "name": "connections_logical_identity",
+          "nullsNotDistinct": false,
+          "columns": [
+            "scope",
+            "provider_ref",
+            "capability_digest",
+            "recipe_version",
+            "evidence_mode"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {
+        "connections_revision": {
+          "name": "connections_revision",
+          "value": "\"agent_reference\".\"connections\".\"revision\" between 1 and 9007199254740991"
+        },
+        "connections_mode": {
+          "name": "connections_mode",
+          "value": "\"agent_reference\".\"connections\".\"evidence_mode\" in ('fixture', 'provider')"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "agent_reference.job_deliveries": {
+      "name": "job_deliveries",
+      "schema": "agent_reference",
+      "columns": {
+        "job_id": {
+          "name": "job_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "revision": {
+          "name": "revision",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "attempt_ref": {
+          "name": "attempt_ref",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "delivery": {
+          "name": "delivery",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "job_deliveries_job_id_revision_job_events_job_id_revision_fk": {
+          "name": "job_deliveries_job_id_revision_job_events_job_id_revision_fk",
+          "tableFrom": "job_deliveries",
+          "tableTo": "job_events",
+          "schemaTo": "agent_reference",
+          "columnsFrom": [
+            "job_id",
+            "revision"
+          ],
+          "columnsTo": [
+            "job_id",
+            "revision"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "job_deliveries_job_id_revision_attempt_ref_pk": {
+          "name": "job_deliveries_job_id_revision_attempt_ref_pk",
+          "columns": [
+            "job_id",
+            "revision",
+            "attempt_ref"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "agent_reference.job_effects": {
+      "name": "job_effects",
+      "schema": "agent_reference",
+      "columns": {
+        "job_id": {
+          "name": "job_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "effect_ref": {
+          "name": "effect_ref",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "provider_ref": {
+          "name": "provider_ref",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "idempotency_ref": {
+          "name": "idempotency_ref",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "request": {
+          "name": "request",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "admission_authority": {
+          "name": "admission_authority",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "authority": {
+          "name": "authority",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "reconciliation": {
+          "name": "reconciliation",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "observation": {
+          "name": "observation",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "resolved_revision": {
+          "name": "resolved_revision",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "job_effects_job_id_jobs_job_id_fk": {
+          "name": "job_effects_job_id_jobs_job_id_fk",
+          "tableFrom": "job_effects",
+          "tableTo": "jobs",
+          "schemaTo": "agent_reference",
+          "columnsFrom": [
+            "job_id"
+          ],
+          "columnsTo": [
+            "job_id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "job_effects_job_id_effect_ref_pk": {
+          "name": "job_effects_job_id_effect_ref_pk",
+          "columns": [
+            "job_id",
+            "effect_ref"
+          ]
+        }
+      },
+      "uniqueConstraints": {
+        "effects_provider_idempotency_unique": {
+          "name": "effects_provider_idempotency_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "provider_ref",
+            "idempotency_ref"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {
+        "effects_observation_shape": {
+          "name": "effects_observation_shape",
+          "value": "(\"agent_reference\".\"job_effects\".\"observation\"->>'outcome' = 'unknown' and \"agent_reference\".\"job_effects\".\"resolved_revision\" is null)\n      or (\"agent_reference\".\"job_effects\".\"observation\"->>'outcome' = 'verified' and \"agent_reference\".\"job_effects\".\"observation\"->>'receiptRef' is not null)"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "agent_reference.job_events": {
+      "name": "job_events",
+      "schema": "agent_reference",
+      "columns": {
+        "job_id": {
+          "name": "job_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "revision": {
+          "name": "revision",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "event": {
+          "name": "event",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "job_events_job_id_jobs_job_id_fk": {
+          "name": "job_events_job_id_jobs_job_id_fk",
+          "tableFrom": "job_events",
+          "tableTo": "jobs",
+          "schemaTo": "agent_reference",
+          "columnsFrom": [
+            "job_id"
+          ],
+          "columnsTo": [
+            "job_id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "job_events_job_id_revision_pk": {
+          "name": "job_events_job_id_revision_pk",
+          "columns": [
+            "job_id",
+            "revision"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "events_safe_revision": {
+          "name": "events_safe_revision",
+          "value": "\"agent_reference\".\"job_events\".\"revision\" between 1 and 9007199254740991"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "agent_reference.jobs": {
+      "name": "jobs",
+      "schema": "agent_reference",
+      "columns": {
+        "job_id": {
+          "name": "job_id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "identity": {
+          "name": "identity",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "revision": {
+          "name": "revision",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "cancellation_epoch": {
+          "name": "cancellation_epoch",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "lease_owner": {
+          "name": "lease_owner",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "lease_epoch": {
+          "name": "lease_epoch",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "lease_expires_at": {
+          "name": "lease_expires_at",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "lease_grant_revision": {
+          "name": "lease_grant_revision",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "lease_cancellation_revision": {
+          "name": "lease_cancellation_revision",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "jobs_safe_revision": {
+          "name": "jobs_safe_revision",
+          "value": "\"agent_reference\".\"jobs\".\"revision\" between 0 and 9007199254740991"
+        },
+        "jobs_safe_cancellation_epoch": {
+          "name": "jobs_safe_cancellation_epoch",
+          "value": "\"agent_reference\".\"jobs\".\"cancellation_epoch\" between 0 and 9007199254740991"
+        },
+        "jobs_safe_lease_epoch": {
+          "name": "jobs_safe_lease_epoch",
+          "value": "\"agent_reference\".\"jobs\".\"lease_epoch\" between 0 and 9007199254740991"
+        },
+        "jobs_lease_shape": {
+          "name": "jobs_lease_shape",
+          "value": "(\n      \"agent_reference\".\"jobs\".\"lease_owner\" is null and \"agent_reference\".\"jobs\".\"lease_expires_at\" is null and \"agent_reference\".\"jobs\".\"lease_grant_revision\" is null and \"agent_reference\".\"jobs\".\"lease_cancellation_revision\" is null\n    ) or (\n      \"agent_reference\".\"jobs\".\"lease_owner\" is not null and \"agent_reference\".\"jobs\".\"lease_expires_at\" is not null and \"agent_reference\".\"jobs\".\"lease_grant_revision\" is not null and \"agent_reference\".\"jobs\".\"lease_cancellation_revision\" is not null\n      and \"agent_reference\".\"jobs\".\"lease_owner\" ~ '^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$' and \"agent_reference\".\"jobs\".\"lease_epoch\" > 0\n      and \"agent_reference\".\"jobs\".\"lease_expires_at\" between 0 and 9007199254740991\n      and \"agent_reference\".\"jobs\".\"lease_grant_revision\" between 1 and 9007199254740991\n      and \"agent_reference\".\"jobs\".\"lease_cancellation_revision\" between 0 and 9007199254740991\n    )"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "agent_reference.vault_access": {
+      "name": "vault_access",
+      "schema": "agent_reference",
+      "columns": {
+        "receipt_ref": {
+          "name": "receipt_ref",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "item_id": {
+          "name": "item_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "at": {
+          "name": "at",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "phase": {
+          "name": "phase",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "outcome": {
+          "name": "outcome",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {
+        "vault_access_item_time": {
+          "name": "vault_access_item_time",
+          "columns": [
+            {
+              "expression": "item_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "receipt_ref",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "vault_access_phase": {
+          "name": "vault_access_phase",
+          "value": "\"agent_reference\".\"vault_access\".\"phase\" in ('admit', 'dispatch')"
+        },
+        "vault_access_outcome": {
+          "name": "vault_access_outcome",
+          "value": "\"agent_reference\".\"vault_access\".\"outcome\" in ('authorized', 'denied', 'expired', 'revoked', 'stale_grant', 'unknown', 'verified')"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "agent_reference.vault_entry_sessions": {
+      "name": "vault_entry_sessions",
+      "schema": "agent_reference",
+      "columns": {
+        "session_ref": {
+          "name": "session_ref",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "job_id": {
+          "name": "job_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "job_revision": {
+          "name": "job_revision",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "revision": {
+          "name": "revision",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "state": {
+          "name": "state",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "binding": {
+          "name": "binding",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "authority": {
+          "name": "authority",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "completion": {
+          "name": "completion",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "receipt": {
+          "name": "receipt",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "vault_entry_sessions_job_id_jobs_job_id_fk": {
+          "name": "vault_entry_sessions_job_id_jobs_job_id_fk",
+          "tableFrom": "vault_entry_sessions",
+          "tableTo": "jobs",
+          "schemaTo": "agent_reference",
+          "columnsFrom": [
+            "job_id"
+          ],
+          "columnsTo": [
+            "job_id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "vault_entry_job_revision": {
+          "name": "vault_entry_job_revision",
+          "nullsNotDistinct": false,
+          "columns": [
+            "job_id",
+            "job_revision"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {
+        "vault_entry_revision": {
+          "name": "vault_entry_revision",
+          "value": "\"agent_reference\".\"vault_entry_sessions\".\"revision\" between 1 and 9007199254740991"
+        },
+        "vault_entry_state": {
+          "name": "vault_entry_state",
+          "value": "\"agent_reference\".\"vault_entry_sessions\".\"state\" in ('open', 'captured', 'delivered', 'withdrawn', 'expired')"
+        },
+        "vault_entry_completion": {
+          "name": "vault_entry_completion",
+          "value": "(\"agent_reference\".\"vault_entry_sessions\".\"state\" != 'open' or \"agent_reference\".\"vault_entry_sessions\".\"completion\" is null)\n      and (\"agent_reference\".\"vault_entry_sessions\".\"state\" not in ('captured', 'delivered') or \"agent_reference\".\"vault_entry_sessions\".\"completion\" is not null)\n      and (\"agent_reference\".\"vault_entry_sessions\".\"state\" != 'delivered' or \"agent_reference\".\"vault_entry_sessions\".\"receipt\" is not null)"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "agent_reference.vault_item_grants": {
+      "name": "vault_item_grants",
+      "schema": "agent_reference",
+      "columns": {
+        "grant_ref": {
+          "name": "grant_ref",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "item_id": {
+          "name": "item_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "revision": {
+          "name": "revision",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "grant": {
+          "name": "grant",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "vault_grant_revision": {
+          "name": "vault_grant_revision",
+          "value": "\"agent_reference\".\"vault_item_grants\".\"revision\" between 1 and 9007199254740991"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "agent_reference.vault_items": {
+      "name": "vault_items",
+      "schema": "agent_reference",
+      "columns": {
+        "item_id": {
+          "name": "item_id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "revision": {
+          "name": "revision",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "scope": {
+          "name": "scope",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "item": {
+          "name": "item",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "envelope_version": {
+          "name": "envelope_version",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "algorithm": {
+          "name": "algorithm",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "key_handle": {
+          "name": "key_handle",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "key_version": {
+          "name": "key_version",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "nonce": {
+          "name": "nonce",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "ciphertext": {
+          "name": "ciphertext",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "tag": {
+          "name": "tag",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "vault_key_nonce_unique": {
+          "name": "vault_key_nonce_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "key_handle",
+            "key_version",
+            "nonce"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {
+        "vault_safe_revision": {
+          "name": "vault_safe_revision",
+          "value": "\"agent_reference\".\"vault_items\".\"revision\" between 1 and 9007199254740991"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "agent_reference.vault_preparations": {
+      "name": "vault_preparations",
+      "schema": "agent_reference",
+      "columns": {
+        "rotation_id": {
+          "name": "rotation_id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "item_id": {
+          "name": "item_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "generation": {
+          "name": "generation",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "source_nonce": {
+          "name": "source_nonce",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "envelope": {
+          "name": "envelope",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "agent_reference.vault_states": {
+      "name": "vault_states",
+      "schema": "agent_reference",
+      "columns": {
+        "item_id": {
+          "name": "item_id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "scope": {
+          "name": "scope",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "revision": {
+          "name": "revision",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "generation": {
+          "name": "generation",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "status": {
+          "name": "status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "active_nonce": {
+          "name": "active_nonce",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "last_rotation": {
+          "name": "last_rotation",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "vault_state_generation": {
+          "name": "vault_state_generation",
+          "value": "\"agent_reference\".\"vault_states\".\"generation\" between 1 and 9007199254740991"
+        },
+        "vault_state_shape": {
+          "name": "vault_state_shape",
+          "value": "(\"agent_reference\".\"vault_states\".\"status\" = 'active' and \"agent_reference\".\"vault_states\".\"active_nonce\" is not null) or\n      (\"agent_reference\".\"vault_states\".\"status\" in ('deleted', 'revoked') and \"agent_reference\".\"vault_states\".\"active_nonce\" is null and \"agent_reference\".\"vault_states\".\"last_rotation\" is null)"
+        }
+      },
+      "isRLSEnabled": false
+    }
+  },
+  "enums": {},
+  "schemas": {},
+  "sequences": {},
+  "roles": {},
+  "policies": {},
+  "views": {},
+  "_meta": {
+    "columns": {},
+    "schemas": {},
+    "tables": {}
+  }
+}

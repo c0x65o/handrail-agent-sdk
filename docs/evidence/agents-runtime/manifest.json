@@ -1,0 +1,104 @@
+{
+  "recorded_at_utc": "2026-09-30T19:26:40.419623+00:00",
+  "baseline_sha": "32ac1c88d02c3e5434ec1094e1e0e5724fdbce9c",
+  "delivery_state": "uncommitted candidate; version bump, commit and push belong to Handrail pipeline",
+  "environment": {
+    "project": "handrail-agent-sdk",
+    "scope": "dev only",
+    "node": "22.23.1",
+    "npm": "10.9.8",
+    "typescript": "5.9.3",
+    "postgres": "15.19",
+    "agents": "0.18.0",
+    "zod": "4.3.6",
+    "test_concurrency": 1,
+    "dev_capabilities": 0,
+    "dev_services": 0
+  },
+  "commands": {
+    "prepare": "npm ci --include=dev",
+    "package": "npm test && node node_modules/typescript/bin/tsc -p tests/fixtures/tsconfig.json",
+    "postgres": "node tests/run-local-postgres.mjs",
+    "focused": "node tests/run-local-postgres.mjs test:agents test:journal",
+    "baseline_install": "node tests/verify-git-install.mjs 32ac1c88d02c3e5434ec1094e1e0e5724fdbce9c --baseline",
+    "post_pipeline": "node tests/verify-git-install.mjs <delivered-full-SHA>"
+  },
+  "results": {
+    "postgres-initial.log": {
+      "tests": 314,
+      "pass": 313,
+      "fail": 1,
+      "skipped": 0
+    },
+    "postgres-final.log": {
+      "tests": 315,
+      "pass": 315,
+      "fail": 0,
+      "skipped": 0
+    },
+    "agents-final.log": {
+      "tests": 31,
+      "pass": 31,
+      "fail": 0,
+      "skipped": 0
+    },
+    "package-final.log": {
+      "tests": 773,
+      "pass": 773,
+      "fail": 0,
+      "skipped": 0
+    }
+  },
+  "source_sha256": {
+    "README.md": "ab2aa1a48fad36ec1907b63f1c0bd3c06e2be24fd61791054f114940c1070ddd",
+    "consumer-distribution/agent-sdk/.gitignore": null,
+    "consumer-distribution/agent-sdk/README.md": null,
+    "consumer-distribution/agent-sdk/package-lock.json": null,
+    "consumer-distribution/agent-sdk/package.json": null,
+    "consumer-distribution/agent-sdk/src/contracts/job.ts": null,
+    "consumer-distribution/agent-sdk/src/index.ts": null,
+    "consumer-distribution/agent-sdk/src/server/index.ts": null,
+    "consumer-distribution/agent-sdk/src/server/job-lease.ts": null,
+    "consumer-distribution/agent-sdk/src/server/job-store.ts": null,
+    "consumer-distribution/agent-sdk/src/server/submit.ts": null,
+    "consumer-distribution/agent-sdk/tsconfig.json": null,
+    "docs/agent-public-distribution-review.md": "25411e8b7a6464ce4529e42a1796bb8e006459a65ccc5d01f4adb87c159c9735",
+    "docs/agent-runtime.md": "a048d1d30002f75dd5c7e3ef6b671298384e7eb9f9d799dcb6fd501b776fe5ca",
+    "docs/effect-reconciliation.md": "fa2578b30def559c152b291fc523e734121727c702ebe81fcd643b7c5ea7b48a",
+    "docs/job-cancellation.md": "91c44b6fff7f6515963a4b456588e555dee46037fee8ecd7b19e489c018403cd",
+    "docs/job-worker.md": null,
+    "examples/headless.mts": "d105241f06e7d7e748eac35a0ae27a3193be46ada0b9d139d0eabefb30247b07",
+    "package-lock.json": "040ab7f1a9774db0607ce878b1648e157581434dfbba84ed1a1cff7e492c3718",
+    "package.json": "e9903a0a11463aca65d076125654b044384361e318abf361b23528d104f5b1fe",
+    "reference/node/agent-state-store.ts": "2d5d14ddd02c2cdee5bb0f84cb027c1f24885fddc8a7ec185e209ef55d0ccfcb",
+    "reference/node/db/migrations/0013_agent_run_states.sql": "59b83959be6d1bf377e19daa1058d0819d5993a8d740d0ef96b116c0e6c23b3b",
+    "reference/node/db/migrations/meta/0013_snapshot.json": "d4ba7baf9fc44d78316db631e361b7e6b8f8d0b0074d72df1abf0fb2822fc6e2",
+    "reference/node/db/migrations/meta/_journal.json": "1a550d9bded5672b273c36e107a5325465863e3520e72e2d7af81c69995c806e",
+    "reference/node/db/schema.ts": "de555b3495322d0645dbbbe5529a49a910fcbc88b8d9b0a30df008f1cd69bee2",
+    "reference/node/job-journal.ts": "fae4811a394b248340b696016e0399c9ae03972470edf961ee80b58354bde2a8",
+    "reference/node/worker.ts": null,
+    "src/server/agent-runtime.ts": "a0efa98577bdc9a09a829686945b525f0bac49028ff56a977201fd39c1090e7f",
+    "src/server/agent-state-binding.ts": "1ecddc5b7ef90693c6d6ad406076c97801f7c00136f08903f4cb0cd32e68b49b",
+    "tests/agent-runtime.test.mjs": "b722896fa3fdedc6bba84ceef888bb2f2db044500d84d2bac58ca65f31851fe3",
+    "tests/fixtures/tsconfig.json": "9e61c118dad8d2177f0083e6e0548b483e60e5ad4499d2e7ef00994f2e45ed5b",
+    "tests/helpers/agent-fixture.mjs": "ab58d72dca42a5fcc61312604320714b1516919be972de9df66b2fdacc409a47",
+    "tests/helpers/agent-process.mjs": "7f43711fc0175543d79f67230262345f9d379976e9358f1aab397d6a8e0dc5ff",
+    "tests/helpers/worker-process.mjs": null,
+    "tests/job-cancel.test.mjs": "bc5a97e4925952806e4ffa9daf4ef450a4773a45f449c2022aa8e80364368c16",
+    "tests/job-worker.test.mjs": null,
+    "tests/packaging.test.mjs": "9879bc02fc35ba8eb3cd20fa063fd7fe8b8ed5613622b18f284f967a2b8e0b84",
+    "tests/reference/vault-lifecycle.test.ts": "ae6eee3dbd3bc55f7a7aae723b1afbc048b25b2b92f29c2254f2a2946c20d1f2",
+    "tests/run-local-postgres.mjs": "35e2ba523a649a400f39b118e0e03ab601e600b4e1a69821fa4be12a59648290",
+    "tests/verify-git-install.mjs": "a48a7ecbeb68b5bca0edced06d41958310dd18cc12ca4c5d2d5b7ba28a75a68d"
+  },
+  "evidence_sha256": {
+    "README.md": "6b9d2d90861c6e0146679af8c0e8f19b78d591a2daafd2010f008297835fe191",
+    "agents-final.log": "b75972b71d7d1b942b3493da2c62482b54f88e081f995d7dde3d1c669710b5d4",
+    "git-install-baseline.log": "77e67a97cc6da492d299d65954596434a6e73292f3869ebc24c2b74aaf352fc3",
+    "package-final.log": "27bddf8399e8f6e9d982e6f62c0ed632077860acd8dc616cd1bd528105444952",
+    "postgres-final.log": "d6a05eb816f1fbbf5da087ce98d540e9b03607c15596846876c7e553fdc24cd9",
+    "postgres-initial.log": "b45fcdef654efed30dbf4586695151768284b76bac8359dbeb60070389502e7b",
+    "prepare.log": "24b71d807c6f15807988fd4e5ac61de2b19d3f37a6a2a15514d788c3b757e8f1",
+    "runtime-audit.json": "dc49e7dd535ddd937fdb95feb614232df46f6371aec044a2513606d0849ceb0a"
+  }
+}

@@ -59,7 +59,8 @@ unknown snapshot. Calling `execute` after Stop fails the lease/cancellation fenc
 Standalone reconciliation also leaves a running snapshot unchanged; a subsequent
 fenced `execute` projects a verified receipt into that journal without dispatch.
 
-The deterministic `createReferenceWorker` continues to reject external effects.
+The OpenAI Agents runtime composes this service for every mutation tool. Each
+OpenAI call ID is checkpointed before dispatch and bound to one effect identity.
 Hosts compose this effect service explicitly with their trusted effect execution
 path; the broader runnable-host task owns that composition. The focused fresh
 worker fixture in `tests/helpers/effect-process.mjs` demonstrates the full path:

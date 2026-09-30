@@ -23,8 +23,9 @@ effect reconciler owns final outcome resolution.
 
 The trusted host must implement the authority callbacks with a transaction or
 equivalent lock that covers the database commit. A policy check followed by an
-unprotected callback is insufficient. The reference worker runs only
-deterministic, effect-free steps and rechecks the lease after each callback.
+unprotected callback is insufficient. The OpenAI Agents runtime checks the lease before every model/tool call and after
+each callback. Its process shutdown preserves recoverable checkpoints; explicit
+Stop is durable and terminal. See [agent-runtime.md](agent-runtime.md).
 
 `node tests/run-local-postgres.mjs test:cancel` runs the boundary cases against
 an isolated PostgreSQL cluster with separate connections and a deterministic

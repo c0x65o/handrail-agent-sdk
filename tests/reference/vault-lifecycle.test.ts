@@ -290,6 +290,7 @@ acceptance('one-time generated upgrade preserves existing v1 envelopes and initi
   await s.client.query(`DROP TABLE ${s.harness.table('connection_receipts')}`);
   await s.client.query(`DROP TABLE ${s.harness.table('connection_revisions')}`);
   await s.client.query(`DROP TABLE ${s.harness.table('connections')}`);
+  await s.client.query(`DROP TABLE ${s.harness.table('agent_run_states')}`);
   await s.client.query(`DELETE FROM ${s.harness.table('journal_migrations')} WHERE id > 4`);
   await migrations(t, s.harness, s.client);
   assert.equal(JSON.stringify(await s.client.database().select().from(s.tables.items)) === before, true);
