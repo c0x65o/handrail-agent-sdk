@@ -13,7 +13,7 @@ async function main() {
   pool.on('error', () => {});
   try {
     await migrate(referenceDatabase(pool), {
-      migrationsFolder: resolve('reference/node/db/migrations'),
+      migrationsFolder: resolve('src/server/postgres/migrations'),
       migrationsSchema: referenceSchemaName,
       migrationsTable: 'journal_migrations',
     });

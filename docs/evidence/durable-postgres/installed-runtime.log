@@ -1,0 +1,234 @@
+Fresh isolated PostgreSQL 15 cluster initialized; dedicated disposable database and non-superuser fixture role; connection values withheld.
+(node:138) SecurityWarning: The flag --allow-child-process must be used with extreme caution. It could invalidate the permission model.
+(Use `node --trace-warnings ...` to show where the warning was created)
+TAP version 13
+# (node:144) SecurityWarning: The flag --allow-child-process must be used with extreme caution. It could invalidate the permission model.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: gateway transport uses actual Runner, durable output and reconnect cursor; disconnect does not Stop
+ok 1 - gateway transport uses actual Runner, durable output and reconnect cursor; disconnect does not Stop
+  ---
+  duration_ms: 676.570641
+  type: 'test'
+  ...
+# Subtest: transport explicit Stop is durable; changed identity cannot reconnect or cancel
+ok 2 - transport explicit Stop is durable; changed identity cannot reconnect or cancel
+  ---
+  duration_ms: 206.810589
+  type: 'test'
+  ...
+# Subtest: approval wait remains durable on reconnect; only verified answer can resume execution
+ok 3 - approval wait remains durable on reconnect; only verified answer can resume execution
+  ---
+  duration_ms: 302.529127
+  type: 'test'
+  ...
+# Subtest: standard reader emits validated native protocol frames and stable replay identities
+ok 4 - standard reader emits validated native protocol frames and stable replay identities
+  ---
+  duration_ms: 542.750493
+  type: 'test'
+  ...
+# Subtest: application catalog adapter preserves validation, read/mutation classification and stable native tool identity
+ok 5 - application catalog adapter preserves validation, read/mutation classification and stable native tool identity
+  ---
+  duration_ms: 4.113376
+  type: 'test'
+  ...
+# Subtest: existing assistant durable wrapper consumes the Agent transport with native protocol checkpoints
+ok 6 - existing assistant durable wrapper consumes the Agent transport with native protocol checkpoints
+  ---
+  duration_ms: 479.681873
+  type: 'test'
+  ...
+# Subtest: application JSON-schema catalog executes read/effect/read through Runner and checkpoint reader
+ok 7 - application JSON-schema catalog executes read/effect/read through Runner and checkpoint reader
+  ---
+  duration_ms: 414.853885
+  type: 'test'
+  ...
+# Subtest: installed assistance and notification delivery share public durable effects with no duplicate send
+ok 8 - installed assistance and notification delivery share public durable effects with no duplicate send
+  ---
+  duration_ms: 212.955536
+  type: 'test'
+  ...
+# (node:180) SecurityWarning: The flag --allow-child-process must be used with extreme caution. It could invalidate the permission model.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: host structured history survives an approval checkpoint without flattening roles or image references
+ok 9 - host structured history survives an approval checkpoint without flattening roles or image references
+  ---
+  duration_ms: 386.116573
+  type: 'test'
+  ...
+# Subtest: verified effects expose bounded host results and a failed result read never repeats the effect
+ok 10 - verified effects expose bounded host results and a failed result read never repeats the effect
+  ---
+  duration_ms: 478.844625
+  type: 'test'
+  ...
+# Subtest: unknown effects cannot release a domain result
+ok 11 - unknown effects cannot release a domain result
+  ---
+  duration_ms: 274.630169
+  type: 'test'
+  ...
+# Subtest: real Runner executes inventory -> protected reservation -> verification; duplicate delivery has one effect
+ok 12 - real Runner executes inventory -> protected reservation -> verification; duplicate delivery has one effect
+  ---
+  duration_ms: 367.992439
+  type: 'test'
+  ...
+# Subtest: different research task recovers from deliberate read-tool failure and computes a quote
+ok 13 - different research task recovers from deliberate read-tool failure and computes a quote
+  ---
+  duration_ms: 302.845251
+  type: 'test'
+  ...
+# Subtest: durable approval, answer and new input resume same job in a separate process
+ok 14 - durable approval, answer and new input resume same job in a separate process
+  ---
+  duration_ms: 1586.352997
+  type: 'test'
+  ...
+# Subtest: SIGKILL after provider mutation reconciles across processes without duplicate execution
+ok 15 - SIGKILL after provider mutation reconciles across processes without duplicate execution
+  ---
+  duration_ms: 3914.89034
+  type: 'test'
+  ...
+# Subtest: unknown external effect waits for reconciliation; schedule wake cannot authorize replay
+ok 16 - unknown external effect waits for reconciliation; schedule wake cannot authorize replay
+  ---
+  duration_ms: 441.860966
+  type: 'test'
+  ...
+# Subtest: tenant isolation, revoked and changed grants deny private state and execution
+ok 17 - tenant isolation, revoked and changed grants deny private state and execution
+  ---
+  duration_ms: 207.107859
+  type: 'test'
+  ...
+# Subtest: provider failure retains checkpoint and retry recovers without repeating completed tools
+ok 18 - provider failure retains checkpoint and retry recovers without repeating completed tools
+  ---
+  duration_ms: 390.724907
+  type: 'test'
+  ...
+# Subtest: process stop resumes checkpoint; explicit durable Stop fences late output and remains terminal
+ok 19 - process stop resumes checkpoint; explicit durable Stop fences late output and remains terminal
+  ---
+  duration_ms: 162.789897
+  type: 'test'
+  ...
+# Subtest: process shutdown aborts model transport and fresh runtime recovers same job
+ok 20 - process shutdown aborts model transport and fresh runtime recovers same job
+  ---
+  duration_ms: 342.058042
+  type: 'test'
+  ...
+# Subtest: invalid tool schema cannot mutate and repeated provider failure is bounded
+ok 21 - invalid tool schema cannot mutate and repeated provider failure is bounded
+  ---
+  duration_ms: 185.955916
+  type: 'test'
+  ...
+# Subtest: lost lease during a pending read prevents tool result and terminal writes
+ok 22 - lost lease during a pending read prevents tool result and terminal writes
+  ---
+  duration_ms: 391.014418
+  type: 'test'
+  ...
+# Subtest: model context bound fails durably and oversized private state is not committed
+ok 23 - model context bound fails durably and oversized private state is not committed
+  ---
+  duration_ms: 144.413914
+  type: 'test'
+  ...
+# Subtest: concurrent delivery is lease fenced; a second worker cannot execute tools
+ok 24 - concurrent delivery is lease fenced; a second worker cannot execute tools
+  ---
+  duration_ms: 315.886646
+  type: 'test'
+  ...
+# Subtest: revocation after model approval is checked immediately before mutation dispatch
+ok 25 - revocation after model approval is checked immediately before mutation dispatch
+  ---
+  duration_ms: 189.165959
+  type: 'test'
+  ...
+# Subtest: unknown first effect stops other tools emitted in the same model response
+ok 26 - unknown first effect stops other tools emitted in the same model response
+  ---
+  duration_ms: 186.168107
+  type: 'test'
+  ...
+# Subtest: official OpenAI Responses provider/client drive Runner through simulated HTTP SSE transport
+ok 27 - official OpenAI Responses provider/client drive Runner through simulated HTTP SSE transport
+  ---
+  duration_ms: 349.742443
+  type: 'test'
+  ...
+# Subtest: current catalog hides unauthorized tools and opaque attachments resolve only at model boundary
+ok 28 - current catalog hides unauthorized tools and opaque attachments resolve only at model boundary
+  ---
+  duration_ms: 160.284981
+  type: 'test'
+  ...
+# Subtest: concurrent tenant scopes share a namespace without sharing state or effects; stale correction is fenced
+ok 29 - concurrent tenant scopes share a namespace without sharing state or effects; stale correction is fenced
+  ---
+  duration_ms: 376.213549
+  type: 'test'
+  ...
+# Subtest: native answer retries are identical, changed delivery conflicts, and revoked actor cannot answer
+ok 30 - native answer retries are identical, changed delivery conflicts, and revoked actor cannot answer
+  ---
+  duration_ms: 423.21299
+  type: 'test'
+  ...
+# Subtest: injected official provider rejects temperature; default omits it
+ok 31 - injected official provider rejects temperature; default omits it
+  ---
+  duration_ms: 170.631618
+  type: 'test'
+  ...
+# Subtest: injected official provider accepts configured sampling
+ok 32 - injected official provider accepts configured sampling
+  ---
+  duration_ms: 146.175309
+  type: 'test'
+  ...
+# Subtest: public migrations serialize, are repeatable, preserve uncertain identities, and reject drift
+ok 33 - public migrations serialize, are repeatable, preserve uncertain identities, and reject drift
+  ---
+  duration_ms: 235.375107
+  type: 'test'
+  ...
+# Subtest: private state requires host key handles; rotation preserves old decryption and rejects substitution
+ok 34 - private state requires host key handles; rotation preserves old decryption and rejects substitution
+  ---
+  duration_ms: 229.085589
+  type: 'test'
+  ...
+# Subtest: bootstrap failure rolls back new tables and preserves an unknown existing table
+ok 35 - bootstrap failure rolls back new tables and preserves an unknown existing table
+  ---
+  duration_ms: 39.477261
+  type: 'test'
+  ...
+# Subtest: installed fixture actively rejects reference-build module fallback and repository reads
+ok 36 - installed fixture actively rejects reference-build module fallback and repository reads
+  ---
+  duration_ms: 0.927098
+  type: 'test'
+  ...
+1..36
+# tests 36
+# suites 0
+# pass 36
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 17076.965565
+Owned temporary PostgreSQL cluster stopped.

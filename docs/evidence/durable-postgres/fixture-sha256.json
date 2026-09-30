@@ -1,0 +1,8 @@
+{
+  "tests/fixtures/installed/host.mjs": "9fe8d5c9faf61e51e93e4c2073b1289d7f1054642808f397bc0b5826baa2f761",
+  "tests/fixtures/installed/runtime.test.mjs": "ba5cfd5a015953680d27313de05576d2ccfae2140ab3c7caaec7d591b836564b",
+  "tests/fixtures/installed/application.test.mjs": "94dcdd580f3935269e46a7317bda9709125dc7970758692c63fe6ecd10d4f700",
+  "tests/fixtures/installed/database.mjs": "eb3834a2555b1f1d3539cee4ec48197db8ccdb6dfb6b42681987bd10ac4b29e6",
+  "tests/fixtures/installed/guard.mjs": "d65ad41400ba2316fb6d6aaf099d14ba71c46c8b5cdba3969aa599e795cffde4",
+  "tests/fixtures/installed/process.mjs": "dfefac8f45f87d2085c01d4c9542257bd726558a34c2630a4ffd17ec4261b9f9"
+}

@@ -1,0 +1,202 @@
+{
+  "base": "715495490a9ab868dd55f486c1a9349c29ca852d",
+  "migrations": [
+    {
+      "old": "reference/node/db/migrations/0000_brainy_wraith.sql",
+      "new": "src/server/postgres/migrations/0000_brainy_wraith.sql",
+      "bytesUnchanged": true,
+      "sha256": "a139d522f8a2b32fa937414f917c3a30a5a11db134553cbe0f5556f66bdb5d64"
+    },
+    {
+      "old": "reference/node/db/migrations/0001_round_garia.sql",
+      "new": "src/server/postgres/migrations/0001_round_garia.sql",
+      "bytesUnchanged": true,
+      "sha256": "109d200d5b77287350bb9d90fecf749a3553e1a606cac4f0c5036d3d7b8f4211"
+    },
+    {
+      "old": "reference/node/db/migrations/0002_outgoing_night_thrasher.sql",
+      "new": "src/server/postgres/migrations/0002_outgoing_night_thrasher.sql",
+      "bytesUnchanged": true,
+      "sha256": "8f67560970841da2d258cc8d1052e37edc08bb74aee9d4bbd4e773b2a2174de4"
+    },
+    {
+      "old": "reference/node/db/migrations/0003_vault_items.sql",
+      "new": "src/server/postgres/migrations/0003_vault_items.sql",
+      "bytesUnchanged": true,
+      "sha256": "52fbb59a9dac81a9664cf2b584e8d15b549f4fa85eb4cf48d700c5d035e2753f"
+    },
+    {
+      "old": "reference/node/db/migrations/0004_vault_lifecycle.sql",
+      "new": "src/server/postgres/migrations/0004_vault_lifecycle.sql",
+      "bytesUnchanged": true,
+      "sha256": "acd25ae34cacaedca2317ed09169c2a78b6316941def8cbb9ac02ce3a93950ae"
+    },
+    {
+      "old": "reference/node/db/migrations/0005_vault_lifecycle_backfill.sql",
+      "new": "src/server/postgres/migrations/0005_vault_lifecycle_backfill.sql",
+      "bytesUnchanged": true,
+      "sha256": "a61d7c6a6013c02159bf3a0e000f129dd52a1f7bb20b208a370e65d4e6f2c406"
+    },
+    {
+      "old": "reference/node/db/migrations/0006_job_cancellation.sql",
+      "new": "src/server/postgres/migrations/0006_job_cancellation.sql",
+      "bytesUnchanged": true,
+      "sha256": "a9658974ca38dc2290e10ee312885027ac8612724e0133334000a50926103048"
+    },
+    {
+      "old": "reference/node/db/migrations/0007_job_answers.sql",
+      "new": "src/server/postgres/migrations/0007_job_answers.sql",
+      "bytesUnchanged": true,
+      "sha256": "2be6a4dffee75c8fbb72511bd83b3f5709c1536b40c5dcf36327274ba78aaa24"
+    },
+    {
+      "old": "reference/node/db/migrations/0008_job_effects.sql",
+      "new": "src/server/postgres/migrations/0008_job_effects.sql",
+      "bytesUnchanged": true,
+      "sha256": "b0a98bd65793b437a329c6ee3c7c298b485642537df38d8282eb1ec96387f222"
+    },
+    {
+      "old": "reference/node/db/migrations/0009_vault_item_grants.sql",
+      "new": "src/server/postgres/migrations/0009_vault_item_grants.sql",
+      "bytesUnchanged": true,
+      "sha256": "feaee98eae0a82250979726ed23521d3099bb643dc1e229900d0c593ee2fcf2e"
+    },
+    {
+      "old": "reference/node/db/migrations/0010_vault_entry.sql",
+      "new": "src/server/postgres/migrations/0010_vault_entry.sql",
+      "bytesUnchanged": true,
+      "sha256": "ccb607b2e46924cd3498f3afa59cf1a7ba91a6a1c8e22d28935d1a10020b5f6d"
+    },
+    {
+      "old": "reference/node/db/migrations/0011_browser_profiles.sql",
+      "new": "src/server/postgres/migrations/0011_browser_profiles.sql",
+      "bytesUnchanged": true,
+      "sha256": "6b39f03b21560dadbbc6c3411323d62c65b8dfda22b6df1c1a7dcf836ea2a8c5"
+    },
+    {
+      "old": "reference/node/db/migrations/0012_connection_store.sql",
+      "new": "src/server/postgres/migrations/0012_connection_store.sql",
+      "bytesUnchanged": true,
+      "sha256": "e39a7d3b94324d54cbd5dc59f722d02e6fefda8c1b61b2546876acccf0f7cf75"
+    },
+    {
+      "old": "reference/node/db/migrations/0013_agent_run_states.sql",
+      "new": "src/server/postgres/migrations/0013_agent_run_states.sql",
+      "bytesUnchanged": true,
+      "sha256": "59b83959be6d1bf377e19daa1058d0819d5993a8d740d0ef96b116c0e6c23b3b"
+    },
+    {
+      "old": "reference/node/db/migrations/meta/0000_snapshot.json",
+      "new": "src/server/postgres/migrations/meta/0000_snapshot.json",
+      "bytesUnchanged": true,
+      "sha256": "dc8dab3c200ae746a99b7b22044338b9fca2d807540539bb0b5f0886a061e364"
+    },
+    {
+      "old": "reference/node/db/migrations/meta/0001_snapshot.json",
+      "new": "src/server/postgres/migrations/meta/0001_snapshot.json",
+      "bytesUnchanged": true,
+      "sha256": "9e7c36bfe6d1934abe2b57b50e3fea601df7556204be1b5972cacbec91100b12"
+    },
+    {
+      "old": "reference/node/db/migrations/meta/0002_snapshot.json",
+      "new": "src/server/postgres/migrations/meta/0002_snapshot.json",
+      "bytesUnchanged": true,
+      "sha256": "38128896689e524017e6d5977a890ed13595549d95fd17f8e470a1c47eb07b84"
+    },
+    {
+      "old": "reference/node/db/migrations/meta/0003_snapshot.json",
+      "new": "src/server/postgres/migrations/meta/0003_snapshot.json",
+      "bytesUnchanged": true,
+      "sha256": "f087cfc18713c4afbe86569732e296208b9955cae9b2ae99df533808dcc1f980"
+    },
+    {
+      "old": "reference/node/db/migrations/meta/0004_snapshot.json",
+      "new": "src/server/postgres/migrations/meta/0004_snapshot.json",
+      "bytesUnchanged": true,
+      "sha256": "266b3a2da7cb8fc8dcafbf4e6179963229f4d60dc070c5765e6b1795ab628832"
+    },
+    {
+      "old": "reference/node/db/migrations/meta/0005_snapshot.json",
+      "new": "src/server/postgres/migrations/meta/0005_snapshot.json",
+      "bytesUnchanged": true,
+      "sha256": "06133f548871456518b8d624cece7d8355cd4cabd9dfe9dba763e4eb827dcb6f"
+    },
+    {
+      "old": "reference/node/db/migrations/meta/0010_snapshot.json",
+      "new": "src/server/postgres/migrations/meta/0010_snapshot.json",
+      "bytesUnchanged": true,
+      "sha256": "f577b8bf303c3a0e53f035c16bb59b78e3eeaac302fed6ded4e1cba2253d4cd0"
+    },
+    {
+      "old": "reference/node/db/migrations/meta/0011_snapshot.json",
+      "new": "src/server/postgres/migrations/meta/0011_snapshot.json",
+      "bytesUnchanged": true,
+      "sha256": "30a7a101941e15923143dd50802feb41abaac644f8af7e06a636e70df2295ef0"
+    },
+    {
+      "old": "reference/node/db/migrations/meta/0012_snapshot.json",
+      "new": "src/server/postgres/migrations/meta/0012_snapshot.json",
+      "bytesUnchanged": true,
+      "sha256": "7b13dd23275fe068c095e119c6f03cfb884531c4dafeb1ea2269063f9560adfb"
+    },
+    {
+      "old": "reference/node/db/migrations/meta/0013_snapshot.json",
+      "new": "src/server/postgres/migrations/meta/0013_snapshot.json",
+      "bytesUnchanged": true,
+      "sha256": "d4ba7baf9fc44d78316db631e361b7e6b8f8d0b0074d72df1abf0fb2822fc6e2"
+    },
+    {
+      "old": "reference/node/db/migrations/meta/_journal.json",
+      "new": "src/server/postgres/migrations/meta/_journal.json",
+      "bytesUnchanged": true,
+      "sha256": "1a550d9bded5672b273c36e107a5325465863e3520e72e2d7af81c69995c806e"
+    }
+  ],
+  "implementations": [
+    {
+      "old": "reference/node/job-admission.ts",
+      "new": "src/server/postgres/job-admission.ts",
+      "unchangedExceptImportsTypesComment": true
+    },
+    {
+      "old": "reference/node/job-journal.ts",
+      "new": "src/server/postgres/job-journal.ts",
+      "unchangedExceptImportsTypesComment": true
+    },
+    {
+      "old": "reference/node/job-lease.ts",
+      "new": "src/server/postgres/job-lease.ts",
+      "unchangedExceptImportsTypesComment": true
+    },
+    {
+      "old": "reference/node/job-lease-fence.ts",
+      "new": "src/server/postgres/job-lease-fence.ts",
+      "unchangedExceptImportsTypesComment": true
+    },
+    {
+      "old": "reference/node/effects.ts",
+      "new": "src/server/postgres/effects.ts",
+      "unchangedExceptImportsTypesComment": true
+    },
+    {
+      "old": "reference/node/effect-resolution.ts",
+      "new": "src/server/postgres/effect-resolution.ts",
+      "unchangedExceptImportsTypesComment": true
+    },
+    {
+      "old": "reference/node/job-cancellation.ts",
+      "new": "src/server/postgres/job-cancellation.ts",
+      "unchangedExceptImportsTypesComment": true
+    },
+    {
+      "old": "reference/node/job-answer.ts",
+      "new": "src/server/postgres/job-answer.ts",
+      "unchangedExceptImportsTypesComment": true
+    },
+    {
+      "old": "reference/node/private-envelope.ts",
+      "new": "src/server/postgres/private-envelope.ts",
+      "unchangedExceptImportsTypesComment": true
+    }
+  ]
+}

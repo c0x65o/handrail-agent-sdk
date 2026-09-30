@@ -1,0 +1,26 @@
+
+> handrail-agent-sdk@0.1.5 pretest
+> npm run build && npm run typecheck:acceptance && npm run build:test-postgres && npm run build:reference
+
+
+> handrail-agent-sdk@0.1.5 build
+> tsc -p tsconfig.json && node scripts/build-postgres-assets.mjs
+
+
+> handrail-agent-sdk@0.1.5 typecheck:acceptance
+> tsc -p tests/fixtures/tsconfig.acceptance.json
+
+
+> handrail-agent-sdk@0.1.5 build:test-postgres
+> tsc -p tests/tsconfig.postgres.json
+
+
+> handrail-agent-sdk@0.1.5 build:reference
+> tsc -p reference/tsconfig.json
+
+reference/node/db/schema.ts(65,12): error TS2304: Cannot find name 'index'.
+npm notice
+npm notice New major version of npm available! 10.9.8 -> 12.2.0
+npm notice Changelog: https://github.com/npm/cli/releases/tag/v12.2.0
+npm notice To update run: npm install -g npm@12.2.0
+npm notice

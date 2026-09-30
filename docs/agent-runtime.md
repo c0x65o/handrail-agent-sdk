@@ -8,6 +8,9 @@ answers, effects, scheduling, encrypted state and Vault custody.
 
 For the reusable schedule/watch, notification, canonical feedback and existing
 application-gateway adapters, see [assistance composition](assistance.md).
+For supported durable store composition, migrations and key custody, use the
+[PostgreSQL guide](postgres-runtime.md) and
+[complete application example](../examples/postgres-application.mts).
 
 ## Installation and migration
 
@@ -48,8 +51,8 @@ with the full delivered SHA):
 
 If the application imports Agents or Zod directly, declare their exact versions
 above as direct dependencies too. Do not depend on incidental npm hoisting for
-application imports. The installed runtime qualification additionally imports
-the installed transitive OpenAI client to mock its transport; this is test code.
+application imports. The installed runtime qualification declares its OpenAI
+client and PostgreSQL dependencies directly too.
 
 With npm 10.9.8, a bare public GitHub HTTPS URL becomes
 `git+ssh://git@github.com/…` in the generated lock. Use the exact **HTTPS** URL
@@ -103,14 +106,13 @@ identity, policy facts, tool registrations, grant objects or persisted RunState
 from an application client. Change `definitionRef` whenever instructions,
 schemas, tool meaning or model policy changes; old checkpoints then fail closed.
 
-Implement `AgentRuntimeHost`, `AgentStateStore`, and the existing admission,
-journal, lease and effect ports using the application's established services.
-`reference/node/agent-state-store.ts` is a working PostgreSQL example. Apply
-migration `0013_agent_run_states.sql` along with the earlier reference migrations
-only in a host that chooses this reference schema. It stores AES-GCM envelopes
-with job identity, version, grant and key reference in authenticated data. The
-host supplies managed key custody and old key resolution; no keys are stored in
-SQL. The reference schema is not Handrail's native task database.
+Implement `AgentRuntimeHost` using the application's current identity, policy,
+input, approval and domain services. For PostgreSQL, compose the supported
+`createPostgresAgentStores` factories instead of implementing generic stores in
+the application. Run the explicit additive migration API before workers and
+provide host-controlled key handles; see the PostgreSQL guide above. Alternative
+persistence engines may implement the existing store ports. These tables are not
+Handrail's native task database.
 
 ### Structured application input and verified domain results
 
@@ -138,10 +140,9 @@ Unknown effects still enter reconciliation and never call `readResult`. Omitting
 the callback preserves receipt-only output. It does not replace host verification,
 approval, authorization, or the effect ledger.
 
-These additions need their own committed/public Git revision before a consumer
-can adopt them. The Mills integration retains its published 0.1.4 pin until the
-SDK delivery pipeline publishes the reviewed change; a local source build is not
-a consumer dependency.
+The published 0.1.5 assistance integration remains in Mills. The new durable
+PostgreSQL composition requires its own pipeline-delivered public SHA before
+adoption; candidate source qualification is not a consumer dependency upgrade.
 
 ## Execution and recovery
 

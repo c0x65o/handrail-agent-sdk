@@ -1,0 +1,32 @@
+# Subtest: TypeScript consumer resolves both declarations through package exports
+not ok 772 - TypeScript consumer resolves both declarations through package exports
+  ---
+  duration_ms: 11827.455152
+  type: 'test'
+  location: '/opt/handrail/repos/handrail/handrail-agent-sdk/handrail-agent-sdk/tests/packaging.test.mjs:109:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    examples/postgres-application.mts(64,33): error TS2345: Argument of type 'AgentRuntimeHost & JobAdmissionHost & JobLeaseHost & JobCancellationHost & JobAnswerHost' is not assignable to parameter of type 'EffectHost'.
+      Types of property 'withAuthority' are incompatible.
+        Type '<T>(identity: JobIdentity, operation: JobLeaseOperation, run: (authority: JobLeaseAuthority) => Promise<JobStoreResult<T>>) => Promise<...>' is not assignable to type '<T>(request: EffectRequest, operation: "admit" | "dispatch" | "reconcile", run: (authority: JobLeaseAuthority) => Promise<JobStoreResult<T>>) => Promise<...>'.
+          Types of parameters 'identity' and 'request' are incompatible.
+            Type 'EffectRequest' is missing the following properties from type 'JobIdentity': jobId, originTaskRef, requestKey, instructionRevision, and 3 more.
+    
+    
+    2 !== 0
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 0
+  actual: 2
+  operator: 'strictEqual'
+  stack: |-
+    runNode (file:///opt/handrail/repos/handrail/handrail-agent-sdk/handrail-agent-sdk/tests/packaging.test.mjs:19:10)
+    TestContext.<anonymous> (file:///opt/handrail/repos/handrail/handrail-agent-sdk/handrail-agent-sdk/tests/packaging.test.mjs:110:3)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:744:18)
+    Test.postRun (node:internal/test_runner/test:1173:19)
+    Test.run (node:internal/test_runner/test:1101:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...

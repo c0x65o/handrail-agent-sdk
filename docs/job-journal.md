@@ -1,8 +1,9 @@
 # Reference Node job journal
 
 `src/server/job-store.ts` exports the injected `JobStore` type through the server
-entrypoint. `reference/node/job-journal.ts` implements it with the shared Drizzle
-boundary in `reference/node/db/database.ts`. It opens no connection on import.
+entrypoint. `src/server/postgres/job-journal.ts` implements it; the reference host reuses
+that implementation. Public Pool-based composition is documented in
+[the PostgreSQL runtime guide](postgres-runtime.md). It opens no connection on import.
 The host supplies an owned Pool (or one dedicated Client per concurrent caller),
 then `createJobJournal(referenceDatabase(client))`. Do not overlap transactions on
 one Client. The application namespace is `agent_reference`; tests explicitly pass
@@ -78,7 +79,7 @@ ignoring an inconsistent checkpoint could accept fabricated progress.
 ## Migrations and verification
 
 Typed schema, generated Drizzle SQL, snapshot and journal metadata live in
-`reference/node/db/`. `npm run db:generate` generates artifacts from
+`src/server/postgres/migrations/`. `npm run db:generate` generates artifacts from
 `drizzle.config.ts`. `npm run db:migrate` is an explicit operator command reading
 `DATABASE_URL`; it uses Drizzle's standard transactional migrator with an
 `agent_reference.journal_migrations` ledger. It must only be invoked against an

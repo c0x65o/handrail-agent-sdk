@@ -1,0 +1,31 @@
+[
+  {
+    "check": "contracts",
+    "command": [
+      "npm",
+      "test"
+    ],
+    "exitCode": 0,
+    "seconds": 29.2
+  },
+  {
+    "check": "consumer-types",
+    "command": [
+      "node",
+      "node_modules/typescript/bin/tsc",
+      "-p",
+      "tests/fixtures/tsconfig.json"
+    ],
+    "exitCode": 0,
+    "seconds": 12.9
+  },
+  {
+    "check": "postgres-all",
+    "command": [
+      "node",
+      "tests/run-local-postgres.mjs"
+    ],
+    "exitCode": 0,
+    "seconds": 223.4
+  }
+]

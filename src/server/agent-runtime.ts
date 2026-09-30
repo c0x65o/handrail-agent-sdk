@@ -150,6 +150,9 @@ export function createAgentRuntime(deps: {
   readonly definitionRef: string;
   readonly instructions: string;
   readonly model: Model;
+  /** Explicit host-approved sampling only. Omitted for models that reject it.
+   * Never copy legacy request.generation wholesale into this boundary. */
+  readonly sampling?: { readonly temperature?: number; readonly topP?: number };
   readonly tools: readonly AgentRuntimeTool[];
   readonly host: AgentRuntimeHost;
   readonly admission: JobAdmissionStore;
@@ -162,6 +165,7 @@ export function createAgentRuntime(deps: {
   readonly observe?: (event: AgentRuntimeEvent) => void;
 }) {
   const limits = deps.limits;
+  if (deps.sampling && Object.values(deps.sampling).some(v => v !== undefined && (typeof v !== 'number' || !Number.isFinite(v)))) throw Error('AGENT_SAMPLING_INVALID');
   if (Object.values(limits).some(v => !Number.isSafeInteger(v) || v <= 0)
     || limits.maxToolCalls > 256 || limits.maxStateBytes > 65_536 || limits.pollMs * 3 >= limits.leaseTtlMs
     || !/^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/.test(deps.definitionRef)
@@ -243,7 +247,8 @@ export function createAgentRuntime(deps: {
       const visible = deps.host.visibleTools ? await deps.host.visibleTools(copy(identity), deps.tools.map(t => t.name)) : deps.tools.map(t => t.name);
       const tools = deps.tools.filter(t => visible.includes(t.name));
       const agent = new Agent({ name: deps.definitionRef, instructions: deps.instructions, model: deps.model,
-        modelSettings: { parallelToolCalls: false, maxTokens: 2048, store: false, retry: { maxRetries: 0 } },
+        modelSettings: { ...(deps.sampling?.temperature === undefined ? {} : { temperature: deps.sampling.temperature }),
+          ...(deps.sampling?.topP === undefined ? {} : { topP: deps.sampling.topP }), parallelToolCalls: false, maxTokens: 2048, store: false, retry: { maxRetries: 0 } },
         tools: tools.map(def => tool({ name: def.name, description: def.description, parameters: def.parameters,
           needsApproval: true, errorFunction: null,
           execute: async (input, _context, details) => {

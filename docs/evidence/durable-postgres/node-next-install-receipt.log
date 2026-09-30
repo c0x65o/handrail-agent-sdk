@@ -1,0 +1,30 @@
+install.log (full log was captured by verifier; successful command required before continuing)
+> handrail-agent-sdk@0.1.5 prepare
+> npm run build
+> handrail-agent-sdk@0.1.5 build
+> tsc -p tsconfig.json
+> @handrail/ai-assistant@0.2.62 prepare
+> npm run build
+> @handrail/ai-assistant@0.2.62 build
+> node -e "require('node:fs').rmSync('dist', { recursive: true, force: true })" && tsc -p tsconfig.build.json
+> @handrail/ai-assistant@0.2.62 prepare
+> npm run build
+> @handrail/ai-assistant@0.2.62 build
+> node -e "require('node:fs').rmSync('dist', { recursive: true, force: true })" && tsc -p tsconfig.build.json
+> handrail-agent-sdk@0.1.5 prepare
+> npm run build
+> handrail-agent-sdk@0.1.5 build
+> tsc -p tsconfig.json
+added 50 packages in 3m
+
+reinstall.log (full log was captured by verifier; successful command required before continuing)
+> @handrail/ai-assistant@0.2.62 prepare
+> npm run build
+> @handrail/ai-assistant@0.2.62 build
+> node -e "require('node:fs').rmSync('dist', { recursive: true, force: true })" && tsc -p tsconfig.build.json
+> handrail-agent-sdk@0.1.5 prepare
+> npm run build
+> handrail-agent-sdk@0.1.5 build
+> tsc -p tsconfig.json
+added 50 packages in 1m
+

@@ -1,6 +1,6 @@
 {
   "name": "handrail-agent-sdk",
-  "version": "0.1.5",
+  "version": "0.1.6",
   "private": true,
   "description": "Headless durable agent execution powered by OpenAI Agents SDK",
   "type": "module",
@@ -15,7 +15,9 @@
     "dist",
     "examples/headless.mts",
     "docs/agent-runtime.md",
-    "docs/assistance.md"
+    "docs/assistance.md",
+    "examples/postgres-application.mts",
+    "docs/postgres-runtime.md"
   ],
   "exports": {
     ".": {
@@ -53,13 +55,17 @@
     "./server/application-tools": {
       "types": "./dist/server/application-tools.d.ts",
       "import": "./dist/server/application-tools.js"
+    },
+    "./server/postgres": {
+      "types": "./dist/server/postgres/index.d.ts",
+      "import": "./dist/server/postgres/index.js"
     }
   },
   "scripts": {
     "build:test-browser": "tsc -p tests/tsconfig.browser.json",
     "test:browser": "npm run build:test-browser && node --test --test-concurrency=1 --test-reporter=tap tests/browser.test.mjs",
     "test:browser-boundary": "npm run build:test-browser && node --test --test-concurrency=1 --test-reporter=tap tests/browser-boundary.test.mjs",
-    "build": "tsc -p tsconfig.json",
+    "build": "tsc -p tsconfig.json && node scripts/build-postgres-assets.mjs",
     "prepare": "npm run build",
     "pretest": "npm run build && npm run typecheck:acceptance && npm run build:test-postgres && npm run build:reference",
     "test": "node --test --test-concurrency=1 --test-reporter=tap tests/contracts/job.test.mjs tests/contracts/connection.test.mjs tests/contracts/vault.test.mjs tests/contracts/browser.test.mjs tests/packaging.test.mjs tests/git-lock.test.mjs tests/acceptance.test.mjs",
@@ -70,7 +76,7 @@
     "build:reference": "tsc -p reference/tsconfig.json",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "npm run build:reference && node .reference-build/reference/node/db/migrate.js",
-    "test:journal": "npm run build:reference && npm run build:test-postgres && node --test --test-concurrency=1 --test-reporter=tap tests/job-journal.test.mjs",
+    "test:journal": "npm run build && npm run build:reference && npm run build:test-postgres && node --test --test-concurrency=1 --test-reporter=tap tests/job-journal.test.mjs",
     "test:submit": "npm run build:reference && npm run build:test-postgres && node --test --test-concurrency=1 --test-reporter=tap tests/submit.test.mjs",
     "test:lease": "npm run build:reference && npm run build:test-postgres && node --test --test-concurrency=1 --test-reporter=tap tests/job-lease.test.mjs",
     "test:cancel": "npm run build:reference && npm run build:test-postgres && node --test --test-concurrency=1 --test-reporter=tap tests/job-cancel.test.mjs",
@@ -85,7 +91,7 @@
     "test:vault-request": "tsc -p tests/tsconfig.vault-request.json && node --test --test-concurrency=1 --test-reporter=tap .reference-build/tests/server/vault-request.test.js",
     "test:browser-profile": "npm run build:test-reference && node --test --test-concurrency=1 --test-reporter=tap .reference-build/tests/reference/browser-profile-store.test.js",
     "test:connection-store": "npm run build:test-reference && node --test --test-concurrency=1 --test-reporter=tap .reference-build/tests/reference/connection-store.test.js",
-    "test:agents": "npm run build:reference && npm run build:test-postgres && node --test --test-concurrency=1 --test-reporter=tap tests/agent-runtime.test.mjs",
+    "test:agents": "npm run build && npm run build:reference && npm run build:test-postgres && node --test --test-concurrency=1 --test-reporter=tap tests/agent-runtime.test.mjs",
     "test:assistance": "npm run build && npm run build:reference && npm run build:test-postgres && node --test --test-concurrency=1 --test-reporter=tap tests/assistance.test.mjs tests/agent-transport.test.mjs"
   },
   "devDependencies": {

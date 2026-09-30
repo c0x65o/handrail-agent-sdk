@@ -1,0 +1,556 @@
+[
+  {
+    "id": "handrail-agent-sdk@0.1.5",
+    "name": "handrail-agent-sdk",
+    "version": "0.1.5",
+    "size": 116190,
+    "unpackedSize": 735326,
+    "shasum": "3363733e535ee8d774fb6c030ec3dedb9c31f425",
+    "integrity": "sha512-w01SAtsNTmlXvfXyh0Kn2jEZ2Se9orzbbN98ktTB/aElWkdJzWoWa+wHYpgVKoZkYkqZrAQE5hpjdBZXh5suJQ==",
+    "filename": "handrail-agent-sdk-0.1.5.tgz",
+    "files": [
+      {
+        "path": "README.md",
+        "size": 4599,
+        "mode": 420
+      },
+      {
+        "path": "dist/contracts/browser.d.ts",
+        "size": 7320,
+        "mode": 420
+      },
+      {
+        "path": "dist/contracts/browser.js",
+        "size": 17576,
+        "mode": 420
+      },
+      {
+        "path": "dist/contracts/connection.d.ts",
+        "size": 5013,
+        "mode": 420
+      },
+      {
+        "path": "dist/contracts/connection.js",
+        "size": 10559,
+        "mode": 420
+      },
+      {
+        "path": "dist/contracts/job.d.ts",
+        "size": 7416,
+        "mode": 420
+      },
+      {
+        "path": "dist/contracts/job.js",
+        "size": 12925,
+        "mode": 420
+      },
+      {
+        "path": "dist/contracts/vault.d.ts",
+        "size": 7519,
+        "mode": 420
+      },
+      {
+        "path": "dist/contracts/vault.js",
+        "size": 13877,
+        "mode": 420
+      },
+      {
+        "path": "dist/index.d.ts",
+        "size": 157,
+        "mode": 420
+      },
+      {
+        "path": "dist/index.js",
+        "size": 157,
+        "mode": 420
+      },
+      {
+        "path": "dist/server/agent-runtime.d.ts",
+        "size": 9195,
+        "mode": 420
+      },
+      {
+        "path": "dist/server/agent-runtime.js",
+        "size": 21944,
+        "mode": 420
+      },
+      {
+        "path": "dist/server/agent-state-binding.d.ts",
+        "size": 222,
+        "mode": 420
+      },
+      {
+        "path": "dist/server/agent-state-binding.js",
+        "size": 518,
+        "mode": 420
+      },
+      {
+        "path": "dist/server/agent-transport.d.ts",
+        "size": 3520,
+        "mode": 420
+      },
+      {
+        "path": "dist/server/agent-transport.js",
+        "size": 8092,
+        "mode": 420
+      },
+      {
+        "path": "dist/server/answer.d.ts",
+        "size": 2476,
+        "mode": 420
+      },
+      {
+        "path": "dist/server/answer.js",
+        "size": 4036,
+        "mode": 420
+      },
+      {
+        "path": "dist/server/application-tools.d.ts",
+        "size": 1797,
+        "mode": 420
+      },
+      {
+        "path": "dist/server/application-tools.js",
+        "size": 1375,
+        "mode": 420
+      },
+      {
+        "path": "dist/server/assistance-notifications.d.ts",
+        "size": 2106,
+        "mode": 420
+      },
+      {
+        "path": "dist/server/assistance-notifications.js",
+        "size": 4424,
+        "mode": 420
+      },
+      {
+        "path": "dist/server/assistance-postgres.d.ts",
+        "size": 824,
+        "mode": 420
+      },
+      {
+        "path": "dist/server/assistance-postgres.js",
+        "size": 5058,
+        "mode": 420
+      },
+      {
+        "path": "dist/server/assistance-time.d.ts",
+        "size": 691,
+        "mode": 420
+      },
+      {
+        "path": "dist/server/assistance-time.js",
+        "size": 2415,
+        "mode": 420
+      },
+      {
+        "path": "dist/server/assistance.d.ts",
+        "size": 5887,
+        "mode": 420
+      },
+      {
+        "path": "dist/server/assistance.js",
+        "size": 10801,
+        "mode": 420
+      },
+      {
+        "path": "dist/server/browser-policy.d.ts",
+        "size": 1887,
+        "mode": 420
+      },
+      {
+        "path": "dist/server/browser-policy.js",
+        "size": 11,
+        "mode": 420
+      },
+      {
+        "path": "dist/server/cancel.d.ts",
+        "size": 2160,
+        "mode": 420
+      },
+      {
+        "path": "dist/server/cancel.js",
+        "size": 3098,
+        "mode": 420
+      },
+      {
+        "path": "dist/server/connection-store.d.ts",
+        "size": 3464,
+        "mode": 420
+      },
+      {
+        "path": "dist/server/connection-store.js",
+        "size": 11,
+        "mode": 420
+      },
+      {
+        "path": "dist/server/effects.d.ts",
+        "size": 3404,
+        "mode": 420
+      },
+      {
+        "path": "dist/server/effects.js",
+        "size": 4281,
+        "mode": 420
+      },
+      {
+        "path": "dist/server/handrail-feedback.d.ts",
+        "size": 3811,
+        "mode": 420
+      },
+      {
+        "path": "dist/server/handrail-feedback.js",
+        "size": 7932,
+        "mode": 420
+      },
+      {
+        "path": "dist/server/index.d.ts",
+        "size": 2414,
+        "mode": 420
+      },
+      {
+        "path": "dist/server/index.js",
+        "size": 520,
+        "mode": 420
+      },
+      {
+        "path": "dist/server/job-lease.d.ts",
+        "size": 4211,
+        "mode": 420
+      },
+      {
+        "path": "dist/server/job-lease.js",
+        "size": 6040,
+        "mode": 420
+      },
+      {
+        "path": "dist/server/job-store.d.ts",
+        "size": 2179,
+        "mode": 420
+      },
+      {
+        "path": "dist/server/job-store.js",
+        "size": 11,
+        "mode": 420
+      },
+      {
+        "path": "dist/server/payment-vault.d.ts",
+        "size": 3327,
+        "mode": 420
+      },
+      {
+        "path": "dist/server/payment-vault.js",
+        "size": 3915,
+        "mode": 420
+      },
+      {
+        "path": "dist/server/postgres/agent-state-store.d.ts",
+        "size": 354,
+        "mode": 420
+      },
+      {
+        "path": "dist/server/postgres/agent-state-store.js",
+        "size": 7976,
+        "mode": 420
+      },
+      {
+        "path": "dist/server/postgres/db/database.d.ts",
+        "size": 385,
+        "mode": 420
+      },
+      {
+        "path": "dist/server/postgres/db/database.js",
+        "size": 293,
+        "mode": 420
+      },
+      {
+        "path": "dist/server/postgres/db/schema.d.ts",
+        "size": 79006,
+        "mode": 420
+      },
+      {
+        "path": "dist/server/postgres/db/schema.js",
+        "size": 7957,
+        "mode": 420
+      },
+      {
+        "path": "dist/server/postgres/effect-resolution.d.ts",
+        "size": 530,
+        "mode": 420
+      },
+      {
+        "path": "dist/server/postgres/effect-resolution.js",
+        "size": 1503,
+        "mode": 420
+      },
+      {
+        "path": "dist/server/postgres/effects.d.ts",
+        "size": 38461,
+        "mode": 420
+      },
+      {
+        "path": "dist/server/postgres/effects.js",
+        "size": 8443,
+        "mode": 420
+      },
+      {
+        "path": "dist/server/postgres/index.d.ts",
+        "size": 2135,
+        "mode": 420
+      },
+      {
+        "path": "dist/server/postgres/index.js",
+        "size": 3760,
+        "mode": 420
+      },
+      {
+        "path": "dist/server/postgres/job-admission.d.ts",
+        "size": 38567,
+        "mode": 420
+      },
+      {
+        "path": "dist/server/postgres/job-admission.js",
+        "size": 6572,
+        "mode": 420
+      },
+      {
+        "path": "dist/server/postgres/job-answer.d.ts",
+        "size": 38483,
+        "mode": 420
+      },
+      {
+        "path": "dist/server/postgres/job-answer.js",
+        "size": 8458,
+        "mode": 420
+      },
+      {
+        "path": "dist/server/postgres/job-cancellation.d.ts",
+        "size": 38508,
+        "mode": 420
+      },
+      {
+        "path": "dist/server/postgres/job-cancellation.js",
+        "size": 6095,
+        "mode": 420
+      },
+      {
+        "path": "dist/server/postgres/job-journal.d.ts",
+        "size": 38661,
+        "mode": 420
+      },
+      {
+        "path": "dist/server/postgres/job-journal.js",
+        "size": 8328,
+        "mode": 420
+      },
+      {
+        "path": "dist/server/postgres/job-lease-fence.d.ts",
+        "size": 835,
+        "mode": 420
+      },
+      {
+        "path": "dist/server/postgres/job-lease-fence.js",
+        "size": 2000,
+        "mode": 420
+      },
+      {
+        "path": "dist/server/postgres/job-lease.d.ts",
+        "size": 38469,
+        "mode": 420
+      },
+      {
+        "path": "dist/server/postgres/job-lease.js",
+        "size": 7979,
+        "mode": 420
+      },
+      {
+        "path": "dist/server/postgres/keys.d.ts",
+        "size": 290,
+        "mode": 420
+      },
+      {
+        "path": "dist/server/postgres/keys.js",
+        "size": 11,
+        "mode": 420
+      },
+      {
+        "path": "dist/server/postgres/migrate.d.ts",
+        "size": 812,
+        "mode": 420
+      },
+      {
+        "path": "dist/server/postgres/migrate.js",
+        "size": 2833,
+        "mode": 420
+      },
+      {
+        "path": "dist/server/postgres/migrations/0000_brainy_wraith.sql",
+        "size": 1968,
+        "mode": 420
+      },
+      {
+        "path": "dist/server/postgres/migrations/0001_round_garia.sql",
+        "size": 658,
+        "mode": 420
+      },
+      {
+        "path": "dist/server/postgres/migrations/0002_outgoing_night_thrasher.sql",
+        "size": 1688,
+        "mode": 420
+      },
+      {
+        "path": "dist/server/postgres/migrations/0003_vault_items.sql",
+        "size": 566,
+        "mode": 420
+      },
+      {
+        "path": "dist/server/postgres/migrations/0004_vault_lifecycle.sql",
+        "size": 965,
+        "mode": 420
+      },
+      {
+        "path": "dist/server/postgres/migrations/0005_vault_lifecycle_backfill.sql",
+        "size": 355,
+        "mode": 420
+      },
+      {
+        "path": "dist/server/postgres/migrations/0006_job_cancellation.sql",
+        "size": 699,
+        "mode": 420
+      },
+      {
+        "path": "dist/server/postgres/migrations/0007_job_answers.sql",
+        "size": 923,
+        "mode": 420
+      },
+      {
+        "path": "dist/server/postgres/migrations/0008_job_effects.sql",
+        "size": 762,
+        "mode": 420
+      },
+      {
+        "path": "dist/server/postgres/migrations/0009_vault_item_grants.sql",
+        "size": 730,
+        "mode": 420
+      },
+      {
+        "path": "dist/server/postgres/migrations/0010_vault_entry.sql",
+        "size": 1381,
+        "mode": 420
+      },
+      {
+        "path": "dist/server/postgres/migrations/0011_browser_profiles.sql",
+        "size": 1304,
+        "mode": 420
+      },
+      {
+        "path": "dist/server/postgres/migrations/0012_connection_store.sql",
+        "size": 2217,
+        "mode": 420
+      },
+      {
+        "path": "dist/server/postgres/migrations/0013_agent_run_states.sql",
+        "size": 713,
+        "mode": 420
+      },
+      {
+        "path": "dist/server/postgres/migrations/meta/_journal.json",
+        "size": 2073,
+        "mode": 420
+      },
+      {
+        "path": "dist/server/postgres/private-envelope.d.ts",
+        "size": 401,
+        "mode": 420
+      },
+      {
+        "path": "dist/server/postgres/private-envelope.js",
+        "size": 1615,
+        "mode": 420
+      },
+      {
+        "path": "dist/server/submit.d.ts",
+        "size": 2497,
+        "mode": 420
+      },
+      {
+        "path": "dist/server/submit.js",
+        "size": 7717,
+        "mode": 420
+      },
+      {
+        "path": "dist/server/vault-entry.d.ts",
+        "size": 3203,
+        "mode": 420
+      },
+      {
+        "path": "dist/server/vault-entry.js",
+        "size": 4067,
+        "mode": 420
+      },
+      {
+        "path": "dist/server/vault-policy.d.ts",
+        "size": 2094,
+        "mode": 420
+      },
+      {
+        "path": "dist/server/vault-policy.js",
+        "size": 11,
+        "mode": 420
+      },
+      {
+        "path": "dist/server/vault-request.d.ts",
+        "size": 3995,
+        "mode": 420
+      },
+      {
+        "path": "dist/server/vault-request.js",
+        "size": 7584,
+        "mode": 420
+      },
+      {
+        "path": "dist/server/vault-use.d.ts",
+        "size": 4255,
+        "mode": 420
+      },
+      {
+        "path": "dist/server/vault-use.js",
+        "size": 4975,
+        "mode": 420
+      },
+      {
+        "path": "docs/agent-runtime.md",
+        "size": 15740,
+        "mode": 420
+      },
+      {
+        "path": "docs/assistance.md",
+        "size": 17043,
+        "mode": 420
+      },
+      {
+        "path": "docs/postgres-runtime.md",
+        "size": 13794,
+        "mode": 420
+      },
+      {
+        "path": "examples/headless.mts",
+        "size": 2545,
+        "mode": 420
+      },
+      {
+        "path": "examples/postgres-application.mts",
+        "size": 7272,
+        "mode": 420
+      },
+      {
+        "path": "package.json",
+        "size": 6637,
+        "mode": 420
+      }
+    ],
+    "entryCount": 108,
+    "bundled": []
+  }
+]

@@ -9,7 +9,7 @@ import { migrate } from 'drizzle-orm/node-postgres/migrator';
 export async function migrations(t, harness, client) {
   const folder = await mkdtemp(resolve('.reference-build/migrations-'));
   t.after(() => rm(folder, { recursive: true, force: true }));
-  const source = resolve('reference/node/db/migrations');
+  const source = resolve('src/server/postgres/migrations');
   await mkdir(join(folder, 'meta'));
   await writeFile(join(folder, 'meta/_journal.json'), await readFile(join(source, 'meta/_journal.json')));
   for (const file of await readdir(source)) if (file.endsWith('.sql')) {

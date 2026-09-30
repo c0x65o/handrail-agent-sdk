@@ -240,7 +240,7 @@ test('a failed migration rolls back every generated application table', async t 
   const client = await harness.client();
   const folder = await mkdtemp(resolve('.reference-build/migrations-failure-'));
   t.after(() => rm(folder, { recursive: true, force: true }));
-  const source = resolve('reference/node/db/migrations');
+  const source = resolve('src/server/postgres/migrations');
   await mkdir(join(folder, 'meta'));
   await writeFile(join(folder, 'meta/_journal.json'), await readFile(join(source, 'meta/_journal.json')));
   for (const file of await readdir(source)) if (file.endsWith('.sql')) {
@@ -266,4 +266,20 @@ test('append detaches validated input before awaiting SQL', async t => {
   input.snapshot.raw = 'synthetic-unsupported';
   assert.deepEqual(ok(await pending).event, expected);
   assert.deepEqual(ok(await other.load(identity)), expected.snapshot);
+});
+
+test('public bootstrap adopts original reference migration ledger without rewriting durable journal rows', async t => {
+  const { migrateAgentPostgres, createJobJournal: publicJournal } = await import('handrail-agent-sdk/server/postgres');
+  const { default: pg } = await import('pg');
+  const { harness, journal, stored, first } = await setup(t);
+  ok(await journal.append(event('submitted', 0)));
+  ok(await journal.append(event('started', 1)));
+  const before = await stored();
+  const ledger = (await first.query(`SELECT * FROM ${harness.table('journal_migrations')} ORDER BY id`)).rows;
+  const pool = new pg.Pool({connectionString:process.env.HANDRAIL_TEST_POSTGRES_URL,options:'-c search_path=pg_catalog'});
+  t.after(()=>pool.end());
+  await migrateAgentPostgres(pool,harness.schema);
+  assert.deepEqual(await stored(),before);
+  assert.deepEqual((await first.query(`SELECT * FROM ${harness.table('journal_migrations')} ORDER BY id`)).rows,ledger);
+  assert.deepEqual(ok(await publicJournal(pool,harness.schema).load(identity)),ok(await journal.load(identity)));
 });

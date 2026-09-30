@@ -2,11 +2,12 @@
 
 Headless, durable agent execution powered by **OpenAI Agents SDK 0.18.0**.
 Requires Node.js 22 or later. The host owns identity, authorization, provider
-connections, storage adapters and private Vault/browser executors. The shared
+connections, database lifecycle and private Vault/browser executors. The shared
 assistance module owns schedule/watch lifecycle and notification orchestration.
 
 - `handrail-agent-sdk`: pure job, connection, Vault and browser contracts.
 - `handrail-agent-sdk/server`: admission, leases, Stop, answers, effects and Vault boundaries.
+- `handrail-agent-sdk/server/postgres`: supported durable stores, additive migrations and host key handles.
 - `handrail-agent-sdk/server/agents`: `createAgentRuntime` and its typed host/store/tool ports.
 - `handrail-agent-sdk/server/application`: existing assistant gateway transport and checkpoint projection.
 - `handrail-agent-sdk/server/application-tools`: trusted application tool catalog/presentation adapters.
@@ -34,8 +35,10 @@ Start with the [typed headless example](examples/headless.mts) and
 The [assistance composition and Mills migration map](docs/assistance.md) describes
 the shared adapters, live-provider inputs and remaining canonical feedback
 interaction gap. Source fixtures do not establish application acceptance.
-The PostgreSQL reference is a host implementation with disposable tests, not an
-automatically started service or a replacement for Handrail's native controller.
+The [PostgreSQL composition guide](docs/postgres-runtime.md) and
+[complete installed application example](examples/postgres-application.mts)
+compose runtime, gateway, native answers and notifications using public factories.
+The reference host reuses these implementations. Nothing starts automatically.
 
 Consumers install from the public HTTPS Git repository
 `https://github.com/c0x65o/handrail-agent-sdk.git`, pinned to the **full 40-character
@@ -60,8 +63,9 @@ node tests/verify-git-install.mjs FULL_40_CHARACTER_DELIVERED_SHA
 ```
 
 This checks two strict consumer type setups, fresh-cache HTTPS lock reinstall,
-and the installed multi-step runtime with disposable PostgreSQL and mocked model
-HTTP transport. It requires the local PostgreSQL 15 test binaries. The
+and an external installed-only runtime suite with disposable PostgreSQL, actual
+Agents Runner and mocked model/provider boundaries. No repository helper, SQL or
+reference build is available to that suite. It requires the local PostgreSQL 15 test binaries. The
 [consumer correction evidence](docs/evidence/consumer-compatibility/README.md)
 separates published-SHA verification from the pending delivery revision.
 

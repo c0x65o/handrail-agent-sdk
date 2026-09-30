@@ -178,3 +178,27 @@ test('assistance/application public subpaths import without background services'
   assert.ok(entries.application.includes('createAgentCheckpointReader'));
   assert.ok(entries['application-tools'].includes('createApplicationAgentTools'));
 });
+
+test('public PostgreSQL factories are inert and their implementation never imports the reference host', () => {
+  runNode(['--input-type=module', '--eval', `
+    import assert from 'node:assert/strict';
+    import pg from 'pg';
+    import * as stores from 'handrail-agent-sdk/server/postgres';
+    const pool=new pg.Pool({host:'fixture.invalid'});
+    pool.on('connect',()=>{throw Error('UNEXPECTED_CONNECTION');});
+    const keys={current:async()=>{throw Error('UNEXPECTED_KEY_READ');},resolve:async()=>{throw Error('UNEXPECTED_KEY_READ');}};
+    const composed=stores.createPostgresAgentStores({client:pool,schema:'fixture_app',keys});
+    assert.deepEqual(Object.keys(composed).sort(),['admission','answer','cancellation','effects','journal','lease','states']);
+    for(const name of ['createJobAdmissionStore','createJobJournal','createJobLeaseStore','createEffectStore','createJobCancellationStore','createJobAnswerStore']) stores[name](pool,'fixture_app');
+    stores.createAgentStateStore(pool,keys,'fixture_app');
+    stores.createPostgresAssistanceDatabase(pool);
+    await pool.end();
+  `]);
+  const visit = path => {
+    const source=ts.createSourceFile(path,readFileSync(path,'utf8'),ts.ScriptTarget.Latest);
+    for(const statement of source.statements) if(ts.isImportDeclaration(statement))
+      assert.ok(!/reference/.test(statement.moduleSpecifier.text),path);
+  };
+  for(const name of ['index','job-admission','job-journal','job-lease','job-answer','job-cancellation','effects','agent-state-store','migrate'])
+    visit(`${root}dist/server/postgres/${name}.js`);
+});
