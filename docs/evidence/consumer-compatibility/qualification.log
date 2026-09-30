@@ -1,0 +1,51 @@
+Running npm install --include=dev --no-audit --no-fund --foreground-scripts --loglevel=http (/opt/handrail/.handrail/codex-runs/b49e7822-2f81-4d1c-a04e-1852b24cc2c7/tmp/handrail-git-consumer-Wqn2zG/node-next-tHNupo)
+Running npm ci --include=dev --no-audit --no-fund --foreground-scripts --loglevel=http (/opt/handrail/.handrail/codex-runs/b49e7822-2f81-4d1c-a04e-1852b24cc2c7/tmp/handrail-git-consumer-Wqn2zG/node-next-tHNupo)
+Running /usr/bin/node node_modules/typescript/bin/tsc -p tsconfig.json (/opt/handrail/.handrail/codex-runs/b49e7822-2f81-4d1c-a04e-1852b24cc2c7/tmp/handrail-git-consumer-Wqn2zG/node-next-tHNupo)
+Running /usr/bin/node --input-type=module --eval 
+      import assert from 'node:assert/strict';
+      import { pathToFileURL } from 'node:url';
+      const name = "handrail-agent-sdk/server/agents";
+      assert.ok(import.meta.resolve(name).startsWith(pathToFileURL(process.cwd() + '/node_modules/handrail-agent-sdk/').href));
+      const entry = await import(name);
+      assert.equal(typeof entry["createAgentRuntime"], 'function');
+     (/opt/handrail/.handrail/codex-runs/b49e7822-2f81-4d1c-a04e-1852b24cc2c7/tmp/handrail-git-consumer-Wqn2zG/node-next-tHNupo)
+Running npm --version (/opt/handrail/.handrail/codex-runs/b49e7822-2f81-4d1c-a04e-1852b24cc2c7/tmp/handrail-git-consumer-Wqn2zG/node-next-tHNupo)
+Running npm install --include=dev --no-audit --no-fund --foreground-scripts --loglevel=http (/opt/handrail/.handrail/codex-runs/b49e7822-2f81-4d1c-a04e-1852b24cc2c7/tmp/handrail-git-consumer-Wqn2zG/bundler-explicit-provider-zpFIc3)
+Running npm ci --include=dev --no-audit --no-fund --foreground-scripts --loglevel=http (/opt/handrail/.handrail/codex-runs/b49e7822-2f81-4d1c-a04e-1852b24cc2c7/tmp/handrail-git-consumer-Wqn2zG/bundler-explicit-provider-zpFIc3)
+Running /usr/bin/node node_modules/typescript/bin/tsc -p tsconfig.json (/opt/handrail/.handrail/codex-runs/b49e7822-2f81-4d1c-a04e-1852b24cc2c7/tmp/handrail-git-consumer-Wqn2zG/bundler-explicit-provider-zpFIc3)
+Running /usr/bin/node --input-type=module --eval 
+      import assert from 'node:assert/strict';
+      import { pathToFileURL } from 'node:url';
+      const name = "handrail-agent-sdk/server/agents";
+      assert.ok(import.meta.resolve(name).startsWith(pathToFileURL(process.cwd() + '/node_modules/handrail-agent-sdk/').href));
+      const entry = await import(name);
+      assert.equal(typeof entry["createAgentRuntime"], 'function');
+     (/opt/handrail/.handrail/codex-runs/b49e7822-2f81-4d1c-a04e-1852b24cc2c7/tmp/handrail-git-consumer-Wqn2zG/bundler-explicit-provider-zpFIc3)
+Running npm --version (/opt/handrail/.handrail/codex-runs/b49e7822-2f81-4d1c-a04e-1852b24cc2c7/tmp/handrail-git-consumer-Wqn2zG/bundler-explicit-provider-zpFIc3)
+Running npm run build:reference (/opt/handrail/repos/handrail/handrail-agent-sdk/handrail-agent-sdk)
+Running npm run build:test-postgres (/opt/handrail/repos/handrail/handrail-agent-sdk/handrail-agent-sdk)
+Running /usr/bin/node tests/run-local-postgres.mjs --installed-consumer /opt/handrail/.handrail/codex-runs/b49e7822-2f81-4d1c-a04e-1852b24cc2c7/tmp/handrail-git-consumer-Wqn2zG/node-next-tHNupo (/opt/handrail/repos/handrail/handrail-agent-sdk/handrail-agent-sdk)
+Fresh isolated PostgreSQL 15 cluster initialized; dedicated disposable database and non-superuser fixture role; connection values withheld.
+TAP version 13
+# No traceId found. Make sure to start a trace with `withTrace()` first. Returning NoopSpan.
+# No traceId found. Make sure to start a trace with `withTrace()` first. Returning NoopSpan.
+# No traceId found. Make sure to start a trace with `withTrace()` first. Returning NoopSpan.
+# No traceId found. Make sure to start a trace with `withTrace()` first. Returning NoopSpan.
+# Subtest: public Git installed runtime persists multi-step work and fences duplicate effects
+ok 1 - public Git installed runtime persists multi-step work and fences duplicate effects
+  ---
+  duration_ms: 658.17344
+  type: 'test'
+  ...
+# Installed Agent/Runner + official OpenAI client; mocked SSE transport; 4 responses, 3 tools, 1 effect; duplicate wake repeated neither model nor effect.
+1..1
+# tests 1
+# suites 0
+# pass 1
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 2108.262572
+Owned temporary PostgreSQL cluster stopped.
+{"status":"passed","sha":"4d1f995e2bf337fb4ad9552bb675dade0f633fdb","evidence":"/opt/handrail/.handrail/codex-runs/b49e7822-2f81-4d1c-a04e-1852b24cc2c7/tmp/handrail-git-consumer-Wqn2zG","runtime":"installed-with-mocked-transport-and-disposable-postgres","profiles":[{"profile":"node-next","status":"passed"},{"profile":"bundler-explicit-provider","status":"passed"}]}

@@ -1,0 +1,37 @@
+bundler-explicit-provider: install
+> handrail-agent-sdk@0.1.3 prepare
+> npm run build
+> handrail-agent-sdk@0.1.3 build
+> tsc -p tsconfig.json
+> handrail-agent-sdk@0.1.3 prepare
+> npm run build
+> handrail-agent-sdk@0.1.3 build
+> tsc -p tsconfig.json
+npm http fetch GET 200 https://codeload.github.com/c0x65o/handrail-agent-sdk/tar.gz/4d1f995e2bf337fb4ad9552bb675dade0f633fdb 431ms (cache miss)
+npm http fetch GET 200 https://codeload.github.com/c0x65o/handrail-agent-sdk/tar.gz/4d1f995e2bf337fb4ad9552bb675dade0f633fdb 79ms (cache revalidated)
+
+bundler-explicit-provider: reinstall
+> handrail-agent-sdk@0.1.3 prepare
+> npm run build
+> handrail-agent-sdk@0.1.3 build
+> tsc -p tsconfig.json
+npm http fetch GET 200 https://codeload.github.com/c0x65o/handrail-agent-sdk/tar.gz/4d1f995e2bf337fb4ad9552bb675dade0f633fdb 1000ms (cache miss)
+
+node-next: install
+> handrail-agent-sdk@0.1.3 prepare
+> npm run build
+> handrail-agent-sdk@0.1.3 build
+> tsc -p tsconfig.json
+> handrail-agent-sdk@0.1.3 prepare
+> npm run build
+> handrail-agent-sdk@0.1.3 build
+> tsc -p tsconfig.json
+npm http fetch GET 200 https://codeload.github.com/c0x65o/handrail-agent-sdk/tar.gz/4d1f995e2bf337fb4ad9552bb675dade0f633fdb 376ms (cache miss)
+npm http fetch GET 200 https://codeload.github.com/c0x65o/handrail-agent-sdk/tar.gz/4d1f995e2bf337fb4ad9552bb675dade0f633fdb 69ms (cache revalidated)
+
+node-next: reinstall
+> handrail-agent-sdk@0.1.3 prepare
+> npm run build
+> handrail-agent-sdk@0.1.3 build
+> tsc -p tsconfig.json
+npm http fetch GET 200 https://codeload.github.com/c0x65o/handrail-agent-sdk/tar.gz/4d1f995e2bf337fb4ad9552bb675dade0f633fdb 1157ms (cache miss)

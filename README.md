@@ -34,11 +34,26 @@ SHA produced by the delivery pipeline**, with a matching package-manager lockfil
 `prepare` builds during normal installation. The root is the installable package;
 the former copied `consumer-distribution` candidate has been retired.
 
+TypeScript consumers must explicitly pin supported Node declarations; the SDK's
+development dependencies do not constrain consumer types. The qualified setup is
+Node **22.23.1**, TypeScript **5.9.3**, and `@types/node` **22.20.4** (also tested:
+**22.18.0** with Bundler resolution). An unpinned clean install currently pulls
+Node 26 types and fails in upstream Agents declarations. Other Node runtime
+majors are unqualified; `engines.node >=22` is a minimum, not a tested-version matrix.
+See the [consumer installation contract](docs/agent-runtime.md#consumer-type-and-lock-contract)
+for the npm HTTPS URL form and reinstall commands.
+
 After the pipeline pushes the revision, verify the actual installed runtime:
 
 ```sh
 node tests/verify-git-install.mjs FULL_40_CHARACTER_DELIVERED_SHA
 ```
+
+This checks two strict consumer type setups, fresh-cache HTTPS lock reinstall,
+and the installed multi-step runtime with disposable PostgreSQL and mocked model
+HTTP transport. It requires the local PostgreSQL 15 test binaries. The
+[consumer correction evidence](docs/evidence/consumer-compatibility/README.md)
+separates published-SHA verification from the pending delivery revision.
 
 No application has been migrated, no pilot has been selected, and no live model,
 generic browser controller, or native Handrail adapter is qualified by these tests.

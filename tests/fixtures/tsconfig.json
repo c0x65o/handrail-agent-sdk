@@ -10,6 +10,7 @@
   },
   "files": [
     "consumer.mts",
+    "git-consumer.mts",
     "convergence-v1.ts",
     "../../examples/headless.mts"
   ]

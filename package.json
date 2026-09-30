@@ -1,6 +1,6 @@
 {
   "name": "handrail-agent-sdk",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "private": true,
   "description": "Headless durable agent execution powered by OpenAI Agents SDK",
   "type": "module",
@@ -37,7 +37,7 @@
     "build": "tsc -p tsconfig.json",
     "prepare": "npm run build",
     "pretest": "npm run build && npm run typecheck:acceptance && npm run build:test-postgres && npm run build:reference",
-    "test": "node --test --test-concurrency=1 --test-reporter=tap tests/contracts/job.test.mjs tests/contracts/connection.test.mjs tests/contracts/vault.test.mjs tests/contracts/browser.test.mjs tests/packaging.test.mjs tests/acceptance.test.mjs",
+    "test": "node --test --test-concurrency=1 --test-reporter=tap tests/contracts/job.test.mjs tests/contracts/connection.test.mjs tests/contracts/vault.test.mjs tests/contracts/browser.test.mjs tests/packaging.test.mjs tests/git-lock.test.mjs tests/acceptance.test.mjs",
     "build:test-postgres": "tsc -p tests/tsconfig.postgres.json",
     "test:postgres": "npm run build:test-postgres && node --test --test-concurrency=1 --test-reporter=tap tests/postgres.test.mjs",
     "typecheck:acceptance": "tsc -p tests/fixtures/tsconfig.acceptance.json",

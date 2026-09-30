@@ -1,0 +1,22 @@
+Running npm install --include=dev --no-audit --no-fund --foreground-scripts --loglevel=http (/opt/handrail/.handrail/codex-runs/b49e7822-2f81-4d1c-a04e-1852b24cc2c7/tmp/handrail-git-consumer-BFaHlv/node-next-6APJMq)
+Running npm ci --include=dev --no-audit --no-fund --foreground-scripts --loglevel=http (/opt/handrail/.handrail/codex-runs/b49e7822-2f81-4d1c-a04e-1852b24cc2c7/tmp/handrail-git-consumer-BFaHlv/node-next-6APJMq)
+node:internal/modules/run_main:123
+    triggerUncaughtException(
+    ^
+
+AssertionError [ERR_ASSERTION]: INSTALLED_LOCK_NOT_HTTPS
++ actual - expected
+
++ 'git+ssh://git@github.com/c0x65o/handrail-agent-sdk.git#4d1f995e2bf337fb4ad9552bb675dade0f633fdb'
+- 'git+https://github.com/c0x65o/handrail-agent-sdk.git#4d1f995e2bf337fb4ad9552bb675dade0f633fdb'
+
+    at file:///opt/handrail/repos/handrail/handrail-agent-sdk/handrail-agent-sdk/tests/verify-git-install.mjs:65:12 {
+  generatedMessage: false,
+  code: 'ERR_ASSERTION',
+  actual: 'git+ssh://git@github.com/c0x65o/handrail-agent-sdk.git#4d1f995e2bf337fb4ad9552bb675dade0f633fdb',
+  expected: 'git+https://github.com/c0x65o/handrail-agent-sdk.git#4d1f995e2bf337fb4ad9552bb675dade0f633fdb',
+  operator: 'strictEqual',
+  diff: 'simple'
+}
+
+Node.js v22.23.1

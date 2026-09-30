@@ -15,6 +15,79 @@ upstream third-party `@openai/agents` and `zod` dependencies are exact npm pins.
 Use `node tests/verify-git-install.mjs <sha>` after delivery to test normal
 prepare, installed exports, lockfile and consumer types.
 
+### Consumer type and lock contract
+
+The qualified runtime is Node 22.23.1. `engines.node >=22` expresses the runtime
+floor; it does not qualify newer Node majors. For TypeScript 5.9.3 consumers,
+pin `@types/node` to **22.20.4** in the application's own devDependencies. The
+SDK's devDependency pin only controls its build during Git installation; it is
+not inherited by applications. Strict NodeNext and ESNext/Bundler consumer
+checks both run with `skipLibCheck: false`. The Bundler fixture also qualifies
+`@types/node` **22.18.0**, direct `@openai/agents` **0.18.0** / `zod` **4.3.6**
+dependencies, and the typed headless worker's provider/model/tool composition.
+No other runtime/type version combination is qualified here.
+
+A minimal application manifest contains these entries (replace the placeholder
+with the full delivered SHA):
+
+```json
+{
+  "type": "module",
+  "dependencies": {
+    "handrail-agent-sdk": "git+https://git@github.com/c0x65o/handrail-agent-sdk.git#FULL_40_CHARACTER_DELIVERED_SHA"
+  },
+  "devDependencies": {
+    "@types/node": "22.20.4",
+    "typescript": "5.9.3"
+  }
+}
+```
+
+If the application imports Agents or Zod directly, declare their exact versions
+above as direct dependencies too. Do not depend on incidental npm hoisting for
+application imports. The installed runtime qualification additionally imports
+the installed transitive OpenAI client to mock its transport; this is test code.
+
+With npm 10.9.8, a bare public GitHub HTTPS URL becomes
+`git+ssh://git@github.com/…` in the generated lock. Use the exact **HTTPS** URL
+form above, including the literal `git@` username. This is a public transport
+selector for npm's GitHub resolver, not an SSH URL, password, token, private key,
+or new credential. The repository remains publicly readable without
+credentials. npm/pacote preserves HTTPS when that username is present.
+
+```sh
+npm install --include=dev
+GIT_ALLOW_PROTOCOL=https GIT_TERMINAL_PROMPT=0 npm ci --include=dev
+```
+
+Commit the application's manifest and generated lock together. The SDK manifest
+dependency, root lock dependency, and SDK `resolved` lock entry must all equal
+`git+https://git@github.com/c0x65o/handrail-agent-sdk.git#<full-sha>` exactly.
+Do not hand-edit an SSH lock into apparent compliance: npm can canonicalize the
+installed metadata back to SSH. Generate it with the HTTPS URL form instead.
+`prepare` still builds the SDK during ordinary installation. npm may internally
+download a GitHub archive over HTTPS for a Git dependency; the dependency and
+lock remain full-SHA Git URLs, never tarball dependencies.
+
+The authoritative verifier automates this sequence using **separate empty caches**
+for install and `npm ci`, disables Git credentials/global rewrites and all Git
+protocols except HTTPS, asserts the root and installed lock URLs exactly, then
+checks installed exports, strict declarations and real installed Runner behavior.
+It rejects SSH even when the SHA suffix matches. Neither lockfile is rewritten
+by the test.
+
+The unpinned failure is reproducible with:
+
+```sh
+node tests/verify-git-install.mjs 4d1f995e2bf337fb4ad9552bb675dade0f633fdb --reproduce-default
+```
+
+That diagnostic expects failure and is separate from the passing supported
+matrix. `@types/ws` requests `@types/node: "*"`; without the application pin,
+Node 26.6.3 declarations conflict with Agents 0.18.0 event-emitter overrides.
+Do not suppress those errors, patch installed declarations, or widen the
+runtime's supported type contract to Node 26.
+
 Replace the former `createReferenceWorker` / deterministic step callback with
 `createAgentRuntime`; that executor and its fallback path have been removed.
 The canonical public root replaces the unused copied consumer candidate.

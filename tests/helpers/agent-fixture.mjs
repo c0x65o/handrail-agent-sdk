@@ -58,6 +58,8 @@ export function modelBoundary(scenario = 'inventory', hooks = {}) {
 }
 export async function services(schema, keyHex, options = {}) {
   if (!/^sdk_test_[a-f0-9]{32}$/.test(schema)) throw Error('FIXTURE_SCHEMA');
+  // Installed-consumer qualification supplies factories from its public exports.
+  const sdk = options.sdk ?? { createAgentRuntime, createJobLease, createEffects, createJobCancellation, createJobAnswer };
   const pool = new pg.Pool({ connectionString: process.env.HANDRAIL_TEST_POSTGRES_URL,
     options: '-c search_path=pg_catalog', max: 5, statement_timeout: 4000 });
   const db = referenceDatabase(pool), tables = journalTables(schema);
@@ -85,7 +87,7 @@ export async function services(schema, keyHex, options = {}) {
   };
   const key = createSecretKey(Buffer.from(keyHex,'hex'));
   const states = createAgentStateStore(db,{ current: async () => ({ ref: 'fixture-key', key }), resolve: async () => key },schema);
-  const lease = createJobLease(host,createJobLeaseStore(db,tables));
+  const lease = sdk.createJobLease(host,createJobLeaseStore(db,tables));
   const providerTable = `"${schema}"."synthetic_provider"`;
   const adapter = {
     async dispatch(r) {
@@ -100,7 +102,7 @@ export async function services(schema, keyHex, options = {}) {
         : { outcome: 'not_applied', evidenceRef: 'synthetic-serial-provider-proof' };
     },
   };
-  const effects = createEffects(host,createEffectStore(db,tables),adapter,3000);
+  const effects = sdk.createEffects(host,createEffectStore(db,tables),adapter,3000);
   const events = [], calls = [];
   const tools = [
     { name: 'lookup', description: 'Read synthetic fixture facts.', kind: 'read', parameters: z.object({ topic: z.string().max(40) }).strict(),
@@ -116,10 +118,10 @@ export async function services(schema, keyHex, options = {}) {
   ];
   if (options.reserve) tools[2] = options.reserve;
   const model = options.model ?? modelBoundary(options.scenario,options.modelHooks);
-  const runtime = createAgentRuntime({ definitionRef: 'fixture-agent-v1', instructions: 'Use only the synthetic tools. Recover from read errors.',
+  const runtime = sdk.createAgentRuntime({ definitionRef: 'fixture-agent-v1', instructions: 'Use only the synthetic tools. Recover from read errors.',
     model, tools, host, admission, journal, lease, states, effects, limits: {...limits,...options.limits}, observe: e => { events.push(e); options.observe?.(e); } });
   return { runtime, pool, journal, admission, lease, states, authority, host, state, events, calls, model,
-    cancel: createJobCancellation(host,createJobCancellationStore(db,tables)),
-    answer: createJobAnswer(host,createJobAnswerStore(db,tables)),
+    cancel: sdk.createJobCancellation(host,createJobCancellationStore(db,tables)),
+    answer: sdk.createJobAnswer(host,createJobAnswerStore(db,tables)),
     close: async () => { await runtime.stop(); await pool.end(); } };
 }
