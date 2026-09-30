@@ -6,6 +6,42 @@ import { createPostgresHarness } from '../.postgres-build/postgres.js';
 import { migrations } from './helpers/migrations.mjs';
 import { services, identity, modelBoundary, requirement } from './helpers/agent-fixture.mjs';
 const ok = r => { assert.equal(r.ok,true,r.code); return r.value; };
+
+test('host structured history survives an approval checkpoint without flattening roles or image references', async t => {
+  const input = [{ role: 'user', content: [{ type: 'input_text', text: 'Check this controlled fixture.' },
+    { type: 'input_image', image: 'fixture-image-reference', detail: 'low' }] },
+    { role: 'assistant', content: [{ type: 'output_text', text: 'I will inspect the fixture.' }], status: 'completed' }];
+  const s = await setup(t, { wait: true, host: { input: async () => input } });
+  assert.equal(ok(await s.runtime.wake(identity)), 'waiting');
+  const checkpoint = ok(await s.states.load(identity, s.authority()));
+  assert.deepEqual(checkpoint.input, input);
+  assert.ok(checkpoint.state.includes('fixture-image-reference'));
+  const next = await services(s.harness.schema, s.key); t.after(() => next.close());
+  assert.deepEqual(ok(await next.states.load(identity, next.authority())).input, input);
+});
+
+test('verified effects expose bounded host results and a failed result read never repeats the effect', async t => {
+  let reads = 0;
+  const s = await setup(t, { readEffectResult: async (_call, receipt) => {
+    assert.equal(receipt.outcome, 'verified');
+    if (++reads === 1) throw Error('private result read unavailable');
+    return JSON.stringify({ canonicalRecordId: 'synthetic-reservation', version: 1 });
+  } });
+  const first = await s.runtime.wake(identity);
+  assert.equal(ok(first), 'retryable');
+  assert.equal(ok(await s.runtime.wake(identity)), 'succeeded');
+  const state = ok(await s.states.load(identity, s.authority()));
+  assert.ok(Object.values(state.results).some(r => r.output.includes('synthetic-reservation')));
+  assert.equal((await s.client.query(`SELECT sum(attempts)::int AS attempts FROM ${s.harness.table('synthetic_provider')}`)).rows[0].attempts, 1);
+  assert.ok(!JSON.stringify(state).includes('private result read unavailable'));
+});
+
+test('unknown effects cannot release a domain result', async t => {
+  let reads = 0;
+  const s = await setup(t, { state: { uncertain: true }, readEffectResult: async () => { reads++; return 'must not escape'; } });
+  assert.equal(ok(await s.runtime.wake(identity)), 'waiting');
+  assert.equal(reads, 0);
+});
 async function setup(t,options = {}) {
   const harness = await createPostgresHarness(); t.after(() => harness.cleanup());
   const client = await harness.client(); await migrations(t,harness,client);
@@ -249,4 +285,19 @@ test('official OpenAI Responses provider/client drive Runner through simulated H
   const state=ok(await s.states.load(identity,s.authority()));
   assert.equal(state.output,'HTTP transport completed.');assert.equal(state.usage.requests,4);
   assert.equal((await s.client.query(`SELECT sum(attempts)::int AS attempts FROM ${s.harness.table('synthetic_provider')}`)).rows[0].attempts,1);
+});
+
+test('current catalog hides unauthorized tools and opaque attachments resolve only at model boundary', async t => {
+  const history=[{role:'user',content:[{type:'input_image',image:'opaque:owned-image'}]}];
+  let prepared=0, seen=0;
+  const s=await setup(t,{host:{input:async()=>history,visibleTools:async()=>['lookup'],
+    prepareModelInput:async(_identity,input)=>{prepared++;assert.equal(input[0].content[0].image,'opaque:owned-image');return [{role:'user',content:[{type:'input_text',text:'authorized attachment fixture'}]}];}},
+    model:{async getResponse(){throw Error('stream expected');},async *getStreamedResponse(request){
+      seen++;assert.deepEqual(request.tools.map(t=>t.name),['lookup']);assert.equal(request.input[0].content[0].text,'authorized attachment fixture');
+      yield {type:'response_done',response:{id:'attachment-response',usage:{requests:1,inputTokens:1,outputTokens:1,totalTokens:2},
+        output:[{type:'message',role:'assistant',status:'completed',content:[{type:'output_text',text:'Attachment inspected.'}]}]}};
+    }}});
+  assert.equal(ok(await s.runtime.wake(identity)),'succeeded');assert.equal(prepared,1);assert.equal(seen,1);
+  const state=ok(await s.states.load(identity,s.authority()));assert.deepEqual(state.input,history);
+  assert.ok(!JSON.stringify(state).includes('authorized attachment fixture'));
 });

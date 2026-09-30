@@ -6,6 +6,12 @@ import { createAgentRuntime } from 'handrail-agent-sdk/server/agents';
 import * as server from 'handrail-agent-sdk/server';
 import { OpenAIProvider } from '@openai/agents';
 import OpenAI from 'openai';
+import { createAssistance } from 'handrail-agent-sdk/server/assistance';
+import { createPostgresAssistanceStore, assistancePostgresSchema } from 'handrail-agent-sdk/server/assistance/postgres';
+import { createAgentCheckpointReader } from 'handrail-agent-sdk/server/application';
+import { createApplicationAgentTools } from 'handrail-agent-sdk/server/application-tools';
+import { createNotificationDelivery } from 'handrail-agent-sdk/server/assistance/notifications';
+import { createHandrailFeedbackObserver } from 'handrail-agent-sdk/server/handrail-feedback';
 
 export async function verifyInstalledRuntime(t, { createPostgresHarness, migrations, services, identity }) {
   const ok = result => { assert.equal(result.ok, true, result.code); return result.value; };
@@ -46,4 +52,20 @@ export async function verifyInstalledRuntime(t, { createPostgresHarness, migrati
   assert.equal(ok(await s.journal.load(identity)).effects[0].outcome, 'verified');
   assert.equal((await db.query(`SELECT sum(attempts)::int AS attempts FROM ${harness.table('synthetic_provider')}`)).rows[0].attempts, 1);
   t.diagnostic('Installed Agent/Runner + official OpenAI client; mocked SSE transport; 4 responses, 3 tools, 1 effect; duplicate wake repeated neither model nor effect.');
+  for (const factory of [createAgentCheckpointReader, createApplicationAgentTools, createNotificationDelivery, createHandrailFeedbackObserver]) assert.equal(typeof factory, 'function');
+  await db.query(assistancePostgresSchema(harness.schema));
+  const now = Date.parse('2027-01-01T00:00Z');
+  const options = { host: { now: () => now, withAuthority: async (_key, _operation, run) => run() },
+    batchSize: 10, readTimeoutMs: 1000, adapters: { machine: { read: async (_key, spec) => ({
+      subjectRef: spec.subjectRef, status: 'matched', observedAt: now, evidenceRef: 'sensor:verified' }) } } };
+  const assistance = createAssistance({ ...options, store: createPostgresAssistanceStore(db, harness.schema) });
+  const key = { scope: identity.host, id: 'industrial-inspection' };
+  await assistance.create(key, 'create-inspection', { kind: 'watch', adapterRef: 'machine', subjectRef: 'pump:inspection',
+    contentRef: 'work-order', pollMs: 1000, maxAgeMs: 5000, expiresAt: now + 60000 });
+  await assistance.tick();
+  const rebuilt = createAssistance({ ...options, store: createPostgresAssistanceStore(await harness.client(), harness.schema) });
+  await rebuilt.tick();
+  assert.equal((await rebuilt.get(key)).state, 'completed');
+  assert.equal((await rebuilt.facts(identity.host)).length, 1);
+  t.diagnostic('Installed assistance exports + disposable PostgreSQL: industrial watch reconstructed with one durable notification fact. Sensor/model boundaries simulated.');
 }

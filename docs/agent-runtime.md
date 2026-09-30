@@ -6,6 +6,9 @@ validated tool dispatch, tool-result continuation, streaming and RunState.
 Handrail still owns durable admission, permissions, leases, cancellation,
 answers, effects, scheduling, encrypted state and Vault custody.
 
+For the reusable schedule/watch, notification, canonical feedback and existing
+application-gateway adapters, see [assistance composition](assistance.md).
+
 ## Installation and migration
 
 Install the public HTTPS Git repository at the full committed SHA returned by
@@ -108,6 +111,37 @@ only in a host that chooses this reference schema. It stores AES-GCM envelopes
 with job identity, version, grant and key reference in authenticated data. The
 host supplies managed key custody and old key resolution; no keys are stored in
 SQL. The reference schema is not Handrail's native task database.
+
+### Structured application input and verified domain results
+
+`AgentRuntimeHost.input` also accepts `AgentInputItem[]`. Hosts migrating an
+existing conversation must preserve message roles and tool/result pairing rather
+than concatenate history into one user message. The encrypted checkpoint retains
+that structured input across approval waits and process recovery. Existing string
+checkpoints remain compatible. These items are trusted host input, never a client
+submission of an arbitrary Agent history. Existing context/state byte limits
+still apply; this is not permission to store unbounded attachment bytes.
+
+Multimodal references remain host-owned: resolve and authorize them immediately
+before provider dispatch with the injected Model adapter. The runtime does not
+authorize URLs, download attachments, or make a reference safe by accepting it.
+Hosts must retain their existing owned-file checks and should retain opaque
+references rather than expiring URLs or credentials in checkpoints.
+
+An effect tool may supply `readResult(call, verifiedReceipt, signal)` to read the
+canonical domain result after the effect service has verified its receipt. This
+is useful when subsequent steps need the created record ID and current version.
+The callback runs inside `withToolAuthority`, must only read/filter, and is bounded
+by the existing result size limit. It may run again after a crash. An error must
+not dispatch the mutation again; the effect ledger reuses its verified receipt.
+Unknown effects still enter reconciliation and never call `readResult`. Omitting
+the callback preserves receipt-only output. It does not replace host verification,
+approval, authorization, or the effect ledger.
+
+These additions need their own committed/public Git revision before a consumer
+can adopt them. The Mills integration retains its published 0.1.4 pin until the
+SDK delivery pipeline publishes the reviewed change; a local source build is not
+a consumer dependency.
 
 ## Execution and recovery
 

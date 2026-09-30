@@ -1,0 +1,178 @@
+Fresh isolated PostgreSQL 15 cluster initialized; dedicated disposable database and non-superuser fixture role; connection values withheld.
+
+> handrail-agent-sdk@0.1.4 test:assistance
+> npm run build && npm run build:reference && npm run build:test-postgres && node --test --test-concurrency=1 --test-reporter=tap tests/assistance.test.mjs tests/agent-transport.test.mjs
+
+
+> handrail-agent-sdk@0.1.4 build
+> tsc -p tsconfig.json
+
+
+> handrail-agent-sdk@0.1.4 build:reference
+> tsc -p reference/tsconfig.json
+
+
+> handrail-agent-sdk@0.1.4 build:test-postgres
+> tsc -p tests/tsconfig.postgres.json
+
+TAP version 13
+# Subtest: gateway transport uses actual Runner, durable output and reconnect cursor; disconnect does not Stop
+not ok 1 - gateway transport uses actual Runner, durable output and reconnect cursor; disconnect does not Stop
+  ---
+  duration_ms: 1826.539392
+  type: 'test'
+  location: '/opt/handrail/repos/handrail/handrail-agent-sdk/handrail-agent-sdk/tests/agent-transport.test.mjs:47:1'
+  failureType: 'hookFailed'
+  error: 'POSTGRES_CLEANUP_FAILED'
+  code: 'ERR_TEST_FAILURE'
+  stack: |-
+    failure (file:///opt/handrail/repos/handrail/handrail-agent-sdk/handrail-agent-sdk/.postgres-build/postgres.js:5:27)
+    Object.cleanup (file:///opt/handrail/repos/handrail/handrail-agent-sdk/handrail-agent-sdk/.postgres-build/postgres.js:165:19)
+    process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    async TestHook.run (node:internal/test_runner/test:1054:7)
+    async Test.runHook (node:internal/test_runner/test:965:9)
+    async after (node:internal/test_runner/test:1005:9)
+    async Test.run (node:internal/test_runner/test:1070:7)
+    async startSubtestAfterBootstrap (node:internal/test_runner/harness:296:3)
+  ...
+# Subtest: transport explicit Stop is durable; changed identity cannot reconnect or cancel
+ok 2 - transport explicit Stop is durable; changed identity cannot reconnect or cancel
+  ---
+  duration_ms: 370.969579
+  type: 'test'
+  ...
+# Subtest: approval wait remains durable on reconnect; only verified answer can resume execution
+ok 3 - approval wait remains durable on reconnect; only verified answer can resume execution
+  ---
+  duration_ms: 501.330304
+  type: 'test'
+  ...
+# Subtest: standard reader emits validated native protocol frames and stable replay identities
+ok 4 - standard reader emits validated native protocol frames and stable replay identities
+  ---
+  duration_ms: 729.597311
+  type: 'test'
+  ...
+# Subtest: application catalog adapter preserves validation, read/mutation classification and stable native tool identity
+ok 5 - application catalog adapter preserves validation, read/mutation classification and stable native tool identity
+  ---
+  duration_ms: 4.979922
+  type: 'test'
+  ...
+# Subtest: existing assistant durable wrapper consumes the Agent transport with native protocol checkpoints
+not ok 6 - existing assistant durable wrapper consumes the Agent transport with native protocol checkpoints
+  ---
+  duration_ms: 222.746814
+  type: 'test'
+  location: '/opt/handrail/repos/handrail/handrail-agent-sdk/handrail-agent-sdk/tests/agent-transport.test.mjs:106:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly equal:
+    
+    false !== true
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: true
+  actual: false
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///opt/handrail/repos/handrail/handrail-agent-sdk/handrail-agent-sdk/tests/agent-transport.test.mjs:120:56)
+    process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: wall clock: gaps, folds, quarter-hour zones and no arbitrary one-year horizon
+ok 7 - wall clock: gaps, folds, quarter-hour zones and no arbitrary one-year horizon
+  ---
+  duration_ms: 77.81403
+  type: 'test'
+  ...
+# Subtest: durable schedule, duplicate creation, immutable binding, concurrent delivery and reconstruction
+ok 8 - durable schedule, duplicate creation, immutable binding, concurrent delivery and reconstruction
+  ---
+  duration_ms: 95.157774
+  type: 'test'
+  ...
+# Subtest: reschedule retries keep receipt and cancel serializes with delivery; scope/current identity checks
+ok 9 - reschedule retries keep receipt and cancel serializes with delivery; scope/current identity checks
+  ---
+  duration_ms: 82.656127
+  type: 'test'
+  ...
+# Subtest: watch landing fixtures: delayed and stale never imply arrival; one durable match after restart
+ok 10 - watch landing fixtures: delayed and stale never imply arrival; one durable match after restart
+  ---
+  duration_ms: 73.005811
+  type: 'test'
+  ...
+# Subtest: cancelled flight, wrong occurrence, future and reordered observations cannot notify arrival
+ok 11 - cancelled flight, wrong occurrence, future and reordered observations cannot notify arrival
+  ---
+  duration_ms: 60.531557
+  type: 'test'
+  ...
+# Subtest: materially different consumer: industrial pump inspection watch uses the same lifecycle and adapter
+ok 12 - materially different consumer: industrial pump inspection watch uses the same lifecycle and adapter
+  ---
+  duration_ms: 53.435704
+  type: 'test'
+  ...
+# Subtest: batch size bounds work, not user capability; fair catch-up and expiration
+ok 13 - batch size bounds work, not user capability; fair catch-up and expiration
+  ---
+  duration_ms: 73.824162
+  type: 'test'
+  ...
+# Subtest: notification delivery reuses effect ledger: concurrent retry, reconstruction and uncertain remote result
+ok 14 - notification delivery reuses effect ledger: concurrent retry, reconstruction and uncertain remote result
+  ---
+  duration_ms: 446.698301
+  type: 'test'
+  ...
+# Subtest: canonical readiness requires verified matching environment and target containment, not worker success
+ok 15 - canonical readiness requires verified matching environment and target containment, not worker success
+  ---
+  duration_ms: 0.411481
+  type: 'test'
+  ...
+# Subtest: canonical feedback fixture status/questions/approvals wait and verified-ready notification survive reconstruction
+ok 16 - canonical feedback fixture status/questions/approvals wait and verified-ready notification survive reconstruction
+  ---
+  duration_ms: 68.61486
+  type: 'test'
+  ...
+# Subtest: canonical submission adapter retains stable dedupe key and canonical ID; uncertainty never means retry
+ok 17 - canonical submission adapter retains stable dedupe key and canonical ID; uncertainty never means retry
+  ---
+  duration_ms: 1.274973
+  type: 'test'
+  ...
+# Subtest: durable mandate revocation is terminal even when account access returns
+ok 18 - durable mandate revocation is terminal even when account access returns
+  ---
+  duration_ms: 54.445955
+  type: 'test'
+  ...
+# Subtest: a crash/failure before transaction commit rolls back both lifecycle and inbox fact
+ok 19 - a crash/failure before transaction commit rolls back both lifecycle and inbox fact
+  ---
+  duration_ms: 77.111417
+  type: 'test'
+  ...
+# Subtest: shared worker coalesces wakeups, drains on shutdown and leaves durable intent intact
+ok 20 - shared worker coalesces wakeups, drains on shutdown and leaves durable intent intact
+  ---
+  duration_ms: 57.661336
+  type: 'test'
+  ...
+1..20
+# tests 20
+# suites 0
+# pass 18
+# fail 2
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 14772.308157
+Owned temporary PostgreSQL cluster stopped.

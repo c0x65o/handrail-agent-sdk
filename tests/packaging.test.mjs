@@ -163,3 +163,18 @@ test('OpenAI Agents server entrypoint imports without starting a worker or provi
   `]);
   assert.deepEqual(JSON.parse(output), ['createAgentRuntime']);
 });
+
+test('assistance/application public subpaths import without background services', () => {
+  const output=runNode(['--input-type=module','--eval',`
+    const result={};
+    for(const path of ['assistance','assistance/postgres','assistance/notifications','handrail-feedback','application','application-tools']) {
+      result[path]=Object.keys(await import('handrail-agent-sdk/server/'+path));
+    }
+    console.log(JSON.stringify(result));
+  `]);
+  const entries=JSON.parse(output);
+  assert.ok(entries.assistance.includes('createAssistance'));
+  assert.ok(entries['assistance/postgres'].includes('createPostgresAssistanceStore'));
+  assert.ok(entries.application.includes('createAgentCheckpointReader'));
+  assert.ok(entries['application-tools'].includes('createApplicationAgentTools'));
+});

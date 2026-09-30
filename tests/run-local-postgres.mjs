@@ -37,7 +37,7 @@ try {
   console.log('Fresh isolated PostgreSQL 15 cluster initialized; dedicated disposable database and non-superuser fixture role; connection values withheld.');
   const installedConsumer = process.argv[2] === '--installed-consumer' ? process.argv[3] : null;
   const suites = installedConsumer ? [] : process.argv.slice(2);
-  const allowed = ['test:connection-store', 'test:browser-profile', 'test:vault-request', 'test:payment-vault', 'test:vault-entry', 'test:vault-use', 'test:vault-lifecycle', 'test:vault', 'test:lease', 'test:effects', 'test:cancel', 'test:answer', 'test:agents', 'test:submit', 'test:journal', 'test:postgres'];
+  const allowed = ['test:assistance', 'test:connection-store', 'test:browser-profile', 'test:vault-request', 'test:payment-vault', 'test:vault-entry', 'test:vault-use', 'test:vault-lifecycle', 'test:vault', 'test:lease', 'test:effects', 'test:cancel', 'test:answer', 'test:agents', 'test:submit', 'test:journal', 'test:postgres'];
   if (suites.some(suite => !allowed.includes(suite))) throw Error('INVALID_FIXTURE_SUITE');
   if (installedConsumer) {
     result = spawnSync(process.execPath, ['--test', '--test-concurrency=1', '--test-reporter=tap', 'tests/installed-agent-runtime.test.mjs'], {

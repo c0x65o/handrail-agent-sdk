@@ -1,0 +1,4695 @@
+
+> handrail-agent-sdk@0.1.4 pretest
+> npm run build && npm run typecheck:acceptance && npm run build:test-postgres && npm run build:reference
+
+
+> handrail-agent-sdk@0.1.4 build
+> tsc -p tsconfig.json
+
+
+> handrail-agent-sdk@0.1.4 typecheck:acceptance
+> tsc -p tests/fixtures/tsconfig.acceptance.json
+
+
+> handrail-agent-sdk@0.1.4 build:test-postgres
+> tsc -p tests/tsconfig.postgres.json
+
+
+> handrail-agent-sdk@0.1.4 build:reference
+> tsc -p reference/tsconfig.json
+
+
+> handrail-agent-sdk@0.1.4 test
+> node --test --test-concurrency=1 --test-reporter=tap tests/contracts/job.test.mjs tests/contracts/connection.test.mjs tests/contracts/vault.test.mjs tests/contracts/browser.test.mjs tests/packaging.test.mjs tests/git-lock.test.mjs tests/acceptance.test.mjs
+
+TAP version 13
+# Subtest: valid baseline: contract-compatible fixture, all cases still unverified
+ok 1 - valid baseline: contract-compatible fixture, all cases still unverified
+  ---
+  duration_ms: 9.905655
+  type: 'test'
+  ...
+# Subtest: duplicate case IDs are rejected
+ok 2 - duplicate case IDs are rejected
+  ---
+  duration_ms: 1.71751
+  type: 'test'
+  ...
+# Subtest: missing coverage: M1
+ok 3 - missing coverage: M1
+  ---
+  duration_ms: 1.112623
+  type: 'test'
+  ...
+# Subtest: missing coverage: M2
+ok 4 - missing coverage: M2
+  ---
+  duration_ms: 0.986824
+  type: 'test'
+  ...
+# Subtest: missing coverage: M3
+ok 5 - missing coverage: M3
+  ---
+  duration_ms: 0.900267
+  type: 'test'
+  ...
+# Subtest: missing coverage: M4
+ok 6 - missing coverage: M4
+  ---
+  duration_ms: 1.448839
+  type: 'test'
+  ...
+# Subtest: missing coverage: M5
+ok 7 - missing coverage: M5
+  ---
+  duration_ms: 1.008121
+  type: 'test'
+  ...
+# Subtest: missing coverage: M6
+ok 8 - missing coverage: M6
+  ---
+  duration_ms: 0.891632
+  type: 'test'
+  ...
+# Subtest: removing one promise while retaining all milestones is rejected
+ok 9 - removing one promise while retaining all milestones is rejected
+  ---
+  duration_ms: 1.242878
+  type: 'test'
+  ...
+# Subtest: both-host acceptance cannot silently drop a host
+ok 10 - both-host acceptance cannot silently drop a host
+  ---
+  duration_ms: 1.655094
+  type: 'test'
+  ...
+# Subtest: unsupported result claim: passed/2/0
+ok 11 - unsupported result claim: passed/2/0
+  ---
+  duration_ms: 0.633228
+  type: 'test'
+  ...
+# Subtest: unsupported result claim: passed/2/1
+ok 12 - unsupported result claim: passed/2/1
+  ---
+  duration_ms: 0.482086
+  type: 'test'
+  ...
+# Subtest: unsupported result claim: provider_verified/2/1
+ok 13 - unsupported result claim: provider_verified/2/1
+  ---
+  duration_ms: 0.459521
+  type: 'test'
+  ...
+# Subtest: unsupported result claim: unverified/2/1
+ok 14 - unsupported result claim: unverified/2/1
+  ---
+  duration_ms: 0.447799
+  type: 'test'
+  ...
+# Subtest: unsupported result claim: unverified/3/0
+ok 15 - unsupported result claim: unverified/3/0
+  ---
+  duration_ms: 0.629637
+  type: 'test'
+  ...
+# Subtest: boolean ready cannot replace expected acceptance
+ok 16 - boolean ready cannot replace expected acceptance
+  ---
+  duration_ms: 0.510267
+  type: 'test'
+  ...
+# Subtest: required evidence and failure conditions cannot be omitted
+ok 17 - required evidence and failure conditions cannot be omitted
+  ---
+  duration_ms: 0.93379
+  type: 'test'
+  ...
+# Subtest: provider proof cannot be downgraded to fixture proof
+ok 18 - provider proof cannot be downgraded to fixture proof
+  ---
+  duration_ms: 1.053446
+  type: 'test'
+  ...
+# Subtest: fixture receipt cannot be relabelled as provider
+ok 19 - fixture receipt cannot be relabelled as provider
+  ---
+  duration_ms: 3.10765
+  type: 'test'
+  ...
+# Subtest: coordinated provider promotion cannot create a provider workflow
+ok 20 - coordinated provider promotion cannot create a provider workflow
+  ---
+  duration_ms: 1.305508
+  type: 'test'
+  ...
+# Subtest: original identity survives restart: jobId
+ok 21 - original identity survives restart: jobId
+  ---
+  duration_ms: 2.391539
+  type: 'test'
+  ...
+# Subtest: original identity survives restart: originTaskRef
+ok 22 - original identity survives restart: originTaskRef
+  ---
+  duration_ms: 3.712654
+  type: 'test'
+  ...
+# Subtest: original identity survives restart: requestKey
+ok 23 - original identity survives restart: requestKey
+  ---
+  duration_ms: 2.012676
+  type: 'test'
+  ...
+# Subtest: original identity survives restart: instructionRevision
+ok 24 - original identity survives restart: instructionRevision
+  ---
+  duration_ms: 2.754157
+  type: 'test'
+  ...
+# Subtest: original identity survives restart: host.tenantRef
+ok 25 - original identity survives restart: host.tenantRef
+  ---
+  duration_ms: 2.744694
+  type: 'test'
+  ...
+# Subtest: original identity survives restart: host.userRef
+ok 26 - original identity survives restart: host.userRef
+  ---
+  duration_ms: 2.240019
+  type: 'test'
+  ...
+# Subtest: original identity survives restart: host.projectRef
+ok 27 - original identity survives restart: host.projectRef
+  ---
+  duration_ms: 2.136649
+  type: 'test'
+  ...
+# Subtest: original identity survives restart: host.accountRef
+ok 28 - original identity survives restart: host.accountRef
+  ---
+  duration_ms: 2.817771
+  type: 'test'
+  ...
+# Subtest: original identity survives restart: host.environmentRef
+ok 29 - original identity survives restart: host.environmentRef
+  ---
+  duration_ms: 2.118535
+  type: 'test'
+  ...
+# Subtest: original identity survives restart: host.purposeRef
+ok 30 - original identity survives restart: host.purposeRef
+  ---
+  duration_ms: 3.099067
+  type: 'test'
+  ...
+# Subtest: original identity survives restart: native.requestRef
+ok 31 - original identity survives restart: native.requestRef
+  ---
+  duration_ms: 2.250616
+  type: 'test'
+  ...
+# Subtest: original identity survives restart: native.rootTaskRef
+ok 32 - original identity survives restart: native.rootTaskRef
+  ---
+  duration_ms: 3.510059
+  type: 'test'
+  ...
+# Subtest: original identity survives restart: native.actionRef
+ok 33 - original identity survives restart: native.actionRef
+  ---
+  duration_ms: 2.470345
+  type: 'test'
+  ...
+# Subtest: original identity survives restart: native.operationRef
+ok 34 - original identity survives restart: native.operationRef
+  ---
+  duration_ms: 3.322886
+  type: 'test'
+  ...
+# Subtest: original identity survives restart: native.effectRef
+ok 35 - original identity survives restart: native.effectRef
+  ---
+  duration_ms: 2.550871
+  type: 'test'
+  ...
+# Subtest: original identity survives restart: native.sourceQueue.queueRef
+ok 36 - original identity survives restart: native.sourceQueue.queueRef
+  ---
+  duration_ms: 2.62922
+  type: 'test'
+  ...
+# Subtest: original identity survives restart: native.sourceQueue.messageRef
+ok 37 - original identity survives restart: native.sourceQueue.messageRef
+  ---
+  duration_ms: 2.684021
+  type: 'test'
+  ...
+# Subtest: original identity survives restart: origin.channelRef
+ok 38 - original identity survives restart: origin.channelRef
+  ---
+  duration_ms: 2.792128
+  type: 'test'
+  ...
+# Subtest: original identity survives restart: origin.routeRef
+ok 39 - original identity survives restart: origin.routeRef
+  ---
+  duration_ms: 2.770776
+  type: 'test'
+  ...
+# Subtest: original identity survives restart: origin.correlationRef
+ok 40 - original identity survives restart: origin.correlationRef
+  ---
+  duration_ms: 3.181008
+  type: 'test'
+  ...
+# Subtest: coordinated rewrite of every original identity still differs from typed fixture
+ok 41 - coordinated rewrite of every original identity still differs from typed fixture
+  ---
+  duration_ms: 6.441276
+  type: 'test'
+  ...
+# Subtest: connection effect identity preserved: actionRef
+ok 42 - connection effect identity preserved: actionRef
+  ---
+  duration_ms: 1.687781
+  type: 'test'
+  ...
+# Subtest: connection effect identity preserved: operationRef
+ok 43 - connection effect identity preserved: operationRef
+  ---
+  duration_ms: 1.531973
+  type: 'test'
+  ...
+# Subtest: connection effect identity preserved: effectRef
+ok 44 - connection effect identity preserved: effectRef
+  ---
+  duration_ms: 2.310023
+  type: 'test'
+  ...
+# Subtest: stale answer revision is rejected
+ok 45 - stale answer revision is rejected
+  ---
+  duration_ms: 1.968439
+  type: 'test'
+  ...
+# Subtest: challenge identity cannot change on reconnect
+ok 46 - challenge identity cannot change on reconnect
+  ---
+  duration_ms: 1.385622
+  type: 'test'
+  ...
+# Subtest: duplicate cannot append a new journal event
+ok 47 - duplicate cannot append a new journal event
+  ---
+  duration_ms: 1.473302
+  type: 'test'
+  ...
+# Subtest: restart cannot advance journal revision
+ok 48 - restart cannot advance journal revision
+  ---
+  duration_ms: 2.10289
+  type: 'test'
+  ...
+# Subtest: delivery attempts stay distinct from logical identity
+ok 49 - delivery attempts stay distinct from logical identity
+  ---
+  duration_ms: 1.572931
+  type: 'test'
+  ...
+# Subtest: ready evidence is scoped: tenantRef
+ok 50 - ready evidence is scoped: tenantRef
+  ---
+  duration_ms: 2.302889
+  type: 'test'
+  ...
+# Subtest: ready evidence is scoped: accountRef
+ok 51 - ready evidence is scoped: accountRef
+  ---
+  duration_ms: 2.571045
+  type: 'test'
+  ...
+# Subtest: ready evidence is scoped: environmentRef
+ok 52 - ready evidence is scoped: environmentRef
+  ---
+  duration_ms: 2.197929
+  type: 'test'
+  ...
+# Subtest: expired fixture capability evidence is rejected
+ok 53 - expired fixture capability evidence is rejected
+  ---
+  duration_ms: 2.255669
+  type: 'test'
+  ...
+# Subtest: changed capability ceiling is rejected
+ok 54 - changed capability ceiling is rejected
+  ---
+  duration_ms: 2.669422
+  type: 'test'
+  ...
+# Subtest: unknown effect stays accounted for in the journal
+ok 55 - unknown effect stays accounted for in the journal
+  ---
+  duration_ms: 2.735878
+  type: 'test'
+  ...
+# Subtest: restart cannot resolve an unknown effect
+ok 56 - restart cannot resolve an unknown effect
+  ---
+  duration_ms: 3.564661
+  type: 'test'
+  ...
+# Subtest: no unsupported connection reconciliation transition is admitted
+ok 57 - no unsupported connection reconciliation transition is admitted
+  ---
+  duration_ms: 3.051289
+  type: 'test'
+  ...
+# Subtest: undeclared data is rejected with no payload reflection
+ok 58 - undeclared data is rejected with no payload reflection
+  ---
+  duration_ms: 5.909392
+  type: 'test'
+  ...
+# Subtest: only fixed timestamps and reviewed synthetic aliases are allowed
+ok 59 - only fixed timestamps and reviewed synthetic aliases are allowed
+  ---
+  duration_ms: 6.331914
+  type: 'test'
+  ...
+# Subtest: invalid inputs return fixed codes and do not throw
+ok 60 - invalid inputs return fixed codes and do not throw
+  ---
+  duration_ms: 1.008087
+  type: 'test'
+  ...
+# Subtest: accept representative action navigate/
+ok 61 - accept representative action navigate/
+  ---
+  duration_ms: 4.761687
+  type: 'test'
+  ...
+# Subtest: accept representative action inspect/
+ok 62 - accept representative action inspect/
+  ---
+  duration_ms: 0.814821
+  type: 'test'
+  ...
+# Subtest: accept representative action locate/
+ok 63 - accept representative action locate/
+  ---
+  duration_ms: 0.774673
+  type: 'test'
+  ...
+# Subtest: accept representative action click/
+ok 64 - accept representative action click/
+  ---
+  duration_ms: 0.578653
+  type: 'test'
+  ...
+# Subtest: accept representative action type/
+ok 65 - accept representative action type/
+  ---
+  duration_ms: 0.587779
+  type: 'test'
+  ...
+# Subtest: accept representative action tab_open/
+ok 66 - accept representative action tab_open/
+  ---
+  duration_ms: 0.478599
+  type: 'test'
+  ...
+# Subtest: accept representative action tab_select/
+ok 67 - accept representative action tab_select/
+  ---
+  duration_ms: 0.556084
+  type: 'test'
+  ...
+# Subtest: accept representative action tab_close/
+ok 68 - accept representative action tab_close/
+  ---
+  duration_ms: 0.550083
+  type: 'test'
+  ...
+# Subtest: accept representative action wait/document_ready
+ok 69 - accept representative action wait/document_ready
+  ---
+  duration_ms: 0.943271
+  type: 'test'
+  ...
+# Subtest: accept representative action wait/element_visible
+ok 70 - accept representative action wait/element_visible
+  ---
+  duration_ms: 0.793692
+  type: 'test'
+  ...
+# Subtest: accept representative action wait/element_hidden
+ok 71 - accept representative action wait/element_hidden
+  ---
+  duration_ms: 0.541952
+  type: 'test'
+  ...
+# Subtest: accept representative action upload/
+ok 72 - accept representative action upload/
+  ---
+  duration_ms: 0.621753
+  type: 'test'
+  ...
+# Subtest: accept representative action download/
+ok 73 - accept representative action download/
+  ---
+  duration_ms: 1.183995
+  type: 'test'
+  ...
+# Subtest: accept representative action vault_fill/
+ok 74 - accept representative action vault_fill/
+  ---
+  duration_ms: 1.903499
+  type: 'test'
+  ...
+# Subtest: accept representative action vault_capture/
+ok 75 - accept representative action vault_capture/
+  ---
+  duration_ms: 0.800426
+  type: 'test'
+  ...
+# Subtest: profile, lease and fenced successor shapes
+ok 76 - profile, lease and fenced successor shapes
+  ---
+  duration_ms: 1.281682
+  type: 'test'
+  ...
+# Subtest: independent scope rejection: tenantRef
+ok 77 - independent scope rejection: tenantRef
+  ---
+  duration_ms: 1.886135
+  type: 'test'
+  ...
+# Subtest: independent scope rejection: userRef
+ok 78 - independent scope rejection: userRef
+  ---
+  duration_ms: 1.002286
+  type: 'test'
+  ...
+# Subtest: independent scope rejection: projectRef
+ok 79 - independent scope rejection: projectRef
+  ---
+  duration_ms: 1.461923
+  type: 'test'
+  ...
+# Subtest: independent scope rejection: accountRef
+ok 80 - independent scope rejection: accountRef
+  ---
+  duration_ms: 0.969487
+  type: 'test'
+  ...
+# Subtest: independent scope rejection: environmentRef
+ok 81 - independent scope rejection: environmentRef
+  ---
+  duration_ms: 1.039924
+  type: 'test'
+  ...
+# Subtest: independent scope rejection: purposeRef
+ok 82 - independent scope rejection: purposeRef
+  ---
+  duration_ms: 1.113617
+  type: 'test'
+  ...
+# Subtest: operation binds admitted request leaf: identity.jobId
+ok 83 - operation binds admitted request leaf: identity.jobId
+  ---
+  duration_ms: 0.610704
+  type: 'test'
+  ...
+# Subtest: operation binds admitted request leaf: identity.originTaskRef
+ok 84 - operation binds admitted request leaf: identity.originTaskRef
+  ---
+  duration_ms: 0.360451
+  type: 'test'
+  ...
+# Subtest: operation binds admitted request leaf: identity.requestKey
+ok 85 - operation binds admitted request leaf: identity.requestKey
+  ---
+  duration_ms: 0.28843
+  type: 'test'
+  ...
+# Subtest: operation binds admitted request leaf: identity.instructionRevision
+ok 86 - operation binds admitted request leaf: identity.instructionRevision
+  ---
+  duration_ms: 0.700068
+  type: 'test'
+  ...
+# Subtest: operation binds admitted request leaf: identity.host.tenantRef
+ok 87 - operation binds admitted request leaf: identity.host.tenantRef
+  ---
+  duration_ms: 0.220844
+  type: 'test'
+  ...
+# Subtest: operation binds admitted request leaf: identity.host.userRef
+ok 88 - operation binds admitted request leaf: identity.host.userRef
+  ---
+  duration_ms: 0.182958
+  type: 'test'
+  ...
+# Subtest: operation binds admitted request leaf: identity.host.projectRef
+ok 89 - operation binds admitted request leaf: identity.host.projectRef
+  ---
+  duration_ms: 0.177454
+  type: 'test'
+  ...
+# Subtest: operation binds admitted request leaf: identity.host.accountRef
+ok 90 - operation binds admitted request leaf: identity.host.accountRef
+  ---
+  duration_ms: 0.170713
+  type: 'test'
+  ...
+# Subtest: operation binds admitted request leaf: identity.host.environmentRef
+ok 91 - operation binds admitted request leaf: identity.host.environmentRef
+  ---
+  duration_ms: 0.161684
+  type: 'test'
+  ...
+# Subtest: operation binds admitted request leaf: identity.host.purposeRef
+ok 92 - operation binds admitted request leaf: identity.host.purposeRef
+  ---
+  duration_ms: 0.161315
+  type: 'test'
+  ...
+# Subtest: operation binds admitted request leaf: identity.native.requestRef
+ok 93 - operation binds admitted request leaf: identity.native.requestRef
+  ---
+  duration_ms: 0.353244
+  type: 'test'
+  ...
+# Subtest: operation binds admitted request leaf: identity.native.sourceQueue.queueRef
+ok 94 - operation binds admitted request leaf: identity.native.sourceQueue.queueRef
+  ---
+  duration_ms: 0.324305
+  type: 'test'
+  ...
+# Subtest: operation binds admitted request leaf: identity.native.sourceQueue.messageRef
+ok 95 - operation binds admitted request leaf: identity.native.sourceQueue.messageRef
+  ---
+  duration_ms: 0.370803
+  type: 'test'
+  ...
+# Subtest: operation binds admitted request leaf: identity.origin.channelRef
+ok 96 - operation binds admitted request leaf: identity.origin.channelRef
+  ---
+  duration_ms: 0.294503
+  type: 'test'
+  ...
+# Subtest: operation binds admitted request leaf: identity.origin.routeRef
+ok 97 - operation binds admitted request leaf: identity.origin.routeRef
+  ---
+  duration_ms: 0.298538
+  type: 'test'
+  ...
+# Subtest: operation binds admitted request leaf: identity.origin.correlationRef
+ok 98 - operation binds admitted request leaf: identity.origin.correlationRef
+  ---
+  duration_ms: 0.305801
+  type: 'test'
+  ...
+# Subtest: operation binds admitted request leaf: jobRevision
+ok 99 - operation binds admitted request leaf: jobRevision
+  ---
+  duration_ms: 0.48803
+  type: 'test'
+  ...
+# Subtest: operation binds admitted request leaf: lease.leaseRef
+ok 100 - operation binds admitted request leaf: lease.leaseRef
+  ---
+  duration_ms: 0.282356
+  type: 'test'
+  ...
+# Subtest: operation binds admitted request leaf: lease.profile.profileRef
+ok 101 - operation binds admitted request leaf: lease.profile.profileRef
+  ---
+  duration_ms: 0.304921
+  type: 'test'
+  ...
+# Subtest: operation binds admitted request leaf: lease.profile.revision
+ok 102 - operation binds admitted request leaf: lease.profile.revision
+  ---
+  duration_ms: 0.275686
+  type: 'test'
+  ...
+# Subtest: operation binds admitted request leaf: lease.profile.scope.tenantRef
+ok 103 - operation binds admitted request leaf: lease.profile.scope.tenantRef
+  ---
+  duration_ms: 0.160001
+  type: 'test'
+  ...
+# Subtest: operation binds admitted request leaf: lease.profile.scope.userRef
+ok 104 - operation binds admitted request leaf: lease.profile.scope.userRef
+  ---
+  duration_ms: 0.278934
+  type: 'test'
+  ...
+# Subtest: operation binds admitted request leaf: lease.profile.scope.projectRef
+ok 105 - operation binds admitted request leaf: lease.profile.scope.projectRef
+  ---
+  duration_ms: 0.173229
+  type: 'test'
+  ...
+# Subtest: operation binds admitted request leaf: lease.profile.scope.accountRef
+ok 106 - operation binds admitted request leaf: lease.profile.scope.accountRef
+  ---
+  duration_ms: 0.200476
+  type: 'test'
+  ...
+# Subtest: operation binds admitted request leaf: lease.profile.scope.environmentRef
+ok 107 - operation binds admitted request leaf: lease.profile.scope.environmentRef
+  ---
+  duration_ms: 0.48731
+  type: 'test'
+  ...
+# Subtest: operation binds admitted request leaf: lease.profile.scope.purposeRef
+ok 108 - operation binds admitted request leaf: lease.profile.scope.purposeRef
+  ---
+  duration_ms: 0.184886
+  type: 'test'
+  ...
+# Subtest: operation binds admitted request leaf: lease.sessionRef
+ok 109 - operation binds admitted request leaf: lease.sessionRef
+  ---
+  duration_ms: 0.274367
+  type: 'test'
+  ...
+# Subtest: operation binds admitted request leaf: lease.owner.kind
+ok 110 - operation binds admitted request leaf: lease.owner.kind
+  ---
+  duration_ms: 0.131162
+  type: 'test'
+  ...
+# Subtest: operation binds admitted request leaf: lease.owner.ownerRef
+ok 111 - operation binds admitted request leaf: lease.owner.ownerRef
+  ---
+  duration_ms: 0.251512
+  type: 'test'
+  ...
+# Subtest: operation binds admitted request leaf: lease.revision
+ok 112 - operation binds admitted request leaf: lease.revision
+  ---
+  duration_ms: 0.248395
+  type: 'test'
+  ...
+# Subtest: operation binds admitted request leaf: lease.epoch
+ok 113 - operation binds admitted request leaf: lease.epoch
+  ---
+  duration_ms: 0.30691
+  type: 'test'
+  ...
+# Subtest: operation binds admitted request leaf: lease.issuedAt
+ok 114 - operation binds admitted request leaf: lease.issuedAt
+  ---
+  duration_ms: 0.285715
+  type: 'test'
+  ...
+# Subtest: operation binds admitted request leaf: lease.expiresAt
+ok 115 - operation binds admitted request leaf: lease.expiresAt
+  ---
+  duration_ms: 0.253639
+  type: 'test'
+  ...
+# Subtest: operation binds admitted request leaf: document.tabRef
+ok 116 - operation binds admitted request leaf: document.tabRef
+  ---
+  duration_ms: 0.26663
+  type: 'test'
+  ...
+# Subtest: operation binds admitted request leaf: document.origin
+ok 117 - operation binds admitted request leaf: document.origin
+  ---
+  duration_ms: 0.156393
+  type: 'test'
+  ...
+# Subtest: operation binds admitted request leaf: document.documentRef
+ok 118 - operation binds admitted request leaf: document.documentRef
+  ---
+  duration_ms: 0.258588
+  type: 'test'
+  ...
+# Subtest: operation binds admitted request leaf: document.navigationRevision
+ok 119 - operation binds admitted request leaf: document.navigationRevision
+  ---
+  duration_ms: 0.277043
+  type: 'test'
+  ...
+# Subtest: operation binds admitted request leaf: document.frames.0.frameRef
+ok 120 - operation binds admitted request leaf: document.frames.0.frameRef
+  ---
+  duration_ms: 0.323458
+  type: 'test'
+  ...
+# Subtest: operation binds admitted request leaf: document.frames.0.origin
+ok 121 - operation binds admitted request leaf: document.frames.0.origin
+  ---
+  duration_ms: 0.164397
+  type: 'test'
+  ...
+# Subtest: operation binds admitted request leaf: document.frames.1.frameRef
+ok 122 - operation binds admitted request leaf: document.frames.1.frameRef
+  ---
+  duration_ms: 0.262033
+  type: 'test'
+  ...
+# Subtest: operation binds admitted request leaf: document.frames.1.origin
+ok 123 - operation binds admitted request leaf: document.frames.1.origin
+  ---
+  duration_ms: 0.252096
+  type: 'test'
+  ...
+# Subtest: operation binds admitted request leaf: effect.actionRef
+ok 124 - operation binds admitted request leaf: effect.actionRef
+  ---
+  duration_ms: 0.262695
+  type: 'test'
+  ...
+# Subtest: operation binds admitted request leaf: effect.operationRef
+ok 125 - operation binds admitted request leaf: effect.operationRef
+  ---
+  duration_ms: 1.252197
+  type: 'test'
+  ...
+# Subtest: operation binds admitted request leaf: effect.effectRef
+ok 126 - operation binds admitted request leaf: effect.effectRef
+  ---
+  duration_ms: 0.300145
+  type: 'test'
+  ...
+# Subtest: operation binds admitted request leaf: action.kind
+ok 127 - operation binds admitted request leaf: action.kind
+  ---
+  duration_ms: 0.195932
+  type: 'test'
+  ...
+# Subtest: action authorization binds navigate.kind
+ok 128 - action authorization binds navigate.kind
+  ---
+  duration_ms: 0.300118
+  type: 'test'
+  ...
+# Subtest: action authorization binds navigate.destinationRef
+ok 129 - action authorization binds navigate.destinationRef
+  ---
+  duration_ms: 0.294694
+  type: 'test'
+  ...
+# Subtest: action authorization binds inspect.kind
+ok 130 - action authorization binds inspect.kind
+  ---
+  duration_ms: 0.183301
+  type: 'test'
+  ...
+# Subtest: action authorization binds locate.kind
+ok 131 - action authorization binds locate.kind
+  ---
+  duration_ms: 0.207052
+  type: 'test'
+  ...
+# Subtest: action authorization binds locate.locatorRef
+ok 132 - action authorization binds locate.locatorRef
+  ---
+  duration_ms: 0.319164
+  type: 'test'
+  ...
+# Subtest: action authorization binds click.kind
+ok 133 - action authorization binds click.kind
+  ---
+  duration_ms: 0.180555
+  type: 'test'
+  ...
+# Subtest: action authorization binds click.elementRef
+ok 134 - action authorization binds click.elementRef
+  ---
+  duration_ms: 0.277609
+  type: 'test'
+  ...
+# Subtest: action authorization binds type.kind
+ok 135 - action authorization binds type.kind
+  ---
+  duration_ms: 0.187588
+  type: 'test'
+  ...
+# Subtest: action authorization binds type.elementRef
+ok 136 - action authorization binds type.elementRef
+  ---
+  duration_ms: 0.362793
+  type: 'test'
+  ...
+# Subtest: action authorization binds type.textRef
+ok 137 - action authorization binds type.textRef
+  ---
+  duration_ms: 0.298463
+  type: 'test'
+  ...
+# Subtest: action authorization binds tab_open.kind
+ok 138 - action authorization binds tab_open.kind
+  ---
+  duration_ms: 0.185713
+  type: 'test'
+  ...
+# Subtest: action authorization binds tab_open.destinationRef
+ok 139 - action authorization binds tab_open.destinationRef
+  ---
+  duration_ms: 0.271237
+  type: 'test'
+  ...
+# Subtest: action authorization binds tab_select.kind
+ok 140 - action authorization binds tab_select.kind
+  ---
+  duration_ms: 0.169466
+  type: 'test'
+  ...
+# Subtest: action authorization binds tab_select.tabRef
+ok 141 - action authorization binds tab_select.tabRef
+  ---
+  duration_ms: 0.262888
+  type: 'test'
+  ...
+# Subtest: action authorization binds tab_close.kind
+ok 142 - action authorization binds tab_close.kind
+  ---
+  duration_ms: 0.168926
+  type: 'test'
+  ...
+# Subtest: action authorization binds tab_close.tabRef
+ok 143 - action authorization binds tab_close.tabRef
+  ---
+  duration_ms: 0.304487
+  type: 'test'
+  ...
+# Subtest: action authorization binds wait.kind
+ok 144 - action authorization binds wait.kind
+  ---
+  duration_ms: 0.182356
+  type: 'test'
+  ...
+# Subtest: action authorization binds wait.condition
+ok 145 - action authorization binds wait.condition
+  ---
+  duration_ms: 0.20365
+  type: 'test'
+  ...
+# Subtest: action authorization binds wait.timeoutMs
+ok 146 - action authorization binds wait.timeoutMs
+  ---
+  duration_ms: 0.405098
+  type: 'test'
+  ...
+# Subtest: action authorization binds wait.kind
+ok 147 - action authorization binds wait.kind
+  ---
+  duration_ms: 0.379646
+  type: 'test'
+  ...
+# Subtest: action authorization binds wait.condition
+ok 148 - action authorization binds wait.condition
+  ---
+  duration_ms: 0.407866
+  type: 'test'
+  ...
+# Subtest: action authorization binds wait.elementRef
+ok 149 - action authorization binds wait.elementRef
+  ---
+  duration_ms: 0.404956
+  type: 'test'
+  ...
+# Subtest: action authorization binds wait.timeoutMs
+ok 150 - action authorization binds wait.timeoutMs
+  ---
+  duration_ms: 0.352455
+  type: 'test'
+  ...
+# Subtest: action authorization binds wait.kind
+ok 151 - action authorization binds wait.kind
+  ---
+  duration_ms: 0.209032
+  type: 'test'
+  ...
+# Subtest: action authorization binds wait.condition
+ok 152 - action authorization binds wait.condition
+  ---
+  duration_ms: 0.197238
+  type: 'test'
+  ...
+# Subtest: action authorization binds wait.elementRef
+ok 153 - action authorization binds wait.elementRef
+  ---
+  duration_ms: 0.336901
+  type: 'test'
+  ...
+# Subtest: action authorization binds wait.timeoutMs
+ok 154 - action authorization binds wait.timeoutMs
+  ---
+  duration_ms: 0.365107
+  type: 'test'
+  ...
+# Subtest: action authorization binds upload.kind
+ok 155 - action authorization binds upload.kind
+  ---
+  duration_ms: 0.226051
+  type: 'test'
+  ...
+# Subtest: action authorization binds upload.elementRef
+ok 156 - action authorization binds upload.elementRef
+  ---
+  duration_ms: 0.410353
+  type: 'test'
+  ...
+# Subtest: action authorization binds upload.artifact.artifactRef
+ok 157 - action authorization binds upload.artifact.artifactRef
+  ---
+  duration_ms: 0.418611
+  type: 'test'
+  ...
+# Subtest: action authorization binds upload.artifact.revision
+ok 158 - action authorization binds upload.artifact.revision
+  ---
+  duration_ms: 0.359187
+  type: 'test'
+  ...
+# Subtest: action authorization binds upload.artifact.scope.tenantRef
+ok 159 - action authorization binds upload.artifact.scope.tenantRef
+  ---
+  duration_ms: 0.231607
+  type: 'test'
+  ...
+# Subtest: action authorization binds upload.artifact.scope.userRef
+ok 160 - action authorization binds upload.artifact.scope.userRef
+  ---
+  duration_ms: 0.313866
+  type: 'test'
+  ...
+# Subtest: action authorization binds upload.artifact.scope.projectRef
+ok 161 - action authorization binds upload.artifact.scope.projectRef
+  ---
+  duration_ms: 0.241043
+  type: 'test'
+  ...
+# Subtest: action authorization binds upload.artifact.scope.accountRef
+ok 162 - action authorization binds upload.artifact.scope.accountRef
+  ---
+  duration_ms: 0.268163
+  type: 'test'
+  ...
+# Subtest: action authorization binds upload.artifact.scope.environmentRef
+ok 163 - action authorization binds upload.artifact.scope.environmentRef
+  ---
+  duration_ms: 0.247044
+  type: 'test'
+  ...
+# Subtest: action authorization binds upload.artifact.scope.purposeRef
+ok 164 - action authorization binds upload.artifact.scope.purposeRef
+  ---
+  duration_ms: 0.232772
+  type: 'test'
+  ...
+# Subtest: action authorization binds download.kind
+ok 165 - action authorization binds download.kind
+  ---
+  duration_ms: 0.230754
+  type: 'test'
+  ...
+# Subtest: action authorization binds download.elementRef
+ok 166 - action authorization binds download.elementRef
+  ---
+  duration_ms: 1.04473
+  type: 'test'
+  ...
+# Subtest: action authorization binds download.artifact.artifactRef
+ok 167 - action authorization binds download.artifact.artifactRef
+  ---
+  duration_ms: 0.387688
+  type: 'test'
+  ...
+# Subtest: action authorization binds download.artifact.revision
+ok 168 - action authorization binds download.artifact.revision
+  ---
+  duration_ms: 0.367932
+  type: 'test'
+  ...
+# Subtest: action authorization binds download.artifact.scope.tenantRef
+ok 169 - action authorization binds download.artifact.scope.tenantRef
+  ---
+  duration_ms: 0.19697
+  type: 'test'
+  ...
+# Subtest: action authorization binds download.artifact.scope.userRef
+ok 170 - action authorization binds download.artifact.scope.userRef
+  ---
+  duration_ms: 0.184353
+  type: 'test'
+  ...
+# Subtest: action authorization binds download.artifact.scope.projectRef
+ok 171 - action authorization binds download.artifact.scope.projectRef
+  ---
+  duration_ms: 0.183414
+  type: 'test'
+  ...
+# Subtest: action authorization binds download.artifact.scope.accountRef
+ok 172 - action authorization binds download.artifact.scope.accountRef
+  ---
+  duration_ms: 0.195304
+  type: 'test'
+  ...
+# Subtest: action authorization binds download.artifact.scope.environmentRef
+ok 173 - action authorization binds download.artifact.scope.environmentRef
+  ---
+  duration_ms: 0.189214
+  type: 'test'
+  ...
+# Subtest: action authorization binds download.artifact.scope.purposeRef
+ok 174 - action authorization binds download.artifact.scope.purposeRef
+  ---
+  duration_ms: 0.177391
+  type: 'test'
+  ...
+# Subtest: action authorization binds vault_fill.kind
+ok 175 - action authorization binds vault_fill.kind
+  ---
+  duration_ms: 0.243748
+  type: 'test'
+  ...
+# Subtest: action authorization binds vault_fill.grantRef
+ok 176 - action authorization binds vault_fill.grantRef
+  ---
+  duration_ms: 0.33836
+  type: 'test'
+  ...
+# Subtest: action authorization binds vault_fill.grantRevision
+ok 177 - action authorization binds vault_fill.grantRevision
+  ---
+  duration_ms: 0.325385
+  type: 'test'
+  ...
+# Subtest: action authorization binds vault_capture.kind
+ok 178 - action authorization binds vault_capture.kind
+  ---
+  duration_ms: 0.355164
+  type: 'test'
+  ...
+# Subtest: action authorization binds vault_capture.grantRef
+ok 179 - action authorization binds vault_capture.grantRef
+  ---
+  duration_ms: 0.334572
+  type: 'test'
+  ...
+# Subtest: action authorization binds vault_capture.grantRevision
+ok 180 - action authorization binds vault_capture.grantRevision
+  ---
+  duration_ms: 0.312825
+  type: 'test'
+  ...
+# Subtest: original job binding: jobId
+ok 181 - original job binding: jobId
+  ---
+  duration_ms: 0.571559
+  type: 'test'
+  ...
+# Subtest: original job binding: originTaskRef
+ok 182 - original job binding: originTaskRef
+  ---
+  duration_ms: 0.646007
+  type: 'test'
+  ...
+# Subtest: original job binding: requestKey
+ok 183 - original job binding: requestKey
+  ---
+  duration_ms: 0.544453
+  type: 'test'
+  ...
+# Subtest: original job binding: instructionRevision
+ok 184 - original job binding: instructionRevision
+  ---
+  duration_ms: 0.550739
+  type: 'test'
+  ...
+# Subtest: original job binding: host.tenantRef
+ok 185 - original job binding: host.tenantRef
+  ---
+  duration_ms: 0.517024
+  type: 'test'
+  ...
+# Subtest: original job binding: host.userRef
+ok 186 - original job binding: host.userRef
+  ---
+  duration_ms: 0.501077
+  type: 'test'
+  ...
+# Subtest: original job binding: host.projectRef
+ok 187 - original job binding: host.projectRef
+  ---
+  duration_ms: 0.470972
+  type: 'test'
+  ...
+# Subtest: original job binding: host.accountRef
+ok 188 - original job binding: host.accountRef
+  ---
+  duration_ms: 0.48254
+  type: 'test'
+  ...
+# Subtest: original job binding: host.environmentRef
+ok 189 - original job binding: host.environmentRef
+  ---
+  duration_ms: 0.56484
+  type: 'test'
+  ...
+# Subtest: original job binding: host.purposeRef
+ok 190 - original job binding: host.purposeRef
+  ---
+  duration_ms: 0.505384
+  type: 'test'
+  ...
+# Subtest: original job binding: native.requestRef
+ok 191 - original job binding: native.requestRef
+  ---
+  duration_ms: 1.08909
+  type: 'test'
+  ...
+# Subtest: original job binding: native.sourceQueue.queueRef
+ok 192 - original job binding: native.sourceQueue.queueRef
+  ---
+  duration_ms: 0.485792
+  type: 'test'
+  ...
+# Subtest: original job binding: native.sourceQueue.messageRef
+ok 193 - original job binding: native.sourceQueue.messageRef
+  ---
+  duration_ms: 0.426784
+  type: 'test'
+  ...
+# Subtest: original job binding: origin.channelRef
+ok 194 - original job binding: origin.channelRef
+  ---
+  duration_ms: 0.394078
+  type: 'test'
+  ...
+# Subtest: original job binding: origin.routeRef
+ok 195 - original job binding: origin.routeRef
+  ---
+  duration_ms: 0.492927
+  type: 'test'
+  ...
+# Subtest: original job binding: origin.correlationRef
+ok 196 - original job binding: origin.correlationRef
+  ---
+  duration_ms: 0.44805
+  type: 'test'
+  ...
+# Subtest: current authority, lease, cancellation and unknown effects fail closed
+ok 197 - current authority, lease, cancellation and unknown effects fail closed
+  ---
+  duration_ms: 4.154437
+  type: 'test'
+  ...
+# Subtest: forbidden operation: eval
+ok 198 - forbidden operation: eval
+  ---
+  duration_ms: 0.224649
+  type: 'test'
+  ...
+# Subtest: forbidden operation: shell
+ok 199 - forbidden operation: shell
+  ---
+  duration_ms: 0.124764
+  type: 'test'
+  ...
+# Subtest: forbidden operation: cdp
+ok 200 - forbidden operation: cdp
+  ---
+  duration_ms: 0.113555
+  type: 'test'
+  ...
+# Subtest: forbidden operation: cookie_export
+ok 201 - forbidden operation: cookie_export
+  ---
+  duration_ms: 0.111199
+  type: 'test'
+  ...
+# Subtest: forbidden operation: state_export
+ok 202 - forbidden operation: state_export
+  ---
+  duration_ms: 0.115223
+  type: 'test'
+  ...
+# Subtest: forbidden operation: debug
+ok 203 - forbidden operation: debug
+  ---
+  duration_ms: 0.111543
+  type: 'test'
+  ...
+# Subtest: forbidden operation: screenshot
+ok 204 - forbidden operation: screenshot
+  ---
+  duration_ms: 0.111385
+  type: 'test'
+  ...
+# Subtest: forbidden operation: clipboard
+ok 205 - forbidden operation: clipboard
+  ---
+  duration_ms: 0.105632
+  type: 'test'
+  ...
+# Subtest: forbidden operation: vault_reveal
+ok 206 - forbidden operation: vault_reveal
+  ---
+  duration_ms: 0.124231
+  type: 'test'
+  ...
+# Subtest: text labels, raw transfers, URLs and malformed destinations cannot grant authority
+ok 207 - text labels, raw transfers, URLs and malformed destinations cannot grant authority
+  ---
+  duration_ms: 1.766838
+  type: 'test'
+  ...
+# Subtest: existing vault policy required: vault_fill
+ok 208 - existing vault policy required: vault_fill
+  ---
+  duration_ms: 8.906536
+  type: 'test'
+  ...
+# Subtest: existing vault policy required: vault_capture
+ok 209 - existing vault policy required: vault_capture
+  ---
+  duration_ms: 12.563297
+  type: 'test'
+  ...
+# Subtest: sanitized attestation, redaction, takeover and unknown-effect observations
+ok 210 - sanitized attestation, redaction, takeover and unknown-effect observations
+  ---
+  duration_ms: 2.059707
+  type: 'test'
+  ...
+# Subtest: requested, leased, fresh handback and expired transitions
+ok 211 - requested, leased, fresh handback and expired transitions
+  ---
+  duration_ms: 2.105225
+  type: 'test'
+  ...
+# Subtest: handback current binding: takeoverRef
+ok 212 - handback current binding: takeoverRef
+  ---
+  duration_ms: 0.289476
+  type: 'test'
+  ...
+# Subtest: handback current binding: identity.jobId
+ok 213 - handback current binding: identity.jobId
+  ---
+  duration_ms: 0.221565
+  type: 'test'
+  ...
+# Subtest: handback current binding: identity.originTaskRef
+ok 214 - handback current binding: identity.originTaskRef
+  ---
+  duration_ms: 0.204778
+  type: 'test'
+  ...
+# Subtest: handback current binding: identity.requestKey
+ok 215 - handback current binding: identity.requestKey
+  ---
+  duration_ms: 0.244491
+  type: 'test'
+  ...
+# Subtest: handback current binding: identity.instructionRevision
+ok 216 - handback current binding: identity.instructionRevision
+  ---
+  duration_ms: 0.222425
+  type: 'test'
+  ...
+# Subtest: handback current binding: identity.host.tenantRef
+ok 217 - handback current binding: identity.host.tenantRef
+  ---
+  duration_ms: 0.145305
+  type: 'test'
+  ...
+# Subtest: handback current binding: identity.host.userRef
+ok 218 - handback current binding: identity.host.userRef
+  ---
+  duration_ms: 0.122655
+  type: 'test'
+  ...
+# Subtest: handback current binding: identity.host.projectRef
+ok 219 - handback current binding: identity.host.projectRef
+  ---
+  duration_ms: 0.124427
+  type: 'test'
+  ...
+# Subtest: handback current binding: identity.host.accountRef
+ok 220 - handback current binding: identity.host.accountRef
+  ---
+  duration_ms: 0.127565
+  type: 'test'
+  ...
+# Subtest: handback current binding: identity.host.environmentRef
+ok 221 - handback current binding: identity.host.environmentRef
+  ---
+  duration_ms: 0.120378
+  type: 'test'
+  ...
+# Subtest: handback current binding: identity.host.purposeRef
+ok 222 - handback current binding: identity.host.purposeRef
+  ---
+  duration_ms: 0.130786
+  type: 'test'
+  ...
+# Subtest: handback current binding: identity.native.requestRef
+ok 223 - handback current binding: identity.native.requestRef
+  ---
+  duration_ms: 0.226517
+  type: 'test'
+  ...
+# Subtest: handback current binding: identity.native.sourceQueue.queueRef
+ok 224 - handback current binding: identity.native.sourceQueue.queueRef
+  ---
+  duration_ms: 0.228497
+  type: 'test'
+  ...
+# Subtest: handback current binding: identity.native.sourceQueue.messageRef
+ok 225 - handback current binding: identity.native.sourceQueue.messageRef
+  ---
+  duration_ms: 0.245563
+  type: 'test'
+  ...
+# Subtest: handback current binding: identity.origin.channelRef
+ok 226 - handback current binding: identity.origin.channelRef
+  ---
+  duration_ms: 0.206244
+  type: 'test'
+  ...
+# Subtest: handback current binding: identity.origin.routeRef
+ok 227 - handback current binding: identity.origin.routeRef
+  ---
+  duration_ms: 0.214807
+  type: 'test'
+  ...
+# Subtest: handback current binding: identity.origin.correlationRef
+ok 228 - handback current binding: identity.origin.correlationRef
+  ---
+  duration_ms: 0.207843
+  type: 'test'
+  ...
+# Subtest: handback current binding: jobRevision
+ok 229 - handback current binding: jobRevision
+  ---
+  duration_ms: 0.662602
+  type: 'test'
+  ...
+# Subtest: handback current binding: requirement.kind
+ok 230 - handback current binding: requirement.kind
+  ---
+  duration_ms: 0.161956
+  type: 'test'
+  ...
+# Subtest: handback current binding: requirement.requirementRef
+ok 231 - handback current binding: requirement.requirementRef
+  ---
+  duration_ms: 0.214557
+  type: 'test'
+  ...
+# Subtest: handback current binding: requirement.revision
+ok 232 - handback current binding: requirement.revision
+  ---
+  duration_ms: 0.214842
+  type: 'test'
+  ...
+# Subtest: handback current binding: requirement.actor.kind
+ok 233 - handback current binding: requirement.actor.kind
+  ---
+  duration_ms: 0.11468
+  type: 'test'
+  ...
+# Subtest: handback current binding: requirement.actor.actorRef
+ok 234 - handback current binding: requirement.actor.actorRef
+  ---
+  duration_ms: 0.121215
+  type: 'test'
+  ...
+# Subtest: handback current binding: revision
+ok 235 - handback current binding: revision
+  ---
+  duration_ms: 0.215478
+  type: 'test'
+  ...
+# Subtest: handback current binding: issuedAt
+ok 236 - handback current binding: issuedAt
+  ---
+  duration_ms: 0.205213
+  type: 'test'
+  ...
+# Subtest: handback current binding: expiresAt
+ok 237 - handback current binding: expiresAt
+  ---
+  duration_ms: 0.205598
+  type: 'test'
+  ...
+# Subtest: handback current binding: lease.profile.profileRef
+ok 238 - handback current binding: lease.profile.profileRef
+  ---
+  duration_ms: 0.200225
+  type: 'test'
+  ...
+# Subtest: handback current binding: lease.profile.revision
+ok 239 - handback current binding: lease.profile.revision
+  ---
+  duration_ms: 0.199358
+  type: 'test'
+  ...
+# Subtest: handback current binding: lease.profile.scope.tenantRef
+ok 240 - handback current binding: lease.profile.scope.tenantRef
+  ---
+  duration_ms: 0.170174
+  type: 'test'
+  ...
+# Subtest: handback current binding: lease.profile.scope.userRef
+ok 241 - handback current binding: lease.profile.scope.userRef
+  ---
+  duration_ms: 0.132056
+  type: 'test'
+  ...
+# Subtest: handback current binding: lease.profile.scope.projectRef
+ok 242 - handback current binding: lease.profile.scope.projectRef
+  ---
+  duration_ms: 0.123514
+  type: 'test'
+  ...
+# Subtest: handback current binding: lease.profile.scope.accountRef
+ok 243 - handback current binding: lease.profile.scope.accountRef
+  ---
+  duration_ms: 0.121669
+  type: 'test'
+  ...
+# Subtest: handback current binding: lease.profile.scope.environmentRef
+ok 244 - handback current binding: lease.profile.scope.environmentRef
+  ---
+  duration_ms: 0.120175
+  type: 'test'
+  ...
+# Subtest: handback current binding: lease.profile.scope.purposeRef
+ok 245 - handback current binding: lease.profile.scope.purposeRef
+  ---
+  duration_ms: 0.124344
+  type: 'test'
+  ...
+# Subtest: handback current binding: lease.owner.kind
+ok 246 - handback current binding: lease.owner.kind
+  ---
+  duration_ms: 0.119521
+  type: 'test'
+  ...
+# Subtest: handback current binding: lease.epoch
+ok 247 - handback current binding: lease.epoch
+  ---
+  duration_ms: 0.244205
+  type: 'test'
+  ...
+# Subtest: handback current binding: lease.issuedAt
+ok 248 - handback current binding: lease.issuedAt
+  ---
+  duration_ms: 0.231239
+  type: 'test'
+  ...
+# Subtest: handback current binding: state
+ok 249 - handback current binding: state
+  ---
+  duration_ms: 0.119079
+  type: 'test'
+  ...
+# Subtest: handback current binding: authorizationRef
+ok 250 - handback current binding: authorizationRef
+  ---
+  duration_ms: 0.227578
+  type: 'test'
+  ...
+# Subtest: handback current binding: authorizationRevision
+ok 251 - handback current binding: authorizationRevision
+  ---
+  duration_ms: 0.239026
+  type: 'test'
+  ...
+# Subtest: handback requires fresh authorized context and proven fencing
+ok 252 - handback requires fresh authorized context and proven fencing
+  ---
+  duration_ms: 5.009568
+  type: 'test'
+  ...
+# Subtest: local deletion does not imply remote provider logout
+ok 253 - local deletion does not imply remote provider logout
+  ---
+  duration_ms: 1.448056
+  type: 'test'
+  ...
+# Subtest: strict nested data boundaries: profile
+ok 254 - strict nested data boundaries: profile
+  ---
+  duration_ms: 2.140021
+  type: 'test'
+  ...
+# Subtest: strict nested data boundaries: lease
+ok 255 - strict nested data boundaries: lease
+  ---
+  duration_ms: 1.636574
+  type: 'test'
+  ...
+# Subtest: strict nested data boundaries: operation-navigate
+ok 256 - strict nested data boundaries: operation-navigate
+  ---
+  duration_ms: 12.753411
+  type: 'test'
+  ...
+# Subtest: strict nested data boundaries: operation-inspect
+ok 257 - strict nested data boundaries: operation-inspect
+  ---
+  duration_ms: 9.967277
+  type: 'test'
+  ...
+# Subtest: strict nested data boundaries: operation-locate
+ok 258 - strict nested data boundaries: operation-locate
+  ---
+  duration_ms: 9.073523
+  type: 'test'
+  ...
+# Subtest: strict nested data boundaries: operation-click
+ok 259 - strict nested data boundaries: operation-click
+  ---
+  duration_ms: 9.877605
+  type: 'test'
+  ...
+# Subtest: strict nested data boundaries: operation-type
+ok 260 - strict nested data boundaries: operation-type
+  ---
+  duration_ms: 9.280881
+  type: 'test'
+  ...
+# Subtest: strict nested data boundaries: operation-tab_open
+ok 261 - strict nested data boundaries: operation-tab_open
+  ---
+  duration_ms: 10.681365
+  type: 'test'
+  ...
+# Subtest: strict nested data boundaries: operation-tab_select
+ok 262 - strict nested data boundaries: operation-tab_select
+  ---
+  duration_ms: 8.473639
+  type: 'test'
+  ...
+# Subtest: strict nested data boundaries: operation-tab_close
+ok 263 - strict nested data boundaries: operation-tab_close
+  ---
+  duration_ms: 9.18015
+  type: 'test'
+  ...
+# Subtest: strict nested data boundaries: operation-wait
+ok 264 - strict nested data boundaries: operation-wait
+  ---
+  duration_ms: 8.517169
+  type: 'test'
+  ...
+# Subtest: strict nested data boundaries: operation-wait
+ok 265 - strict nested data boundaries: operation-wait
+  ---
+  duration_ms: 8.757033
+  type: 'test'
+  ...
+# Subtest: strict nested data boundaries: operation-wait
+ok 266 - strict nested data boundaries: operation-wait
+  ---
+  duration_ms: 8.465037
+  type: 'test'
+  ...
+# Subtest: strict nested data boundaries: operation-upload
+ok 267 - strict nested data boundaries: operation-upload
+  ---
+  duration_ms: 13.146348
+  type: 'test'
+  ...
+# Subtest: strict nested data boundaries: operation-download
+ok 268 - strict nested data boundaries: operation-download
+  ---
+  duration_ms: 13.199315
+  type: 'test'
+  ...
+# Subtest: strict nested data boundaries: operation-vault_fill
+ok 269 - strict nested data boundaries: operation-vault_fill
+  ---
+  duration_ms: 10.515621
+  type: 'test'
+  ...
+# Subtest: strict nested data boundaries: operation-vault_capture
+ok 270 - strict nested data boundaries: operation-vault_capture
+  ---
+  duration_ms: 12.392279
+  type: 'test'
+  ...
+# Subtest: strict nested data boundaries: observation
+ok 271 - strict nested data boundaries: observation
+  ---
+  duration_ms: 29.845507
+  type: 'test'
+  ...
+# Subtest: strict nested data boundaries: handback
+ok 272 - strict nested data boundaries: handback
+  ---
+  duration_ms: 7.125622
+  type: 'test'
+  ...
+# Subtest: strict nested data boundaries: requested
+ok 273 - strict nested data boundaries: requested
+  ---
+  duration_ms: 7.832816
+  type: 'test'
+  ...
+# Subtest: strict nested data boundaries: leased
+ok 274 - strict nested data boundaries: leased
+  ---
+  duration_ms: 6.736917
+  type: 'test'
+  ...
+# Subtest: strict nested data boundaries: expired
+ok 275 - strict nested data boundaries: expired
+  ---
+  duration_ms: 6.652165
+  type: 'test'
+  ...
+# Subtest: strict nested data boundaries: redacted
+ok 276 - strict nested data boundaries: redacted
+  ---
+  duration_ms: 29.533068
+  type: 'test'
+  ...
+# Subtest: strict nested data boundaries: takeover-observation
+ok 277 - strict nested data boundaries: takeover-observation
+  ---
+  duration_ms: 20.584373
+  type: 'test'
+  ...
+# Subtest: strict nested data boundaries: revocation
+ok 278 - strict nested data boundaries: revocation
+  ---
+  duration_ms: 1.280425
+  type: 'test'
+  ...
+# Subtest: malformed arrays, throwing proxies, fixed errors and frozen input
+ok 279 - malformed arrays, throwing proxies, fixed errors and frozen input
+  ---
+  duration_ms: 1.9839
+  type: 'test'
+  ...
+# Subtest: vault token capture and synthetic identity fill reuse destination policy
+ok 280 - vault token capture and synthetic identity fill reuse destination policy
+  ---
+  duration_ms: 2.043859
+  type: 'test'
+  ...
+# Subtest: trusted contexts reject nested extra fields and accessors before reading them
+ok 281 - trusted contexts reject nested extra fields and accessors before reading them
+  ---
+  duration_ms: 90.740176
+  type: 'test'
+  ...
+# Subtest: fixture: requested
+ok 282 - fixture: requested
+  ---
+  duration_ms: 3.593281
+  type: 'test'
+  ...
+# Subtest: fixture: inspecting
+ok 283 - fixture: inspecting
+  ---
+  duration_ms: 0.569037
+  type: 'test'
+  ...
+# Subtest: fixture: authenticating
+ok 284 - fixture: authenticating
+  ---
+  duration_ms: 0.463231
+  type: 'test'
+  ...
+# Subtest: fixture: configuring
+ok 285 - fixture: configuring
+  ---
+  duration_ms: 0.312958
+  type: 'test'
+  ...
+# Subtest: fixture: verifying
+ok 286 - fixture: verifying
+  ---
+  duration_ms: 0.407627
+  type: 'test'
+  ...
+# Subtest: fixture: waiting_for_user
+ok 287 - fixture: waiting_for_user
+  ---
+  duration_ms: 0.488415
+  type: 'test'
+  ...
+# Subtest: fixture: waiting_for_provider
+ok 288 - fixture: waiting_for_provider
+  ---
+  duration_ms: 1.422496
+  type: 'test'
+  ...
+# Subtest: fixture: reauthorization_required
+ok 289 - fixture: reauthorization_required
+  ---
+  duration_ms: 0.378911
+  type: 'test'
+  ...
+# Subtest: fixture: unknown_effect
+ok 290 - fixture: unknown_effect
+  ---
+  duration_ms: 0.559766
+  type: 'test'
+  ...
+# Subtest: fixture: ready
+ok 291 - fixture: ready
+  ---
+  duration_ms: 0.997927
+  type: 'test'
+  ...
+# Subtest: provider: requested
+ok 292 - provider: requested
+  ---
+  duration_ms: 0.299989
+  type: 'test'
+  ...
+# Subtest: provider: inspecting
+ok 293 - provider: inspecting
+  ---
+  duration_ms: 0.185372
+  type: 'test'
+  ...
+# Subtest: provider: authenticating
+ok 294 - provider: authenticating
+  ---
+  duration_ms: 0.257999
+  type: 'test'
+  ...
+# Subtest: provider: configuring
+ok 295 - provider: configuring
+  ---
+  duration_ms: 0.184212
+  type: 'test'
+  ...
+# Subtest: provider: verifying
+ok 296 - provider: verifying
+  ---
+  duration_ms: 0.229814
+  type: 'test'
+  ...
+# Subtest: provider: waiting_for_user
+ok 297 - provider: waiting_for_user
+  ---
+  duration_ms: 0.273384
+  type: 'test'
+  ...
+# Subtest: provider: waiting_for_provider
+ok 298 - provider: waiting_for_provider
+  ---
+  duration_ms: 0.267705
+  type: 'test'
+  ...
+# Subtest: provider: reauthorization_required
+ok 299 - provider: reauthorization_required
+  ---
+  duration_ms: 0.307747
+  type: 'test'
+  ...
+# Subtest: provider: unknown_effect
+ok 300 - provider: unknown_effect
+  ---
+  duration_ms: 0.282679
+  type: 'test'
+  ...
+# Subtest: provider: ready
+ok 301 - provider: ready
+  ---
+  duration_ms: 0.390129
+  type: 'test'
+  ...
+# Subtest: input uses existing job scope, optional custody references and distinct stable effect identity
+ok 302 - input uses existing job scope, optional custody references and distinct stable effect identity
+  ---
+  duration_ms: 1.038848
+  type: 'test'
+  ...
+# Subtest: ready rejects wrong evidence scope: tenantRef
+ok 303 - ready rejects wrong evidence scope: tenantRef
+  ---
+  duration_ms: 0.331447
+  type: 'test'
+  ...
+# Subtest: ready rejects wrong evidence scope: userRef
+ok 304 - ready rejects wrong evidence scope: userRef
+  ---
+  duration_ms: 0.238305
+  type: 'test'
+  ...
+# Subtest: ready rejects wrong evidence scope: projectRef
+ok 305 - ready rejects wrong evidence scope: projectRef
+  ---
+  duration_ms: 0.233564
+  type: 'test'
+  ...
+# Subtest: ready rejects wrong evidence scope: accountRef
+ok 306 - ready rejects wrong evidence scope: accountRef
+  ---
+  duration_ms: 0.218331
+  type: 'test'
+  ...
+# Subtest: ready rejects wrong evidence scope: environmentRef
+ok 307 - ready rejects wrong evidence scope: environmentRef
+  ---
+  duration_ms: 0.338827
+  type: 'test'
+  ...
+# Subtest: ready rejects wrong evidence scope: purposeRef
+ok 308 - ready rejects wrong evidence scope: purposeRef
+  ---
+  duration_ms: 0.3152
+  type: 'test'
+  ...
+# Subtest: ready rejects provider
+ok 309 - ready rejects provider
+  ---
+  duration_ms: 0.457554
+  type: 'test'
+  ...
+# Subtest: ready rejects prerequisite version
+ok 310 - ready rejects prerequisite version
+  ---
+  duration_ms: 0.356122
+  type: 'test'
+  ...
+# Subtest: ready rejects missing capability
+ok 311 - ready rejects missing capability
+  ---
+  duration_ms: 0.326587
+  type: 'test'
+  ...
+# Subtest: ready rejects unrelated capability
+ok 312 - ready rejects unrelated capability
+  ---
+  duration_ms: 0.901266
+  type: 'test'
+  ...
+# Subtest: ready rejects duplicate capability
+ok 313 - ready rejects duplicate capability
+  ---
+  duration_ms: 0.376545
+  type: 'test'
+  ...
+# Subtest: ready rejects absent evidence
+ok 314 - ready rejects absent evidence
+  ---
+  duration_ms: 0.334329
+  type: 'test'
+  ...
+# Subtest: ready rejects browser login
+ok 315 - ready rejects browser login
+  ---
+  duration_ms: 0.344923
+  type: 'test'
+  ...
+# Subtest: ready rejects token presence
+ok 316 - ready rejects token presence
+  ---
+  duration_ms: 0.473419
+  type: 'test'
+  ...
+# Subtest: ready rejects setup grant
+ok 317 - ready rejects setup grant
+  ---
+  duration_ms: 0.405712
+  type: 'test'
+  ...
+# Subtest: ready rejects spending authority
+ok 318 - ready rejects spending authority
+  ---
+  duration_ms: 0.242472
+  type: 'test'
+  ...
+# Subtest: ready rejects ads authority
+ok 319 - ready rejects ads authority
+  ---
+  duration_ms: 0.212606
+  type: 'test'
+  ...
+# Subtest: ready rejects unverified authorization
+ok 320 - ready rejects unverified authorization
+  ---
+  duration_ms: 0.180004
+  type: 'test'
+  ...
+# Subtest: ready rejects expired authorization
+ok 321 - ready rejects expired authorization
+  ---
+  duration_ms: 0.195216
+  type: 'test'
+  ...
+# Subtest: ready rejects revoked authorization
+ok 322 - ready rejects revoked authorization
+  ---
+  duration_ms: 0.176729
+  type: 'test'
+  ...
+# Subtest: ready rejects elapsed active expiry
+ok 323 - ready rejects elapsed active expiry
+  ---
+  duration_ms: 0.248258
+  type: 'test'
+  ...
+# Subtest: ready rejects elapsed evidence expiry
+ok 324 - ready rejects elapsed evidence expiry
+  ---
+  duration_ms: 0.444301
+  type: 'test'
+  ...
+# Subtest: ready rejects future evidence
+ok 325 - ready rejects future evidence
+  ---
+  duration_ms: 0.343324
+  type: 'test'
+  ...
+# Subtest: ready rejects inverted interval
+ok 326 - ready rejects inverted interval
+  ---
+  duration_ms: 0.297249
+  type: 'test'
+  ...
+# Subtest: ready rejects fixture evidence for provider
+ok 327 - ready rejects fixture evidence for provider
+  ---
+  duration_ms: 0.244945
+  type: 'test'
+  ...
+# Subtest: expiry/revocation are valid non-ready reauthorization states, never renewed by validation
+ok 328 - expiry/revocation are valid non-ready reauthorization states, never renewed by validation
+  ---
+  duration_ms: 4.130053
+  type: 'test'
+  ...
+# Subtest: typed missing requirement: credentials_required
+ok 329 - typed missing requirement: credentials_required
+  ---
+  duration_ms: 0.495221
+  type: 'test'
+  ...
+# Subtest: typed missing requirement: authentication_challenge
+ok 330 - typed missing requirement: authentication_challenge
+  ---
+  duration_ms: 0.321555
+  type: 'test'
+  ...
+# Subtest: typed missing requirement: consent_required
+ok 331 - typed missing requirement: consent_required
+  ---
+  duration_ms: 0.31402
+  type: 'test'
+  ...
+# Subtest: typed missing requirement: account_selection
+ok 332 - typed missing requirement: account_selection
+  ---
+  duration_ms: 0.307371
+  type: 'test'
+  ...
+# Subtest: typed missing requirement: authority_required
+ok 333 - typed missing requirement: authority_required
+  ---
+  duration_ms: 0.481903
+  type: 'test'
+  ...
+# Subtest: typed missing requirement: review_pending
+ok 334 - typed missing requirement: review_pending
+  ---
+  duration_ms: 0.613535
+  type: 'test'
+  ...
+# Subtest: typed missing requirement: access_level_required
+ok 335 - typed missing requirement: access_level_required
+  ---
+  duration_ms: 0.517908
+  type: 'test'
+  ...
+# Subtest: typed missing requirement: account_role_required
+ok 336 - typed missing requirement: account_role_required
+  ---
+  duration_ms: 0.381156
+  type: 'test'
+  ...
+# Subtest: typed missing requirement: prerequisite_unavailable
+ok 337 - typed missing requirement: prerequisite_unavailable
+  ---
+  duration_ms: 0.301202
+  type: 'test'
+  ...
+# Subtest: typed missing requirement: capability_missing
+ok 338 - typed missing requirement: capability_missing
+  ---
+  duration_ms: 0.290882
+  type: 'test'
+  ...
+# Subtest: waits require precise, bound, nonempty outstanding requirements
+ok 339 - waits require precise, bound, nonempty outstanding requirements
+  ---
+  duration_ms: 1.272419
+  type: 'test'
+  ...
+# Subtest: result correlation and reconnect preserve every original job/task, scope, native, route and request leaf
+ok 340 - result correlation and reconnect preserve every original job/task, scope, native, route and request leaf
+  ---
+  duration_ms: 9.432201
+  type: 'test'
+  ...
+# Subtest: fixture receipts cannot be promoted through result binding, reconnect, intermediate states or replay
+ok 341 - fixture receipts cannot be promoted through result binding, reconnect, intermediate states or replay
+  ---
+  duration_ms: 1.681745
+  type: 'test'
+  ...
+# Subtest: unknown effects require the original logical effect and reconciliation reference; reconnect cannot clear or replay them
+ok 342 - unknown effects require the original logical effect and reconciliation reference; reconnect cannot clear or replay them
+  ---
+  duration_ms: 2.520203
+  type: 'test'
+  ...
+# Subtest: pure validation returns original values and leaves frozen inputs unchanged
+ok 343 - pure validation returns original values and leaves frozen inputs unchanged
+  ---
+  duration_ms: 0.706891
+  type: 'test'
+  ...
+# Subtest: nested payloads, errors, getters, hidden keys and malformed arrays fail without raw output
+ok 344 - nested payloads, errors, getters, hidden keys and malformed arrays fail without raw output
+  ---
+  duration_ms: 15.488037
+  type: 'test'
+  ...
+# Subtest: snapshot: queued
+ok 345 - snapshot: queued
+  ---
+  duration_ms: 1.906284
+  type: 'test'
+  ...
+# Subtest: snapshot: running
+ok 346 - snapshot: running
+  ---
+  duration_ms: 0.287624
+  type: 'test'
+  ...
+# Subtest: snapshot: waiting
+ok 347 - snapshot: waiting
+  ---
+  duration_ms: 0.277856
+  type: 'test'
+  ...
+# Subtest: snapshot: succeeded
+ok 348 - snapshot: succeeded
+  ---
+  duration_ms: 0.222496
+  type: 'test'
+  ...
+# Subtest: snapshot: failed
+ok 349 - snapshot: failed
+  ---
+  duration_ms: 0.261148
+  type: 'test'
+  ...
+# Subtest: snapshot: cancelled
+ok 350 - snapshot: cancelled
+  ---
+  duration_ms: 0.19595
+  type: 'test'
+  ...
+# Subtest: transition: queued -> queued
+ok 351 - transition: queued -> queued
+  ---
+  duration_ms: 0.915791
+  type: 'test'
+  ...
+# Subtest: transition: queued -> running
+ok 352 - transition: queued -> running
+  ---
+  duration_ms: 0.263834
+  type: 'test'
+  ...
+# Subtest: transition: queued -> waiting
+ok 353 - transition: queued -> waiting
+  ---
+  duration_ms: 0.402937
+  type: 'test'
+  ...
+# Subtest: transition: queued -> succeeded
+ok 354 - transition: queued -> succeeded
+  ---
+  duration_ms: 1.187379
+  type: 'test'
+  ...
+# Subtest: transition: queued -> failed
+ok 355 - transition: queued -> failed
+  ---
+  duration_ms: 0.297236
+  type: 'test'
+  ...
+# Subtest: transition: queued -> cancelled
+ok 356 - transition: queued -> cancelled
+  ---
+  duration_ms: 0.276957
+  type: 'test'
+  ...
+# Subtest: transition: running -> queued
+ok 357 - transition: running -> queued
+  ---
+  duration_ms: 0.240945
+  type: 'test'
+  ...
+# Subtest: transition: running -> running
+ok 358 - transition: running -> running
+  ---
+  duration_ms: 0.149374
+  type: 'test'
+  ...
+# Subtest: transition: running -> waiting
+ok 359 - transition: running -> waiting
+  ---
+  duration_ms: 0.149514
+  type: 'test'
+  ...
+# Subtest: transition: running -> succeeded
+ok 360 - transition: running -> succeeded
+  ---
+  duration_ms: 0.215353
+  type: 'test'
+  ...
+# Subtest: transition: running -> failed
+ok 361 - transition: running -> failed
+  ---
+  duration_ms: 0.150815
+  type: 'test'
+  ...
+# Subtest: transition: running -> cancelled
+ok 362 - transition: running -> cancelled
+  ---
+  duration_ms: 0.242828
+  type: 'test'
+  ...
+# Subtest: transition: waiting -> queued
+ok 363 - transition: waiting -> queued
+  ---
+  duration_ms: 0.293969
+  type: 'test'
+  ...
+# Subtest: transition: waiting -> running
+ok 364 - transition: waiting -> running
+  ---
+  duration_ms: 0.147871
+  type: 'test'
+  ...
+# Subtest: transition: waiting -> waiting
+ok 365 - transition: waiting -> waiting
+  ---
+  duration_ms: 0.155287
+  type: 'test'
+  ...
+# Subtest: transition: waiting -> succeeded
+ok 366 - transition: waiting -> succeeded
+  ---
+  duration_ms: 0.170757
+  type: 'test'
+  ...
+# Subtest: transition: waiting -> failed
+ok 367 - transition: waiting -> failed
+  ---
+  duration_ms: 0.165263
+  type: 'test'
+  ...
+# Subtest: transition: waiting -> cancelled
+ok 368 - transition: waiting -> cancelled
+  ---
+  duration_ms: 0.281643
+  type: 'test'
+  ...
+# Subtest: transition: succeeded -> queued
+ok 369 - transition: succeeded -> queued
+  ---
+  duration_ms: 0.279146
+  type: 'test'
+  ...
+# Subtest: transition: succeeded -> running
+ok 370 - transition: succeeded -> running
+  ---
+  duration_ms: 0.161033
+  type: 'test'
+  ...
+# Subtest: transition: succeeded -> waiting
+ok 371 - transition: succeeded -> waiting
+  ---
+  duration_ms: 0.158188
+  type: 'test'
+  ...
+# Subtest: transition: succeeded -> succeeded
+ok 372 - transition: succeeded -> succeeded
+  ---
+  duration_ms: 0.206936
+  type: 'test'
+  ...
+# Subtest: transition: succeeded -> failed
+ok 373 - transition: succeeded -> failed
+  ---
+  duration_ms: 0.158341
+  type: 'test'
+  ...
+# Subtest: transition: succeeded -> cancelled
+ok 374 - transition: succeeded -> cancelled
+  ---
+  duration_ms: 0.321292
+  type: 'test'
+  ...
+# Subtest: transition: failed -> queued
+ok 375 - transition: failed -> queued
+  ---
+  duration_ms: 0.273346
+  type: 'test'
+  ...
+# Subtest: transition: failed -> running
+ok 376 - transition: failed -> running
+  ---
+  duration_ms: 0.14923
+  type: 'test'
+  ...
+# Subtest: transition: failed -> waiting
+ok 377 - transition: failed -> waiting
+  ---
+  duration_ms: 0.168668
+  type: 'test'
+  ...
+# Subtest: transition: failed -> succeeded
+ok 378 - transition: failed -> succeeded
+  ---
+  duration_ms: 0.1637
+  type: 'test'
+  ...
+# Subtest: transition: failed -> failed
+ok 379 - transition: failed -> failed
+  ---
+  duration_ms: 0.857512
+  type: 'test'
+  ...
+# Subtest: transition: failed -> cancelled
+ok 380 - transition: failed -> cancelled
+  ---
+  duration_ms: 0.250581
+  type: 'test'
+  ...
+# Subtest: transition: cancelled -> queued
+ok 381 - transition: cancelled -> queued
+  ---
+  duration_ms: 0.225913
+  type: 'test'
+  ...
+# Subtest: transition: cancelled -> running
+ok 382 - transition: cancelled -> running
+  ---
+  duration_ms: 0.224317
+  type: 'test'
+  ...
+# Subtest: transition: cancelled -> waiting
+ok 383 - transition: cancelled -> waiting
+  ---
+  duration_ms: 0.164881
+  type: 'test'
+  ...
+# Subtest: transition: cancelled -> succeeded
+ok 384 - transition: cancelled -> succeeded
+  ---
+  duration_ms: 0.241917
+  type: 'test'
+  ...
+# Subtest: transition: cancelled -> failed
+ok 385 - transition: cancelled -> failed
+  ---
+  duration_ms: 0.210891
+  type: 'test'
+  ...
+# Subtest: transition: cancelled -> cancelled
+ok 386 - transition: cancelled -> cancelled
+  ---
+  duration_ms: 0.329944
+  type: 'test'
+  ...
+# Subtest: admission is queued at revision 1 with no effects
+ok 387 - admission is queued at revision 1 with no effects
+  ---
+  duration_ms: 0.621449
+  type: 'test'
+  ...
+# Subtest: success needs a host-verified receipt bound to job and revision
+ok 388 - success needs a host-verified receipt bound to job and revision
+  ---
+  duration_ms: 0.702595
+  type: 'test'
+  ...
+# Subtest: waiting, answer, resume, new attempt retain original identity
+ok 389 - waiting, answer, resume, new attempt retain original identity
+  ---
+  duration_ms: 1.540499
+  type: 'test'
+  ...
+# Subtest: every original identity and route leaf is immutable
+ok 390 - every original identity and route leaf is immutable
+  ---
+  duration_ms: 5.038398
+  type: 'test'
+  ...
+# Subtest: invalid, duplicate, skipped and stale revisions fail
+ok 391 - invalid, duplicate, skipped and stale revisions fail
+  ---
+  duration_ms: 0.828243
+  type: 'test'
+  ...
+# Subtest: answers and resumes bind the current requirement and reject consumed answers
+ok 392 - answers and resumes bind the current requirement and reject consumed answers
+  ---
+  duration_ms: 1.13723
+  type: 'test'
+  ...
+# Subtest: terminal cancellation rejects resume, answer and repeated cancel; observation is read only
+ok 393 - terminal cancellation rejects resume, answer and repeated cancel; observation is read only
+  ---
+  duration_ms: 1.49557
+  type: 'test'
+  ...
+# Subtest: unknown effects survive waiting and cancellation; no implicit resolution or replay
+ok 394 - unknown effects survive waiting and cancellation; no implicit resolution or replay
+  ---
+  duration_ms: 1.064536
+  type: 'test'
+  ...
+# Subtest: command and result: submit
+ok 395 - command and result: submit
+  ---
+  duration_ms: 0.334605
+  type: 'test'
+  ...
+# Subtest: command and result: inspect
+ok 396 - command and result: inspect
+  ---
+  duration_ms: 0.136627
+  type: 'test'
+  ...
+# Subtest: command and result: events
+ok 397 - command and result: events
+  ---
+  duration_ms: 0.270493
+  type: 'test'
+  ...
+# Subtest: command and result: answer
+ok 398 - command and result: answer
+  ---
+  duration_ms: 0.178209
+  type: 'test'
+  ...
+# Subtest: command and result: resume
+ok 399 - command and result: resume
+  ---
+  duration_ms: 0.138425
+  type: 'test'
+  ...
+# Subtest: command and result: cancel
+ok 400 - command and result: cancel
+  ---
+  duration_ms: 0.125975
+  type: 'test'
+  ...
+# Subtest: event batches require contiguous revisions, same identity and valid transitions
+ok 401 - event batches require contiguous revisions, same identity and valid transitions
+  ---
+  duration_ms: 2.425382
+  type: 'test'
+  ...
+# Subtest: unknown sensitive fields rejected at every nested boundary, without echo
+ok 402 - unknown sensitive fields rejected at every nested boundary, without echo
+  ---
+  duration_ms: 19.642704
+  type: 'test'
+  ...
+# Subtest: reject malformed objects, getters, symbols, unsafe refs and raw errors safely
+ok 403 - reject malformed objects, getters, symbols, unsafe refs and raw errors safely
+  ---
+  duration_ms: 0.631079
+  type: 'test'
+  ...
+# Subtest: every waiting reason and actor kind requires resolvable references
+ok 404 - every waiting reason and actor kind requires resolvable references
+  ---
+  duration_ms: 0.860836
+  type: 'test'
+  ...
+# Subtest: command-bound events reject identity, revision and command substitutions
+ok 405 - command-bound events reject identity, revision and command substitutions
+  ---
+  duration_ms: 0.798895
+  type: 'test'
+  ...
+# Subtest: results reject mismatched state and discriminants
+ok 406 - results reject mismatched state and discriminants
+  ---
+  duration_ms: 0.338416
+  type: 'test'
+  ...
+# Subtest: vault TS suite: login metadata, reference-only completion, operation and receipt
+ok 407 - vault TS suite: login metadata, reference-only completion, operation and receipt
+  ---
+  duration_ms: 12.02431
+  type: 'test'
+  ...
+# Subtest: vault TS suite: api metadata, reference-only completion, operation and receipt
+ok 408 - vault TS suite: api metadata, reference-only completion, operation and receipt
+  ---
+  duration_ms: 2.520652
+  type: 'test'
+  ...
+# Subtest: vault TS suite: refresh metadata, reference-only completion, operation and receipt
+ok 409 - vault TS suite: refresh metadata, reference-only completion, operation and receipt
+  ---
+  duration_ms: 2.223527
+  type: 'test'
+  ...
+# Subtest: vault TS suite: identity metadata, reference-only completion, operation and receipt
+ok 410 - vault TS suite: identity metadata, reference-only completion, operation and receipt
+  ---
+  duration_ms: 4.515251
+  type: 'test'
+  ...
+# Subtest: vault TS suite: payment metadata, reference-only completion, operation and receipt
+ok 411 - vault TS suite: payment metadata, reference-only completion, operation and receipt
+  ---
+  duration_ms: 1.464572
+  type: 'test'
+  ...
+# Subtest: vault capture: login
+ok 412 - vault capture: login
+  ---
+  duration_ms: 0.537998
+  type: 'test'
+  ...
+# Subtest: vault capture: api
+ok 413 - vault capture: api
+  ---
+  duration_ms: 0.548597
+  type: 'test'
+  ...
+# Subtest: vault capture: refresh
+ok 414 - vault capture: refresh
+  ---
+  duration_ms: 0.433932
+  type: 'test'
+  ...
+# Subtest: synthetic field classification: ssn
+ok 415 - synthetic field classification: ssn
+  ---
+  duration_ms: 0.444998
+  type: 'test'
+  ...
+# Subtest: synthetic field classification: legal_name
+ok 416 - synthetic field classification: legal_name
+  ---
+  duration_ms: 0.414577
+  type: 'test'
+  ...
+# Subtest: synthetic field classification: date_of_birth
+ok 417 - synthetic field classification: date_of_birth
+  ---
+  duration_ms: 0.191362
+  type: 'test'
+  ...
+# Subtest: synthetic field classification: tax_id
+ok 418 - synthetic field classification: tax_id
+  ---
+  duration_ms: 0.117131
+  type: 'test'
+  ...
+# Subtest: login new_input requires authenticated actor and item ACL
+ok 419 - login new_input requires authenticated actor and item ACL
+  ---
+  duration_ms: 1.299678
+  type: 'test'
+  ...
+# Subtest: login existing_item requires authenticated actor and item ACL
+ok 420 - login existing_item requires authenticated actor and item ACL
+  ---
+  duration_ms: 1.319048
+  type: 'test'
+  ...
+# Subtest: api new_input requires authenticated actor and item ACL
+ok 421 - api new_input requires authenticated actor and item ACL
+  ---
+  duration_ms: 1.311357
+  type: 'test'
+  ...
+# Subtest: api existing_item requires authenticated actor and item ACL
+ok 422 - api existing_item requires authenticated actor and item ACL
+  ---
+  duration_ms: 1.177405
+  type: 'test'
+  ...
+# Subtest: refresh new_input requires authenticated actor and item ACL
+ok 423 - refresh new_input requires authenticated actor and item ACL
+  ---
+  duration_ms: 1.174969
+  type: 'test'
+  ...
+# Subtest: refresh existing_item requires authenticated actor and item ACL
+ok 424 - refresh existing_item requires authenticated actor and item ACL
+  ---
+  duration_ms: 1.110285
+  type: 'test'
+  ...
+# Subtest: identity new_input requires authenticated actor and item ACL
+ok 425 - identity new_input requires authenticated actor and item ACL
+  ---
+  duration_ms: 1.127022
+  type: 'test'
+  ...
+# Subtest: identity existing_item requires authenticated actor and item ACL
+ok 426 - identity existing_item requires authenticated actor and item ACL
+  ---
+  duration_ms: 1.106664
+  type: 'test'
+  ...
+# Subtest: payment new_input requires authenticated actor and item ACL
+ok 427 - payment new_input requires authenticated actor and item ACL
+  ---
+  duration_ms: 1.115802
+  type: 'test'
+  ...
+# Subtest: payment existing_item requires authenticated actor and item ACL
+ok 428 - payment existing_item requires authenticated actor and item ACL
+  ---
+  duration_ms: 1.071562
+  type: 'test'
+  ...
+# Subtest: completion independently binds original request: operation
+ok 429 - completion independently binds original request: operation
+  ---
+  duration_ms: 0.28776
+  type: 'test'
+  ...
+# Subtest: completion independently binds original request: identity.jobId
+ok 430 - completion independently binds original request: identity.jobId
+  ---
+  duration_ms: 2.019745
+  type: 'test'
+  ...
+# Subtest: completion independently binds original request: identity.originTaskRef
+ok 431 - completion independently binds original request: identity.originTaskRef
+  ---
+  duration_ms: 0.314505
+  type: 'test'
+  ...
+# Subtest: completion independently binds original request: identity.requestKey
+ok 432 - completion independently binds original request: identity.requestKey
+  ---
+  duration_ms: 0.245143
+  type: 'test'
+  ...
+# Subtest: completion independently binds original request: identity.instructionRevision
+ok 433 - completion independently binds original request: identity.instructionRevision
+  ---
+  duration_ms: 0.231758
+  type: 'test'
+  ...
+# Subtest: completion independently binds original request: identity.host.tenantRef
+ok 434 - completion independently binds original request: identity.host.tenantRef
+  ---
+  duration_ms: 0.233159
+  type: 'test'
+  ...
+# Subtest: completion independently binds original request: identity.host.userRef
+ok 435 - completion independently binds original request: identity.host.userRef
+  ---
+  duration_ms: 0.168774
+  type: 'test'
+  ...
+# Subtest: completion independently binds original request: identity.host.projectRef
+ok 436 - completion independently binds original request: identity.host.projectRef
+  ---
+  duration_ms: 0.274533
+  type: 'test'
+  ...
+# Subtest: completion independently binds original request: identity.host.accountRef
+ok 437 - completion independently binds original request: identity.host.accountRef
+  ---
+  duration_ms: 0.249957
+  type: 'test'
+  ...
+# Subtest: completion independently binds original request: identity.host.environmentRef
+ok 438 - completion independently binds original request: identity.host.environmentRef
+  ---
+  duration_ms: 0.234723
+  type: 'test'
+  ...
+# Subtest: completion independently binds original request: identity.host.purposeRef
+ok 439 - completion independently binds original request: identity.host.purposeRef
+  ---
+  duration_ms: 0.273712
+  type: 'test'
+  ...
+# Subtest: completion independently binds original request: identity.native.requestRef
+ok 440 - completion independently binds original request: identity.native.requestRef
+  ---
+  duration_ms: 0.227614
+  type: 'test'
+  ...
+# Subtest: completion independently binds original request: identity.native.threadRef
+ok 441 - completion independently binds original request: identity.native.threadRef
+  ---
+  duration_ms: 0.351065
+  type: 'test'
+  ...
+# Subtest: completion independently binds original request: identity.native.assistantProjectRef
+ok 442 - completion independently binds original request: identity.native.assistantProjectRef
+  ---
+  duration_ms: 0.44975
+  type: 'test'
+  ...
+# Subtest: completion independently binds original request: identity.native.objectiveRef
+ok 443 - completion independently binds original request: identity.native.objectiveRef
+  ---
+  duration_ms: 0.406979
+  type: 'test'
+  ...
+# Subtest: completion independently binds original request: identity.native.rootTaskRef
+ok 444 - completion independently binds original request: identity.native.rootTaskRef
+  ---
+  duration_ms: 0.386151
+  type: 'test'
+  ...
+# Subtest: completion independently binds original request: identity.native.outcomeRef
+ok 445 - completion independently binds original request: identity.native.outcomeRef
+  ---
+  duration_ms: 0.373885
+  type: 'test'
+  ...
+# Subtest: completion independently binds original request: identity.native.backingWorkRequestRef
+ok 446 - completion independently binds original request: identity.native.backingWorkRequestRef
+  ---
+  duration_ms: 0.395576
+  type: 'test'
+  ...
+# Subtest: completion independently binds original request: identity.native.childWorkRequestRef
+ok 447 - completion independently binds original request: identity.native.childWorkRequestRef
+  ---
+  duration_ms: 0.397918
+  type: 'test'
+  ...
+# Subtest: completion independently binds original request: identity.native.turnRef
+ok 448 - completion independently binds original request: identity.native.turnRef
+  ---
+  duration_ms: 0.375683
+  type: 'test'
+  ...
+# Subtest: completion independently binds original request: identity.native.runRef
+ok 449 - completion independently binds original request: identity.native.runRef
+  ---
+  duration_ms: 0.4132
+  type: 'test'
+  ...
+# Subtest: completion independently binds original request: identity.native.actionRef
+ok 450 - completion independently binds original request: identity.native.actionRef
+  ---
+  duration_ms: 0.300232
+  type: 'test'
+  ...
+# Subtest: completion independently binds original request: identity.native.operationRef
+ok 451 - completion independently binds original request: identity.native.operationRef
+  ---
+  duration_ms: 0.301713
+  type: 'test'
+  ...
+# Subtest: completion independently binds original request: identity.native.effectRef
+ok 452 - completion independently binds original request: identity.native.effectRef
+  ---
+  duration_ms: 0.215893
+  type: 'test'
+  ...
+# Subtest: completion independently binds original request: identity.native.sourceQueue.queueRef
+ok 453 - completion independently binds original request: identity.native.sourceQueue.queueRef
+  ---
+  duration_ms: 0.438621
+  type: 'test'
+  ...
+# Subtest: completion independently binds original request: identity.native.sourceQueue.messageRef
+ok 454 - completion independently binds original request: identity.native.sourceQueue.messageRef
+  ---
+  duration_ms: 0.360826
+  type: 'test'
+  ...
+# Subtest: completion independently binds original request: identity.origin.channelRef
+ok 455 - completion independently binds original request: identity.origin.channelRef
+  ---
+  duration_ms: 0.239272
+  type: 'test'
+  ...
+# Subtest: completion independently binds original request: identity.origin.routeRef
+ok 456 - completion independently binds original request: identity.origin.routeRef
+  ---
+  duration_ms: 0.236096
+  type: 'test'
+  ...
+# Subtest: completion independently binds original request: identity.origin.correlationRef
+ok 457 - completion independently binds original request: identity.origin.correlationRef
+  ---
+  duration_ms: 0.221367
+  type: 'test'
+  ...
+# Subtest: completion independently binds original request: jobRevision
+ok 458 - completion independently binds original request: jobRevision
+  ---
+  duration_ms: 0.314565
+  type: 'test'
+  ...
+# Subtest: completion independently binds original request: requirement.kind
+ok 459 - completion independently binds original request: requirement.kind
+  ---
+  duration_ms: 0.246785
+  type: 'test'
+  ...
+# Subtest: completion independently binds original request: requirement.requirementRef
+ok 460 - completion independently binds original request: requirement.requirementRef
+  ---
+  duration_ms: 0.198874
+  type: 'test'
+  ...
+# Subtest: completion independently binds original request: requirement.revision
+ok 461 - completion independently binds original request: requirement.revision
+  ---
+  duration_ms: 0.157161
+  type: 'test'
+  ...
+# Subtest: completion independently binds original request: requirement.actor.kind
+ok 462 - completion independently binds original request: requirement.actor.kind
+  ---
+  duration_ms: 0.122492
+  type: 'test'
+  ...
+# Subtest: completion independently binds original request: requirement.actor.actorRef
+ok 463 - completion independently binds original request: requirement.actor.actorRef
+  ---
+  duration_ms: 0.151151
+  type: 'test'
+  ...
+# Subtest: completion independently binds original request: origin
+ok 464 - completion independently binds original request: origin
+  ---
+  duration_ms: 0.361473
+  type: 'test'
+  ...
+# Subtest: completion independently binds original request: metadata.kind
+ok 465 - completion independently binds original request: metadata.kind
+  ---
+  duration_ms: 0.334561
+  type: 'test'
+  ...
+# Subtest: completion independently binds original request: metadata.credential
+ok 466 - completion independently binds original request: metadata.credential
+  ---
+  duration_ms: 0.161702
+  type: 'test'
+  ...
+# Subtest: completion independently binds original request: effect.actionRef
+ok 467 - completion independently binds original request: effect.actionRef
+  ---
+  duration_ms: 0.218379
+  type: 'test'
+  ...
+# Subtest: completion independently binds original request: effect.operationRef
+ok 468 - completion independently binds original request: effect.operationRef
+  ---
+  duration_ms: 0.147326
+  type: 'test'
+  ...
+# Subtest: completion independently binds original request: effect.effectRef
+ok 469 - completion independently binds original request: effect.effectRef
+  ---
+  duration_ms: 0.175705
+  type: 'test'
+  ...
+# Subtest: completion independently binds original request: issuedAt
+ok 470 - completion independently binds original request: issuedAt
+  ---
+  duration_ms: 0.374168
+  type: 'test'
+  ...
+# Subtest: completion independently binds original request: expiresAt
+ok 471 - completion independently binds original request: expiresAt
+  ---
+  duration_ms: 0.323827
+  type: 'test'
+  ...
+# Subtest: host job independently binds identity: jobId
+ok 472 - host job independently binds identity: jobId
+  ---
+  duration_ms: 0.353065
+  type: 'test'
+  ...
+# Subtest: host job independently binds identity: originTaskRef
+ok 473 - host job independently binds identity: originTaskRef
+  ---
+  duration_ms: 0.303666
+  type: 'test'
+  ...
+# Subtest: host job independently binds identity: requestKey
+ok 474 - host job independently binds identity: requestKey
+  ---
+  duration_ms: 0.299156
+  type: 'test'
+  ...
+# Subtest: host job independently binds identity: instructionRevision
+ok 475 - host job independently binds identity: instructionRevision
+  ---
+  duration_ms: 0.320968
+  type: 'test'
+  ...
+# Subtest: host job independently binds identity: host.tenantRef
+ok 476 - host job independently binds identity: host.tenantRef
+  ---
+  duration_ms: 0.266481
+  type: 'test'
+  ...
+# Subtest: host job independently binds identity: host.userRef
+ok 477 - host job independently binds identity: host.userRef
+  ---
+  duration_ms: 0.294139
+  type: 'test'
+  ...
+# Subtest: host job independently binds identity: host.projectRef
+ok 478 - host job independently binds identity: host.projectRef
+  ---
+  duration_ms: 0.270544
+  type: 'test'
+  ...
+# Subtest: host job independently binds identity: host.accountRef
+ok 479 - host job independently binds identity: host.accountRef
+  ---
+  duration_ms: 0.329682
+  type: 'test'
+  ...
+# Subtest: host job independently binds identity: host.environmentRef
+ok 480 - host job independently binds identity: host.environmentRef
+  ---
+  duration_ms: 0.335104
+  type: 'test'
+  ...
+# Subtest: host job independently binds identity: host.purposeRef
+ok 481 - host job independently binds identity: host.purposeRef
+  ---
+  duration_ms: 0.316368
+  type: 'test'
+  ...
+# Subtest: host job independently binds identity: native.requestRef
+ok 482 - host job independently binds identity: native.requestRef
+  ---
+  duration_ms: 0.313464
+  type: 'test'
+  ...
+# Subtest: host job independently binds identity: native.threadRef
+ok 483 - host job independently binds identity: native.threadRef
+  ---
+  duration_ms: 0.237511
+  type: 'test'
+  ...
+# Subtest: host job independently binds identity: native.assistantProjectRef
+ok 484 - host job independently binds identity: native.assistantProjectRef
+  ---
+  duration_ms: 0.291318
+  type: 'test'
+  ...
+# Subtest: host job independently binds identity: native.objectiveRef
+ok 485 - host job independently binds identity: native.objectiveRef
+  ---
+  duration_ms: 0.291373
+  type: 'test'
+  ...
+# Subtest: host job independently binds identity: native.rootTaskRef
+ok 486 - host job independently binds identity: native.rootTaskRef
+  ---
+  duration_ms: 0.239327
+  type: 'test'
+  ...
+# Subtest: host job independently binds identity: native.outcomeRef
+ok 487 - host job independently binds identity: native.outcomeRef
+  ---
+  duration_ms: 0.339697
+  type: 'test'
+  ...
+# Subtest: host job independently binds identity: native.backingWorkRequestRef
+ok 488 - host job independently binds identity: native.backingWorkRequestRef
+  ---
+  duration_ms: 0.238689
+  type: 'test'
+  ...
+# Subtest: host job independently binds identity: native.childWorkRequestRef
+ok 489 - host job independently binds identity: native.childWorkRequestRef
+  ---
+  duration_ms: 0.305705
+  type: 'test'
+  ...
+# Subtest: host job independently binds identity: native.turnRef
+ok 490 - host job independently binds identity: native.turnRef
+  ---
+  duration_ms: 0.226083
+  type: 'test'
+  ...
+# Subtest: host job independently binds identity: native.runRef
+ok 491 - host job independently binds identity: native.runRef
+  ---
+  duration_ms: 0.333155
+  type: 'test'
+  ...
+# Subtest: host job independently binds identity: native.actionRef
+ok 492 - host job independently binds identity: native.actionRef
+  ---
+  duration_ms: 0.250884
+  type: 'test'
+  ...
+# Subtest: host job independently binds identity: native.operationRef
+ok 493 - host job independently binds identity: native.operationRef
+  ---
+  duration_ms: 0.304079
+  type: 'test'
+  ...
+# Subtest: host job independently binds identity: native.effectRef
+ok 494 - host job independently binds identity: native.effectRef
+  ---
+  duration_ms: 0.314213
+  type: 'test'
+  ...
+# Subtest: host job independently binds identity: native.sourceQueue.queueRef
+ok 495 - host job independently binds identity: native.sourceQueue.queueRef
+  ---
+  duration_ms: 0.289709
+  type: 'test'
+  ...
+# Subtest: host job independently binds identity: native.sourceQueue.messageRef
+ok 496 - host job independently binds identity: native.sourceQueue.messageRef
+  ---
+  duration_ms: 0.308607
+  type: 'test'
+  ...
+# Subtest: host job independently binds identity: origin.channelRef
+ok 497 - host job independently binds identity: origin.channelRef
+  ---
+  duration_ms: 0.274938
+  type: 'test'
+  ...
+# Subtest: host job independently binds identity: origin.routeRef
+ok 498 - host job independently binds identity: origin.routeRef
+  ---
+  duration_ms: 0.310462
+  type: 'test'
+  ...
+# Subtest: host job independently binds identity: origin.correlationRef
+ok 499 - host job independently binds identity: origin.correlationRef
+  ---
+  duration_ms: 0.319577
+  type: 'test'
+  ...
+# Subtest: completion binds answer, family, source, item identity and current item revision
+ok 500 - completion binds answer, family, source, item identity and current item revision
+  ---
+  duration_ms: 1.790299
+  type: 'test'
+  ...
+# Subtest: stale completion: job revision
+ok 501 - stale completion: job revision
+  ---
+  duration_ms: 0.475119
+  type: 'test'
+  ...
+# Subtest: stale completion: challenge
+ok 502 - stale completion: challenge
+  ---
+  duration_ms: 0.454613
+  type: 'test'
+  ...
+# Subtest: stale completion: challenge revision
+ok 503 - stale completion: challenge revision
+  ---
+  duration_ms: 0.404433
+  type: 'test'
+  ...
+# Subtest: stale completion: already answered
+ok 504 - stale completion: already answered
+  ---
+  duration_ms: 2.323744
+  type: 'test'
+  ...
+# Subtest: stale completion: not waiting
+ok 505 - stale completion: not waiting
+  ---
+  duration_ms: 0.651214
+  type: 'test'
+  ...
+# Subtest: authorized identical replay keeps all identities and the original effect; conflicts never reapply
+ok 506 - authorized identical replay keeps all identities and the original effect; conflicts never reapply
+  ---
+  duration_ms: 17.299374
+  type: 'test'
+  ...
+# Subtest: entry expiry, revocation, cancellation, lifetime limits and narrower host policy
+ok 507 - entry expiry, revocation, cancellation, lifetime limits and narrower host policy
+  ---
+  duration_ms: 4.861664
+  type: 'test'
+  ...
+# Subtest: use expiry, revocation, cancellation, lifetime limits and narrower host policy
+ok 508 - use expiry, revocation, cancellation, lifetime limits and narrower host policy
+  ---
+  duration_ms: 4.556023
+  type: 'test'
+  ...
+# Subtest: login use binds grant and destination: identity.jobId
+ok 509 - login use binds grant and destination: identity.jobId
+  ---
+  duration_ms: 0.470533
+  type: 'test'
+  ...
+# Subtest: login use binds grant and destination: identity.originTaskRef
+ok 510 - login use binds grant and destination: identity.originTaskRef
+  ---
+  duration_ms: 0.354015
+  type: 'test'
+  ...
+# Subtest: login use binds grant and destination: identity.requestKey
+ok 511 - login use binds grant and destination: identity.requestKey
+  ---
+  duration_ms: 0.342949
+  type: 'test'
+  ...
+# Subtest: login use binds grant and destination: identity.instructionRevision
+ok 512 - login use binds grant and destination: identity.instructionRevision
+  ---
+  duration_ms: 0.329584
+  type: 'test'
+  ...
+# Subtest: login use binds grant and destination: identity.host.tenantRef
+ok 513 - login use binds grant and destination: identity.host.tenantRef
+  ---
+  duration_ms: 0.282228
+  type: 'test'
+  ...
+# Subtest: login use binds grant and destination: identity.host.userRef
+ok 514 - login use binds grant and destination: identity.host.userRef
+  ---
+  duration_ms: 0.326767
+  type: 'test'
+  ...
+# Subtest: login use binds grant and destination: identity.host.projectRef
+ok 515 - login use binds grant and destination: identity.host.projectRef
+  ---
+  duration_ms: 0.306066
+  type: 'test'
+  ...
+# Subtest: login use binds grant and destination: identity.host.accountRef
+ok 516 - login use binds grant and destination: identity.host.accountRef
+  ---
+  duration_ms: 0.326757
+  type: 'test'
+  ...
+# Subtest: login use binds grant and destination: identity.host.environmentRef
+ok 517 - login use binds grant and destination: identity.host.environmentRef
+  ---
+  duration_ms: 0.343338
+  type: 'test'
+  ...
+# Subtest: login use binds grant and destination: identity.host.purposeRef
+ok 518 - login use binds grant and destination: identity.host.purposeRef
+  ---
+  duration_ms: 0.279465
+  type: 'test'
+  ...
+# Subtest: login use binds grant and destination: identity.native.requestRef
+ok 519 - login use binds grant and destination: identity.native.requestRef
+  ---
+  duration_ms: 0.302912
+  type: 'test'
+  ...
+# Subtest: login use binds grant and destination: identity.native.threadRef
+ok 520 - login use binds grant and destination: identity.native.threadRef
+  ---
+  duration_ms: 0.323964
+  type: 'test'
+  ...
+# Subtest: login use binds grant and destination: identity.native.assistantProjectRef
+ok 521 - login use binds grant and destination: identity.native.assistantProjectRef
+  ---
+  duration_ms: 0.34596
+  type: 'test'
+  ...
+# Subtest: login use binds grant and destination: identity.native.objectiveRef
+ok 522 - login use binds grant and destination: identity.native.objectiveRef
+  ---
+  duration_ms: 0.365498
+  type: 'test'
+  ...
+# Subtest: login use binds grant and destination: identity.native.rootTaskRef
+ok 523 - login use binds grant and destination: identity.native.rootTaskRef
+  ---
+  duration_ms: 0.253653
+  type: 'test'
+  ...
+# Subtest: login use binds grant and destination: identity.native.outcomeRef
+ok 524 - login use binds grant and destination: identity.native.outcomeRef
+  ---
+  duration_ms: 0.367531
+  type: 'test'
+  ...
+# Subtest: login use binds grant and destination: identity.native.backingWorkRequestRef
+ok 525 - login use binds grant and destination: identity.native.backingWorkRequestRef
+  ---
+  duration_ms: 0.28177
+  type: 'test'
+  ...
+# Subtest: login use binds grant and destination: identity.native.childWorkRequestRef
+ok 526 - login use binds grant and destination: identity.native.childWorkRequestRef
+  ---
+  duration_ms: 0.275751
+  type: 'test'
+  ...
+# Subtest: login use binds grant and destination: identity.native.turnRef
+ok 527 - login use binds grant and destination: identity.native.turnRef
+  ---
+  duration_ms: 0.331268
+  type: 'test'
+  ...
+# Subtest: login use binds grant and destination: identity.native.runRef
+ok 528 - login use binds grant and destination: identity.native.runRef
+  ---
+  duration_ms: 0.249326
+  type: 'test'
+  ...
+# Subtest: login use binds grant and destination: identity.native.actionRef
+ok 529 - login use binds grant and destination: identity.native.actionRef
+  ---
+  duration_ms: 0.22813
+  type: 'test'
+  ...
+# Subtest: login use binds grant and destination: identity.native.operationRef
+ok 530 - login use binds grant and destination: identity.native.operationRef
+  ---
+  duration_ms: 0.921561
+  type: 'test'
+  ...
+# Subtest: login use binds grant and destination: identity.native.effectRef
+ok 531 - login use binds grant and destination: identity.native.effectRef
+  ---
+  duration_ms: 0.262135
+  type: 'test'
+  ...
+# Subtest: login use binds grant and destination: identity.native.sourceQueue.queueRef
+ok 532 - login use binds grant and destination: identity.native.sourceQueue.queueRef
+  ---
+  duration_ms: 0.344905
+  type: 'test'
+  ...
+# Subtest: login use binds grant and destination: identity.native.sourceQueue.messageRef
+ok 533 - login use binds grant and destination: identity.native.sourceQueue.messageRef
+  ---
+  duration_ms: 0.334158
+  type: 'test'
+  ...
+# Subtest: login use binds grant and destination: identity.origin.channelRef
+ok 534 - login use binds grant and destination: identity.origin.channelRef
+  ---
+  duration_ms: 0.253342
+  type: 'test'
+  ...
+# Subtest: login use binds grant and destination: identity.origin.routeRef
+ok 535 - login use binds grant and destination: identity.origin.routeRef
+  ---
+  duration_ms: 0.327675
+  type: 'test'
+  ...
+# Subtest: login use binds grant and destination: identity.origin.correlationRef
+ok 536 - login use binds grant and destination: identity.origin.correlationRef
+  ---
+  duration_ms: 0.324738
+  type: 'test'
+  ...
+# Subtest: login use binds grant and destination: jobRevision
+ok 537 - login use binds grant and destination: jobRevision
+  ---
+  duration_ms: 0.318081
+  type: 'test'
+  ...
+# Subtest: login use binds grant and destination: grantRef
+ok 538 - login use binds grant and destination: grantRef
+  ---
+  duration_ms: 0.276165
+  type: 'test'
+  ...
+# Subtest: login use binds grant and destination: grantRevision
+ok 539 - login use binds grant and destination: grantRevision
+  ---
+  duration_ms: 0.298633
+  type: 'test'
+  ...
+# Subtest: login use binds grant and destination: effect.actionRef
+ok 540 - login use binds grant and destination: effect.actionRef
+  ---
+  duration_ms: 0.190283
+  type: 'test'
+  ...
+# Subtest: login use binds grant and destination: effect.operationRef
+ok 541 - login use binds grant and destination: effect.operationRef
+  ---
+  duration_ms: 0.197664
+  type: 'test'
+  ...
+# Subtest: login use binds grant and destination: effect.effectRef
+ok 542 - login use binds grant and destination: effect.effectRef
+  ---
+  duration_ms: 0.169832
+  type: 'test'
+  ...
+# Subtest: login use binds grant and destination: operation
+ok 543 - login use binds grant and destination: operation
+  ---
+  duration_ms: 0.189492
+  type: 'test'
+  ...
+# Subtest: login use binds grant and destination: item.metadata.kind
+ok 544 - login use binds grant and destination: item.metadata.kind
+  ---
+  duration_ms: 0.127856
+  type: 'test'
+  ...
+# Subtest: login use binds grant and destination: item.metadata.credential
+ok 545 - login use binds grant and destination: item.metadata.credential
+  ---
+  duration_ms: 0.154233
+  type: 'test'
+  ...
+# Subtest: login use binds grant and destination: item.reference.kind
+ok 546 - login use binds grant and destination: item.reference.kind
+  ---
+  duration_ms: 0.190304
+  type: 'test'
+  ...
+# Subtest: login use binds grant and destination: item.reference.itemRef
+ok 547 - login use binds grant and destination: item.reference.itemRef
+  ---
+  duration_ms: 0.294305
+  type: 'test'
+  ...
+# Subtest: login use binds grant and destination: item.reference.revision
+ok 548 - login use binds grant and destination: item.reference.revision
+  ---
+  duration_ms: 0.266316
+  type: 'test'
+  ...
+# Subtest: login use binds grant and destination: destination.origin
+ok 549 - login use binds grant and destination: destination.origin
+  ---
+  duration_ms: 0.247649
+  type: 'test'
+  ...
+# Subtest: login use binds grant and destination: destination.profileRef
+ok 550 - login use binds grant and destination: destination.profileRef
+  ---
+  duration_ms: 0.251638
+  type: 'test'
+  ...
+# Subtest: login use binds grant and destination: destination.leaseEpoch
+ok 551 - login use binds grant and destination: destination.leaseEpoch
+  ---
+  duration_ms: 0.334053
+  type: 'test'
+  ...
+# Subtest: login use binds grant and destination: destination.documentRef
+ok 552 - login use binds grant and destination: destination.documentRef
+  ---
+  duration_ms: 0.30613
+  type: 'test'
+  ...
+# Subtest: login use binds grant and destination: destination.navigationRevision
+ok 553 - login use binds grant and destination: destination.navigationRevision
+  ---
+  duration_ms: 0.257411
+  type: 'test'
+  ...
+# Subtest: login use binds grant and destination: destination.frames.0.frameRef
+ok 554 - login use binds grant and destination: destination.frames.0.frameRef
+  ---
+  duration_ms: 0.337804
+  type: 'test'
+  ...
+# Subtest: login use binds grant and destination: destination.frames.0.origin
+ok 555 - login use binds grant and destination: destination.frames.0.origin
+  ---
+  duration_ms: 0.17245
+  type: 'test'
+  ...
+# Subtest: login use binds grant and destination: destination.frames.1.frameRef
+ok 556 - login use binds grant and destination: destination.frames.1.frameRef
+  ---
+  duration_ms: 0.319964
+  type: 'test'
+  ...
+# Subtest: login use binds grant and destination: destination.frames.1.origin
+ok 557 - login use binds grant and destination: destination.frames.1.origin
+  ---
+  duration_ms: 0.329587
+  type: 'test'
+  ...
+# Subtest: login use binds grant and destination: destination.fieldRef
+ok 558 - login use binds grant and destination: destination.fieldRef
+  ---
+  duration_ms: 0.256804
+  type: 'test'
+  ...
+# Subtest: login use binds grant and destination: destination.fieldKind
+ok 559 - login use binds grant and destination: destination.fieldKind
+  ---
+  duration_ms: 0.264797
+  type: 'test'
+  ...
+# Subtest: login use binds grant and destination: destination.formEndpoint
+ok 560 - login use binds grant and destination: destination.formEndpoint
+  ---
+  duration_ms: 0.381924
+  type: 'test'
+  ...
+# Subtest: api use binds grant and destination: identity.jobId
+ok 561 - api use binds grant and destination: identity.jobId
+  ---
+  duration_ms: 0.260405
+  type: 'test'
+  ...
+# Subtest: api use binds grant and destination: identity.originTaskRef
+ok 562 - api use binds grant and destination: identity.originTaskRef
+  ---
+  duration_ms: 0.271508
+  type: 'test'
+  ...
+# Subtest: api use binds grant and destination: identity.requestKey
+ok 563 - api use binds grant and destination: identity.requestKey
+  ---
+  duration_ms: 0.22623
+  type: 'test'
+  ...
+# Subtest: api use binds grant and destination: identity.instructionRevision
+ok 564 - api use binds grant and destination: identity.instructionRevision
+  ---
+  duration_ms: 0.302768
+  type: 'test'
+  ...
+# Subtest: api use binds grant and destination: identity.host.tenantRef
+ok 565 - api use binds grant and destination: identity.host.tenantRef
+  ---
+  duration_ms: 0.28064
+  type: 'test'
+  ...
+# Subtest: api use binds grant and destination: identity.host.userRef
+ok 566 - api use binds grant and destination: identity.host.userRef
+  ---
+  duration_ms: 0.341394
+  type: 'test'
+  ...
+# Subtest: api use binds grant and destination: identity.host.projectRef
+ok 567 - api use binds grant and destination: identity.host.projectRef
+  ---
+  duration_ms: 0.345171
+  type: 'test'
+  ...
+# Subtest: api use binds grant and destination: identity.host.accountRef
+ok 568 - api use binds grant and destination: identity.host.accountRef
+  ---
+  duration_ms: 0.341941
+  type: 'test'
+  ...
+# Subtest: api use binds grant and destination: identity.host.environmentRef
+ok 569 - api use binds grant and destination: identity.host.environmentRef
+  ---
+  duration_ms: 0.315056
+  type: 'test'
+  ...
+# Subtest: api use binds grant and destination: identity.host.purposeRef
+ok 570 - api use binds grant and destination: identity.host.purposeRef
+  ---
+  duration_ms: 0.281683
+  type: 'test'
+  ...
+# Subtest: api use binds grant and destination: identity.native.requestRef
+ok 571 - api use binds grant and destination: identity.native.requestRef
+  ---
+  duration_ms: 0.288693
+  type: 'test'
+  ...
+# Subtest: api use binds grant and destination: identity.native.threadRef
+ok 572 - api use binds grant and destination: identity.native.threadRef
+  ---
+  duration_ms: 0.26971
+  type: 'test'
+  ...
+# Subtest: api use binds grant and destination: identity.native.assistantProjectRef
+ok 573 - api use binds grant and destination: identity.native.assistantProjectRef
+  ---
+  duration_ms: 0.221357
+  type: 'test'
+  ...
+# Subtest: api use binds grant and destination: identity.native.objectiveRef
+ok 574 - api use binds grant and destination: identity.native.objectiveRef
+  ---
+  duration_ms: 0.205843
+  type: 'test'
+  ...
+# Subtest: api use binds grant and destination: identity.native.rootTaskRef
+ok 575 - api use binds grant and destination: identity.native.rootTaskRef
+  ---
+  duration_ms: 0.215994
+  type: 'test'
+  ...
+# Subtest: api use binds grant and destination: identity.native.outcomeRef
+ok 576 - api use binds grant and destination: identity.native.outcomeRef
+  ---
+  duration_ms: 0.204517
+  type: 'test'
+  ...
+# Subtest: api use binds grant and destination: identity.native.backingWorkRequestRef
+ok 577 - api use binds grant and destination: identity.native.backingWorkRequestRef
+  ---
+  duration_ms: 0.214967
+  type: 'test'
+  ...
+# Subtest: api use binds grant and destination: identity.native.childWorkRequestRef
+ok 578 - api use binds grant and destination: identity.native.childWorkRequestRef
+  ---
+  duration_ms: 0.307333
+  type: 'test'
+  ...
+# Subtest: api use binds grant and destination: identity.native.turnRef
+ok 579 - api use binds grant and destination: identity.native.turnRef
+  ---
+  duration_ms: 0.281109
+  type: 'test'
+  ...
+# Subtest: api use binds grant and destination: identity.native.runRef
+ok 580 - api use binds grant and destination: identity.native.runRef
+  ---
+  duration_ms: 0.286833
+  type: 'test'
+  ...
+# Subtest: api use binds grant and destination: identity.native.actionRef
+ok 581 - api use binds grant and destination: identity.native.actionRef
+  ---
+  duration_ms: 0.211205
+  type: 'test'
+  ...
+# Subtest: api use binds grant and destination: identity.native.operationRef
+ok 582 - api use binds grant and destination: identity.native.operationRef
+  ---
+  duration_ms: 0.156507
+  type: 'test'
+  ...
+# Subtest: api use binds grant and destination: identity.native.effectRef
+ok 583 - api use binds grant and destination: identity.native.effectRef
+  ---
+  duration_ms: 0.177762
+  type: 'test'
+  ...
+# Subtest: api use binds grant and destination: identity.native.sourceQueue.queueRef
+ok 584 - api use binds grant and destination: identity.native.sourceQueue.queueRef
+  ---
+  duration_ms: 0.271575
+  type: 'test'
+  ...
+# Subtest: api use binds grant and destination: identity.native.sourceQueue.messageRef
+ok 585 - api use binds grant and destination: identity.native.sourceQueue.messageRef
+  ---
+  duration_ms: 0.276867
+  type: 'test'
+  ...
+# Subtest: api use binds grant and destination: identity.origin.channelRef
+ok 586 - api use binds grant and destination: identity.origin.channelRef
+  ---
+  duration_ms: 0.248387
+  type: 'test'
+  ...
+# Subtest: api use binds grant and destination: identity.origin.routeRef
+ok 587 - api use binds grant and destination: identity.origin.routeRef
+  ---
+  duration_ms: 0.289458
+  type: 'test'
+  ...
+# Subtest: api use binds grant and destination: identity.origin.correlationRef
+ok 588 - api use binds grant and destination: identity.origin.correlationRef
+  ---
+  duration_ms: 0.298554
+  type: 'test'
+  ...
+# Subtest: api use binds grant and destination: jobRevision
+ok 589 - api use binds grant and destination: jobRevision
+  ---
+  duration_ms: 0.270074
+  type: 'test'
+  ...
+# Subtest: api use binds grant and destination: grantRef
+ok 590 - api use binds grant and destination: grantRef
+  ---
+  duration_ms: 0.216612
+  type: 'test'
+  ...
+# Subtest: api use binds grant and destination: grantRevision
+ok 591 - api use binds grant and destination: grantRevision
+  ---
+  duration_ms: 0.282978
+  type: 'test'
+  ...
+# Subtest: api use binds grant and destination: effect.actionRef
+ok 592 - api use binds grant and destination: effect.actionRef
+  ---
+  duration_ms: 0.149685
+  type: 'test'
+  ...
+# Subtest: api use binds grant and destination: effect.operationRef
+ok 593 - api use binds grant and destination: effect.operationRef
+  ---
+  duration_ms: 0.19603
+  type: 'test'
+  ...
+# Subtest: api use binds grant and destination: effect.effectRef
+ok 594 - api use binds grant and destination: effect.effectRef
+  ---
+  duration_ms: 0.142535
+  type: 'test'
+  ...
+# Subtest: api use binds grant and destination: operation
+ok 595 - api use binds grant and destination: operation
+  ---
+  duration_ms: 0.182768
+  type: 'test'
+  ...
+# Subtest: api use binds grant and destination: item.metadata.kind
+ok 596 - api use binds grant and destination: item.metadata.kind
+  ---
+  duration_ms: 0.123997
+  type: 'test'
+  ...
+# Subtest: api use binds grant and destination: item.metadata.tokenType
+ok 597 - api use binds grant and destination: item.metadata.tokenType
+  ---
+  duration_ms: 0.124713
+  type: 'test'
+  ...
+# Subtest: api use binds grant and destination: item.reference.kind
+ok 598 - api use binds grant and destination: item.reference.kind
+  ---
+  duration_ms: 0.190633
+  type: 'test'
+  ...
+# Subtest: api use binds grant and destination: item.reference.itemRef
+ok 599 - api use binds grant and destination: item.reference.itemRef
+  ---
+  duration_ms: 0.242685
+  type: 'test'
+  ...
+# Subtest: api use binds grant and destination: item.reference.revision
+ok 600 - api use binds grant and destination: item.reference.revision
+  ---
+  duration_ms: 0.23895
+  type: 'test'
+  ...
+# Subtest: api use binds grant and destination: destination.endpoint
+ok 601 - api use binds grant and destination: destination.endpoint
+  ---
+  duration_ms: 0.194905
+  type: 'test'
+  ...
+# Subtest: api use binds grant and destination: destination.method
+ok 602 - api use binds grant and destination: destination.method
+  ---
+  duration_ms: 0.228102
+  type: 'test'
+  ...
+# Subtest: api use binds grant and destination: destination.resourceRef
+ok 603 - api use binds grant and destination: destination.resourceRef
+  ---
+  duration_ms: 0.284572
+  type: 'test'
+  ...
+# Subtest: api use binds grant and destination: destination.redirects
+ok 604 - api use binds grant and destination: destination.redirects
+  ---
+  duration_ms: 0.143309
+  type: 'test'
+  ...
+# Subtest: refresh use binds grant and destination: identity.jobId
+ok 605 - refresh use binds grant and destination: identity.jobId
+  ---
+  duration_ms: 0.274307
+  type: 'test'
+  ...
+# Subtest: refresh use binds grant and destination: identity.originTaskRef
+ok 606 - refresh use binds grant and destination: identity.originTaskRef
+  ---
+  duration_ms: 0.249845
+  type: 'test'
+  ...
+# Subtest: refresh use binds grant and destination: identity.requestKey
+ok 607 - refresh use binds grant and destination: identity.requestKey
+  ---
+  duration_ms: 0.25956
+  type: 'test'
+  ...
+# Subtest: refresh use binds grant and destination: identity.instructionRevision
+ok 608 - refresh use binds grant and destination: identity.instructionRevision
+  ---
+  duration_ms: 0.231559
+  type: 'test'
+  ...
+# Subtest: refresh use binds grant and destination: identity.host.tenantRef
+ok 609 - refresh use binds grant and destination: identity.host.tenantRef
+  ---
+  duration_ms: 0.285839
+  type: 'test'
+  ...
+# Subtest: refresh use binds grant and destination: identity.host.userRef
+ok 610 - refresh use binds grant and destination: identity.host.userRef
+  ---
+  duration_ms: 0.267037
+  type: 'test'
+  ...
+# Subtest: refresh use binds grant and destination: identity.host.projectRef
+ok 611 - refresh use binds grant and destination: identity.host.projectRef
+  ---
+  duration_ms: 1.254457
+  type: 'test'
+  ...
+# Subtest: refresh use binds grant and destination: identity.host.accountRef
+ok 612 - refresh use binds grant and destination: identity.host.accountRef
+  ---
+  duration_ms: 0.348593
+  type: 'test'
+  ...
+# Subtest: refresh use binds grant and destination: identity.host.environmentRef
+ok 613 - refresh use binds grant and destination: identity.host.environmentRef
+  ---
+  duration_ms: 0.252931
+  type: 'test'
+  ...
+# Subtest: refresh use binds grant and destination: identity.host.purposeRef
+ok 614 - refresh use binds grant and destination: identity.host.purposeRef
+  ---
+  duration_ms: 0.268916
+  type: 'test'
+  ...
+# Subtest: refresh use binds grant and destination: identity.native.requestRef
+ok 615 - refresh use binds grant and destination: identity.native.requestRef
+  ---
+  duration_ms: 0.30314
+  type: 'test'
+  ...
+# Subtest: refresh use binds grant and destination: identity.native.threadRef
+ok 616 - refresh use binds grant and destination: identity.native.threadRef
+  ---
+  duration_ms: 0.312425
+  type: 'test'
+  ...
+# Subtest: refresh use binds grant and destination: identity.native.assistantProjectRef
+ok 617 - refresh use binds grant and destination: identity.native.assistantProjectRef
+  ---
+  duration_ms: 0.260431
+  type: 'test'
+  ...
+# Subtest: refresh use binds grant and destination: identity.native.objectiveRef
+ok 618 - refresh use binds grant and destination: identity.native.objectiveRef
+  ---
+  duration_ms: 0.289083
+  type: 'test'
+  ...
+# Subtest: refresh use binds grant and destination: identity.native.rootTaskRef
+ok 619 - refresh use binds grant and destination: identity.native.rootTaskRef
+  ---
+  duration_ms: 0.27361
+  type: 'test'
+  ...
+# Subtest: refresh use binds grant and destination: identity.native.outcomeRef
+ok 620 - refresh use binds grant and destination: identity.native.outcomeRef
+  ---
+  duration_ms: 0.325782
+  type: 'test'
+  ...
+# Subtest: refresh use binds grant and destination: identity.native.backingWorkRequestRef
+ok 621 - refresh use binds grant and destination: identity.native.backingWorkRequestRef
+  ---
+  duration_ms: 0.270361
+  type: 'test'
+  ...
+# Subtest: refresh use binds grant and destination: identity.native.childWorkRequestRef
+ok 622 - refresh use binds grant and destination: identity.native.childWorkRequestRef
+  ---
+  duration_ms: 0.322884
+  type: 'test'
+  ...
+# Subtest: refresh use binds grant and destination: identity.native.turnRef
+ok 623 - refresh use binds grant and destination: identity.native.turnRef
+  ---
+  duration_ms: 0.289992
+  type: 'test'
+  ...
+# Subtest: refresh use binds grant and destination: identity.native.runRef
+ok 624 - refresh use binds grant and destination: identity.native.runRef
+  ---
+  duration_ms: 0.252793
+  type: 'test'
+  ...
+# Subtest: refresh use binds grant and destination: identity.native.actionRef
+ok 625 - refresh use binds grant and destination: identity.native.actionRef
+  ---
+  duration_ms: 0.185887
+  type: 'test'
+  ...
+# Subtest: refresh use binds grant and destination: identity.native.operationRef
+ok 626 - refresh use binds grant and destination: identity.native.operationRef
+  ---
+  duration_ms: 0.144817
+  type: 'test'
+  ...
+# Subtest: refresh use binds grant and destination: identity.native.effectRef
+ok 627 - refresh use binds grant and destination: identity.native.effectRef
+  ---
+  duration_ms: 0.200426
+  type: 'test'
+  ...
+# Subtest: refresh use binds grant and destination: identity.native.sourceQueue.queueRef
+ok 628 - refresh use binds grant and destination: identity.native.sourceQueue.queueRef
+  ---
+  duration_ms: 0.381585
+  type: 'test'
+  ...
+# Subtest: refresh use binds grant and destination: identity.native.sourceQueue.messageRef
+ok 629 - refresh use binds grant and destination: identity.native.sourceQueue.messageRef
+  ---
+  duration_ms: 0.375213
+  type: 'test'
+  ...
+# Subtest: refresh use binds grant and destination: identity.origin.channelRef
+ok 630 - refresh use binds grant and destination: identity.origin.channelRef
+  ---
+  duration_ms: 0.360419
+  type: 'test'
+  ...
+# Subtest: refresh use binds grant and destination: identity.origin.routeRef
+ok 631 - refresh use binds grant and destination: identity.origin.routeRef
+  ---
+  duration_ms: 0.295014
+  type: 'test'
+  ...
+# Subtest: refresh use binds grant and destination: identity.origin.correlationRef
+ok 632 - refresh use binds grant and destination: identity.origin.correlationRef
+  ---
+  duration_ms: 0.30241
+  type: 'test'
+  ...
+# Subtest: refresh use binds grant and destination: jobRevision
+ok 633 - refresh use binds grant and destination: jobRevision
+  ---
+  duration_ms: 0.283692
+  type: 'test'
+  ...
+# Subtest: refresh use binds grant and destination: grantRef
+ok 634 - refresh use binds grant and destination: grantRef
+  ---
+  duration_ms: 0.279743
+  type: 'test'
+  ...
+# Subtest: refresh use binds grant and destination: grantRevision
+ok 635 - refresh use binds grant and destination: grantRevision
+  ---
+  duration_ms: 0.253239
+  type: 'test'
+  ...
+# Subtest: refresh use binds grant and destination: effect.actionRef
+ok 636 - refresh use binds grant and destination: effect.actionRef
+  ---
+  duration_ms: 0.170651
+  type: 'test'
+  ...
+# Subtest: refresh use binds grant and destination: effect.operationRef
+ok 637 - refresh use binds grant and destination: effect.operationRef
+  ---
+  duration_ms: 0.19794
+  type: 'test'
+  ...
+# Subtest: refresh use binds grant and destination: effect.effectRef
+ok 638 - refresh use binds grant and destination: effect.effectRef
+  ---
+  duration_ms: 0.19741
+  type: 'test'
+  ...
+# Subtest: refresh use binds grant and destination: operation
+ok 639 - refresh use binds grant and destination: operation
+  ---
+  duration_ms: 0.13109
+  type: 'test'
+  ...
+# Subtest: refresh use binds grant and destination: item.metadata.kind
+ok 640 - refresh use binds grant and destination: item.metadata.kind
+  ---
+  duration_ms: 0.182685
+  type: 'test'
+  ...
+# Subtest: refresh use binds grant and destination: item.metadata.tokenType
+ok 641 - refresh use binds grant and destination: item.metadata.tokenType
+  ---
+  duration_ms: 0.172865
+  type: 'test'
+  ...
+# Subtest: refresh use binds grant and destination: item.reference.kind
+ok 642 - refresh use binds grant and destination: item.reference.kind
+  ---
+  duration_ms: 0.144834
+  type: 'test'
+  ...
+# Subtest: refresh use binds grant and destination: item.reference.itemRef
+ok 643 - refresh use binds grant and destination: item.reference.itemRef
+  ---
+  duration_ms: 0.289058
+  type: 'test'
+  ...
+# Subtest: refresh use binds grant and destination: item.reference.revision
+ok 644 - refresh use binds grant and destination: item.reference.revision
+  ---
+  duration_ms: 0.30758
+  type: 'test'
+  ...
+# Subtest: refresh use binds grant and destination: destination.endpoint
+ok 645 - refresh use binds grant and destination: destination.endpoint
+  ---
+  duration_ms: 0.213002
+  type: 'test'
+  ...
+# Subtest: refresh use binds grant and destination: destination.method
+ok 646 - refresh use binds grant and destination: destination.method
+  ---
+  duration_ms: 0.227439
+  type: 'test'
+  ...
+# Subtest: refresh use binds grant and destination: destination.resourceRef
+ok 647 - refresh use binds grant and destination: destination.resourceRef
+  ---
+  duration_ms: 0.311774
+  type: 'test'
+  ...
+# Subtest: refresh use binds grant and destination: destination.redirects
+ok 648 - refresh use binds grant and destination: destination.redirects
+  ---
+  duration_ms: 0.181467
+  type: 'test'
+  ...
+# Subtest: identity use binds grant and destination: identity.jobId
+ok 649 - identity use binds grant and destination: identity.jobId
+  ---
+  duration_ms: 0.412098
+  type: 'test'
+  ...
+# Subtest: identity use binds grant and destination: identity.originTaskRef
+ok 650 - identity use binds grant and destination: identity.originTaskRef
+  ---
+  duration_ms: 0.341532
+  type: 'test'
+  ...
+# Subtest: identity use binds grant and destination: identity.requestKey
+ok 651 - identity use binds grant and destination: identity.requestKey
+  ---
+  duration_ms: 0.335439
+  type: 'test'
+  ...
+# Subtest: identity use binds grant and destination: identity.instructionRevision
+ok 652 - identity use binds grant and destination: identity.instructionRevision
+  ---
+  duration_ms: 0.289061
+  type: 'test'
+  ...
+# Subtest: identity use binds grant and destination: identity.host.tenantRef
+ok 653 - identity use binds grant and destination: identity.host.tenantRef
+  ---
+  duration_ms: 0.284368
+  type: 'test'
+  ...
+# Subtest: identity use binds grant and destination: identity.host.userRef
+ok 654 - identity use binds grant and destination: identity.host.userRef
+  ---
+  duration_ms: 0.335769
+  type: 'test'
+  ...
+# Subtest: identity use binds grant and destination: identity.host.projectRef
+ok 655 - identity use binds grant and destination: identity.host.projectRef
+  ---
+  duration_ms: 0.325643
+  type: 'test'
+  ...
+# Subtest: identity use binds grant and destination: identity.host.accountRef
+ok 656 - identity use binds grant and destination: identity.host.accountRef
+  ---
+  duration_ms: 0.342598
+  type: 'test'
+  ...
+# Subtest: identity use binds grant and destination: identity.host.environmentRef
+ok 657 - identity use binds grant and destination: identity.host.environmentRef
+  ---
+  duration_ms: 0.284897
+  type: 'test'
+  ...
+# Subtest: identity use binds grant and destination: identity.host.purposeRef
+ok 658 - identity use binds grant and destination: identity.host.purposeRef
+  ---
+  duration_ms: 0.213379
+  type: 'test'
+  ...
+# Subtest: identity use binds grant and destination: identity.native.requestRef
+ok 659 - identity use binds grant and destination: identity.native.requestRef
+  ---
+  duration_ms: 0.314584
+  type: 'test'
+  ...
+# Subtest: identity use binds grant and destination: identity.native.threadRef
+ok 660 - identity use binds grant and destination: identity.native.threadRef
+  ---
+  duration_ms: 0.372853
+  type: 'test'
+  ...
+# Subtest: identity use binds grant and destination: identity.native.assistantProjectRef
+ok 661 - identity use binds grant and destination: identity.native.assistantProjectRef
+  ---
+  duration_ms: 0.292526
+  type: 'test'
+  ...
+# Subtest: identity use binds grant and destination: identity.native.objectiveRef
+ok 662 - identity use binds grant and destination: identity.native.objectiveRef
+  ---
+  duration_ms: 0.305043
+  type: 'test'
+  ...
+# Subtest: identity use binds grant and destination: identity.native.rootTaskRef
+ok 663 - identity use binds grant and destination: identity.native.rootTaskRef
+  ---
+  duration_ms: 0.362238
+  type: 'test'
+  ...
+# Subtest: identity use binds grant and destination: identity.native.outcomeRef
+ok 664 - identity use binds grant and destination: identity.native.outcomeRef
+  ---
+  duration_ms: 0.358664
+  type: 'test'
+  ...
+# Subtest: identity use binds grant and destination: identity.native.backingWorkRequestRef
+ok 665 - identity use binds grant and destination: identity.native.backingWorkRequestRef
+  ---
+  duration_ms: 0.332042
+  type: 'test'
+  ...
+# Subtest: identity use binds grant and destination: identity.native.childWorkRequestRef
+ok 666 - identity use binds grant and destination: identity.native.childWorkRequestRef
+  ---
+  duration_ms: 0.334535
+  type: 'test'
+  ...
+# Subtest: identity use binds grant and destination: identity.native.turnRef
+ok 667 - identity use binds grant and destination: identity.native.turnRef
+  ---
+  duration_ms: 0.281788
+  type: 'test'
+  ...
+# Subtest: identity use binds grant and destination: identity.native.runRef
+ok 668 - identity use binds grant and destination: identity.native.runRef
+  ---
+  duration_ms: 0.334742
+  type: 'test'
+  ...
+# Subtest: identity use binds grant and destination: identity.native.actionRef
+ok 669 - identity use binds grant and destination: identity.native.actionRef
+  ---
+  duration_ms: 0.230307
+  type: 'test'
+  ...
+# Subtest: identity use binds grant and destination: identity.native.operationRef
+ok 670 - identity use binds grant and destination: identity.native.operationRef
+  ---
+  duration_ms: 0.198093
+  type: 'test'
+  ...
+# Subtest: identity use binds grant and destination: identity.native.effectRef
+ok 671 - identity use binds grant and destination: identity.native.effectRef
+  ---
+  duration_ms: 0.189736
+  type: 'test'
+  ...
+# Subtest: identity use binds grant and destination: identity.native.sourceQueue.queueRef
+ok 672 - identity use binds grant and destination: identity.native.sourceQueue.queueRef
+  ---
+  duration_ms: 0.324635
+  type: 'test'
+  ...
+# Subtest: identity use binds grant and destination: identity.native.sourceQueue.messageRef
+ok 673 - identity use binds grant and destination: identity.native.sourceQueue.messageRef
+  ---
+  duration_ms: 0.308882
+  type: 'test'
+  ...
+# Subtest: identity use binds grant and destination: identity.origin.channelRef
+ok 674 - identity use binds grant and destination: identity.origin.channelRef
+  ---
+  duration_ms: 0.265718
+  type: 'test'
+  ...
+# Subtest: identity use binds grant and destination: identity.origin.routeRef
+ok 675 - identity use binds grant and destination: identity.origin.routeRef
+  ---
+  duration_ms: 0.327926
+  type: 'test'
+  ...
+# Subtest: identity use binds grant and destination: identity.origin.correlationRef
+ok 676 - identity use binds grant and destination: identity.origin.correlationRef
+  ---
+  duration_ms: 0.329449
+  type: 'test'
+  ...
+# Subtest: identity use binds grant and destination: jobRevision
+ok 677 - identity use binds grant and destination: jobRevision
+  ---
+  duration_ms: 0.289395
+  type: 'test'
+  ...
+# Subtest: identity use binds grant and destination: grantRef
+ok 678 - identity use binds grant and destination: grantRef
+  ---
+  duration_ms: 0.261334
+  type: 'test'
+  ...
+# Subtest: identity use binds grant and destination: grantRevision
+ok 679 - identity use binds grant and destination: grantRevision
+  ---
+  duration_ms: 0.333765
+  type: 'test'
+  ...
+# Subtest: identity use binds grant and destination: effect.actionRef
+ok 680 - identity use binds grant and destination: effect.actionRef
+  ---
+  duration_ms: 0.188898
+  type: 'test'
+  ...
+# Subtest: identity use binds grant and destination: effect.operationRef
+ok 681 - identity use binds grant and destination: effect.operationRef
+  ---
+  duration_ms: 0.189069
+  type: 'test'
+  ...
+# Subtest: identity use binds grant and destination: effect.effectRef
+ok 682 - identity use binds grant and destination: effect.effectRef
+  ---
+  duration_ms: 0.183235
+  type: 'test'
+  ...
+# Subtest: identity use binds grant and destination: operation
+ok 683 - identity use binds grant and destination: operation
+  ---
+  duration_ms: 0.176636
+  type: 'test'
+  ...
+# Subtest: identity use binds grant and destination: item.metadata.kind
+ok 684 - identity use binds grant and destination: item.metadata.kind
+  ---
+  duration_ms: 0.163305
+  type: 'test'
+  ...
+# Subtest: identity use binds grant and destination: item.metadata.field
+ok 685 - identity use binds grant and destination: item.metadata.field
+  ---
+  duration_ms: 0.151337
+  type: 'test'
+  ...
+# Subtest: identity use binds grant and destination: item.metadata.classification
+ok 686 - identity use binds grant and destination: item.metadata.classification
+  ---
+  duration_ms: 0.12365
+  type: 'test'
+  ...
+# Subtest: identity use binds grant and destination: item.metadata.provenanceRef
+ok 687 - identity use binds grant and destination: item.metadata.provenanceRef
+  ---
+  duration_ms: 0.33318
+  type: 'test'
+  ...
+# Subtest: identity use binds grant and destination: item.reference.kind
+ok 688 - identity use binds grant and destination: item.reference.kind
+  ---
+  duration_ms: 0.143834
+  type: 'test'
+  ...
+# Subtest: identity use binds grant and destination: item.reference.itemRef
+ok 689 - identity use binds grant and destination: item.reference.itemRef
+  ---
+  duration_ms: 0.410229
+  type: 'test'
+  ...
+# Subtest: identity use binds grant and destination: item.reference.revision
+ok 690 - identity use binds grant and destination: item.reference.revision
+  ---
+  duration_ms: 2.826467
+  type: 'test'
+  ...
+# Subtest: identity use binds grant and destination: destination.origin
+ok 691 - identity use binds grant and destination: destination.origin
+  ---
+  duration_ms: 0.284908
+  type: 'test'
+  ...
+# Subtest: identity use binds grant and destination: destination.profileRef
+ok 692 - identity use binds grant and destination: destination.profileRef
+  ---
+  duration_ms: 0.421353
+  type: 'test'
+  ...
+# Subtest: identity use binds grant and destination: destination.leaseEpoch
+ok 693 - identity use binds grant and destination: destination.leaseEpoch
+  ---
+  duration_ms: 0.402056
+  type: 'test'
+  ...
+# Subtest: identity use binds grant and destination: destination.documentRef
+ok 694 - identity use binds grant and destination: destination.documentRef
+  ---
+  duration_ms: 0.353577
+  type: 'test'
+  ...
+# Subtest: identity use binds grant and destination: destination.navigationRevision
+ok 695 - identity use binds grant and destination: destination.navigationRevision
+  ---
+  duration_ms: 0.349075
+  type: 'test'
+  ...
+# Subtest: identity use binds grant and destination: destination.frames.0.frameRef
+ok 696 - identity use binds grant and destination: destination.frames.0.frameRef
+  ---
+  duration_ms: 0.338338
+  type: 'test'
+  ...
+# Subtest: identity use binds grant and destination: destination.frames.0.origin
+ok 697 - identity use binds grant and destination: destination.frames.0.origin
+  ---
+  duration_ms: 0.246167
+  type: 'test'
+  ...
+# Subtest: identity use binds grant and destination: destination.frames.1.frameRef
+ok 698 - identity use binds grant and destination: destination.frames.1.frameRef
+  ---
+  duration_ms: 0.338205
+  type: 'test'
+  ...
+# Subtest: identity use binds grant and destination: destination.frames.1.origin
+ok 699 - identity use binds grant and destination: destination.frames.1.origin
+  ---
+  duration_ms: 0.379959
+  type: 'test'
+  ...
+# Subtest: identity use binds grant and destination: destination.fieldRef
+ok 700 - identity use binds grant and destination: destination.fieldRef
+  ---
+  duration_ms: 0.346525
+  type: 'test'
+  ...
+# Subtest: identity use binds grant and destination: destination.fieldKind
+ok 701 - identity use binds grant and destination: destination.fieldKind
+  ---
+  duration_ms: 0.18856
+  type: 'test'
+  ...
+# Subtest: identity use binds grant and destination: destination.formEndpoint
+ok 702 - identity use binds grant and destination: destination.formEndpoint
+  ---
+  duration_ms: 0.374998
+  type: 'test'
+  ...
+# Subtest: identity use binds grant and destination: destination.recipientRef
+ok 703 - identity use binds grant and destination: destination.recipientRef
+  ---
+  duration_ms: 0.347394
+  type: 'test'
+  ...
+# Subtest: identity use binds grant and destination: destination.purposeRef
+ok 704 - identity use binds grant and destination: destination.purposeRef
+  ---
+  duration_ms: 0.175669
+  type: 'test'
+  ...
+# Subtest: identity use binds grant and destination: destination.identityField
+ok 705 - identity use binds grant and destination: destination.identityField
+  ---
+  duration_ms: 0.23706
+  type: 'test'
+  ...
+# Subtest: payment use binds grant and destination: identity.jobId
+ok 706 - payment use binds grant and destination: identity.jobId
+  ---
+  duration_ms: 0.342444
+  type: 'test'
+  ...
+# Subtest: payment use binds grant and destination: identity.originTaskRef
+ok 707 - payment use binds grant and destination: identity.originTaskRef
+  ---
+  duration_ms: 0.267124
+  type: 'test'
+  ...
+# Subtest: payment use binds grant and destination: identity.requestKey
+ok 708 - payment use binds grant and destination: identity.requestKey
+  ---
+  duration_ms: 0.294314
+  type: 'test'
+  ...
+# Subtest: payment use binds grant and destination: identity.instructionRevision
+ok 709 - payment use binds grant and destination: identity.instructionRevision
+  ---
+  duration_ms: 0.31756
+  type: 'test'
+  ...
+# Subtest: payment use binds grant and destination: identity.host.tenantRef
+ok 710 - payment use binds grant and destination: identity.host.tenantRef
+  ---
+  duration_ms: 0.315462
+  type: 'test'
+  ...
+# Subtest: payment use binds grant and destination: identity.host.userRef
+ok 711 - payment use binds grant and destination: identity.host.userRef
+  ---
+  duration_ms: 0.28048
+  type: 'test'
+  ...
+# Subtest: payment use binds grant and destination: identity.host.projectRef
+ok 712 - payment use binds grant and destination: identity.host.projectRef
+  ---
+  duration_ms: 0.27454
+  type: 'test'
+  ...
+# Subtest: payment use binds grant and destination: identity.host.accountRef
+ok 713 - payment use binds grant and destination: identity.host.accountRef
+  ---
+  duration_ms: 0.339194
+  type: 'test'
+  ...
+# Subtest: payment use binds grant and destination: identity.host.environmentRef
+ok 714 - payment use binds grant and destination: identity.host.environmentRef
+  ---
+  duration_ms: 0.325028
+  type: 'test'
+  ...
+# Subtest: payment use binds grant and destination: identity.host.purposeRef
+ok 715 - payment use binds grant and destination: identity.host.purposeRef
+  ---
+  duration_ms: 0.23682
+  type: 'test'
+  ...
+# Subtest: payment use binds grant and destination: identity.native.requestRef
+ok 716 - payment use binds grant and destination: identity.native.requestRef
+  ---
+  duration_ms: 0.257675
+  type: 'test'
+  ...
+# Subtest: payment use binds grant and destination: identity.native.threadRef
+ok 717 - payment use binds grant and destination: identity.native.threadRef
+  ---
+  duration_ms: 0.307257
+  type: 'test'
+  ...
+# Subtest: payment use binds grant and destination: identity.native.assistantProjectRef
+ok 718 - payment use binds grant and destination: identity.native.assistantProjectRef
+  ---
+  duration_ms: 0.317723
+  type: 'test'
+  ...
+# Subtest: payment use binds grant and destination: identity.native.objectiveRef
+ok 719 - payment use binds grant and destination: identity.native.objectiveRef
+  ---
+  duration_ms: 0.318453
+  type: 'test'
+  ...
+# Subtest: payment use binds grant and destination: identity.native.rootTaskRef
+ok 720 - payment use binds grant and destination: identity.native.rootTaskRef
+  ---
+  duration_ms: 0.316149
+  type: 'test'
+  ...
+# Subtest: payment use binds grant and destination: identity.native.outcomeRef
+ok 721 - payment use binds grant and destination: identity.native.outcomeRef
+  ---
+  duration_ms: 0.264681
+  type: 'test'
+  ...
+# Subtest: payment use binds grant and destination: identity.native.backingWorkRequestRef
+ok 722 - payment use binds grant and destination: identity.native.backingWorkRequestRef
+  ---
+  duration_ms: 0.284686
+  type: 'test'
+  ...
+# Subtest: payment use binds grant and destination: identity.native.childWorkRequestRef
+ok 723 - payment use binds grant and destination: identity.native.childWorkRequestRef
+  ---
+  duration_ms: 0.314849
+  type: 'test'
+  ...
+# Subtest: payment use binds grant and destination: identity.native.turnRef
+ok 724 - payment use binds grant and destination: identity.native.turnRef
+  ---
+  duration_ms: 0.310132
+  type: 'test'
+  ...
+# Subtest: payment use binds grant and destination: identity.native.runRef
+ok 725 - payment use binds grant and destination: identity.native.runRef
+  ---
+  duration_ms: 0.250733
+  type: 'test'
+  ...
+# Subtest: payment use binds grant and destination: identity.native.actionRef
+ok 726 - payment use binds grant and destination: identity.native.actionRef
+  ---
+  duration_ms: 0.236039
+  type: 'test'
+  ...
+# Subtest: payment use binds grant and destination: identity.native.operationRef
+ok 727 - payment use binds grant and destination: identity.native.operationRef
+  ---
+  duration_ms: 0.167216
+  type: 'test'
+  ...
+# Subtest: payment use binds grant and destination: identity.native.effectRef
+ok 728 - payment use binds grant and destination: identity.native.effectRef
+  ---
+  duration_ms: 0.202161
+  type: 'test'
+  ...
+# Subtest: payment use binds grant and destination: identity.native.sourceQueue.queueRef
+ok 729 - payment use binds grant and destination: identity.native.sourceQueue.queueRef
+  ---
+  duration_ms: 0.289225
+  type: 'test'
+  ...
+# Subtest: payment use binds grant and destination: identity.native.sourceQueue.messageRef
+ok 730 - payment use binds grant and destination: identity.native.sourceQueue.messageRef
+  ---
+  duration_ms: 0.25541
+  type: 'test'
+  ...
+# Subtest: payment use binds grant and destination: identity.origin.channelRef
+ok 731 - payment use binds grant and destination: identity.origin.channelRef
+  ---
+  duration_ms: 0.312245
+  type: 'test'
+  ...
+# Subtest: payment use binds grant and destination: identity.origin.routeRef
+ok 732 - payment use binds grant and destination: identity.origin.routeRef
+  ---
+  duration_ms: 0.299829
+  type: 'test'
+  ...
+# Subtest: payment use binds grant and destination: identity.origin.correlationRef
+ok 733 - payment use binds grant and destination: identity.origin.correlationRef
+  ---
+  duration_ms: 0.310079
+  type: 'test'
+  ...
+# Subtest: payment use binds grant and destination: jobRevision
+ok 734 - payment use binds grant and destination: jobRevision
+  ---
+  duration_ms: 0.28315
+  type: 'test'
+  ...
+# Subtest: payment use binds grant and destination: grantRef
+ok 735 - payment use binds grant and destination: grantRef
+  ---
+  duration_ms: 0.280506
+  type: 'test'
+  ...
+# Subtest: payment use binds grant and destination: grantRevision
+ok 736 - payment use binds grant and destination: grantRevision
+  ---
+  duration_ms: 0.369592
+  type: 'test'
+  ...
+# Subtest: payment use binds grant and destination: effect.actionRef
+ok 737 - payment use binds grant and destination: effect.actionRef
+  ---
+  duration_ms: 0.25848
+  type: 'test'
+  ...
+# Subtest: payment use binds grant and destination: effect.operationRef
+ok 738 - payment use binds grant and destination: effect.operationRef
+  ---
+  duration_ms: 0.247028
+  type: 'test'
+  ...
+# Subtest: payment use binds grant and destination: effect.effectRef
+ok 739 - payment use binds grant and destination: effect.effectRef
+  ---
+  duration_ms: 0.253548
+  type: 'test'
+  ...
+# Subtest: payment use binds grant and destination: operation
+ok 740 - payment use binds grant and destination: operation
+  ---
+  duration_ms: 0.215319
+  type: 'test'
+  ...
+# Subtest: payment use binds grant and destination: item.metadata.kind
+ok 741 - payment use binds grant and destination: item.metadata.kind
+  ---
+  duration_ms: 0.191059
+  type: 'test'
+  ...
+# Subtest: payment use binds grant and destination: item.metadata.instrument
+ok 742 - payment use binds grant and destination: item.metadata.instrument
+  ---
+  duration_ms: 0.173958
+  type: 'test'
+  ...
+# Subtest: payment use binds grant and destination: item.reference.kind
+ok 743 - payment use binds grant and destination: item.reference.kind
+  ---
+  duration_ms: 0.15099
+  type: 'test'
+  ...
+# Subtest: payment use binds grant and destination: item.reference.paymentRef
+ok 744 - payment use binds grant and destination: item.reference.paymentRef
+  ---
+  duration_ms: 0.34431
+  type: 'test'
+  ...
+# Subtest: payment use binds grant and destination: item.reference.revision
+ok 745 - payment use binds grant and destination: item.reference.revision
+  ---
+  duration_ms: 0.340817
+  type: 'test'
+  ...
+# Subtest: payment use binds grant and destination: destination.origin
+ok 746 - payment use binds grant and destination: destination.origin
+  ---
+  duration_ms: 0.216903
+  type: 'test'
+  ...
+# Subtest: payment use binds grant and destination: destination.profileRef
+ok 747 - payment use binds grant and destination: destination.profileRef
+  ---
+  duration_ms: 0.321761
+  type: 'test'
+  ...
+# Subtest: payment use binds grant and destination: destination.leaseEpoch
+ok 748 - payment use binds grant and destination: destination.leaseEpoch
+  ---
+  duration_ms: 0.409734
+  type: 'test'
+  ...
+# Subtest: payment use binds grant and destination: destination.documentRef
+ok 749 - payment use binds grant and destination: destination.documentRef
+  ---
+  duration_ms: 0.342793
+  type: 'test'
+  ...
+# Subtest: payment use binds grant and destination: destination.navigationRevision
+ok 750 - payment use binds grant and destination: destination.navigationRevision
+  ---
+  duration_ms: 0.32435
+  type: 'test'
+  ...
+# Subtest: payment use binds grant and destination: destination.frames.0.frameRef
+ok 751 - payment use binds grant and destination: destination.frames.0.frameRef
+  ---
+  duration_ms: 0.327725
+  type: 'test'
+  ...
+# Subtest: payment use binds grant and destination: destination.frames.0.origin
+ok 752 - payment use binds grant and destination: destination.frames.0.origin
+  ---
+  duration_ms: 0.19964
+  type: 'test'
+  ...
+# Subtest: payment use binds grant and destination: destination.frames.1.frameRef
+ok 753 - payment use binds grant and destination: destination.frames.1.frameRef
+  ---
+  duration_ms: 0.334469
+  type: 'test'
+  ...
+# Subtest: payment use binds grant and destination: destination.frames.1.origin
+ok 754 - payment use binds grant and destination: destination.frames.1.origin
+  ---
+  duration_ms: 0.320626
+  type: 'test'
+  ...
+# Subtest: payment use binds grant and destination: destination.fieldRef
+ok 755 - payment use binds grant and destination: destination.fieldRef
+  ---
+  duration_ms: 0.302034
+  type: 'test'
+  ...
+# Subtest: payment use binds grant and destination: destination.fieldKind
+ok 756 - payment use binds grant and destination: destination.fieldKind
+  ---
+  duration_ms: 0.176552
+  type: 'test'
+  ...
+# Subtest: payment use binds grant and destination: destination.formEndpoint
+ok 757 - payment use binds grant and destination: destination.formEndpoint
+  ---
+  duration_ms: 0.326286
+  type: 'test'
+  ...
+# Subtest: payment use binds grant and destination: destination.purposeRef
+ok 758 - payment use binds grant and destination: destination.purposeRef
+  ---
+  duration_ms: 0.164276
+  type: 'test'
+  ...
+# Subtest: current use authority rejects stale items, grants, jobs, unauthenticated callers and ungranted use
+ok 759 - current use authority rejects stale items, grants, jobs, unauthenticated callers and ungranted use
+  ---
+  duration_ms: 3.265139
+  type: 'test'
+  ...
+# Subtest: payment references cannot substitute for generic references at any schema boundary
+ok 760 - payment references cannot substitute for generic references at any schema boundary
+  ---
+  duration_ms: 1.563065
+  type: 'test'
+  ...
+# Subtest: operation/family and destination rules reject even mutually matching client and grant claims
+ok 761 - operation/family and destination rules reject even mutually matching client and grant claims
+  ---
+  duration_ms: 10.500955
+  type: 'test'
+  ...
+# Subtest: origins and endpoints must be normalized HTTPS without credentials, query or fragments
+ok 762 - origins and endpoints must be normalized HTTPS without credentials, query or fragments
+  ---
+  duration_ms: 1.393168
+  type: 'test'
+  ...
+# Subtest: broker results are redacted, fixed-error and bound to stable effect identity
+ok 763 - broker results are redacted, fixed-error and bound to stable effect identity
+  ---
+  duration_ms: 11.525027
+  type: 'test'
+  ...
+# Subtest: all nested boundaries reject unknown raw values, hidden properties, symbols and hostile accessors without echo
+ok 764 - all nested boundaries reject unknown raw values, hidden properties, symbols and hostile accessors without echo
+  ---
+  duration_ms: 366.848293
+  type: 'test'
+  ...
+# Subtest: malformed arrays, unsafe revisions and frozen inputs
+ok 765 - malformed arrays, unsafe revisions and frozen inputs
+  ---
+  duration_ms: 1.004058
+  type: 'test'
+  ...
+# Subtest: accounted effects never authorize another dispatch, including unknown outcomes
+ok 766 - accounted effects never authorize another dispatch, including unknown outcomes
+  ---
+  duration_ms: 1.436807
+  type: 'test'
+  ...
+# Subtest: requires public HTTPS and full SHA in both manifest and resolved lock
+ok 767 - requires public HTTPS and full SHA in both manifest and resolved lock
+  ---
+  duration_ms: 1.774674
+  type: 'test'
+  ...
+# Subtest: rejects SSH even with matching SHA, repository drift and alternate sources
+ok 768 - rejects SSH even with matching SHA, repository drift and alternate sources
+  ---
+  duration_ms: 2.738452
+  type: 'test'
+  ...
+# Subtest: handrail-agent-sdk imports by package name and exits naturally
+ok 769 - handrail-agent-sdk imports by package name and exits naturally
+  ---
+  duration_ms: 70.013349
+  type: 'test'
+  ...
+# Subtest: handrail-agent-sdk/server imports by package name and exits naturally
+ok 770 - handrail-agent-sdk/server imports by package name and exits naturally
+  ---
+  duration_ms: 43.6184
+  type: 'test'
+  ...
+# Subtest: entrypoints and contract import graph have no startup calls or external runtime imports
+ok 771 - entrypoints and contract import graph have no startup calls or external runtime imports
+  ---
+  duration_ms: 63.309415
+  type: 'test'
+  ...
+# Subtest: TypeScript consumer resolves both declarations through package exports
+ok 772 - TypeScript consumer resolves both declarations through package exports
+  ---
+  duration_ms: 12038.584383
+  type: 'test'
+  ...
+# Subtest: implementation paths are not public package entrypoints
+ok 773 - implementation paths are not public package entrypoints
+  ---
+  duration_ms: 34.893558
+  type: 'test'
+  ...
+# Subtest: lease and reference factories are inert on import and construction
+ok 774 - lease and reference factories are inert on import and construction
+  ---
+  duration_ms: 448.396287
+  type: 'test'
+  ...
+# Subtest: OpenAI Agents server entrypoint imports without starting a worker or provider request
+ok 775 - OpenAI Agents server entrypoint imports without starting a worker or provider request
+  ---
+  duration_ms: 450.295179
+  type: 'test'
+  ...
+# Subtest: assistance/application public subpaths import without background services
+ok 776 - assistance/application public subpaths import without background services
+  ---
+  duration_ms: 105.665778
+  type: 'test'
+  ...
+1..776
+# tests 776
+# suites 0
+# pass 776
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 16125.513442
+npm notice
+npm notice New major version of npm available! 10.9.8 -> 12.2.0
+npm notice Changelog: https://github.com/npm/cli/releases/tag/v12.2.0
+npm notice To update run: npm install -g npm@12.2.0
+npm notice

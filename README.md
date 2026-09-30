@@ -2,11 +2,18 @@
 
 Headless, durable agent execution powered by **OpenAI Agents SDK 0.18.0**.
 Requires Node.js 22 or later. The host owns identity, authorization, provider
-connections, storage, scheduling and private Vault/browser executors.
+connections, storage adapters and private Vault/browser executors. The shared
+assistance module owns schedule/watch lifecycle and notification orchestration.
 
 - `handrail-agent-sdk`: pure job, connection, Vault and browser contracts.
 - `handrail-agent-sdk/server`: admission, leases, Stop, answers, effects and Vault boundaries.
 - `handrail-agent-sdk/server/agents`: `createAgentRuntime` and its typed host/store/tool ports.
+- `handrail-agent-sdk/server/application`: existing assistant gateway transport and checkpoint projection.
+- `handrail-agent-sdk/server/application-tools`: trusted application tool catalog/presentation adapters.
+- `handrail-agent-sdk/server/assistance`: durable schedules, observed conditions and deduplicated inbox facts.
+- `handrail-agent-sdk/server/assistance/postgres`: reusable host-owned SQL storage adapter.
+- `handrail-agent-sdk/server/assistance/notifications`: delivery through the existing effect ledger.
+- `handrail-agent-sdk/server/handrail-feedback`: canonical reporter/MCP v2 submission and verified-readiness observation.
 
 The runtime uses OpenAI Agent, Runner, tools, streaming and serialized RunState.
 It checkpoints tool calls before execution, reauthorizes each call, and uses the
@@ -24,6 +31,9 @@ node tests/run-local-postgres.mjs
 Start with the [typed headless example](examples/headless.mts) and
 [integration/migration guide](docs/agent-runtime.md). Read the
 [readiness evidence](docs/evidence/agents-runtime/README.md) before choosing a pilot.
+The [assistance composition and Mills migration map](docs/assistance.md) describes
+the shared adapters, live-provider inputs and remaining canonical feedback
+interaction gap. Source fixtures do not establish application acceptance.
 The PostgreSQL reference is a host implementation with disposable tests, not an
 automatically started service or a replacement for Handrail's native controller.
 
@@ -55,5 +65,6 @@ HTTP transport. It requires the local PostgreSQL 15 test binaries. The
 [consumer correction evidence](docs/evidence/consumer-compatibility/README.md)
 separates published-SHA verification from the pending delivery revision.
 
-No application has been migrated, no pilot has been selected, and no live model,
-generic browser controller, or native Handrail adapter is qualified by these tests.
+Mills is the first intended consumer; its application cutover is separate work.
+No live model, generic browser controller, or native Handrail deployment is
+qualified by these source tests.

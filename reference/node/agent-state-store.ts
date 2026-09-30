@@ -42,7 +42,7 @@ export function createAgentStateStore(db: ReferenceDatabase, keys: AgentStateKey
   async function decode(identity: JobIdentity, row: Row): Promise<AgentCheckpoint> {
     const result = open(row.envelope, await keys.resolve(row.keyRef), aad(identity, row)) as AgentCheckpoint;
     if (!result || result.version !== row.version || typeof result.definitionRef !== 'string'
-      || !Number.isSafeInteger(result.dispatches) || typeof result.input !== 'string'
+      || !Number.isSafeInteger(result.dispatches) || !(typeof result.input === 'string' || Array.isArray(result.input))
       || !result.results || (result.state !== undefined && typeof result.state !== 'string')) reject('invalid_checkpoint');
     return result;
   }

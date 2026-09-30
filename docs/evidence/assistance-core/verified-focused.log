@@ -1,0 +1,301 @@
+Fresh isolated PostgreSQL 15 cluster initialized; dedicated disposable database and non-superuser fixture role; connection values withheld.
+
+> handrail-agent-sdk@0.1.4 test:assistance
+> npm run build && npm run build:reference && npm run build:test-postgres && node --test --test-concurrency=1 --test-reporter=tap tests/assistance.test.mjs tests/agent-transport.test.mjs
+
+
+> handrail-agent-sdk@0.1.4 build
+> tsc -p tsconfig.json
+
+
+> handrail-agent-sdk@0.1.4 build:reference
+> tsc -p reference/tsconfig.json
+
+
+> handrail-agent-sdk@0.1.4 build:test-postgres
+> tsc -p tests/tsconfig.postgres.json
+
+TAP version 13
+# Subtest: gateway transport uses actual Runner, durable output and reconnect cursor; disconnect does not Stop
+ok 1 - gateway transport uses actual Runner, durable output and reconnect cursor; disconnect does not Stop
+  ---
+  duration_ms: 772.600758
+  type: 'test'
+  ...
+# Subtest: transport explicit Stop is durable; changed identity cannot reconnect or cancel
+ok 2 - transport explicit Stop is durable; changed identity cannot reconnect or cancel
+  ---
+  duration_ms: 294.15962
+  type: 'test'
+  ...
+# Subtest: approval wait remains durable on reconnect; only verified answer can resume execution
+ok 3 - approval wait remains durable on reconnect; only verified answer can resume execution
+  ---
+  duration_ms: 388.905136
+  type: 'test'
+  ...
+# Subtest: standard reader emits validated native protocol frames and stable replay identities
+ok 4 - standard reader emits validated native protocol frames and stable replay identities
+  ---
+  duration_ms: 656.116747
+  type: 'test'
+  ...
+# Subtest: application catalog adapter preserves validation, read/mutation classification and stable native tool identity
+ok 5 - application catalog adapter preserves validation, read/mutation classification and stable native tool identity
+  ---
+  duration_ms: 6.47922
+  type: 'test'
+  ...
+# Subtest: existing assistant durable wrapper consumes the Agent transport with native protocol checkpoints
+ok 6 - existing assistant durable wrapper consumes the Agent transport with native protocol checkpoints
+  ---
+  duration_ms: 570.733813
+  type: 'test'
+  ...
+# Subtest: wall clock: gaps, folds, quarter-hour zones and no arbitrary one-year horizon
+ok 7 - wall clock: gaps, folds, quarter-hour zones and no arbitrary one-year horizon
+  ---
+  duration_ms: 73.903132
+  type: 'test'
+  ...
+# Subtest: durable schedule, duplicate creation, immutable binding, concurrent delivery and reconstruction
+ok 8 - durable schedule, duplicate creation, immutable binding, concurrent delivery and reconstruction
+  ---
+  duration_ms: 97.356845
+  type: 'test'
+  ...
+# Subtest: reschedule retries keep receipt and cancel serializes with delivery; scope/current identity checks
+ok 9 - reschedule retries keep receipt and cancel serializes with delivery; scope/current identity checks
+  ---
+  duration_ms: 73.524854
+  type: 'test'
+  ...
+# Subtest: watch landing fixtures: delayed and stale never imply arrival; one durable match after restart
+ok 10 - watch landing fixtures: delayed and stale never imply arrival; one durable match after restart
+  ---
+  duration_ms: 70.257632
+  type: 'test'
+  ...
+# Subtest: cancelled flight, wrong occurrence, future and reordered observations cannot notify arrival
+ok 11 - cancelled flight, wrong occurrence, future and reordered observations cannot notify arrival
+  ---
+  duration_ms: 61.748524
+  type: 'test'
+  ...
+# Subtest: materially different consumer: industrial pump inspection watch uses the same lifecycle and adapter
+ok 12 - materially different consumer: industrial pump inspection watch uses the same lifecycle and adapter
+  ---
+  duration_ms: 50.867653
+  type: 'test'
+  ...
+# Subtest: batch size bounds work, not user capability; fair catch-up and expiration
+ok 13 - batch size bounds work, not user capability; fair catch-up and expiration
+  ---
+  duration_ms: 69.220777
+  type: 'test'
+  ...
+# Subtest: notification delivery reuses effect ledger: concurrent retry, reconstruction and uncertain remote result
+ok 14 - notification delivery reuses effect ledger: concurrent retry, reconstruction and uncertain remote result
+  ---
+  duration_ms: 359.893339
+  type: 'test'
+  ...
+# Subtest: canonical readiness requires verified matching environment and target containment, not worker success
+ok 15 - canonical readiness requires verified matching environment and target containment, not worker success
+  ---
+  duration_ms: 0.449031
+  type: 'test'
+  ...
+# Subtest: canonical feedback fixture status/questions/approvals wait and verified-ready notification survive reconstruction
+ok 16 - canonical feedback fixture status/questions/approvals wait and verified-ready notification survive reconstruction
+  ---
+  duration_ms: 69.963338
+  type: 'test'
+  ...
+# Subtest: canonical submission adapter retains stable dedupe key and canonical ID; uncertainty never means retry
+ok 17 - canonical submission adapter retains stable dedupe key and canonical ID; uncertainty never means retry
+  ---
+  duration_ms: 0.870317
+  type: 'test'
+  ...
+# Subtest: durable mandate revocation is terminal even when account access returns
+ok 18 - durable mandate revocation is terminal even when account access returns
+  ---
+  duration_ms: 57.960422
+  type: 'test'
+  ...
+# Subtest: a crash/failure before transaction commit rolls back both lifecycle and inbox fact
+ok 19 - a crash/failure before transaction commit rolls back both lifecycle and inbox fact
+  ---
+  duration_ms: 72.797343
+  type: 'test'
+  ...
+# Subtest: shared worker coalesces wakeups, drains on shutdown and leaves durable intent intact
+ok 20 - shared worker coalesces wakeups, drains on shutdown and leaves durable intent intact
+  ---
+  duration_ms: 45.684348
+  type: 'test'
+  ...
+1..20
+# tests 20
+# suites 0
+# pass 20
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 5450.737817
+npm notice
+npm notice New major version of npm available! 10.9.8 -> 12.2.0
+npm notice Changelog: https://github.com/npm/cli/releases/tag/v12.2.0
+npm notice To update run: npm install -g npm@12.2.0
+npm notice
+
+> handrail-agent-sdk@0.1.4 test:agents
+> npm run build:reference && npm run build:test-postgres && node --test --test-concurrency=1 --test-reporter=tap tests/agent-runtime.test.mjs
+
+
+> handrail-agent-sdk@0.1.4 build:reference
+> tsc -p reference/tsconfig.json
+
+
+> handrail-agent-sdk@0.1.4 build:test-postgres
+> tsc -p tests/tsconfig.postgres.json
+
+TAP version 13
+# Subtest: host structured history survives an approval checkpoint without flattening roles or image references
+ok 1 - host structured history survives an approval checkpoint without flattening roles or image references
+  ---
+  duration_ms: 618.294426
+  type: 'test'
+  ...
+# Subtest: verified effects expose bounded host results and a failed result read never repeats the effect
+ok 2 - verified effects expose bounded host results and a failed result read never repeats the effect
+  ---
+  duration_ms: 668.809907
+  type: 'test'
+  ...
+# Subtest: unknown effects cannot release a domain result
+ok 3 - unknown effects cannot release a domain result
+  ---
+  duration_ms: 375.267132
+  type: 'test'
+  ...
+# Subtest: real Runner executes inventory -> protected reservation -> verification; duplicate delivery has one effect
+ok 4 - real Runner executes inventory -> protected reservation -> verification; duplicate delivery has one effect
+  ---
+  duration_ms: 444.962795
+  type: 'test'
+  ...
+# Subtest: different research task recovers from deliberate read-tool failure and computes a quote
+ok 5 - different research task recovers from deliberate read-tool failure and computes a quote
+  ---
+  duration_ms: 449.713445
+  type: 'test'
+  ...
+# Subtest: durable approval, answer and new input resume same job in a separate process
+ok 6 - durable approval, answer and new input resume same job in a separate process
+  ---
+  duration_ms: 1783.47083
+  type: 'test'
+  ...
+# Subtest: SIGKILL after provider mutation reconciles across processes without duplicate execution
+ok 7 - SIGKILL after provider mutation reconciles across processes without duplicate execution
+  ---
+  duration_ms: 3837.486907
+  type: 'test'
+  ...
+# Subtest: unknown external effect waits for reconciliation; schedule wake cannot authorize replay
+ok 8 - unknown external effect waits for reconciliation; schedule wake cannot authorize replay
+  ---
+  duration_ms: 527.972177
+  type: 'test'
+  ...
+# Subtest: tenant isolation, revoked and changed grants deny private state and execution
+ok 9 - tenant isolation, revoked and changed grants deny private state and execution
+  ---
+  duration_ms: 303.386697
+  type: 'test'
+  ...
+# Subtest: provider failure retains checkpoint and retry recovers without repeating completed tools
+ok 10 - provider failure retains checkpoint and retry recovers without repeating completed tools
+  ---
+  duration_ms: 433.880608
+  type: 'test'
+  ...
+# Subtest: process stop resumes checkpoint; explicit durable Stop fences late output and remains terminal
+ok 11 - process stop resumes checkpoint; explicit durable Stop fences late output and remains terminal
+  ---
+  duration_ms: 287.484806
+  type: 'test'
+  ...
+# Subtest: process shutdown aborts model transport and fresh runtime recovers same job
+ok 12 - process shutdown aborts model transport and fresh runtime recovers same job
+  ---
+  duration_ms: 443.011299
+  type: 'test'
+  ...
+# Subtest: invalid tool schema cannot mutate and repeated provider failure is bounded
+ok 13 - invalid tool schema cannot mutate and repeated provider failure is bounded
+  ---
+  duration_ms: 323.119371
+  type: 'test'
+  ...
+# Subtest: lost lease during a pending read prevents tool result and terminal writes
+ok 14 - lost lease during a pending read prevents tool result and terminal writes
+  ---
+  duration_ms: 460.75434
+  type: 'test'
+  ...
+# Subtest: model context bound fails durably and oversized private state is not committed
+ok 15 - model context bound fails durably and oversized private state is not committed
+  ---
+  duration_ms: 243.91878
+  type: 'test'
+  ...
+# Subtest: concurrent delivery is lease fenced; a second worker cannot execute tools
+ok 16 - concurrent delivery is lease fenced; a second worker cannot execute tools
+  ---
+  duration_ms: 442.471822
+  type: 'test'
+  ...
+# Subtest: Runner Vault tool composes real custody/grants/effects and never exposes the private token
+ok 17 - Runner Vault tool composes real custody/grants/effects and never exposes the private token
+  ---
+  duration_ms: 481.611908
+  type: 'test'
+  ...
+# Subtest: revocation after model approval is checked immediately before mutation dispatch
+ok 18 - revocation after model approval is checked immediately before mutation dispatch
+  ---
+  duration_ms: 297.868123
+  type: 'test'
+  ...
+# Subtest: unknown first effect stops other tools emitted in the same model response
+ok 19 - unknown first effect stops other tools emitted in the same model response
+  ---
+  duration_ms: 286.499176
+  type: 'test'
+  ...
+# Subtest: official OpenAI Responses provider/client drive Runner through simulated HTTP SSE transport
+ok 20 - official OpenAI Responses provider/client drive Runner through simulated HTTP SSE transport
+  ---
+  duration_ms: 520.042621
+  type: 'test'
+  ...
+# Subtest: current catalog hides unauthorized tools and opaque attachments resolve only at model boundary
+ok 21 - current catalog hides unauthorized tools and opaque attachments resolve only at model boundary
+  ---
+  duration_ms: 256.076465
+  type: 'test'
+  ...
+1..21
+# tests 21
+# suites 0
+# pass 21
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 14327.061343
+Owned temporary PostgreSQL cluster stopped.

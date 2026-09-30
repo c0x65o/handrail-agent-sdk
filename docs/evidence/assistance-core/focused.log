@@ -1,0 +1,378 @@
+Fresh isolated PostgreSQL 15 cluster initialized; dedicated disposable database and non-superuser fixture role; connection values withheld.
+
+> handrail-agent-sdk@0.1.4 test:assistance
+> npm run build && npm run build:reference && npm run build:test-postgres && node --test --test-concurrency=1 --test-reporter=tap tests/assistance.test.mjs tests/agent-transport.test.mjs
+
+
+> handrail-agent-sdk@0.1.4 build
+> tsc -p tsconfig.json
+
+
+> handrail-agent-sdk@0.1.4 build:reference
+> tsc -p reference/tsconfig.json
+
+
+> handrail-agent-sdk@0.1.4 build:test-postgres
+> tsc -p tests/tsconfig.postgres.json
+
+TAP version 13
+# Subtest: gateway transport uses actual Runner, durable output and reconnect cursor; disconnect does not Stop
+ok 1 - gateway transport uses actual Runner, durable output and reconnect cursor; disconnect does not Stop
+  ---
+  duration_ms: 746.960269
+  type: 'test'
+  ...
+# Subtest: transport explicit Stop is durable; changed identity cannot reconnect or cancel
+ok 2 - transport explicit Stop is durable; changed identity cannot reconnect or cancel
+  ---
+  duration_ms: 285.687093
+  type: 'test'
+  ...
+# Subtest: approval wait remains durable on reconnect; only verified answer can resume execution
+ok 3 - approval wait remains durable on reconnect; only verified answer can resume execution
+  ---
+  duration_ms: 415.493818
+  type: 'test'
+  ...
+# Subtest: wall clock: gaps, folds, quarter-hour zones and no arbitrary one-year horizon
+ok 4 - wall clock: gaps, folds, quarter-hour zones and no arbitrary one-year horizon
+  ---
+  duration_ms: 83.819103
+  type: 'test'
+  ...
+# Subtest: durable schedule, duplicate creation, immutable binding, concurrent delivery and reconstruction
+not ok 5 - durable schedule, duplicate creation, immutable binding, concurrent delivery and reconstruction
+  ---
+  duration_ms: 88.999997
+  type: 'test'
+  location: '/opt/handrail/repos/handrail/handrail-agent-sdk/handrail-agent-sdk/tests/assistance.test.mjs:46:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    The input did not match the regular expression /conflict/. Input:
+    
+    'Error: POSTGRES_TRANSACTION_FAILED'
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+  actual:
+  error: 'POSTGRES_TRANSACTION_FAILED'
+  stack: |-
+    failure (file:///opt/handrail/repos/handrail/handrail-agent-sdk/handrail-agent-sdk/.postgres-build/postgres.js:5:27)
+    Object.transaction (file:///opt/handrail/repos/handrail/handrail-agent-sdk/handrail-agent-sdk/.postgres-build/postgres.js:91:23)
+    process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    async waitForActual (node:assert:644:5)
+    async Function.rejects (node:assert:767:25)
+    async TestContext.<anonymous> (file:///opt/handrail/repos/handrail/handrail-agent-sdk/handrail-agent-sdk/tests/assistance.test.mjs:51:3)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  operator: 'rejects'
+  stack: |-
+    process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    async TestContext.<anonymous> (file:///opt/handrail/repos/handrail/handrail-agent-sdk/handrail-agent-sdk/tests/assistance.test.mjs:51:3)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: reschedule retries keep receipt and cancel serializes with delivery; scope/current identity checks
+ok 6 - reschedule retries keep receipt and cancel serializes with delivery; scope/current identity checks
+  ---
+  duration_ms: 77.406341
+  type: 'test'
+  ...
+# Subtest: watch landing fixtures: delayed and stale never imply arrival; one durable match after restart
+not ok 7 - watch landing fixtures: delayed and stale never imply arrival; one durable match after restart
+  ---
+  duration_ms: 52.579058
+  type: 'test'
+  location: '/opt/handrail/repos/handrail/handrail-agent-sdk/handrail-agent-sdk/tests/assistance.test.mjs:71:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly equal:
+    
+    0 !== 1
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 1
+  actual: 0
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///opt/handrail/repos/handrail/handrail-agent-sdk/handrail-agent-sdk/tests/assistance.test.mjs:76:10)
+    process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: cancelled flight, wrong occurrence, future and reordered observations cannot notify arrival
+not ok 8 - cancelled flight, wrong occurrence, future and reordered observations cannot notify arrival
+  ---
+  duration_ms: 68.10918
+  type: 'test'
+  location: '/opt/handrail/repos/handrail/handrail-agent-sdk/handrail-agent-sdk/tests/assistance.test.mjs:86:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly equal:
+    + actual - expected
+    
+    + 'active'
+    - 'cancelled'
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 'cancelled'
+  actual: 'active'
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///opt/handrail/repos/handrail/handrail-agent-sdk/handrail-agent-sdk/tests/assistance.test.mjs:93:30)
+    process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: materially different consumer: industrial pump inspection watch uses the same lifecycle and adapter
+not ok 9 - materially different consumer: industrial pump inspection watch uses the same lifecycle and adapter
+  ---
+  duration_ms: 55.625553
+  type: 'test'
+  location: '/opt/handrail/repos/handrail/handrail-agent-sdk/handrail-agent-sdk/tests/assistance.test.mjs:96:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly equal:
+    + actual - expected
+    
+    + 'active'
+    - 'completed'
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 'completed'
+  actual: 'active'
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///opt/handrail/repos/handrail/handrail-agent-sdk/handrail-agent-sdk/tests/assistance.test.mjs:102:10)
+    process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: batch size bounds work, not user capability; fair catch-up and expiration
+not ok 10 - batch size bounds work, not user capability; fair catch-up and expiration
+  ---
+  duration_ms: 64.764732
+  type: 'test'
+  location: '/opt/handrail/repos/handrail/handrail-agent-sdk/handrail-agent-sdk/tests/assistance.test.mjs:105:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly equal:
+    
+    0 !== 4
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 4
+  actual: 0
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///opt/handrail/repos/handrail/handrail-agent-sdk/handrail-agent-sdk/tests/assistance.test.mjs:109:10)
+    process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: notification delivery reuses effect ledger: concurrent retry, reconstruction and uncertain remote result
+not ok 11 - notification delivery reuses effect ledger: concurrent retry, reconstruction and uncertain remote result
+  ---
+  duration_ms: 239.664547
+  type: 'test'
+  location: '/opt/handrail/repos/handrail/handrail-agent-sdk/handrail-agent-sdk/tests/assistance.test.mjs:112:1'
+  failureType: 'testCodeFailure'
+  error: "Cannot read properties of undefined (reading 'outcome')"
+  code: 'ERR_TEST_FAILURE'
+  name: 'TypeError'
+  stack: |-
+    TestContext.<anonymous> (file:///opt/handrail/repos/handrail/handrail-agent-sdk/handrail-agent-sdk/tests/assistance.test.mjs:123:66)
+    process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: canonical readiness requires verified matching environment and target containment, not worker success
+ok 12 - canonical readiness requires verified matching environment and target containment, not worker success
+  ---
+  duration_ms: 0.740946
+  type: 'test'
+  ...
+# Subtest: canonical feedback fixture status/questions/approvals wait and verified-ready notification survive reconstruction
+not ok 13 - canonical feedback fixture status/questions/approvals wait and verified-ready notification survive reconstruction
+  ---
+  duration_ms: 51.697621
+  type: 'test'
+  location: '/opt/handrail/repos/handrail/handrail-agent-sdk/handrail-agent-sdk/tests/assistance.test.mjs:145:1'
+  failureType: 'testCodeFailure'
+  error: "Cannot read properties of undefined (reading 'kind')"
+  code: 'ERR_TEST_FAILURE'
+  name: 'TypeError'
+  stack: |-
+    TestContext.<anonymous> (file:///opt/handrail/repos/handrail/handrail-agent-sdk/handrail-agent-sdk/tests/assistance.test.mjs:156:70)
+    process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: canonical submission adapter retains stable dedupe key and canonical ID; uncertainty never means retry
+ok 14 - canonical submission adapter retains stable dedupe key and canonical ID; uncertainty never means retry
+  ---
+  duration_ms: 1.331875
+  type: 'test'
+  ...
+1..14
+# tests 14
+# suites 0
+# pass 7
+# fail 7
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 3932.865672
+npm notice
+npm notice New major version of npm available! 10.9.8 -> 12.2.0
+npm notice Changelog: https://github.com/npm/cli/releases/tag/v12.2.0
+npm notice To update run: npm install -g npm@12.2.0
+npm notice
+
+> handrail-agent-sdk@0.1.4 test:agents
+> npm run build:reference && npm run build:test-postgres && node --test --test-concurrency=1 --test-reporter=tap tests/agent-runtime.test.mjs
+
+
+> handrail-agent-sdk@0.1.4 build:reference
+> tsc -p reference/tsconfig.json
+
+
+> handrail-agent-sdk@0.1.4 build:test-postgres
+> tsc -p tests/tsconfig.postgres.json
+
+TAP version 13
+# Subtest: host structured history survives an approval checkpoint without flattening roles or image references
+ok 1 - host structured history survives an approval checkpoint without flattening roles or image references
+  ---
+  duration_ms: 575.102249
+  type: 'test'
+  ...
+# Subtest: verified effects expose bounded host results and a failed result read never repeats the effect
+ok 2 - verified effects expose bounded host results and a failed result read never repeats the effect
+  ---
+  duration_ms: 606.400639
+  type: 'test'
+  ...
+# Subtest: unknown effects cannot release a domain result
+ok 3 - unknown effects cannot release a domain result
+  ---
+  duration_ms: 330.209533
+  type: 'test'
+  ...
+# Subtest: real Runner executes inventory -> protected reservation -> verification; duplicate delivery has one effect
+ok 4 - real Runner executes inventory -> protected reservation -> verification; duplicate delivery has one effect
+  ---
+  duration_ms: 426.571635
+  type: 'test'
+  ...
+# Subtest: different research task recovers from deliberate read-tool failure and computes a quote
+ok 5 - different research task recovers from deliberate read-tool failure and computes a quote
+  ---
+  duration_ms: 416.997335
+  type: 'test'
+  ...
+# Subtest: durable approval, answer and new input resume same job in a separate process
+ok 6 - durable approval, answer and new input resume same job in a separate process
+  ---
+  duration_ms: 1487.991691
+  type: 'test'
+  ...
+# Subtest: SIGKILL after provider mutation reconciles across processes without duplicate execution
+ok 7 - SIGKILL after provider mutation reconciles across processes without duplicate execution
+  ---
+  duration_ms: 3815.995226
+  type: 'test'
+  ...
+# Subtest: unknown external effect waits for reconciliation; schedule wake cannot authorize replay
+ok 8 - unknown external effect waits for reconciliation; schedule wake cannot authorize replay
+  ---
+  duration_ms: 578.716814
+  type: 'test'
+  ...
+# Subtest: tenant isolation, revoked and changed grants deny private state and execution
+ok 9 - tenant isolation, revoked and changed grants deny private state and execution
+  ---
+  duration_ms: 319.077572
+  type: 'test'
+  ...
+# Subtest: provider failure retains checkpoint and retry recovers without repeating completed tools
+ok 10 - provider failure retains checkpoint and retry recovers without repeating completed tools
+  ---
+  duration_ms: 482.704851
+  type: 'test'
+  ...
+# Subtest: process stop resumes checkpoint; explicit durable Stop fences late output and remains terminal
+ok 11 - process stop resumes checkpoint; explicit durable Stop fences late output and remains terminal
+  ---
+  duration_ms: 293.236352
+  type: 'test'
+  ...
+# Subtest: process shutdown aborts model transport and fresh runtime recovers same job
+ok 12 - process shutdown aborts model transport and fresh runtime recovers same job
+  ---
+  duration_ms: 517.487312
+  type: 'test'
+  ...
+# Subtest: invalid tool schema cannot mutate and repeated provider failure is bounded
+ok 13 - invalid tool schema cannot mutate and repeated provider failure is bounded
+  ---
+  duration_ms: 295.340763
+  type: 'test'
+  ...
+# Subtest: lost lease during a pending read prevents tool result and terminal writes
+ok 14 - lost lease during a pending read prevents tool result and terminal writes
+  ---
+  duration_ms: 505.695132
+  type: 'test'
+  ...
+# Subtest: model context bound fails durably and oversized private state is not committed
+ok 15 - model context bound fails durably and oversized private state is not committed
+  ---
+  duration_ms: 272.047092
+  type: 'test'
+  ...
+# Subtest: concurrent delivery is lease fenced; a second worker cannot execute tools
+ok 16 - concurrent delivery is lease fenced; a second worker cannot execute tools
+  ---
+  duration_ms: 485.84767
+  type: 'test'
+  ...
+# Subtest: Runner Vault tool composes real custody/grants/effects and never exposes the private token
+ok 17 - Runner Vault tool composes real custody/grants/effects and never exposes the private token
+  ---
+  duration_ms: 503.255412
+  type: 'test'
+  ...
+# Subtest: revocation after model approval is checked immediately before mutation dispatch
+ok 18 - revocation after model approval is checked immediately before mutation dispatch
+  ---
+  duration_ms: 391.009407
+  type: 'test'
+  ...
+# Subtest: unknown first effect stops other tools emitted in the same model response
+ok 19 - unknown first effect stops other tools emitted in the same model response
+  ---
+  duration_ms: 331.758871
+  type: 'test'
+  ...
+# Subtest: official OpenAI Responses provider/client drive Runner through simulated HTTP SSE transport
+ok 20 - official OpenAI Responses provider/client drive Runner through simulated HTTP SSE transport
+  ---
+  duration_ms: 526.805623
+  type: 'test'
+  ...
+1..20
+# tests 20
+# suites 0
+# pass 20
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 14039.447332
+Owned temporary PostgreSQL cluster stopped.

@@ -1,6 +1,6 @@
 {
   "name": "handrail-agent-sdk",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "private": true,
   "description": "Headless durable agent execution powered by OpenAI Agents SDK",
   "type": "module",
@@ -14,7 +14,8 @@
   "files": [
     "dist",
     "examples/headless.mts",
-    "docs/agent-runtime.md"
+    "docs/agent-runtime.md",
+    "docs/assistance.md"
   ],
   "exports": {
     ".": {
@@ -28,6 +29,30 @@
     "./server/agents": {
       "types": "./dist/server/agent-runtime.d.ts",
       "import": "./dist/server/agent-runtime.js"
+    },
+    "./server/assistance": {
+      "types": "./dist/server/assistance.d.ts",
+      "import": "./dist/server/assistance.js"
+    },
+    "./server/assistance/postgres": {
+      "types": "./dist/server/assistance-postgres.d.ts",
+      "import": "./dist/server/assistance-postgres.js"
+    },
+    "./server/assistance/notifications": {
+      "types": "./dist/server/assistance-notifications.d.ts",
+      "import": "./dist/server/assistance-notifications.js"
+    },
+    "./server/handrail-feedback": {
+      "types": "./dist/server/handrail-feedback.d.ts",
+      "import": "./dist/server/handrail-feedback.js"
+    },
+    "./server/application": {
+      "types": "./dist/server/agent-transport.d.ts",
+      "import": "./dist/server/agent-transport.js"
+    },
+    "./server/application-tools": {
+      "types": "./dist/server/application-tools.d.ts",
+      "import": "./dist/server/application-tools.js"
     }
   },
   "scripts": {
@@ -60,7 +85,8 @@
     "test:vault-request": "tsc -p tests/tsconfig.vault-request.json && node --test --test-concurrency=1 --test-reporter=tap .reference-build/tests/server/vault-request.test.js",
     "test:browser-profile": "npm run build:test-reference && node --test --test-concurrency=1 --test-reporter=tap .reference-build/tests/reference/browser-profile-store.test.js",
     "test:connection-store": "npm run build:test-reference && node --test --test-concurrency=1 --test-reporter=tap .reference-build/tests/reference/connection-store.test.js",
-    "test:agents": "npm run build:reference && npm run build:test-postgres && node --test --test-concurrency=1 --test-reporter=tap tests/agent-runtime.test.mjs"
+    "test:agents": "npm run build:reference && npm run build:test-postgres && node --test --test-concurrency=1 --test-reporter=tap tests/agent-runtime.test.mjs",
+    "test:assistance": "npm run build && npm run build:reference && npm run build:test-postgres && node --test --test-concurrency=1 --test-reporter=tap tests/assistance.test.mjs tests/agent-transport.test.mjs"
   },
   "devDependencies": {
     "@types/node": "22.20.4",
@@ -70,6 +96,7 @@
     "typescript": "5.9.3"
   },
   "dependencies": {
+    "@handrail/ai-assistant": "git+https://git@github.com/c0x65o/handrail-sdk-ai-assistant-js.git#97cb53daa35a0ce1bb06c3563e795e94371b17d2",
     "@openai/agents": "0.18.0",
     "drizzle-orm": "0.45.3",
     "pg": "8.23.0",

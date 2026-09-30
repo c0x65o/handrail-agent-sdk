@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto';
 import { canonicalAgentJson } from './agent-state-binding.js';
 import { Agent, Runner, RunState, setSensitiveDataLoggingEnabled, tool } from '@openai/agents';
-import type { Model } from '@openai/agents';
+import type { AgentInputItem, Model } from '@openai/agents';
 import type { ZodObject } from 'zod';
 import { validateJobCommand } from '../contracts/job.js';
 import type { JobIdentity, JobRequirement, JobSnapshot } from '../contracts/job.js';
@@ -9,7 +9,7 @@ import { sameLeaseValue, validLeaseAuthority } from './job-lease.js';
 import type { JobAppendFence, JobLease, JobLeaseAuthority, JobLeaseFence, JobLeaseHost } from './job-lease.js';
 import type { JobAdmissionStore, JobStore, JobStoreResult, JobStoreErrorCode } from './job-store.js';
 import type { JobAuthority } from './submit.js';
-import type { EffectRequest, createEffects } from './effects.js';
+import type { EffectRequest, EffectObservation, createEffects } from './effects.js';
 import type { VaultOperation } from '../contracts/vault.js';
 import type { createVaultUse } from './vault-use.js';
 
@@ -33,12 +33,16 @@ export interface AgentUsage {
   readonly outputTokens: number;
   readonly totalTokens: number;
 }
+/** Trusted host-authored input. Structured history preserves roles, tool-result
+ * pairing and multimodal references instead of flattening a conversation into
+ * a user string. Private state limits and host attachment authorization apply. */
+export type AgentInput = string | AgentInputItem[];
 /** Private custody only. Never return this record in job events or diagnostics. */
 export interface AgentCheckpoint {
   readonly version: number;
   readonly definitionRef: string;
   readonly dispatches: number;
-  readonly input: string;
+  readonly input: AgentInput;
   readonly state?: string;
   readonly results: Readonly<Record<string, { readonly binding: string; readonly output: string }>>;
   readonly resolution?: AgentResolution;
@@ -65,7 +69,14 @@ export interface AgentRuntimeHost extends JobLeaseHost {
   recover(): Promise<readonly JobIdentity[]>;
   authorize(identity: JobIdentity): Promise<JobAuthority | null>;
   /** Resolve admitted private input; exclude credentials/cookies/Vault values. */
-  input(identity: JobIdentity): Promise<string>;
+  input(identity: JobIdentity): Promise<AgentInput>;
+  /** Current catalog visibility, evaluated on every dispatch/reconstruction.
+   * Execution still goes through withToolAuthority. Omit only for a catalog
+   * already scoped by the trusted host when constructing this runtime. */
+  visibleTools?(identity: JobIdentity, names: readonly string[]): Promise<readonly string[]>;
+  /** Resolve/reauthorize opaque attachments just before each model request.
+   * Returned provider URLs/bytes are transient, not the durable input. */
+  prepareModelInput?(identity: JobIdentity, input: AgentInputItem[], signal: AbortSignal): Promise<AgentInputItem[]>;
   /** Current policy for the exact call; approval receipts are never model supplied.
    * Verify resolution against this call, original wait and current grant. */
   decide(call: AgentCall, resolution?: AgentResolution): Promise<'approve' | 'reject' | JobRequirement>;
@@ -88,7 +99,13 @@ export type AgentRuntimeTool = AgentToolBase & (
   | { readonly kind: 'read'; readonly execute: (call: AgentCall, signal: AbortSignal) => Promise<string> }
   | { readonly kind: 'effect';
       /** Bind validated references to an existing effect/Vault adapter. No IO. */
-      readonly bind: (call: AgentCall) => Promise<EffectRequest> }
+      readonly bind: (call: AgentCall) => Promise<EffectRequest>;
+      /** Read a host-filtered domain result only AFTER a verified effect. This
+       * callback is read-only, runs inside current tool authority, and may be
+       * repeated after a crash. Never use it to dispatch another mutation. The
+       * default remains the safe receipt-only observation. */
+      readonly readResult?: (call: AgentCall, receipt: Extract<EffectObservation, { outcome: 'verified' }>,
+        signal: AbortSignal) => Promise<string> }
   | { readonly kind: 'vault';
       /** Resolve a persisted, currently authorized grant. No private value. */
       readonly bind: (call: AgentCall) => Promise<VaultOperation>;
@@ -223,9 +240,11 @@ export function createAgentRuntime(deps: {
         identity: copy(identity), toolName: name, callId, input,
         effectRef: `agent:${digest([identity, callId, name])}`,
       });
+      const visible = deps.host.visibleTools ? await deps.host.visibleTools(copy(identity), deps.tools.map(t => t.name)) : deps.tools.map(t => t.name);
+      const tools = deps.tools.filter(t => visible.includes(t.name));
       const agent = new Agent({ name: deps.definitionRef, instructions: deps.instructions, model: deps.model,
         modelSettings: { parallelToolCalls: false, maxTokens: 2048, store: false, retry: { maxRetries: 0 } },
-        tools: deps.tools.map(def => tool({ name: def.name, description: def.description, parameters: def.parameters,
+        tools: tools.map(def => tool({ name: def.name, description: def.description, parameters: def.parameters,
           needsApproval: true, errorFunction: null,
           execute: async (input, _context, details) => {
             try {
@@ -258,7 +277,9 @@ export function createAgentRuntime(deps: {
                   await check();
                   const observation = unwrap(await deps.effects.execute(request, fence!));
                   if (observation.outcome !== 'verified') throw new Reconcile(call);
-                  output = JSON.stringify(observation);
+                  output = def.readResult
+                    ? await abortable(def.readResult(call, observation, controller.signal), controller.signal)
+                    : JSON.stringify(observation);
                 } else {
                   try { output = await abortable(def.execute(call, controller.signal), controller.signal); }
                   catch { output = '{"error":"tool_failed"}'; }
@@ -280,7 +301,12 @@ export function createAgentRuntime(deps: {
         callModelInputFilter: async ({ modelData }) => {
           await check();
           if (size(modelData) > limits.maxContextBytes) throw new Halt('limit_exceeded');
-          return modelData;
+          const prepared = deps.host.prepareModelInput
+            ? { ...modelData, input: await deps.host.prepareModelInput(copy(identity), copy(modelData.input), controller.signal) }
+            : modelData;
+          await check();
+          if (size(prepared) > limits.maxContextBytes) throw new Halt('limit_exceeded');
+          return prepared;
         },
       });
       let state: RunState<unknown, typeof agent> | undefined = record.state ? await RunState.fromString(agent, record.state) : undefined;
@@ -291,14 +317,14 @@ export function createAgentRuntime(deps: {
         record = { ...record, state: state.toString(), resolution: { receiptRef: record.resolution.receiptRef } };
         await save();
       }
-      const invoke = (input: string | RunState<unknown, typeof agent>) => runner.run(agent, input, {
+      const invoke = (input: AgentInput | RunState<unknown, typeof agent>) => runner.run(agent, input, {
         stream: true, maxTurns: limits.maxTurns, signal: controller.signal,
       });
       for (;;) {
         await check();
         if (state) {
           for (const interruption of state.getInterruptions()) {
-            const def = deps.tools.find(t => t.name === interruption.name);
+            const def = tools.find(t => t.name === interruption.name);
             if (!def) throw Error('tool_changed');
             const raw = interruption.rawItem;
             if (raw.type !== 'function_call') throw Error('unsupported_tool');
@@ -384,22 +410,42 @@ export function createAgentRuntime(deps: {
   }
   return {
     wake,
+    /** Trusted-server projection seam. Never expose raw checkpoint custody to
+     * clients; filter results through the application's conversation policy. */
+    async inspect(identity: JobIdentity): Promise<JobStoreResult<{ snapshot: JobSnapshot; checkpoint: AgentCheckpoint | null }>> {
+      try {
+        identity = copy(identity);
+        const snapshot = await load(identity);
+        // Stop revokes the private-state execution fence. Public terminal
+        // convergence must not require opening the now-revoked checkpoint.
+        if (snapshot.state === 'cancelled' || snapshot.state === 'failed') return { ok: true, value: { snapshot, checkpoint: null } };
+        const checkpoint = await authorized(identity, authority => deps.states.load(identity, authority));
+        return { ok: true, value: { snapshot, checkpoint } };
+      } catch { return { ok: false, code: 'not_authorized' }; }
+    },
     async start() {
       const results: JobStoreResult<AgentOutcome>[] = [];
       for (const identity of await deps.host.recover()) results.push(await wake(identity));
       return results;
     },
-    async resume(identity: JobIdentity): Promise<JobStoreResult<void>> {
-      try {
-        const snapshot = await load(identity);
-        if (snapshot.state !== 'waiting') return { ok: false, code: 'invalid_transition' };
-        await authorized(identity, async authority => {
-          const resolution = await deps.host.resolveWait(snapshot);
-          if (!resolution || size(resolution.input ?? '') > limits.maxContextBytes) return { ok: false, code: 'not_authorized' };
-          return deps.states.resume(identity, snapshot.revision, resolution, authority);
-        });
-        return { ok: true, value: undefined };
-      } catch { return { ok: false, code: 'not_authorized' }; }
+    resume(input: JobIdentity): Promise<JobStoreResult<void>> {
+      if (stopped) return Promise.resolve({ ok: false, code: 'invalid_transition' });
+      const identity = copy(input);
+      const operation = (async (): Promise<JobStoreResult<void>> => {
+        try {
+          const snapshot = await load(identity);
+          if (snapshot.state !== 'waiting') return { ok: false, code: 'invalid_transition' };
+          await authorized(identity, async authority => {
+            const resolution = await deps.host.resolveWait(snapshot);
+            if (!resolution || size(resolution.input ?? '') > limits.maxContextBytes) return { ok: false, code: 'not_authorized' };
+            return deps.states.resume(identity, snapshot.revision, resolution, authority);
+          });
+          return { ok: true, value: undefined };
+        } catch { return { ok: false, code: 'not_authorized' }; }
+      })();
+      pending.add(operation);
+      void operation.finally(() => pending.delete(operation));
+      return operation;
     },
     /** Process shutdown only. Explicit user Stop uses createJobCancellation and
      * remains terminal; a process restart may recover unfinished running work. */

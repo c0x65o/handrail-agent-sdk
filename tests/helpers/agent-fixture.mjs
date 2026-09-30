@@ -117,10 +117,11 @@ export async function services(schema, keyHex, options = {}) {
         requestDigest: `sha256:${createHash('sha256').update(canonicalAgentJson([c.identity,c.input])).digest('hex')}` }) },
   ];
   if (options.reserve) tools[2] = options.reserve;
+  if (options.readEffectResult) tools[2] = { ...tools[2], readResult: options.readEffectResult };
   const model = options.model ?? modelBoundary(options.scenario,options.modelHooks);
   const runtime = sdk.createAgentRuntime({ definitionRef: 'fixture-agent-v1', instructions: 'Use only the synthetic tools. Recover from read errors.',
     model, tools, host, admission, journal, lease, states, effects, limits: {...limits,...options.limits}, observe: e => { events.push(e); options.observe?.(e); } });
-  return { runtime, pool, journal, admission, lease, states, authority, host, state, events, calls, model,
+  return { runtime, pool, journal, admission, lease, states, effects, authority, host, state, events, calls, model,
     cancel: sdk.createJobCancellation(host,createJobCancellationStore(db,tables)),
     answer: sdk.createJobAnswer(host,createJobAnswerStore(db,tables)),
     close: async () => { await runtime.stop(); await pool.end(); } };
