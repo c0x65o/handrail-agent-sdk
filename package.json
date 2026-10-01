@@ -1,6 +1,6 @@
 {
   "name": "handrail-agent-sdk",
-  "version": "0.1.7",
+  "version": "0.1.8",
   "private": true,
   "description": "Headless durable agent execution powered by OpenAI Agents SDK",
   "type": "module",
@@ -102,7 +102,7 @@
     "typescript": "5.9.3"
   },
   "dependencies": {
-    "@handrail/ai-assistant": "git+https://git@github.com/c0x65o/handrail-sdk-ai-assistant-js.git#97cb53daa35a0ce1bb06c3563e795e94371b17d2",
+    "@handrail/ai-assistant": "git+https://github.com/c0x65o/handrail-sdk-ai-assistant-js.git#921a5650f1937504a124574ad795ea222555a684",
     "@openai/agents": "0.18.0",
     "ajv": "8.20.0",
     "ajv-formats": "3.0.1",
