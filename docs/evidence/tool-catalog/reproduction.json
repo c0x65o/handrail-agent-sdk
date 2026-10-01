@@ -1,0 +1,205 @@
+{
+  "status": "published-algorithm-failures-reproduced",
+  "requested": {
+    "count": 92,
+    "failures": [
+      {
+        "name": "calendar_create_event",
+        "message": "Unable to convert the provided Zod schema to JSON Schema. Ensure that the `zod` package is available at runtime or provide a JSON schema object instead. Upstream helper error: Schema field at `properties/event/properties/recurrence/anyOf/1/properties/count` uses `.optional()` without `.nullable()` which is not supported by the API. See: https://platform.openai.com/docs/guides/structured-outputs?api-mode=responses#all-fields-must-be-required"
+      },
+      {
+        "name": "calendar_update_event",
+        "message": "Unable to convert the provided Zod schema to JSON Schema. Ensure that the `zod` package is available at runtime or provide a JSON schema object instead. Upstream helper error: Schema field at `properties/patch/properties/title` uses `.optional()` without `.nullable()` which is not supported by the API. See: https://platform.openai.com/docs/guides/structured-outputs?api-mode=responses#all-fields-must-be-required"
+      },
+      {
+        "name": "real_estate_create_rental_property",
+        "message": "Unable to convert the provided Zod schema to JSON Schema. Ensure that the `zod` package is available at runtime or provide a JSON schema object instead. Upstream helper error: Schema field at `properties/property/properties/displayColorHex` uses `.optional()` without `.nullable()` which is not supported by the API. See: https://platform.openai.com/docs/guides/structured-outputs?api-mode=responses#all-fields-must-be-required"
+      },
+      {
+        "name": "real_estate_update_property",
+        "message": "Unable to convert the provided Zod schema to JSON Schema. Ensure that the `zod` package is available at runtime or provide a JSON schema object instead. Upstream helper error: Schema field at `properties/patch/properties/name` uses `.optional()` without `.nullable()` which is not supported by the API. See: https://platform.openai.com/docs/guides/structured-outputs?api-mode=responses#all-fields-must-be-required"
+      },
+      {
+        "name": "real_estate_update_unit",
+        "message": "Unable to convert the provided Zod schema to JSON Schema. Ensure that the `zod` package is available at runtime or provide a JSON schema object instead. Upstream helper error: Schema field at `properties/patch/properties/unitLabel` uses `.optional()` without `.nullable()` which is not supported by the API. See: https://platform.openai.com/docs/guides/structured-outputs?api-mode=responses#all-fields-must-be-required"
+      },
+      {
+        "name": "liability_update",
+        "message": "Unable to convert the provided Zod schema to JSON Schema. Ensure that the `zod` package is available at runtime or provide a JSON schema object instead. Upstream helper error: Schema field at `properties/patch/properties/name` uses `.optional()` without `.nullable()` which is not supported by the API. See: https://platform.openai.com/docs/guides/structured-outputs?api-mode=responses#all-fields-must-be-required"
+      },
+      {
+        "name": "life_insurance_update_policy",
+        "message": "Unable to convert the provided Zod schema to JSON Schema. Ensure that the `zod` package is available at runtime or provide a JSON schema object instead. Upstream helper error: Schema field at `properties/patch/properties/insuredPersonId` uses `.optional()` without `.nullable()` which is not supported by the API. See: https://platform.openai.com/docs/guides/structured-outputs?api-mode=responses#all-fields-must-be-required"
+      },
+      {
+        "name": "property_casualty_insurance_update_policy",
+        "message": "Unable to convert the provided Zod schema to JSON Schema. Ensure that the `zod` package is available at runtime or provide a JSON schema object instead. Upstream helper error: Schema field at `properties/patch/properties/name` uses `.optional()` without `.nullable()` which is not supported by the API. See: https://platform.openai.com/docs/guides/structured-outputs?api-mode=responses#all-fields-must-be-required"
+      },
+      {
+        "name": "finance_update_manual_account",
+        "message": "Unable to convert the provided Zod schema to JSON Schema. Ensure that the `zod` package is available at runtime or provide a JSON schema object instead. Upstream helper error: Schema field at `properties/patch/properties/institution` uses `.optional()` without `.nullable()` which is not supported by the API. See: https://platform.openai.com/docs/guides/structured-outputs?api-mode=responses#all-fields-must-be-required"
+      },
+      {
+        "name": "asset_update_transport",
+        "message": "Unable to convert the provided Zod schema to JSON Schema. Ensure that the `zod` package is available at runtime or provide a JSON schema object instead. Upstream helper error: Schema field at `properties/patch/properties/name` uses `.optional()` without `.nullable()` which is not supported by the API. See: https://platform.openai.com/docs/guides/structured-outputs?api-mode=responses#all-fields-must-be-required"
+      },
+      {
+        "name": "asset_update_security",
+        "message": "Unable to convert the provided Zod schema to JSON Schema. Ensure that the `zod` package is available at runtime or provide a JSON schema object instead. Upstream helper error: Schema field at `properties/patch/properties/name` uses `.optional()` without `.nullable()` which is not supported by the API. See: https://platform.openai.com/docs/guides/structured-outputs?api-mode=responses#all-fields-must-be-required"
+      },
+      {
+        "name": "asset_create_security",
+        "message": "Unable to convert the provided Zod schema to JSON Schema. Ensure that the `zod` package is available at runtime or provide a JSON schema object instead. Upstream helper error: Schema field at `properties/security/properties/displayColorHex` uses `.optional()` without `.nullable()` which is not supported by the API. See: https://platform.openai.com/docs/guides/structured-outputs?api-mode=responses#all-fields-must-be-required"
+      },
+      {
+        "name": "asset_create_valuable",
+        "message": "Unable to convert the provided Zod schema to JSON Schema. Ensure that the `zod` package is available at runtime or provide a JSON schema object instead. Upstream helper error: Schema field at `properties/valuable/properties/displayColorHex` uses `.optional()` without `.nullable()` which is not supported by the API. See: https://platform.openai.com/docs/guides/structured-outputs?api-mode=responses#all-fields-must-be-required"
+      },
+      {
+        "name": "asset_update_valuable",
+        "message": "Unable to convert the provided Zod schema to JSON Schema. Ensure that the `zod` package is available at runtime or provide a JSON schema object instead. Upstream helper error: Schema field at `properties/patch/properties/name` uses `.optional()` without `.nullable()` which is not supported by the API. See: https://platform.openai.com/docs/guides/structured-outputs?api-mode=responses#all-fields-must-be-required"
+      },
+      {
+        "name": "asset_create_transport",
+        "message": "Unable to convert the provided Zod schema to JSON Schema. Ensure that the `zod` package is available at runtime or provide a JSON schema object instead. Upstream helper error: Schema field at `properties/asset/properties/displayColorHex` uses `.optional()` without `.nullable()` which is not supported by the API. See: https://platform.openai.com/docs/guides/structured-outputs?api-mode=responses#all-fields-must-be-required"
+      },
+      {
+        "name": "liability_create",
+        "message": "Unable to convert the provided Zod schema to JSON Schema. Ensure that the `zod` package is available at runtime or provide a JSON schema object instead. Upstream helper error: Schema field at `properties/liability/properties/assetIds` uses `.optional()` without `.nullable()` which is not supported by the API. See: https://platform.openai.com/docs/guides/structured-outputs?api-mode=responses#all-fields-must-be-required"
+      },
+      {
+        "name": "household_update_person",
+        "message": "Unable to convert the provided Zod schema to JSON Schema. Ensure that the `zod` package is available at runtime or provide a JSON schema object instead. Upstream helper error: Schema field at `properties/patch/properties/firstName` uses `.optional()` without `.nullable()` which is not supported by the API. See: https://platform.openai.com/docs/guides/structured-outputs?api-mode=responses#all-fields-must-be-required"
+      },
+      {
+        "name": "household_add_profile_fields",
+        "message": "Unable to convert the provided Zod schema to JSON Schema. Ensure that the `zod` package is available at runtime or provide a JSON schema object instead. Upstream helper error: Schema field at `properties/sourceDocumentId` uses `.optional()` without `.nullable()` which is not supported by the API. See: https://platform.openai.com/docs/guides/structured-outputs?api-mode=responses#all-fields-must-be-required"
+      },
+      {
+        "name": "reference_update_item",
+        "message": "Unable to convert the provided Zod schema to JSON Schema. Ensure that the `zod` package is available at runtime or provide a JSON schema object instead. Upstream helper error: Schema field at `properties/patch/properties/title` uses `.optional()` without `.nullable()` which is not supported by the API. See: https://platform.openai.com/docs/guides/structured-outputs?api-mode=responses#all-fields-must-be-required"
+      },
+      {
+        "name": "recurring_charge_update",
+        "message": "Unable to convert the provided Zod schema to JSON Schema. Ensure that the `zod` package is available at runtime or provide a JSON schema object instead. Upstream helper error: Schema field at `properties/patch/properties/name` uses `.optional()` without `.nullable()` which is not supported by the API. See: https://platform.openai.com/docs/guides/structured-outputs?api-mode=responses#all-fields-must-be-required"
+      },
+      {
+        "name": "assistance_create_reminder",
+        "message": "Unable to convert the provided Zod schema to JSON Schema. Ensure that the `zod` package is available at runtime or provide a JSON schema object instead. Upstream helper error: Schema at `properties/localDate` uses unsupported keyword `allOf` and cannot be represented in strict Structured Outputs."
+      },
+      {
+        "name": "assistance_reschedule_reminder",
+        "message": "Unable to convert the provided Zod schema to JSON Schema. Ensure that the `zod` package is available at runtime or provide a JSON schema object instead. Upstream helper error: Schema at `properties/id` uses unsupported keyword `allOf` and cannot be represented in strict Structured Outputs."
+      }
+    ]
+  },
+  "current": {
+    "count": 100,
+    "failures": [
+      {
+        "name": "calendar_create_event",
+        "message": "Unable to convert the provided Zod schema to JSON Schema. Ensure that the `zod` package is available at runtime or provide a JSON schema object instead. Upstream helper error: Schema field at `properties/event/properties/recurrence/anyOf/1/properties/count` uses `.optional()` without `.nullable()` which is not supported by the API. See: https://platform.openai.com/docs/guides/structured-outputs?api-mode=responses#all-fields-must-be-required"
+      },
+      {
+        "name": "calendar_update_event",
+        "message": "Unable to convert the provided Zod schema to JSON Schema. Ensure that the `zod` package is available at runtime or provide a JSON schema object instead. Upstream helper error: Schema field at `properties/patch/properties/title` uses `.optional()` without `.nullable()` which is not supported by the API. See: https://platform.openai.com/docs/guides/structured-outputs?api-mode=responses#all-fields-must-be-required"
+      },
+      {
+        "name": "real_estate_create_rental_property",
+        "message": "Unable to convert the provided Zod schema to JSON Schema. Ensure that the `zod` package is available at runtime or provide a JSON schema object instead. Upstream helper error: Schema field at `properties/property/properties/displayColorHex` uses `.optional()` without `.nullable()` which is not supported by the API. See: https://platform.openai.com/docs/guides/structured-outputs?api-mode=responses#all-fields-must-be-required"
+      },
+      {
+        "name": "real_estate_update_property",
+        "message": "Unable to convert the provided Zod schema to JSON Schema. Ensure that the `zod` package is available at runtime or provide a JSON schema object instead. Upstream helper error: Schema field at `properties/patch/properties/name` uses `.optional()` without `.nullable()` which is not supported by the API. See: https://platform.openai.com/docs/guides/structured-outputs?api-mode=responses#all-fields-must-be-required"
+      },
+      {
+        "name": "real_estate_update_unit",
+        "message": "Unable to convert the provided Zod schema to JSON Schema. Ensure that the `zod` package is available at runtime or provide a JSON schema object instead. Upstream helper error: Schema field at `properties/patch/properties/unitLabel` uses `.optional()` without `.nullable()` which is not supported by the API. See: https://platform.openai.com/docs/guides/structured-outputs?api-mode=responses#all-fields-must-be-required"
+      },
+      {
+        "name": "liability_update",
+        "message": "Unable to convert the provided Zod schema to JSON Schema. Ensure that the `zod` package is available at runtime or provide a JSON schema object instead. Upstream helper error: Schema field at `properties/patch/properties/name` uses `.optional()` without `.nullable()` which is not supported by the API. See: https://platform.openai.com/docs/guides/structured-outputs?api-mode=responses#all-fields-must-be-required"
+      },
+      {
+        "name": "life_insurance_update_policy",
+        "message": "Unable to convert the provided Zod schema to JSON Schema. Ensure that the `zod` package is available at runtime or provide a JSON schema object instead. Upstream helper error: Schema field at `properties/patch/properties/insuredPersonId` uses `.optional()` without `.nullable()` which is not supported by the API. See: https://platform.openai.com/docs/guides/structured-outputs?api-mode=responses#all-fields-must-be-required"
+      },
+      {
+        "name": "property_casualty_insurance_update_policy",
+        "message": "Unable to convert the provided Zod schema to JSON Schema. Ensure that the `zod` package is available at runtime or provide a JSON schema object instead. Upstream helper error: Schema field at `properties/patch/properties/name` uses `.optional()` without `.nullable()` which is not supported by the API. See: https://platform.openai.com/docs/guides/structured-outputs?api-mode=responses#all-fields-must-be-required"
+      },
+      {
+        "name": "finance_update_manual_account",
+        "message": "Unable to convert the provided Zod schema to JSON Schema. Ensure that the `zod` package is available at runtime or provide a JSON schema object instead. Upstream helper error: Schema field at `properties/patch/properties/institution` uses `.optional()` without `.nullable()` which is not supported by the API. See: https://platform.openai.com/docs/guides/structured-outputs?api-mode=responses#all-fields-must-be-required"
+      },
+      {
+        "name": "asset_update_transport",
+        "message": "Unable to convert the provided Zod schema to JSON Schema. Ensure that the `zod` package is available at runtime or provide a JSON schema object instead. Upstream helper error: Schema field at `properties/patch/properties/name` uses `.optional()` without `.nullable()` which is not supported by the API. See: https://platform.openai.com/docs/guides/structured-outputs?api-mode=responses#all-fields-must-be-required"
+      },
+      {
+        "name": "asset_update_security",
+        "message": "Unable to convert the provided Zod schema to JSON Schema. Ensure that the `zod` package is available at runtime or provide a JSON schema object instead. Upstream helper error: Schema field at `properties/patch/properties/name` uses `.optional()` without `.nullable()` which is not supported by the API. See: https://platform.openai.com/docs/guides/structured-outputs?api-mode=responses#all-fields-must-be-required"
+      },
+      {
+        "name": "asset_create_security",
+        "message": "Unable to convert the provided Zod schema to JSON Schema. Ensure that the `zod` package is available at runtime or provide a JSON schema object instead. Upstream helper error: Schema field at `properties/security/properties/displayColorHex` uses `.optional()` without `.nullable()` which is not supported by the API. See: https://platform.openai.com/docs/guides/structured-outputs?api-mode=responses#all-fields-must-be-required"
+      },
+      {
+        "name": "asset_create_valuable",
+        "message": "Unable to convert the provided Zod schema to JSON Schema. Ensure that the `zod` package is available at runtime or provide a JSON schema object instead. Upstream helper error: Schema field at `properties/valuable/properties/displayColorHex` uses `.optional()` without `.nullable()` which is not supported by the API. See: https://platform.openai.com/docs/guides/structured-outputs?api-mode=responses#all-fields-must-be-required"
+      },
+      {
+        "name": "asset_update_valuable",
+        "message": "Unable to convert the provided Zod schema to JSON Schema. Ensure that the `zod` package is available at runtime or provide a JSON schema object instead. Upstream helper error: Schema field at `properties/patch/properties/name` uses `.optional()` without `.nullable()` which is not supported by the API. See: https://platform.openai.com/docs/guides/structured-outputs?api-mode=responses#all-fields-must-be-required"
+      },
+      {
+        "name": "asset_create_transport",
+        "message": "Unable to convert the provided Zod schema to JSON Schema. Ensure that the `zod` package is available at runtime or provide a JSON schema object instead. Upstream helper error: Schema field at `properties/asset/properties/displayColorHex` uses `.optional()` without `.nullable()` which is not supported by the API. See: https://platform.openai.com/docs/guides/structured-outputs?api-mode=responses#all-fields-must-be-required"
+      },
+      {
+        "name": "liability_create",
+        "message": "Unable to convert the provided Zod schema to JSON Schema. Ensure that the `zod` package is available at runtime or provide a JSON schema object instead. Upstream helper error: Schema field at `properties/liability/properties/assetIds` uses `.optional()` without `.nullable()` which is not supported by the API. See: https://platform.openai.com/docs/guides/structured-outputs?api-mode=responses#all-fields-must-be-required"
+      },
+      {
+        "name": "household_update_person",
+        "message": "Unable to convert the provided Zod schema to JSON Schema. Ensure that the `zod` package is available at runtime or provide a JSON schema object instead. Upstream helper error: Schema field at `properties/patch/properties/firstName` uses `.optional()` without `.nullable()` which is not supported by the API. See: https://platform.openai.com/docs/guides/structured-outputs?api-mode=responses#all-fields-must-be-required"
+      },
+      {
+        "name": "household_add_profile_fields",
+        "message": "Unable to convert the provided Zod schema to JSON Schema. Ensure that the `zod` package is available at runtime or provide a JSON schema object instead. Upstream helper error: Schema field at `properties/sourceDocumentId` uses `.optional()` without `.nullable()` which is not supported by the API. See: https://platform.openai.com/docs/guides/structured-outputs?api-mode=responses#all-fields-must-be-required"
+      },
+      {
+        "name": "reference_update_item",
+        "message": "Unable to convert the provided Zod schema to JSON Schema. Ensure that the `zod` package is available at runtime or provide a JSON schema object instead. Upstream helper error: Schema field at `properties/patch/properties/title` uses `.optional()` without `.nullable()` which is not supported by the API. See: https://platform.openai.com/docs/guides/structured-outputs?api-mode=responses#all-fields-must-be-required"
+      },
+      {
+        "name": "recurring_charge_update",
+        "message": "Unable to convert the provided Zod schema to JSON Schema. Ensure that the `zod` package is available at runtime or provide a JSON schema object instead. Upstream helper error: Schema field at `properties/patch/properties/name` uses `.optional()` without `.nullable()` which is not supported by the API. See: https://platform.openai.com/docs/guides/structured-outputs?api-mode=responses#all-fields-must-be-required"
+      },
+      {
+        "name": "assistance_create_reminder",
+        "message": "Unable to convert the provided Zod schema to JSON Schema. Ensure that the `zod` package is available at runtime or provide a JSON schema object instead. Upstream helper error: Schema at `properties/localDate` uses unsupported keyword `allOf` and cannot be represented in strict Structured Outputs."
+      },
+      {
+        "name": "assistance_reschedule_reminder",
+        "message": "Unable to convert the provided Zod schema to JSON Schema. Ensure that the `zod` package is available at runtime or provide a JSON schema object instead. Upstream helper error: Schema at `properties/id` uses unsupported keyword `allOf` and cannot be represented in strict Structured Outputs."
+      },
+      {
+        "name": "travel_create_trip",
+        "message": "Unable to convert the provided Zod schema to JSON Schema. Ensure that the `zod` package is available at runtime or provide a JSON schema object instead. Upstream helper error: Schema field at `properties/details/properties/travelers` uses `.optional()` without `.nullable()` which is not supported by the API. See: https://platform.openai.com/docs/guides/structured-outputs?api-mode=responses#all-fields-must-be-required"
+      },
+      {
+        "name": "travel_update_trip",
+        "message": "Unable to convert the provided Zod schema to JSON Schema. Ensure that the `zod` package is available at runtime or provide a JSON schema object instead. Upstream helper error: Schema at `properties/id` uses unsupported keyword `allOf` and cannot be represented in strict Structured Outputs."
+      },
+      {
+        "name": "travel_create_item",
+        "message": "Unable to convert the provided Zod schema to JSON Schema. Ensure that the `zod` package is available at runtime or provide a JSON schema object instead. Upstream helper error: Schema at `properties/tripId` uses unsupported keyword `allOf` and cannot be represented in strict Structured Outputs."
+      },
+      {
+        "name": "travel_update_item",
+        "message": "Unable to convert the provided Zod schema to JSON Schema. Ensure that the `zod` package is available at runtime or provide a JSON schema object instead. Upstream helper error: Schema at `properties/id` uses unsupported keyword `allOf` and cannot be represented in strict Structured Outputs."
+      }
+    ]
+  }
+}

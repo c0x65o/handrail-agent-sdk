@@ -1,0 +1,16 @@
+[
+  {
+    "profile": "node-next",
+    "source": "/opt/handrail/repos/mills/mills-family-erp-v4/mills-family-erp-v4/src/server/assistant/agent-composition.ts",
+    "sourceSha256": "471660cdbf1fd67fd90c8a02307500a4d401da750c2b0c41014f700ce36ba225",
+    "candidateSourceOverlay": true,
+    "exitCode": 0
+  },
+  {
+    "profile": "bundler-explicit-provider",
+    "source": "/opt/handrail/repos/mills/mills-family-erp-v4/mills-family-erp-v4/src/server/assistant/agent-composition.ts",
+    "sourceSha256": "471660cdbf1fd67fd90c8a02307500a4d401da750c2b0c41014f700ce36ba225",
+    "candidateSourceOverlay": true,
+    "exitCode": 0
+  }
+]

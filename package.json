@@ -1,6 +1,6 @@
 {
   "name": "handrail-agent-sdk",
-  "version": "0.1.6",
+  "version": "0.1.7",
   "private": true,
   "description": "Headless durable agent execution powered by OpenAI Agents SDK",
   "type": "module",
@@ -104,6 +104,8 @@
   "dependencies": {
     "@handrail/ai-assistant": "git+https://git@github.com/c0x65o/handrail-sdk-ai-assistant-js.git#97cb53daa35a0ce1bb06c3563e795e94371b17d2",
     "@openai/agents": "0.18.0",
+    "ajv": "8.20.0",
+    "ajv-formats": "3.0.1",
     "drizzle-orm": "0.45.3",
     "pg": "8.23.0",
     "zod": "4.3.6"

@@ -22,6 +22,23 @@ const tool: AgentRuntimeTool = {
   execute: async (call, signal) => signal.aborted ? 'cancelled' : String(call.input.topic),
 };
 const runtime = createAgentRuntime({ ...options, host, states, tools: [tool] });
+const applicationTools = createApplicationAgentTools({
+  definitions: [{ name: 'patch', description: 'Update supplied fields.', input_schema: {
+    type: 'object', properties: { patch: { type: 'object', properties: {
+      title: { type: 'string', minLength: 1 }, label: { type: ['string', 'null'] },
+    }, additionalProperties: false } }, required: ['patch'], additionalProperties: false,
+  } }],
+  isReadOnly: () => false,
+  read: async call => String(call.input.patch),
+  bind: async call => ({ identity: call.identity, effectRef: call.effectRef, idempotencyRef: call.effectRef,
+    actionRef: 'patch', operationRef: 'patch', providerRef: 'host', requestDigest: 'sha256:host-bound-intent' }),
+  result: async (_call, receipt) => receipt.receiptRef,
+});
+createAgentRuntime({ ...options, tools: applicationTools });
+const parsed: Record<string, unknown> = applicationTools[0].parameters.parse({ patch: { label: null } });
+if ('jsonSchema' in applicationTools[0].parameters) {
+  const schema: Readonly<Record<string, unknown>> = applicationTools[0].parameters.jsonSchema;
+}
 await runtime.wake(identity);
 await runtime.stop();
 validateJobSnapshot({});

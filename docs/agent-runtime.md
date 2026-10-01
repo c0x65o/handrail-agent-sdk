@@ -114,6 +114,63 @@ provide host-controlled key handles; see the PostgreSQL guide above. Alternative
 persistence engines may implement the existing store ports. These tables are not
 Handrail's native task database.
 
+### Application tool schemas
+
+Pass the trusted application's complete `ToolDefinition[]` to
+`createApplicationAgentTools` from `handrail-agent-sdk/server/application-tools`,
+then pass its result directly to `createAgentRuntime`. Names, descriptions and
+JSON Schemas are preserved. The SDK uses upstream raw JSON Schema tools with
+`strict: false` and `needsApproval: true`. Optional members stay optional;
+explicit null is accepted only where the original schema allows it. This is
+the documented [non-strict function tool representation](https://openai.github.io/openai-agents-js/guides/tools/),
+not strict Structured Outputs with nullable placeholders.
+
+The model is not the validator. Ajv 8.20.0 with ajv-formats 3.0.1 compiles the
+original schema once and validates both the durable interruption before
+`host.decide` and the executed arguments before `withToolAuthority`, `read`,
+`bind`, or any effect. Validation never coerces types, supplies defaults, strips
+additional fields, or replaces null with absence. Thus `patch: {label: null}`
+and `patch: {}` remain different calls and have different effect bindings.
+Additional properties follow the application's schema (retained if allowed,
+rejected if forbidden). Invalid arguments cannot reach application IO; malformed
+JSON may become an upstream tool error that the model can correct. Other schema
+failures leave the durable run retryable under the existing dispatch bounds.
+
+Supported object-root schemas use JSON Schema 2020-12 (default, or explicit
+`https://json-schema.org/draft/2020-12/schema`), 2019-09
+(`https://json-schema.org/draft/2019-09/schema`), or draft-07
+(`http://json-schema.org/draft-07/schema#`). This includes local references,
+unions, intersections, nested optional members, pattern/format and numeric,
+string, object and array constraints. Unknown dialects, keywords, formats,
+unresolved references and asynchronous validators fail catalog construction;
+no tools or fields are silently omitted. Remote reference fetching and custom
+executable keywords are not enabled. See [Ajv dialects](https://ajv.js.org/json-schema.html)
+and [data mutation options](https://ajv.js.org/guide/modifying-data.html).
+
+Keep the original business validators and authorization in the host adapters.
+JSON Schema cannot express every application refinement, transaction rule,
+optimistic version check or permission. Validate the immutable intent during
+binding and retain the existing domain executor's checks immediately before
+mutation. `bind` must not dispatch a mutation. Reads and effects still run under
+current host authority and the existing durable ledger.
+An upstream provider that does not support non-strict function tools is not
+qualified by this contract; do not silently fall back to a lossy strict schema.
+
+Compatibility: existing host-authored `ZodObject` runtime tools retain their
+strict upstream behavior. Application-generated tools now return
+`AgentJsonSchemaParameters` in the `AgentRuntimeTool.parameters` union, exported
+from `server/agents`. Both variants support `.parse(unknown)` returning
+`Record<string, unknown>`; narrow with `'jsonSchema' in parameters` to inspect
+the unchanged model schema. The application adapter no longer promises Zod
+methods such as `.shape` or `.safeParse`. Do not hand the wrapper to upstream
+`tool({parameters})`: it requires the runtime's non-strict representation and
+validation boundary. Diagnostics should instantiate the public runtime and
+assert the tools seen by its injected `Model`, as the catalog regression does.
+This avoids comparing the application's Zod version structurally with the SDK's
+Zod version. No consumer schema rewrite is required. Change `definitionRef`
+when adopting the corrected schema semantics; reconcile old pending work via
+the host's existing policy rather than replaying it under a changed definition.
+
 ### Structured application input and verified domain results
 
 `AgentRuntimeHost.input` also accepts `AgentInputItem[]`. Hosts migrating an

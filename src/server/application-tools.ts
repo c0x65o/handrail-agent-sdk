@@ -1,4 +1,4 @@
-import { z } from 'zod';
+import { applicationToolParameters } from './agent-tool-schema.js';
 import type { ToolDefinition } from '@handrail/ai-assistant';
 import type { HandrailAssistantToolObserver } from '@handrail/ai-assistant/server/assistant';
 import type { AgentCall, AgentRuntimeTool } from './agent-runtime.js';
@@ -14,13 +14,13 @@ export interface ApplicationAgentTools {
   readonly bind: (call: AgentCall) => Promise<EffectRequest>;
   readonly result: (call: AgentCall, receipt: Extract<EffectObservation, { outcome: 'verified' }>, signal: AbortSignal) => Promise<string>;
 }
-/** Convert the existing application JSON-schema catalog once on the server.
- * Unsupported schema constructs fail construction rather than weaken validation.
+/** Compile the unchanged application JSON-schema catalog once on the server.
+ * The runtime sends non-strict JSON Schema and validates before approval and IO.
+ * Unsupported dialects, keywords and formats fail construction.
  * Change definitionRef when the catalog/schema or business meaning changes. */
 export function createApplicationAgentTools(adapter: ApplicationAgentTools): readonly AgentRuntimeTool[] {
   return adapter.definitions.map(definition => {
-    const parameters = z.fromJSONSchema(definition.input_schema);
-    if (!(parameters instanceof z.ZodObject)) throw Error('agent_tool_requires_object_schema');
+    const parameters = applicationToolParameters(definition.input_schema);
     const base = { name: definition.name, description: definition.description, parameters };
     return adapter.isReadOnly(definition.name)
       ? { ...base, kind: 'read', execute: adapter.read }

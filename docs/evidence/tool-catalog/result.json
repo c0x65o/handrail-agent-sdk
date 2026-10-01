@@ -1,0 +1,67 @@
+{
+  "status": "candidate-verified",
+  "observedAt": "2026-10-01T01:25:07.858Z",
+  "basePublicSha": "f6eb0ef10af89a8ecaea0707610d7709483eaa49",
+  "publishedRepairedSha": null,
+  "nativePipeline": "Version bump, commit, push and next full SHA receipt remain owned by Handrail after this worker.",
+  "catalog": {
+    "original": 85,
+    "requested": 92,
+    "current": 100,
+    "read": 35,
+    "effect": 65,
+    "historicalFailures": [
+      22,
+      26
+    ],
+    "failedConstructionAfterRepair": 0
+  },
+  "checks": {
+    "contracts": {
+      "passed": 777,
+      "failed": 0,
+      "exitCode": 0
+    },
+    "strictLocalTypes": {
+      "exitCode": 0
+    },
+    "installedCandidate": {
+      "passed": 77,
+      "failed": 0,
+      "skipped": 0,
+      "exitCode": 0,
+      "candidateSourceOverlay": true,
+      "profiles": [
+        "NodeNext",
+        "Bundler"
+      ],
+      "compiledJsMatchesLocal": true
+    },
+    "unchangedMillsComposition": {
+      "NodeNext": 0,
+      "Bundler": 0
+    },
+    "postgres": {
+      "suiteCount": 17,
+      "tests": 391,
+      "passed": 391,
+      "failed": 0,
+      "skipped": 0,
+      "exitCode": 0
+    }
+  },
+  "sourceHashes": {
+    "src/server/agent-runtime.ts": "4946f3312e550f0b5bcc33f5ff80e2db9f84fda58547f63ca0f926e8bb04942d",
+    "src/server/application-tools.ts": "ac237e41e32738b0992a4426b91ac0452e145756074e92352f5939276c23d07c",
+    "src/server/agent-tool-schema.ts": "5e82915e6e3fd0a6d707262457c6065f5aa0439f11d164881f4249b4187022e7",
+    "package.json": "6127d0f7cbbab8ab36e968811f865a0d86ed2ab61014abc829fa99348be5cbdc",
+    "package-lock.json": "419dec6be9a4dfa65491f287b575c2e4701af31c8c4af2cc9cf031515e0cb02a",
+    "tests/fixtures/installed/catalog.test.mjs": "bbb9800d2f29debe94b2e049ddb441cd2021074757e5f48486ae23f80d123823",
+    "tests/fixtures/installed/mills-catalog.json": "e0765904eac404da0b82cf23b6c610d50d64646868a993f810d9a5681ae6ccc0"
+  },
+  "remaining": [
+    "Native publication and clean no-overlay qualification at the delivered full public SHA",
+    "Avery consumer pin/lock update, separate AI SDK Stop repair, live DEV and independent web/Flutter QA; original outcome remains open"
+  ],
+  "simulation": "Model and domain/provider boundaries simulated; real Runner and disposable PostgreSQL. No production or consumer runtime changes."
+}

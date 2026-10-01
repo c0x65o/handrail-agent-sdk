@@ -16,7 +16,8 @@ const candidate = flags.includes('--candidate-source');
 const baseline = flags.includes('--baseline'); // Distribution-only check for pre-runtime revisions.
 assert.ok(!(reproduce && baseline) && !(candidate && (baseline || reproduce)), 'INCOMPATIBLE_OPTIONS');
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-const assistantSpec = JSON.parse(await readFile(join(root, 'package.json'), 'utf8')).dependencies['@handrail/ai-assistant'];
+const candidateManifest = JSON.parse(await readFile(join(root, 'package.json'), 'utf8'));
+const assistantSpec = candidateManifest.dependencies['@handrail/ai-assistant'];
 assert.match(assistantSpec, /^git\+https:\/\/git@github\.com\/c0x65o\/handrail-sdk-ai-assistant-js\.git#[a-f0-9]{40}$/);
 // Outside the repository: no accidental fallback to its node_modules or types.
 const work = await mkdtemp(join(tmpdir(), 'handrail-git-consumer-'));
@@ -44,6 +45,9 @@ for (const profile of profiles) {
   const dir = await mkdtemp(join(work, `${profile.name}-`));
   const manifest = { name: 'agent-install-verification', private: true, type: 'module',
     dependencies: { 'handrail-agent-sdk': spec,
+      // Candidate-only dependencies use ordinary package resolution. The SDK
+      // itself remains a public SHA install followed by the labelled overlay.
+      ...candidate ? candidateManifest.dependencies : {},
       ...baseline ? {} : { '@handrail/ai-assistant': assistantSpec, pg: '8.23.0', openai: '7.25.0', '@openai/agents': '0.18.0', zod: '4.3.6' },
       ...profile.provider ? { '@openai/agents': '0.18.0', zod: '4.3.6' } : {} },
     devDependencies: { typescript: '5.9.3', ...profile.types ? { '@types/node': profile.types, '@types/pg': '8.23.1' } : {} } };

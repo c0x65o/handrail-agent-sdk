@@ -1,8 +1,10 @@
 import { createHash } from 'node:crypto';
 import { canonicalAgentJson } from './agent-state-binding.js';
 import { Agent, Runner, RunState, setSensitiveDataLoggingEnabled, tool } from '@openai/agents';
-import type { AgentInputItem, Model } from '@openai/agents';
+import type { AgentInputItem, Model, ToolInputParameters, ToolOptions } from '@openai/agents';
 import type { ZodObject } from 'zod';
+import type { AgentJsonSchemaParameters } from './agent-tool-schema.js';
+export type { AgentJsonSchemaParameters } from './agent-tool-schema.js';
 import { validateJobCommand } from '../contracts/job.js';
 import type { JobIdentity, JobRequirement, JobSnapshot } from '../contracts/job.js';
 import { sameLeaseValue, validLeaseAuthority } from './job-lease.js';
@@ -93,7 +95,7 @@ export interface AgentRuntimeHost extends JobLeaseHost {
 interface AgentToolBase {
   readonly name: string;
   readonly description: string;
-  readonly parameters: ZodObject;
+  readonly parameters: ZodObject | AgentJsonSchemaParameters;
 }
 export type AgentRuntimeTool = AgentToolBase & (
   | { readonly kind: 'read'; readonly execute: (call: AgentCall, signal: AbortSignal) => Promise<string> }
@@ -249,14 +251,23 @@ export function createAgentRuntime(deps: {
       const agent = new Agent({ name: deps.definitionRef, instructions: deps.instructions, model: deps.model,
         modelSettings: { ...(deps.sampling?.temperature === undefined ? {} : { temperature: deps.sampling.temperature }),
           ...(deps.sampling?.topP === undefined ? {} : { topP: deps.sampling.topP }), parallelToolCalls: false, maxTokens: 2048, store: false, retry: { maxRetries: 0 } },
-        tools: tools.map(def => tool({ name: def.name, description: def.description, parameters: def.parameters,
+        tools: tools.map(def => tool<ToolInputParameters>({ name: def.name, description: def.description,
+          ...('jsonSchema' in def.parameters
+            // Upstream 0.18 types require additionalProperties:true for a
+            // non-strict schema, although its implementation passes any JSON
+            // Schema unchanged. Narrow only that upstream declaration mismatch;
+            // never change the application's additionalProperties constraint.
+            ? { strict: false as const, parameters: def.parameters.jsonSchema as
+                NonNullable<Extract<ToolOptions<ToolInputParameters>, { strict: false }>['parameters']> }
+            : { parameters: def.parameters }),
           needsApproval: true, errorFunction: null,
-          execute: async (input, _context, details) => {
+          execute: async (input: unknown, _context, details) => {
             try {
               if (fatal) throw fatal;
               await check();
               if (!details?.toolCall?.callId) throw Error('missing_call');
-              const call = callFor(def.name, details.toolCall.callId, input);
+              const validated = 'jsonSchema' in def.parameters ? def.parameters.parse(input) : input;
+              const call = callFor(def.name, details.toolCall.callId, validated as Record<string, unknown>);
               const binding = digest([call.toolName, call.input]);
               return await deps.host.withToolAuthority(call, async () => {
                 await check();

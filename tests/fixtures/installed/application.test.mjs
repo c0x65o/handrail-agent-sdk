@@ -5,6 +5,7 @@ import { createAgentConversationTransport } from 'handrail-agent-sdk/server/appl
 import { createPostgresHarness } from './database.mjs';
 import { migrations } from './database.mjs';
 import { services, identity } from './host.mjs';
+import './catalog.test.mjs';
 
 const empty={lastAppliedCursor:null,lastAppliedEventId:null,lastAppliedRevision:null};
 async function setup(t,options={}) {
