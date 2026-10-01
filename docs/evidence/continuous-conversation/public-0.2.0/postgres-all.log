@@ -1,0 +1,2826 @@
+Fresh isolated PostgreSQL 15 cluster initialized; dedicated disposable database and non-superuser fixture role; connection values withheld.
+
+> handrail-agent-sdk@0.2.0 test:conversation
+> npm run build && node --test --test-concurrency=1 tests/fixtures/installed/conversation.test.mjs
+
+
+> handrail-agent-sdk@0.2.0 build
+> tsc -p tsconfig.json && node scripts/build-postgres-assets.mjs
+
+TAP version 13
+# Subtest: canonical long conversation survives bounded context, upstream Runner session and compaction with exact pinned roles
+ok 1 - canonical long conversation survives bounded context, upstream Runner session and compaction with exact pinned roles
+  ---
+  duration_ms: 841.980036
+  type: 'test'
+  ...
+# Subtest: memory revise/forget, stale reads, scope isolation and authorization are durable
+ok 2 - memory revise/forget, stale reads, scope isolation and authorization are durable
+  ---
+  duration_ms: 135.134769
+  type: 'test'
+  ...
+# Subtest: personal-assistant: same durable composition replies while delegated native work survives fresh-process callback/replay
+ok 3 - personal-assistant: same durable composition replies while delegated native work survives fresh-process callback/replay
+  ---
+  duration_ms: 2562.399225
+  type: 'test'
+  ...
+# Subtest: industrial-inspection: same durable composition replies while delegated native work survives fresh-process callback/replay
+ok 4 - industrial-inspection: same durable composition replies while delegated native work survives fresh-process callback/replay
+  ---
+  duration_ms: 2553.051655
+  type: 'test'
+  ...
+# Subtest: delegated executor preserves native receipt and uncertainty; correction and revoked callback cannot deliver
+ok 5 - delegated executor preserves native receipt and uncertainty; correction and revoked callback cannot deliver
+  ---
+  duration_ms: 134.201177
+  type: 'test'
+  ...
+# Subtest: large RunState is paged under explicit quota; actual Runner and encrypted reload exceed 64KiB without raising envelope bound
+ok 6 - large RunState is paged under explicit quota; actual Runner and encrypted reload exceed 64KiB without raising envelope bound
+  ---
+  duration_ms: 1253.063531
+  type: 'test'
+  ...
+# Subtest: real Runner delegates through existing durable effect ledger and returns without awaiting native work
+ok 7 - real Runner delegates through existing durable effect ledger and returns without awaiting native work
+  ---
+  duration_ms: 1287.431347
+  type: 'test'
+  ...
+# Subtest: compaction racing a correction cannot replace newer context; overfull pins fail explicitly
+ok 8 - compaction racing a correction cannot replace newer context; overfull pins fail explicitly
+  ---
+  duration_ms: 116.680956
+  type: 'test'
+  ...
+# Subtest: reply committed before job checkpoint failure recovers its original receipt without a second canonical reply
+ok 9 - reply committed before job checkpoint failure recovers its original receipt without a second canonical reply
+  ---
+  duration_ms: 266.623138
+  type: 'test'
+  ...
+# Subtest: pause/wait observations keep work; concurrent terminal callbacks deliver at most once and cancelled work cannot reopen
+ok 10 - pause/wait observations keep work; concurrent terminal callbacks deliver at most once and cancelled work cannot reopen
+  ---
+  duration_ms: 124.45399
+  type: 'test'
+  ...
+1..10
+# tests 10
+# suites 0
+# pass 10
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 10351.847676
+
+> handrail-agent-sdk@0.2.0 test:assistance
+> npm run build && npm run build:reference && npm run build:test-postgres && node --test --test-concurrency=1 --test-reporter=tap tests/assistance.test.mjs tests/agent-transport.test.mjs
+
+
+> handrail-agent-sdk@0.2.0 build
+> tsc -p tsconfig.json && node scripts/build-postgres-assets.mjs
+
+
+> handrail-agent-sdk@0.2.0 build:reference
+> tsc -p reference/tsconfig.json
+
+
+> handrail-agent-sdk@0.2.0 build:test-postgres
+> tsc -p tests/tsconfig.postgres.json
+
+TAP version 13
+# Subtest: unchanged original 85, requested 92 and current 100 catalogs reach the actual Runner model boundary
+    # Subtest: 85 unchanged tools
+    ok 1 - 85 unchanged tools
+      ---
+      duration_ms: 2033.772689
+      type: 'test'
+      ...
+    # Subtest: 92 unchanged tools
+    ok 2 - 92 unchanged tools
+      ---
+      duration_ms: 1850.110925
+      type: 'test'
+      ...
+    # Subtest: 100 unchanged tools
+    ok 3 - 100 unchanged tools
+      ---
+      duration_ms: 1791.385195
+      type: 'test'
+      ...
+    1..3
+ok 1 - unchanged original 85, requested 92 and current 100 catalogs reach the actual Runner model boundary
+  ---
+  duration_ms: 5677.342173
+  type: 'test'
+  ...
+# Subtest: all retained historical 22/26 failure schemas reach Runner unchanged
+    # Subtest: mills-catalog
+    ok 1 - mills-catalog
+      ---
+      duration_ms: 633.415541
+      type: 'test'
+      ...
+    # Subtest: current-main-catalog
+    ok 2 - current-main-catalog
+      ---
+      duration_ms: 759.848521
+      type: 'test'
+      ...
+    1..2
+ok 2 - all retained historical 22/26 failure schemas reach Runner unchanged
+  ---
+  duration_ms: 1394.355461
+  type: 'test'
+  ...
+# Subtest: full catalog read/effects preserve omissions, explicit null and nested defaults; duplicate delivery has one effect per call
+ok 3 - full catalog read/effects preserve omissions, explicit null and nested defaults; duplicate delivery has one effect per call
+  ---
+  duration_ms: 2573.290532
+  type: 'test'
+  ...
+# Subtest: invalid catalog arguments never reach approval, authorized IO or effects
+    # Subtest: calendar_update_event {"eventId":"12345678-1234-4234-8234-123456789abc","expectedVersion":1,"patch":{}}
+    ok 1 - calendar_update_event {"eventId":"12345678-1234-4234-8234-123456789abc","expectedVersion":1,"patch":{}}
+      ---
+      duration_ms: 261.672692
+      type: 'test'
+      ...
+    # Subtest: calendar_update_event {"eventId":"bad-uuid","expectedVersion":1,"patch":{"title":"Changed"}}
+    ok 2 - calendar_update_event {"eventId":"bad-uuid","expectedVersion":1,"patch":{"title":"Changed"}}
+      ---
+      duration_ms: 242.400812
+      type: 'test'
+      ...
+    # Subtest: calendar_update_event {"eventId":"12345678-1234-4234-8234-123456789abc","expectedVersion":"1","patch":{"title":"Changed"}}
+    ok 3 - calendar_update_event {"eventId":"12345678-1234-4234-8234-123456789abc","expectedVersion":"1","patch":{"title":"Changed"}}
+      ---
+      duration_ms: 251.062939
+      type: 'test'
+      ...
+    # Subtest: calendar_update_event {"eventId":"12345678-1234-4234-8234-123456789abc","expectedVersion":1,"patch":{"title":null}}
+    ok 4 - calendar_update_event {"eventId":"12345678-1234-4234-8234-123456789abc","expectedVersion":1,"patch":{"title":null}}
+      ---
+      duration_ms: 221.243771
+      type: 'test'
+      ...
+    # Subtest: calendar_update_event {"eventId":"12345678-1234-4234-8234-123456789abc","expectedVersion":1,"patch":{"title":""}}
+    ok 5 - calendar_update_event {"eventId":"12345678-1234-4234-8234-123456789abc","expectedVersion":1,"patch":{"title":""}}
+      ---
+      duration_ms: 220.373783
+      type: 'test'
+      ...
+    # Subtest: calendar_update_event {"eventId":"12345678-1234-4234-8234-123456789abc","expectedVersion":1,"patch":{"title":"xxxxxxxxxxxx
+    ok 6 - calendar_update_event {"eventId":"12345678-1234-4234-8234-123456789abc","expectedVersion":1,"patch":{"title":"xxxxxxxxxxxx
+      ---
+      duration_ms: 237.625259
+      type: 'test'
+      ...
+    # Subtest: calendar_update_event {"eventId":"12345678-1234-4234-8234-123456789abc","expectedVersion":1,"patch":{"accentHex":"red"}}
+    ok 7 - calendar_update_event {"eventId":"12345678-1234-4234-8234-123456789abc","expectedVersion":1,"patch":{"accentHex":"red"}}
+      ---
+      duration_ms: 238.490623
+      type: 'test'
+      ...
+    # Subtest: calendar_update_event {"eventId":"12345678-1234-4234-8234-123456789abc","expectedVersion":1,"patch":{"startsAt":"tomorrow"
+    ok 8 - calendar_update_event {"eventId":"12345678-1234-4234-8234-123456789abc","expectedVersion":1,"patch":{"startsAt":"tomorrow"
+      ---
+      duration_ms: 220.971167
+      type: 'test'
+      ...
+    # Subtest: calendar_update_event {"eventId":"12345678-1234-4234-8234-123456789abc","expectedVersion":1,"patch":{"recurrence":{"freque
+    ok 9 - calendar_update_event {"eventId":"12345678-1234-4234-8234-123456789abc","expectedVersion":1,"patch":{"recurrence":{"freque
+      ---
+      duration_ms: 242.918523
+      type: 'test'
+      ...
+    # Subtest: calendar_update_event {"eventId":"12345678-1234-4234-8234-123456789abc","expectedVersion":1,"patch":{"recurrence":{"freque
+    ok 10 - calendar_update_event {"eventId":"12345678-1234-4234-8234-123456789abc","expectedVersion":1,"patch":{"recurrence":{"freque
+      ---
+      duration_ms: 260.874012
+      type: 'test'
+      ...
+    # Subtest: calendar_update_event {"eventId":"12345678-1234-4234-8234-123456789abc","expectedVersion":1,"patch":{"unknown":true}}
+    ok 11 - calendar_update_event {"eventId":"12345678-1234-4234-8234-123456789abc","expectedVersion":1,"patch":{"unknown":true}}
+      ---
+      duration_ms: 251.922071
+      type: 'test'
+      ...
+    # Subtest: assistance_create_reminder {"title":"Synthetic fixture only","localDate":"2027-02-29","localTime":"17:00","timeZone":"America/C
+    ok 12 - assistance_create_reminder {"title":"Synthetic fixture only","localDate":"2027-02-29","localTime":"17:00","timeZone":"America/C
+      ---
+      duration_ms: 280.955689
+      type: 'test'
+      ...
+    # Subtest: assistance_create_reminder {"title":"Synthetic fixture only","localDate":"2028-02-29","localTime":"25:00","timeZone":"America/C
+    ok 13 - assistance_create_reminder {"title":"Synthetic fixture only","localDate":"2028-02-29","localTime":"25:00","timeZone":"America/C
+      ---
+      duration_ms: 270.717499
+      type: 'test'
+      ...
+    # Subtest: travel_update_trip {"id":"12345678-1234-4234-8234-123456789abc","expectedVersion":1,"patch":{"travelers":["synthetic","
+    ok 14 - travel_update_trip {"id":"12345678-1234-4234-8234-123456789abc","expectedVersion":1,"patch":{"travelers":["synthetic","
+      ---
+      duration_ms: 251.446071
+      type: 'test'
+      ...
+    # Subtest: travel_update_trip {"id":"12345678-1234-4234-8234-123456789abc","expectedVersion":1,"patch":{"travelers":[null]}}
+    ok 15 - travel_update_trip {"id":"12345678-1234-4234-8234-123456789abc","expectedVersion":1,"patch":{"travelers":[null]}}
+      ---
+      duration_ms: 240.985574
+      type: 'test'
+      ...
+    # Subtest: travel_update_trip {"id":"12345678-1234-4234-8234-123456789abc","expectedVersion":0,"patch":{"destination":null}}
+    ok 16 - travel_update_trip {"id":"12345678-1234-4234-8234-123456789abc","expectedVersion":0,"patch":{"destination":null}}
+      ---
+      duration_ms: 235.847068
+      type: 'test'
+      ...
+    # Subtest: travel_update_trip {"id":"12345678-1234-9234-8234-123456789abc","expectedVersion":1,"patch":{"destination":null}}
+    ok 17 - travel_update_trip {"id":"12345678-1234-9234-8234-123456789abc","expectedVersion":1,"patch":{"destination":null}}
+      ---
+      duration_ms: 239.439824
+      type: 'test'
+      ...
+    # Subtest: assistance_list null
+    ok 18 - assistance_list null
+      ---
+      duration_ms: 227.759081
+      type: 'test'
+      ...
+    # Subtest: assistance_list []
+    ok 19 - assistance_list []
+      ---
+      duration_ms: 217.372317
+      type: 'test'
+      ...
+    # Subtest: assistance_list {"unexpected":1}
+    ok 20 - assistance_list {"unexpected":1}
+      ---
+      duration_ms: 254.188663
+      type: 'test'
+      ...
+    # Subtest: malformed JSON
+    ok 21 - malformed JSON
+      ---
+      duration_ms: 251.652737
+      type: 'test'
+      ...
+    1..21
+ok 4 - invalid catalog arguments never reach approval, authorized IO or effects
+  ---
+  duration_ms: 5125.342463
+  type: 'test'
+  ...
+# Subtest: original business refinement remains authoritative before effects
+ok 5 - original business refinement remains authoritative before effects
+  ---
+  duration_ms: 1661.913324
+  type: 'test'
+  ...
+# Subtest: catalog approval recovery revalidates and retains null/omission and effect identity
+ok 6 - catalog approval recovery revalidates and retains null/omission and effect identity
+  ---
+  duration_ms: 1827.424319
+  type: 'test'
+  ...
+# Subtest: catalog rejection, durable cancellation and scope revocation prevent effects
+    # Subtest: reject
+    ok 1 - reject
+      ---
+      duration_ms: 1669.778976
+      type: 'test'
+      ...
+    # Subtest: cancel
+    ok 2 - cancel
+      ---
+      duration_ms: 1549.761532
+      type: 'test'
+      ...
+    # Subtest: scope
+    ok 3 - scope
+      ---
+      duration_ms: 1507.614438
+      type: 'test'
+      ...
+    1..3
+ok 7 - catalog rejection, durable cancellation and scope revocation prevent effects
+  ---
+  duration_ms: 4728.035835
+  type: 'test'
+  ...
+# Subtest: catalog effect result recovery and repeated model call ID do not duplicate dispatch
+ok 8 - catalog effect result recovery and repeated model call ID do not duplicate dispatch
+  ---
+  duration_ms: 1593.754134
+  type: 'test'
+  ...
+# Subtest: reused catalog call ID with different arguments cannot dispatch another effect
+ok 9 - reused catalog call ID with different arguments cannot dispatch another effect
+  ---
+  duration_ms: 1548.138923
+  type: 'test'
+  ...
+# Subtest: non-Mills laboratory schema executes refs, allOf, oneOf, arrays and open patterned metadata without rewriting
+ok 10 - non-Mills laboratory schema executes refs, allOf, oneOf, arrays and open patterned metadata without rewriting
+  ---
+  duration_ms: 287.97224
+  type: 'test'
+  ...
+# Subtest: invalid non-Mills allOf/oneOf input never reaches the effect boundary
+ok 11 - invalid non-Mills allOf/oneOf input never reaches the effect boundary
+  ---
+  duration_ms: 216.196101
+  type: 'test'
+  ...
+# Subtest: unsupported schema semantics fail construction; schema and input cannot be silently mutated
+ok 12 - unsupported schema semantics fail construction; schema and input cannot be silently mutated
+  ---
+  duration_ms: 100.426198
+  type: 'test'
+  ...
+# Subtest: gateway transport uses actual Runner, durable output and reconnect cursor; disconnect does not Stop
+ok 13 - gateway transport uses actual Runner, durable output and reconnect cursor; disconnect does not Stop
+  ---
+  duration_ms: 500.734729
+  type: 'test'
+  ...
+# Subtest: transport explicit Stop is durable; changed identity cannot reconnect or cancel
+ok 14 - transport explicit Stop is durable; changed identity cannot reconnect or cancel
+  ---
+  duration_ms: 213.817423
+  type: 'test'
+  ...
+# Subtest: approval wait remains durable on reconnect; only verified answer can resume execution
+ok 15 - approval wait remains durable on reconnect; only verified answer can resume execution
+  ---
+  duration_ms: 282.141812
+  type: 'test'
+  ...
+# Subtest: standard reader emits validated native protocol frames and stable replay identities
+ok 16 - standard reader emits validated native protocol frames and stable replay identities
+  ---
+  duration_ms: 481.395539
+  type: 'test'
+  ...
+# Subtest: application catalog adapter preserves validation, read/mutation classification and stable native tool identity
+ok 17 - application catalog adapter preserves validation, read/mutation classification and stable native tool identity
+  ---
+  duration_ms: 23.637524
+  type: 'test'
+  ...
+# Subtest: existing assistant durable wrapper consumes the Agent transport with native protocol checkpoints
+ok 18 - existing assistant durable wrapper consumes the Agent transport with native protocol checkpoints
+  ---
+  duration_ms: 511.171688
+  type: 'test'
+  ...
+# Subtest: application JSON-schema catalog executes read/effect/read through Runner and checkpoint reader
+ok 19 - application JSON-schema catalog executes read/effect/read through Runner and checkpoint reader
+  ---
+  duration_ms: 497.486733
+  type: 'test'
+  ...
+# Subtest: installed assistance and notification delivery share public durable effects with no duplicate send
+ok 20 - installed assistance and notification delivery share public durable effects with no duplicate send
+  ---
+  duration_ms: 246.548033
+  type: 'test'
+  ...
+# Subtest: wall clock: gaps, folds, quarter-hour zones and no arbitrary one-year horizon
+ok 21 - wall clock: gaps, folds, quarter-hour zones and no arbitrary one-year horizon
+  ---
+  duration_ms: 104.502758
+  type: 'test'
+  ...
+# Subtest: durable schedule, duplicate creation, immutable binding, concurrent delivery and reconstruction
+ok 22 - durable schedule, duplicate creation, immutable binding, concurrent delivery and reconstruction
+  ---
+  duration_ms: 136.048783
+  type: 'test'
+  ...
+# Subtest: reschedule retries keep receipt and cancel serializes with delivery; scope/current identity checks
+ok 23 - reschedule retries keep receipt and cancel serializes with delivery; scope/current identity checks
+  ---
+  duration_ms: 88.522707
+  type: 'test'
+  ...
+# Subtest: watch landing fixtures: delayed and stale never imply arrival; one durable match after restart
+ok 24 - watch landing fixtures: delayed and stale never imply arrival; one durable match after restart
+  ---
+  duration_ms: 88.922576
+  type: 'test'
+  ...
+# Subtest: cancelled flight, wrong occurrence, future and reordered observations cannot notify arrival
+ok 25 - cancelled flight, wrong occurrence, future and reordered observations cannot notify arrival
+  ---
+  duration_ms: 107.134244
+  type: 'test'
+  ...
+# Subtest: materially different consumer: industrial pump inspection watch uses the same lifecycle and adapter
+ok 26 - materially different consumer: industrial pump inspection watch uses the same lifecycle and adapter
+  ---
+  duration_ms: 63.466497
+  type: 'test'
+  ...
+# Subtest: batch size bounds work, not user capability; fair catch-up and expiration
+ok 27 - batch size bounds work, not user capability; fair catch-up and expiration
+  ---
+  duration_ms: 80.704522
+  type: 'test'
+  ...
+# Subtest: notification delivery reuses effect ledger: concurrent retry, reconstruction and uncertain remote result
+ok 28 - notification delivery reuses effect ledger: concurrent retry, reconstruction and uncertain remote result
+  ---
+  duration_ms: 444.903999
+  type: 'test'
+  ...
+# Subtest: canonical readiness requires verified matching environment and target containment, not worker success
+ok 29 - canonical readiness requires verified matching environment and target containment, not worker success
+  ---
+  duration_ms: 0.406471
+  type: 'test'
+  ...
+# Subtest: canonical feedback fixture status/questions/approvals wait and verified-ready notification survive reconstruction
+ok 30 - canonical feedback fixture status/questions/approvals wait and verified-ready notification survive reconstruction
+  ---
+  duration_ms: 87.430327
+  type: 'test'
+  ...
+# Subtest: canonical submission adapter retains stable dedupe key and canonical ID; uncertainty never means retry
+ok 31 - canonical submission adapter retains stable dedupe key and canonical ID; uncertainty never means retry
+  ---
+  duration_ms: 1.027622
+  type: 'test'
+  ...
+# Subtest: durable mandate revocation is terminal even when account access returns
+ok 32 - durable mandate revocation is terminal even when account access returns
+  ---
+  duration_ms: 59.384278
+  type: 'test'
+  ...
+# Subtest: a crash/failure before transaction commit rolls back both lifecycle and inbox fact
+ok 33 - a crash/failure before transaction commit rolls back both lifecycle and inbox fact
+  ---
+  duration_ms: 78.107493
+  type: 'test'
+  ...
+# Subtest: shared worker coalesces wakeups, drains on shutdown and leaves durable intent intact
+ok 34 - shared worker coalesces wakeups, drains on shutdown and leaves durable intent intact
+  ---
+  duration_ms: 58.126413
+  type: 'test'
+  ...
+1..34
+# tests 63
+# suites 0
+# pass 63
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 33106.718601
+
+> handrail-agent-sdk@0.2.0 test:connection-store
+> npm run build:test-reference && node --test --test-concurrency=1 --test-reporter=tap .reference-build/tests/reference/connection-store.test.js
+
+
+> handrail-agent-sdk@0.2.0 build:test-reference
+> tsc -p tests/tsconfig.reference.json
+
+TAP version 13
+# Subtest: current verification persists private revisions and restores the same reference through a fresh SQL connection
+ok 1 - current verification persists private revisions and restores the same reference through a fresh SQL connection
+  ---
+  duration_ms: 279.070967
+  type: 'test'
+  ...
+# Subtest: identical admission and CAS retries preserve the original fact; changed content conflicts
+ok 2 - identical admission and CAS retries preserve the original fact; changed content conflicts
+  ---
+  duration_ms: 253.493107
+  type: 'test'
+  ...
+# Subtest: verification racing revoke cannot publish stale readiness
+ok 3 - verification racing revoke cannot publish stale readiness
+  ---
+  duration_ms: 251.136275
+  type: 'test'
+  ...
+# Subtest: verification racing rotate cannot publish stale readiness
+ok 4 - verification racing rotate cannot publish stale readiness
+  ---
+  duration_ms: 228.611842
+  type: 'test'
+  ...
+# Subtest: rotation and revocation fence already-ready reads before any asynchronous cleanup
+ok 5 - rotation and revocation fence already-ready reads before any asynchronous cleanup
+  ---
+  duration_ms: 234.501976
+  type: 'test'
+  ...
+# Subtest: independent connections contend at a deterministic barrier: one CAS winner and one conflict
+ok 6 - independent connections contend at a deterministic barrier: one CAS winner and one conflict
+  ---
+  duration_ms: 219.968742
+  type: 'test'
+  ...
+# Subtest: concurrent identical admission has one durable logical identity; alias and immutable request changes are denied
+ok 7 - concurrent identical admission has one durable logical identity; alias and immutable request changes are denied
+  ---
+  duration_ms: 220.031327
+  type: 'test'
+  ...
+# Subtest: wrong tenantRef is denied on lookup and writes even with host scope supplied
+ok 8 - wrong tenantRef is denied on lookup and writes even with host scope supplied
+  ---
+  duration_ms: 198.884483
+  type: 'test'
+  ...
+# Subtest: wrong userRef is denied on lookup and writes even with host scope supplied
+ok 9 - wrong userRef is denied on lookup and writes even with host scope supplied
+  ---
+  duration_ms: 203.68825
+  type: 'test'
+  ...
+# Subtest: wrong projectRef is denied on lookup and writes even with host scope supplied
+ok 10 - wrong projectRef is denied on lookup and writes even with host scope supplied
+  ---
+  duration_ms: 189.313202
+  type: 'test'
+  ...
+# Subtest: wrong accountRef is denied on lookup and writes even with host scope supplied
+ok 11 - wrong accountRef is denied on lookup and writes even with host scope supplied
+  ---
+  duration_ms: 172.120376
+  type: 'test'
+  ...
+# Subtest: wrong environmentRef is denied on lookup and writes even with host scope supplied
+ok 12 - wrong environmentRef is denied on lookup and writes even with host scope supplied
+  ---
+  duration_ms: 176.265119
+  type: 'test'
+  ...
+# Subtest: wrong purposeRef is denied on lookup and writes even with host scope supplied
+ok 13 - wrong purposeRef is denied on lookup and writes even with host scope supplied
+  ---
+  duration_ms: 182.19808
+  type: 'test'
+  ...
+# Subtest: expiry is rechecked for ready reads and identical retries; stale grant bindings fail
+ok 14 - expiry is rechecked for ready reads and identical retries; stale grant bindings fail
+  ---
+  duration_ms: 208.606396
+  type: 'test'
+  ...
+# Subtest: credential, grant, authorization and evidence expiry are independently enforced
+ok 15 - credential, grant, authorization and evidence expiry are independently enforced
+  ---
+  duration_ms: 202.327248
+  type: 'test'
+  ...
+# Subtest: canonical receipt contents and revision bindings survive intermediate states and fresh stores
+ok 16 - canonical receipt contents and revision bindings survive intermediate states and fresh stores
+  ---
+  duration_ms: 239.881178
+  type: 'test'
+  ...
+# Subtest: receipt identity cannot be relabelled as provider evidence under a new admission
+ok 17 - receipt identity cannot be relabelled as provider evidence under a new admission
+  ---
+  duration_ms: 219.619676
+  type: 'test'
+  ...
+# Subtest: unresolved effects retain their original identity across reconnect, rotation and revocation
+ok 18 - unresolved effects retain their original identity across reconnect, rotation and revocation
+  ---
+  duration_ms: 216.364123
+  type: 'test'
+  ...
+# Subtest: composed SQL job cancellation and lease fences deny reads and stale verification
+ok 19 - composed SQL job cancellation and lease fences deny reads and stale verification
+  ---
+  duration_ms: 232.090073
+  type: 'test'
+  ...
+# Subtest: host denials, thrown diagnostics, malformed private metadata and SQL rollback return only fixed failures
+ok 20 - host denials, thrown diagnostics, malformed private metadata and SQL rollback return only fixed failures
+  ---
+  duration_ms: 217.444237
+  type: 'test'
+  ...
+# Subtest: migrations rerun, SQL constraints reject duplicates, and owned schema cleanup preserves an unrelated sentinel
+ok 21 - migrations rerun, SQL constraints reject duplicates, and owned schema cleanup preserves an unrelated sentinel
+  ---
+  duration_ms: 240.274621
+  type: 'test'
+  ...
+# All 13 migrations applied and rerun; logical uniqueness and revision constraints enforced; owned schema absent after cleanup; unrelated sentinel intact.
+# Subtest: fresh verification after local revocation requires a new grant revision and new canonical receipt
+ok 22 - fresh verification after local revocation requires a new grant revision and new canonical receipt
+  ---
+  duration_ms: 259.298754
+  type: 'test'
+  ...
+# Subtest: mutable caller input is detached before authority waits; expiry is checked after a SQL lock wait
+ok 23 - mutable caller input is detached before authority waits; expiry is checked after a SQL lock wait
+  ---
+  duration_ms: 240.414696
+  type: 'test'
+  ...
+1..23
+# tests 23
+# suites 0
+# pass 23
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 5650.537751
+
+> handrail-agent-sdk@0.2.0 test:browser-profile
+> npm run build:test-reference && node --test --test-concurrency=1 --test-reporter=tap .reference-build/tests/reference/browser-profile-store.test.js
+
+
+> handrail-agent-sdk@0.2.0 build:test-reference
+> tsc -p tests/tsconfig.reference.json
+
+TAP version 13
+# Subtest: exact encrypted cookies and both storage types survive exited writer and fresh reader; durable sinks contain no canaries
+ok 1 - exact encrypted cookies and both storage types survive exited writer and fresh reader; durable sinks contain no canaries
+  ---
+  duration_ms: 1451.886935
+  type: 'test'
+  ...
+# Private scan: 27 needles, 0 matches; 6 journal tables; child output 0 bytes; restored 3 values.
+# Subtest: all six host scope dimensions deny load/save/termination/cleanup and origin checks deny before keys
+ok 2 - all six host scope dimensions deny load/save/termination/cleanup and origin checks deny before keys
+  ---
+  duration_ms: 212.028728
+  type: 'test'
+  ...
+# Subtest: unsupported state, unapproved origins, getters and caller mutation never enter custody
+ok 3 - unsupported state, unapproved origins, getters and caller mutation never enter custody
+  ---
+  duration_ms: 183.232897
+  type: 'test'
+  ...
+# Subtest: two real PostgreSQL clients racing saves have exactly one revision winner
+ok 4 - two real PostgreSQL clients racing saves have exactly one revision winner
+  ---
+  duration_ms: 205.718269
+  type: 'test'
+  ...
+# Subtest: revoked fence survives restart, interrupted cleanup, restored ciphertext and stale saves
+ok 5 - revoked fence survives restart, interrupted cleanup, restored ciphertext and stale saves
+  ---
+  duration_ms: 2957.66431
+  type: 'test'
+  ...
+# Subtest: deleted fence survives restart, interrupted cleanup, restored ciphertext and stale saves
+ok 6 - deleted fence survives restart, interrupted cleanup, restored ciphertext and stale saves
+  ---
+  duration_ms: 2742.174245
+  type: 'test'
+  ...
+# Subtest: paused creates, saves and loads are fenced by termination during key resolution
+ok 7 - paused creates, saves and loads are fenced by termination during key resolution
+  ---
+  duration_ms: 218.075387
+  type: 'test'
+  ...
+# Subtest: expiry equality and expiry during key resolution request reauthentication without extending state
+ok 8 - expiry equality and expiry during key resolution request reauthentication without extending state
+  ---
+  duration_ms: 180.486811
+  type: 'test'
+  ...
+# Subtest: missing and wrong keys never try another key or profile; fixed errors remain private
+ok 9 - missing and wrong keys never try another key or profile; fixed errors remain private
+  ---
+  duration_ms: 169.373503
+  type: 'test'
+  ...
+# Subtest: tampered ciphertext, encodings, scope and version metadata cannot restore state
+ok 10 - tampered ciphertext, encodings, scope and version metadata cannot restore state
+  ---
+  duration_ms: 274.620482
+  type: 'test'
+  ...
+# Subtest: old ciphertext cannot roll back an active revision; missing ledger never reconstructs authority
+ok 11 - old ciphertext cannot roll back an active revision; missing ledger never reconstructs authority
+  ---
+  duration_ms: 185.029104
+  type: 'test'
+  ...
+# Subtest: authorization changes and thrown secret-bearing service errors have only fixed results
+ok 12 - authorization changes and thrown secret-bearing service errors have only fixed results
+  ---
+  duration_ms: 176.956166
+  type: 'test'
+  ...
+# Subtest: generated migrations rerun and constraints reject nonce reuse without touching sentinel schema
+ok 13 - generated migrations rerun and constraints reject nonce reuse without touching sentinel schema
+  ---
+  duration_ms: 199.635923
+  type: 'test'
+  ...
+# Subtest: shared primitive preserves legacy vault v1 bytes and authenticates a distinct browser domain
+ok 14 - shared primitive preserves legacy vault v1 bytes and authenticates a distinct browser domain
+  ---
+  duration_ms: 1.467537
+  type: 'test'
+  ...
+# Subtest: authenticated but unsupported plaintext and cross-profile envelope swaps fail closed
+ok 15 - authenticated but unsupported plaintext and cross-profile envelope swaps fail closed
+  ---
+  duration_ms: 196.104699
+  type: 'test'
+  ...
+# Subtest: concurrent creation has one winner and failed SQL save rolls back snapshot and revision together
+ok 16 - concurrent creation has one winner and failed SQL save rolls back snapshot and revision together
+  ---
+  duration_ms: 187.285776
+  type: 'test'
+  ...
+1..16
+# tests 16
+# suites 0
+# pass 16
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 10136.284982
+
+> handrail-agent-sdk@0.2.0 test:vault-request
+> tsc -p tests/tsconfig.vault-request.json && node --test --test-concurrency=1 --test-reporter=tap .reference-build/tests/server/vault-request.test.js
+
+TAP version 13
+# Subtest: registered destination alone receives authorization; reflected headers/body never enter receipts or SQL; durable replay dispatches once
+ok 1 - registered destination alone receives authorization; reflected headers/body never enter receipts or SQL; durable replay dispatches once
+  ---
+  duration_ms: 360.230031
+  type: 'test'
+  ...
+# Disposable HTTP + PostgreSQL receipt=request-effect; authorized_requests=1; redirect_target_requests=0; replay_requests=0; raw_output_fields=0.
+# Subtest: redirect: unknown survives duplicate delivery; no forwarding or blind retry; reconciliation survives revoke
+ok 2 - redirect: unknown survives duplicate delivery; no forwarding or blind retry; reconciliation survives revoke
+  ---
+  duration_ms: 281.213528
+  type: 'test'
+  ...
+# Subtest: error: unknown survives duplicate delivery; no forwarding or blind retry; reconciliation survives revoke
+ok 3 - error: unknown survives duplicate delivery; no forwarding or blind retry; reconciliation survives revoke
+  ---
+  duration_ms: 299.650797
+  type: 'test'
+  ...
+# Subtest: lost: unknown survives duplicate delivery; no forwarding or blind retry; reconciliation survives revoke
+ok 4 - lost: unknown survives duplicate delivery; no forwarding or blind retry; reconciliation survives revoke
+  ---
+  duration_ms: 283.284046
+  type: 'test'
+  ...
+# Subtest: timeout: unknown survives duplicate delivery; no forwarding or blind retry; reconciliation survives revoke
+ok 5 - timeout: unknown survives duplicate delivery; no forwarding or blind retry; reconciliation survives revoke
+  ---
+  duration_ms: 386.350637
+  type: 'test'
+  ...
+# Subtest: large: unknown survives duplicate delivery; no forwarding or blind retry; reconciliation survives revoke
+ok 6 - large: unknown survives duplicate delivery; no forwarding or blind retry; reconciliation survives revoke
+  ---
+  duration_ms: 267.573403
+  type: 'test'
+  ...
+# Subtest: revocation between admission and dispatch prevents custody and all HTTP requests
+ok 7 - revocation between admission and dispatch prevents custody and all HTTP requests
+  ---
+  duration_ms: 245.642841
+  type: 'test'
+  ...
+# Subtest: expiry during DNS preparation prevents transmission of the resolved token
+ok 8 - expiry during DNS preparation prevents transmission of the resolved token
+  ---
+  duration_ms: 242.116301
+  type: 'test'
+  ...
+# Subtest: address policy rejects private, metadata, multicast, mapped IPv6, noncanonical and mixed DNS answers before connect
+ok 9 - address policy rejects private, metadata, multicast, mapped IPv6, noncanonical and mixed DNS answers before connect
+  ---
+  duration_ms: 195.601135
+  type: 'test'
+  ...
+# Subtest: actual peer, scheme, host and port mismatches cannot receive credentials; client callbacks cannot dispatch twice
+ok 10 - actual peer, scheme, host and port mismatches cannot receive credentials; client callbacks cannot dispatch twice
+  ---
+  duration_ms: 238.847047
+  type: 'test'
+  ...
+# Subtest: public HTTP override, model headers/body, unregistered destination, fixture environment and changed recipe cannot reuse an effect
+ok 11 - public HTTP override, model headers/body, unregistered destination, fixture environment and changed recipe cannot reuse an effect
+  ---
+  duration_ms: 249.582531
+  type: 'test'
+  ...
+# Subtest: reflected exceptions and payload-shaped verifier returns cannot escape or produce verified receipts
+ok 12 - reflected exceptions and payload-shaped verifier returns cannot escape or produce verified receipts
+  ---
+  duration_ms: 474.004354
+  type: 'test'
+  ...
+# Subtest: timeout while resolving never starts a late connection; request byte limit withholds oversized token
+ok 13 - timeout while resolving never starts a late connection; request byte limit withholds oversized token
+  ---
+  duration_ms: 282.649031
+  type: 'test'
+  ...
+# Subtest: public HTTPS policy pins a canonical routable address and rejects a changed socket peer before sending
+ok 14 - public HTTPS policy pins a canonical routable address and rejects a changed socket peer before sending
+  ---
+  duration_ms: 203.703119
+  type: 'test'
+  ...
+# Public-address policy uses an injected transport fixture; no public network connection.
+# Subtest: invalid fixture registrations, token header injection and secret-bearing client exceptions fail closed
+ok 15 - invalid fixture registrations, token header injection and secret-bearing client exceptions fail closed
+  ---
+  duration_ms: 235.925072
+  type: 'test'
+  ...
+1..15
+# tests 15
+# suites 0
+# pass 15
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 4745.620732
+
+> handrail-agent-sdk@0.2.0 test:payment-vault
+> npm run build:reference && npm run build:test-postgres && node --test --test-concurrency=1 --test-reporter=tap tests/payment-vault.test.mjs
+
+
+> handrail-agent-sdk@0.2.0 build:reference
+> tsc -p reference/tsconfig.json
+
+
+> handrail-agent-sdk@0.2.0 build:test-postgres
+> tsc -p tests/tsconfig.postgres.json
+
+TAP version 13
+# Subtest: new_input: encrypted card entry, concurrent one-shot completion and same-job delivery
+ok 1 - new_input: encrypted card entry, concurrent one-shot completion and same-job delivery
+  ---
+  duration_ms: 483.860715
+  type: 'test'
+  ...
+# Subtest: existing_item: encrypted card entry, concurrent one-shot completion and same-job delivery
+ok 2 - existing_item: encrypted card entry, concurrent one-shot completion and same-job delivery
+  ---
+  duration_ms: 370.898736
+  type: 'test'
+  ...
+# Subtest: card entry rejects changed actor
+ok 3 - card entry rejects changed actor
+  ---
+  duration_ms: 215.627341
+  type: 'test'
+  ...
+# Subtest: card entry rejects changed tenantRef
+ok 4 - card entry rejects changed tenantRef
+  ---
+  duration_ms: 207.316769
+  type: 'test'
+  ...
+# Subtest: card entry rejects changed userRef
+ok 5 - card entry rejects changed userRef
+  ---
+  duration_ms: 215.247912
+  type: 'test'
+  ...
+# Subtest: card entry rejects changed projectRef
+ok 6 - card entry rejects changed projectRef
+  ---
+  duration_ms: 216.893157
+  type: 'test'
+  ...
+# Subtest: card entry rejects changed accountRef
+ok 7 - card entry rejects changed accountRef
+  ---
+  duration_ms: 202.941306
+  type: 'test'
+  ...
+# Subtest: card entry rejects changed environmentRef
+ok 8 - card entry rejects changed environmentRef
+  ---
+  duration_ms: 219.839832
+  type: 'test'
+  ...
+# Subtest: card entry rejects changed purposeRef
+ok 9 - card entry rejects changed purposeRef
+  ---
+  duration_ms: 222.726153
+  type: 'test'
+  ...
+# Subtest: card entry rejects changed origin
+ok 10 - card entry rejects changed origin
+  ---
+  duration_ms: 208.247326
+  type: 'test'
+  ...
+# Subtest: card entry rejects changed field
+ok 11 - card entry rejects changed field
+  ---
+  duration_ms: 237.712088
+  type: 'test'
+  ...
+# Subtest: card entry rejects changed frame
+ok 12 - card entry rejects changed frame
+  ---
+  duration_ms: 251.6824
+  type: 'test'
+  ...
+# Subtest: card entry rejects changed revision
+ok 13 - card entry rejects changed revision
+  ---
+  duration_ms: 258.595362
+  type: 'test'
+  ...
+# Subtest: card entry rejects changed expiry
+ok 14 - card entry rejects changed expiry
+  ---
+  duration_ms: 251.658479
+  type: 'test'
+  ...
+# Subtest: card entry rejects changed cancelled
+ok 15 - card entry rejects changed cancelled
+  ---
+  duration_ms: 270.907048
+  type: 'test'
+  ...
+# Subtest: card capture expiry during key await rolls back
+ok 16 - card capture expiry during key await rolls back
+  ---
+  duration_ms: 234.392263
+  type: 'test'
+  ...
+# Subtest: card capture scope during key await rolls back
+ok 17 - card capture scope during key await rolls back
+  ---
+  duration_ms: 220.358179
+  type: 'test'
+  ...
+# Subtest: card capture revocation during key await rolls back
+ok 18 - card capture revocation during key await rolls back
+  ---
+  duration_ms: 232.004332
+  type: 'test'
+  ...
+# Subtest: revoke prevents card reference delivery
+ok 19 - revoke prevents card reference delivery
+  ---
+  duration_ms: 268.48853
+  type: 'test'
+  ...
+# Subtest: expiry prevents card reference delivery
+ok 20 - expiry prevents card reference delivery
+  ---
+  duration_ms: 253.273972
+  type: 'test'
+  ...
+# Subtest: withdraw prevents card reference delivery
+ok 21 - withdraw prevents card reference delivery
+  ---
+  duration_ms: 251.705067
+  type: 'test'
+  ...
+# Subtest: card codes, extra private fields and public card payloads are rejected without retention
+ok 22 - card codes, extra private fields and public card payloads are rejected without retention
+  ---
+  duration_ms: 257.347589
+  type: 'test'
+  ...
+# Subtest: fresh process recovers reference and delivers with no card or key access
+ok 23 - fresh process recovers reference and delivers with no card or key access
+  ---
+  duration_ms: 835.857332
+  type: 'test'
+  ...
+# Subtest: capture outbox failure rolls back card ciphertext and consent atomically
+ok 24 - capture outbox failure rolls back card ciphertext and consent atomically
+  ---
+  duration_ms: 295.478303
+  type: 'test'
+  ...
+# Subtest: card executor selects one field and fences live destination, expiry, abort and output spoofing
+ok 25 - card executor selects one field and fences live destination, expiry, abort and output spoofing
+  ---
+  duration_ms: 4.562852
+  type: 'test'
+  ...
+1..25
+# tests 25
+# suites 0
+# pass 25
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 7229.58346
+
+> handrail-agent-sdk@0.2.0 test:vault-entry
+> npm run build:reference && npm run build:test-postgres && node --test --test-concurrency=1 --test-reporter=tap tests/vault-entry.test.mjs
+
+
+> handrail-agent-sdk@0.2.0 build:reference
+> tsc -p reference/tsconfig.json
+
+
+> handrail-agent-sdk@0.2.0 build:test-postgres
+> tsc -p tests/tsconfig.postgres.json
+
+TAP version 13
+# Subtest: token: concurrent capture and delivery produce one item, completion and original-job resume
+ok 1 - token: concurrent capture and delivery produce one item, completion and original-job resume
+  ---
+  duration_ms: 414.88569
+  type: 'test'
+  ...
+# Subtest: login: concurrent capture and delivery produce one item, completion and original-job resume
+ok 2 - login: concurrent capture and delivery produce one item, completion and original-job resume
+  ---
+  duration_ms: 337.480958
+  type: 'test'
+  ...
+# Subtest: identity: concurrent capture and delivery produce one item, completion and original-job resume
+ok 3 - identity: concurrent capture and delivery produce one item, completion and original-job resume
+  ---
+  duration_ms: 321.430799
+  type: 'test'
+  ...
+# Subtest: conflicting private retry and altered binding fail without orphaning another item
+ok 4 - conflicting private retry and altered binding fail without orphaning another item
+  ---
+  duration_ms: 259.173605
+  type: 'test'
+  ...
+# Subtest: select an existing item only with current item-owner permission; persist consent revision before delivery
+ok 5 - select an existing item only with current item-owner permission; persist consent revision before delivery
+  ---
+  duration_ms: 280.558933
+  type: 'test'
+  ...
+# Subtest: before capture: stale, unauthenticated, expired and withdrawn sessions cannot advance
+    # Subtest: wrong actor
+    ok 1 - wrong actor
+      ---
+      duration_ms: 238.81441
+      type: 'test'
+      ...
+    # Subtest: authentication revoked
+    ok 2 - authentication revoked
+      ---
+      duration_ms: 228.24559
+      type: 'test'
+      ...
+    # Subtest: wrong tenant
+    ok 3 - wrong tenant
+      ---
+      duration_ms: 221.581039
+      type: 'test'
+      ...
+    # Subtest: wrong account
+    ok 4 - wrong account
+      ---
+      duration_ms: 234.161117
+      type: 'test'
+      ...
+    # Subtest: wrong environment
+    ok 5 - wrong environment
+      ---
+      duration_ms: 240.563289
+      type: 'test'
+      ...
+    # Subtest: wrong purpose
+    ok 6 - wrong purpose
+      ---
+      duration_ms: 233.189055
+      type: 'test'
+      ...
+    # Subtest: scope revision changed
+    ok 7 - scope revision changed
+      ---
+      duration_ms: 238.366991
+      type: 'test'
+      ...
+    # Subtest: destination changed
+    ok 8 - destination changed
+      ---
+      duration_ms: 223.382326
+      type: 'test'
+      ...
+    # Subtest: origin changed
+    ok 9 - origin changed
+      ---
+      duration_ms: 249.853413
+      type: 'test'
+      ...
+    # Subtest: session revision changed
+    ok 10 - session revision changed
+      ---
+      duration_ms: 227.229261
+      type: 'test'
+      ...
+    # Subtest: expired
+    ok 11 - expired
+      ---
+      duration_ms: 219.592064
+      type: 'test'
+      ...
+    # Subtest: withdrawn
+    ok 12 - withdrawn
+      ---
+      duration_ms: 216.877219
+      type: 'test'
+      ...
+    # Subtest: cancelled
+    ok 13 - cancelled
+      ---
+      duration_ms: 255.470189
+      type: 'test'
+      ...
+    1..13
+ok 6 - before capture: stale, unauthenticated, expired and withdrawn sessions cannot advance
+  ---
+  duration_ms: 3030.421711
+  type: 'test'
+  ...
+# Subtest: before delivery: stale, unauthenticated, expired and withdrawn sessions cannot advance
+    # Subtest: wrong actor
+    ok 1 - wrong actor
+      ---
+      duration_ms: 236.876712
+      type: 'test'
+      ...
+    # Subtest: authentication revoked
+    ok 2 - authentication revoked
+      ---
+      duration_ms: 235.959222
+      type: 'test'
+      ...
+    # Subtest: wrong tenant
+    ok 3 - wrong tenant
+      ---
+      duration_ms: 240.58582
+      type: 'test'
+      ...
+    # Subtest: wrong account
+    ok 4 - wrong account
+      ---
+      duration_ms: 225.556337
+      type: 'test'
+      ...
+    # Subtest: wrong environment
+    ok 5 - wrong environment
+      ---
+      duration_ms: 246.036655
+      type: 'test'
+      ...
+    # Subtest: wrong purpose
+    ok 6 - wrong purpose
+      ---
+      duration_ms: 253.543042
+      type: 'test'
+      ...
+    # Subtest: scope revision changed
+    ok 7 - scope revision changed
+      ---
+      duration_ms: 244.1002
+      type: 'test'
+      ...
+    # Subtest: destination changed
+    ok 8 - destination changed
+      ---
+      duration_ms: 240.311967
+      type: 'test'
+      ...
+    # Subtest: origin changed
+    ok 9 - origin changed
+      ---
+      duration_ms: 244.804695
+      type: 'test'
+      ...
+    # Subtest: session revision changed
+    ok 10 - session revision changed
+      ---
+      duration_ms: 248.311968
+      type: 'test'
+      ...
+    # Subtest: expired
+    ok 11 - expired
+      ---
+      duration_ms: 235.862214
+      type: 'test'
+      ...
+    # Subtest: withdrawn
+    ok 12 - withdrawn
+      ---
+      duration_ms: 251.473387
+      type: 'test'
+      ...
+    # Subtest: cancelled
+    ok 13 - cancelled
+      ---
+      duration_ms: 237.176734
+      type: 'test'
+      ...
+    1..13
+ok 7 - before delivery: stale, unauthenticated, expired and withdrawn sessions cannot advance
+  ---
+  duration_ms: 3142.646388
+  type: 'test'
+  ...
+# Subtest: surface dismissal has no job effect; explicit expiry and withdrawal survive fresh store instances
+    # Subtest: expire
+    ok 1 - expire
+      ---
+      duration_ms: 215.504968
+      type: 'test'
+      ...
+    # Subtest: withdraw
+    ok 2 - withdraw
+      ---
+      duration_ms: 216.142825
+      type: 'test'
+      ...
+    1..2
+ok 8 - surface dismissal has no job effect; explicit expiry and withdrawal survive fresh store instances
+  ---
+  duration_ms: 432.181863
+  type: 'test'
+  ...
+# Subtest: custody failure, grant denial and expiry during key resolution roll back item, consent and outbox together
+    # Subtest: keys
+    ok 1 - keys
+      ---
+      duration_ms: 203.803019
+      type: 'test'
+      ...
+    # Subtest: grant
+    ok 2 - grant
+      ---
+      duration_ms: 216.734031
+      type: 'test'
+      ...
+    # Subtest: expiry
+    ok 3 - expiry
+      ---
+      duration_ms: 221.920891
+      type: 'test'
+      ...
+    1..3
+ok 9 - custody failure, grant denial and expiry during key resolution roll back item, consent and outbox together
+  ---
+  duration_ms: 643.192253
+  type: 'test'
+  ...
+# Subtest: lifecycle revocation and narrowed grant fence pending delivery
+    # Subtest: lifecycle
+    ok 1 - lifecycle
+      ---
+      duration_ms: 251.994922
+      type: 'test'
+      ...
+    # Subtest: grant
+    ok 2 - grant
+      ---
+      duration_ms: 285.028071
+      type: 'test'
+      ...
+    1..2
+ok 10 - lifecycle revocation and narrowed grant fence pending delivery
+  ---
+  duration_ms: 537.526652
+  type: 'test'
+  ...
+# Subtest: killed capture process leaves a durable completion; fresh keyless process delivers the same reference
+ok 11 - killed capture process leaves a durable completion; fresh keyless process delivers the same reference
+  ---
+  duration_ms: 1917.363764
+  type: 'test'
+  ...
+# Fixture-only receipt: killed capture process -> fresh keyless delivery -> replay; items=1; completions=1; answers=1; original jobs=1.
+# Subtest: outbox write failure rolls back ciphertext and grant; delivery write failure rolls back the existing answer service
+ok 12 - outbox write failure rolls back ciphertext and grant; delivery write failure rolls back the existing answer service
+  ---
+  duration_ms: 306.557603
+  type: 'test'
+  ...
+# Subtest: superseded challenge/job revision cannot capture or deliver to a later wait
+    # Subtest: open
+    ok 1 - open
+      ---
+      duration_ms: 255.696198
+      type: 'test'
+      ...
+    # Subtest: captured
+    ok 2 - captured
+      ---
+      duration_ms: 275.096494
+      type: 'test'
+      ...
+    1..2
+ok 13 - superseded challenge/job revision cannot capture or deliver to a later wait
+  ---
+  duration_ms: 531.56513
+  type: 'test'
+  ...
+# Subtest: delivery and withdrawal serialize on real SQL locks; no later delivery after withdrawal
+ok 14 - delivery and withdrawal serialize on real SQL locks; no later delivery after withdrawal
+  ---
+  duration_ms: 297.323069
+  type: 'test'
+  ...
+# Subtest: changed frame and stored item metadata cannot be selected; payment input is deferred
+ok 15 - changed frame and stored item metadata cannot be selected; payment input is deferred
+  ---
+  duration_ms: 267.749058
+  type: 'test'
+  ...
+1..15
+# tests 50
+# suites 0
+# pass 50
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 13212.336725
+
+> handrail-agent-sdk@0.2.0 test:vault-use
+> npm run build:reference && npm run build:test-postgres && node --test --test-concurrency=1 --test-reporter=tap tests/vault-use.test.mjs
+
+
+> handrail-agent-sdk@0.2.0 build:reference
+> tsc -p reference/tsconfig.json
+
+
+> handrail-agent-sdk@0.2.0 build:test-postgres
+> tsc -p tests/tsconfig.postgres.json
+
+TAP version 13
+# Subtest: token: table: personal/shared item authorization requires exact actor, item, scope, purpose, action and destination
+    # Subtest: personal owner explicit grant
+    ok 1 - personal owner explicit grant
+      ---
+      duration_ms: 442.827306
+      type: 'test'
+      ...
+    # Subtest: shared recipient explicit item grant
+    ok 2 - shared recipient explicit item grant
+      ---
+      duration_ms: 371.569793
+      type: 'test'
+      ...
+    # Subtest: personal ownership alone is insufficient
+    ok 3 - personal ownership alone is insufficient
+      ---
+      duration_ms: 268.011008
+      type: 'test'
+      ...
+    # Subtest: organization/project sharing alone is insufficient
+    ok 4 - organization/project sharing alone is insufficient
+      ---
+      duration_ms: 303.205686
+      type: 'test'
+      ...
+    # Subtest: wrong authenticated actor
+    ok 5 - wrong authenticated actor
+      ---
+      duration_ms: 290.598872
+      type: 'test'
+      ...
+    # Subtest: wrong tenantRef
+    ok 6 - wrong tenantRef
+      ---
+      duration_ms: 343.049161
+      type: 'test'
+      ...
+    # Subtest: wrong userRef
+    ok 7 - wrong userRef
+      ---
+      duration_ms: 292.276322
+      type: 'test'
+      ...
+    # Subtest: wrong projectRef
+    ok 8 - wrong projectRef
+      ---
+      duration_ms: 266.667879
+      type: 'test'
+      ...
+    # Subtest: wrong accountRef
+    ok 9 - wrong accountRef
+      ---
+      duration_ms: 302.774339
+      type: 'test'
+      ...
+    # Subtest: wrong environmentRef
+    ok 10 - wrong environmentRef
+      ---
+      duration_ms: 328.967358
+      type: 'test'
+      ...
+    # Subtest: wrong purposeRef
+    ok 11 - wrong purposeRef
+      ---
+      duration_ms: 279.831828
+      type: 'test'
+      ...
+    # Subtest: wrong action
+    ok 12 - wrong action
+      ---
+      duration_ms: 296.988544
+      type: 'test'
+      ...
+    # Subtest: unregistered executor
+    ok 13 - unregistered executor
+      ---
+      duration_ms: 275.930736
+      type: 'test'
+      ...
+    # Subtest: wrong destination
+    ok 14 - wrong destination
+      ---
+      duration_ms: 319.967957
+      type: 'test'
+      ...
+    # Subtest: wrong method
+    ok 15 - wrong method
+      ---
+      duration_ms: 308.205821
+      type: 'test'
+      ...
+    # Subtest: wrong item version
+    ok 16 - wrong item version
+      ---
+      duration_ms: 268.815553
+      type: 'test'
+      ...
+    # Subtest: wrong grant revision
+    ok 17 - wrong grant revision
+      ---
+      duration_ms: 232.228483
+      type: 'test'
+      ...
+    # Subtest: expiry
+    ok 18 - expiry
+      ---
+      duration_ms: 297.985628
+      type: 'test'
+      ...
+    # Subtest: job scope revision changed
+    ok 19 - job scope revision changed
+      ---
+      duration_ms: 255.977956
+      type: 'test'
+      ...
+    # Subtest: native authority denied
+    ok 20 - native authority denied
+      ---
+      duration_ms: 263.467261
+      type: 'test'
+      ...
+    # Subtest: reveal unsupported
+    ok 21 - reveal unsupported
+      ---
+      duration_ms: 265.938013
+      type: 'test'
+      ...
+    # Subtest: export unsupported
+    ok 22 - export unsupported
+      ---
+      duration_ms: 238.472806
+      type: 'test'
+      ...
+    # Subtest: arbitrary callback input rejected
+    ok 23 - arbitrary callback input rejected
+      ---
+      duration_ms: 246.927479
+      type: 'test'
+      ...
+    1..23
+ok 1 - token: table: personal/shared item authorization requires exact actor, item, scope, purpose, action and destination
+  ---
+  duration_ms: 6767.170675
+  type: 'test'
+  ...
+# Subtest: token: owner grant CAS, atomic revoke fence, restart persistence and bounded authorized history
+ok 2 - token: owner grant CAS, atomic revoke fence, restart persistence and bounded authorized history
+  ---
+  duration_ms: 252.746373
+  type: 'test'
+  ...
+# Subtest: token: real PostgreSQL race: revoke commits between admission and dispatch and prevents private use
+ok 3 - token: real PostgreSQL race: revoke commits between admission and dispatch and prevents private use
+  ---
+  duration_ms: 282.291241
+  type: 'test'
+  ...
+# Fixture-only SQL race: mutation=revoke; grant_revision=2; private_reads=0; dispatches=0; durable_effect=unknown; receipt=vault-effect.
+# Subtest: token: real PostgreSQL race: narrow commits between admission and dispatch and prevents private use
+ok 4 - token: real PostgreSQL race: narrow commits between admission and dispatch and prevents private use
+  ---
+  duration_ms: 267.042176
+  type: 'test'
+  ...
+# Fixture-only SQL race: mutation=narrow; grant_revision=2; private_reads=0; dispatches=0; durable_effect=unknown; receipt=vault-effect.
+# Subtest: token: revoke waits for an already dispatched operation; after commit no later use starts
+ok 5 - token: revoke waits for an already dispatched operation; after commit no later use starts
+  ---
+  duration_ms: 275.013739
+  type: 'test'
+  ...
+# Subtest: token: malicious executor exceptions and fabricated receipts are withheld; unknown effects reconcile after revoke
+ok 6 - token: malicious executor exceptions and fabricated receipts are withheld; unknown effects reconcile after revoke
+  ---
+  duration_ms: 325.313346
+  type: 'test'
+  ...
+# Subtest: token: expiry after reconciliation and during private key resolution prevents actual dispatch
+    # Subtest: reconcile
+    ok 1 - reconcile
+      ---
+      duration_ms: 269.106637
+      type: 'test'
+      ...
+    # Subtest: custody
+    ok 2 - custody
+      ---
+      duration_ms: 257.536228
+      type: 'test'
+      ...
+    1..2
+ok 7 - token: expiry after reconciliation and during private key resolution prevents actual dispatch
+  ---
+  duration_ms: 527.386838
+  type: 'test'
+  ...
+# Subtest: token: cancellation, stale lease and lifecycle revoke all prevent use
+    # Subtest: stop
+    ok 1 - stop
+      ---
+      duration_ms: 234.001547
+      type: 'test'
+      ...
+    # Subtest: lease
+    ok 2 - lease
+      ---
+      duration_ms: 252.528073
+      type: 'test'
+      ...
+    # Subtest: lifecycle
+    ok 3 - lifecycle
+      ---
+      duration_ms: 234.678231
+      type: 'test'
+      ...
+    1..3
+ok 8 - token: cancellation, stale lease and lifecycle revoke all prevent use
+  ---
+  duration_ms: 721.962172
+  type: 'test'
+  ...
+# Subtest: token: timeout during custody cannot dispatch later and retains unknown for reconciliation
+ok 9 - token: timeout during custody cannot dispatch later and retains unknown for reconciliation
+  ---
+  duration_ms: 338.382851
+  type: 'test'
+  ...
+# Subtest: token: browser origin/frame binding uses exact grant destination, before any private resolution
+    # Subtest: origin
+    ok 1 - origin
+      ---
+      duration_ms: 251.85981
+      type: 'test'
+      ...
+    # Subtest: frame
+    ok 2 - frame
+      ---
+      duration_ms: 258.444746
+      type: 'test'
+      ...
+    1..2
+ok 10 - token: browser origin/frame binding uses exact grant destination, before any private resolution
+  ---
+  duration_ms: 510.980432
+  type: 'test'
+  ...
+# Subtest: token: human reveal/export permissions never confer use and a payload disguised as receipt stays unknown
+ok 11 - token: human reveal/export permissions never confer use and a payload disguised as receipt stays unknown
+  ---
+  duration_ms: 273.058783
+  type: 'test'
+  ...
+# Subtest: token: concurrent clients deliver one private effect and reject conflicting idempotency
+ok 12 - token: concurrent clients deliver one private effect and reject conflicting idempotency
+  ---
+  duration_ms: 336.608643
+  type: 'test'
+  ...
+# Subtest: card: table: personal/shared item authorization requires exact actor, item, scope, purpose, action and destination
+    # Subtest: personal owner explicit grant
+    ok 1 - personal owner explicit grant
+      ---
+      duration_ms: 337.761852
+      type: 'test'
+      ...
+    # Subtest: shared recipient explicit item grant
+    ok 2 - shared recipient explicit item grant
+      ---
+      duration_ms: 318.499812
+      type: 'test'
+      ...
+    # Subtest: personal ownership alone is insufficient
+    ok 3 - personal ownership alone is insufficient
+      ---
+      duration_ms: 235.46587
+      type: 'test'
+      ...
+    # Subtest: organization/project sharing alone is insufficient
+    ok 4 - organization/project sharing alone is insufficient
+      ---
+      duration_ms: 230.200483
+      type: 'test'
+      ...
+    # Subtest: wrong authenticated actor
+    ok 5 - wrong authenticated actor
+      ---
+      duration_ms: 239.882879
+      type: 'test'
+      ...
+    # Subtest: wrong tenantRef
+    ok 6 - wrong tenantRef
+      ---
+      duration_ms: 261.420483
+      type: 'test'
+      ...
+    # Subtest: wrong userRef
+    ok 7 - wrong userRef
+      ---
+      duration_ms: 238.103283
+      type: 'test'
+      ...
+    # Subtest: wrong projectRef
+    ok 8 - wrong projectRef
+      ---
+      duration_ms: 251.911504
+      type: 'test'
+      ...
+    # Subtest: wrong accountRef
+    ok 9 - wrong accountRef
+      ---
+      duration_ms: 232.109203
+      type: 'test'
+      ...
+    # Subtest: wrong environmentRef
+    ok 10 - wrong environmentRef
+      ---
+      duration_ms: 241.160072
+      type: 'test'
+      ...
+    # Subtest: wrong purposeRef
+    ok 11 - wrong purposeRef
+      ---
+      duration_ms: 234.268215
+      type: 'test'
+      ...
+    # Subtest: wrong action
+    ok 12 - wrong action
+      ---
+      duration_ms: 239.499733
+      type: 'test'
+      ...
+    # Subtest: unregistered executor
+    ok 13 - unregistered executor
+      ---
+      duration_ms: 235.309204
+      type: 'test'
+      ...
+    # Subtest: wrong destination
+    ok 14 - wrong destination
+      ---
+      duration_ms: 245.783807
+      type: 'test'
+      ...
+    # Subtest: wrong method
+    ok 15 - wrong method
+      ---
+      duration_ms: 234.38405
+      type: 'test'
+      ...
+    # Subtest: wrong item version
+    ok 16 - wrong item version
+      ---
+      duration_ms: 240.774471
+      type: 'test'
+      ...
+    # Subtest: wrong grant revision
+    ok 17 - wrong grant revision
+      ---
+      duration_ms: 246.104892
+      type: 'test'
+      ...
+    # Subtest: expiry
+    ok 18 - expiry
+      ---
+      duration_ms: 234.404648
+      type: 'test'
+      ...
+    # Subtest: job scope revision changed
+    ok 19 - job scope revision changed
+      ---
+      duration_ms: 225.781323
+      type: 'test'
+      ...
+    # Subtest: native authority denied
+    ok 20 - native authority denied
+      ---
+      duration_ms: 227.977057
+      type: 'test'
+      ...
+    # Subtest: reveal unsupported
+    ok 21 - reveal unsupported
+      ---
+      duration_ms: 201.060652
+      type: 'test'
+      ...
+    # Subtest: export unsupported
+    ok 22 - export unsupported
+      ---
+      duration_ms: 214.122635
+      type: 'test'
+      ...
+    # Subtest: arbitrary callback input rejected
+    ok 23 - arbitrary callback input rejected
+      ---
+      duration_ms: 214.642528
+      type: 'test'
+      ...
+    1..23
+ok 13 - card: table: personal/shared item authorization requires exact actor, item, scope, purpose, action and destination
+  ---
+  duration_ms: 5584.309064
+  type: 'test'
+  ...
+# Subtest: card: owner grant CAS, atomic revoke fence, restart persistence and bounded authorized history
+ok 14 - card: owner grant CAS, atomic revoke fence, restart persistence and bounded authorized history
+  ---
+  duration_ms: 245.81892
+  type: 'test'
+  ...
+# Subtest: card: real PostgreSQL race: revoke commits between admission and dispatch and prevents private use
+ok 15 - card: real PostgreSQL race: revoke commits between admission and dispatch and prevents private use
+  ---
+  duration_ms: 274.898962
+  type: 'test'
+  ...
+# Fixture-only SQL race: mutation=revoke; grant_revision=2; private_reads=0; dispatches=0; durable_effect=unknown; receipt=vault-effect.
+# Subtest: card: real PostgreSQL race: narrow commits between admission and dispatch and prevents private use
+ok 16 - card: real PostgreSQL race: narrow commits between admission and dispatch and prevents private use
+  ---
+  duration_ms: 242.425958
+  type: 'test'
+  ...
+# Fixture-only SQL race: mutation=narrow; grant_revision=2; private_reads=0; dispatches=0; durable_effect=unknown; receipt=vault-effect.
+# Subtest: card: revoke waits for an already dispatched operation; after commit no later use starts
+ok 17 - card: revoke waits for an already dispatched operation; after commit no later use starts
+  ---
+  duration_ms: 273.379041
+  type: 'test'
+  ...
+# Subtest: card: malicious executor exceptions and fabricated receipts are withheld; unknown effects reconcile after revoke
+ok 18 - card: malicious executor exceptions and fabricated receipts are withheld; unknown effects reconcile after revoke
+  ---
+  duration_ms: 280.444856
+  type: 'test'
+  ...
+# Subtest: card: expiry after reconciliation and during private key resolution prevents actual dispatch
+    # Subtest: reconcile
+    ok 1 - reconcile
+      ---
+      duration_ms: 227.631223
+      type: 'test'
+      ...
+    # Subtest: custody
+    ok 2 - custody
+      ---
+      duration_ms: 270.834529
+      type: 'test'
+      ...
+    1..2
+ok 19 - card: expiry after reconciliation and during private key resolution prevents actual dispatch
+  ---
+  duration_ms: 499.202306
+  type: 'test'
+  ...
+# Subtest: card: cancellation, stale lease and lifecycle revoke all prevent use
+    # Subtest: stop
+    ok 1 - stop
+      ---
+      duration_ms: 236.623515
+      type: 'test'
+      ...
+    # Subtest: lease
+    ok 2 - lease
+      ---
+      duration_ms: 218.467877
+      type: 'test'
+      ...
+    # Subtest: lifecycle
+    ok 3 - lifecycle
+      ---
+      duration_ms: 225.651943
+      type: 'test'
+      ...
+    1..3
+ok 20 - card: cancellation, stale lease and lifecycle revoke all prevent use
+  ---
+  duration_ms: 681.2716
+  type: 'test'
+  ...
+# Subtest: card: timeout during custody cannot dispatch later and retains unknown for reconciliation
+ok 21 - card: timeout during custody cannot dispatch later and retains unknown for reconciliation
+  ---
+  duration_ms: 300.932755
+  type: 'test'
+  ...
+# Subtest: card: browser origin/frame binding uses exact grant destination, before any private resolution
+    # Subtest: origin
+    ok 1 - origin
+      ---
+      duration_ms: 227.872815
+      type: 'test'
+      ...
+    # Subtest: frame
+    ok 2 - frame
+      ---
+      duration_ms: 238.248631
+      type: 'test'
+      ...
+    1..2
+ok 22 - card: browser origin/frame binding uses exact grant destination, before any private resolution
+  ---
+  duration_ms: 466.530004
+  type: 'test'
+  ...
+# Subtest: card: human reveal/export permissions never confer use and a payload disguised as receipt stays unknown
+ok 23 - card: human reveal/export permissions never confer use and a payload disguised as receipt stays unknown
+  ---
+  duration_ms: 268.657731
+  type: 'test'
+  ...
+# Subtest: card: concurrent clients deliver one private effect and reject conflicting idempotency
+ok 24 - card: concurrent clients deliver one private effect and reject conflicting idempotency
+  ---
+  duration_ms: 294.733976
+  type: 'test'
+  ...
+1..24
+# tests 84
+# suites 0
+# pass 84
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 20882.626797
+
+> handrail-agent-sdk@0.2.0 test:vault-lifecycle
+> npm run build:test-reference && node --test --test-concurrency=1 --test-reporter=tap .reference-build/tests/reference/vault-lifecycle.test.js
+
+
+> handrail-agent-sdk@0.2.0 build:test-reference
+> tsc -p tests/tsconfig.reference.json
+
+TAP version 13
+# Subtest: fresh processes resume durable preparation for eight variants with unchanged references and exact target keys
+ok 1 - fresh processes resume durable preparation for eight variants with unchanged references and exact target keys
+  ---
+  duration_ms: 1737.834017
+  type: 'test'
+  ...
+# Writer exited after preparation; fresh reader recovered all 8 variants without source key access; references unchanged; captured diagnostics and SQL scans passed.
+# Subtest: concurrent commits have one winner; stale preparations and receipts cannot replace newer key state
+ok 2 - concurrent commits have one winner; stale preparations and receipts cannot replace newer key state
+  ---
+  duration_ms: 292.313961
+  type: 'test'
+  ...
+# Subtest: deleted fences pending recovery, reads, recreation and replayed backups before and after cleanup
+ok 3 - deleted fences pending recovery, reads, recreation and replayed backups before and after cleanup
+  ---
+  duration_ms: 259.682114
+  type: 'test'
+  ...
+# Subtest: revoked fences pending recovery, reads, recreation and replayed backups before and after cleanup
+ok 4 - revoked fences pending recovery, reads, recreation and replayed backups before and after cleanup
+  ---
+  duration_ms: 253.89466
+  type: 'test'
+  ...
+# Subtest: durable tombstone during read key resolution prevents decryption/output or persistence
+ok 5 - durable tombstone during read key resolution prevents decryption/output or persistence
+  ---
+  duration_ms: 232.414201
+  type: 'test'
+  ...
+# Subtest: durable tombstone during prepare key resolution prevents decryption/output or persistence
+ok 6 - durable tombstone during prepare key resolution prevents decryption/output or persistence
+  ---
+  duration_ms: 230.830829
+  type: 'test'
+  ...
+# Subtest: durable tombstone during prepare-target key resolution prevents decryption/output or persistence
+ok 7 - durable tombstone during prepare-target key resolution prevents decryption/output or persistence
+  ---
+  duration_ms: 224.628151
+  type: 'test'
+  ...
+# Subtest: durable tombstone during resume key resolution prevents decryption/output or persistence
+ok 8 - durable tombstone during resume key resolution prevents decryption/output or persistence
+  ---
+  duration_ms: 236.186553
+  type: 'test'
+  ...
+# Subtest: durable tombstone during create key resolution prevents decryption/output or persistence
+ok 9 - durable tombstone during create key resolution prevents decryption/output or persistence
+  ---
+  duration_ms: 214.905443
+  type: 'test'
+  ...
+# Subtest: final private output fence observes a deletion after decryption during authorization
+ok 10 - final private output fence observes a deletion after decryption during authorization
+  ---
+  duration_ms: 223.408799
+  type: 'test'
+  ...
+# Subtest: cleanup SQL interruption rolls back private removal but leaves committed tombstone retryable
+ok 11 - cleanup SQL interruption rolls back private removal but leaves committed tombstone retryable
+  ---
+  duration_ms: 286.311285
+  type: 'test'
+  ...
+# Subtest: missing and wrong exact keys fail closed; target-only recovery is retryable without key retirement
+ok 12 - missing and wrong exact keys fail closed; target-only recovery is retryable without key retirement
+  ---
+  duration_ms: 248.652085
+  type: 'test'
+  ...
+# Subtest: all six scopes and current host denial fence preparation/recovery/cleanup; changed scope during key access fails closed
+ok 13 - all six scopes and current host denial fence preparation/recovery/cleanup; changed scope during key access fails closed
+  ---
+  duration_ms: 259.760138
+  type: 'test'
+  ...
+# Subtest: missing/unavailable authoritative ledger and stale ciphertext fail closed without reconstruction
+ok 14 - missing/unavailable authoritative ledger and stale ciphertext fail closed without reconstruction
+  ---
+  duration_ms: 215.803173
+  type: 'test'
+  ...
+# Subtest: tampered prepared bindings cannot authenticate even with current host authorization
+ok 15 - tampered prepared bindings cannot authenticate even with current host authorization
+  ---
+  duration_ms: 223.70655
+  type: 'test'
+  ...
+# Subtest: generated migrations rerun safely; owned lifecycle schemas removed with independent sentinel intact
+ok 16 - generated migrations rerun safely; owned lifecycle schemas removed with independent sentinel intact
+  ---
+  duration_ms: 262.733377
+  type: 'test'
+  ...
+# Owned migrated lifecycle schema removed; independent sentinel preserved; migration reruns did not clear tombstones.
+# Subtest: one-time generated upgrade preserves existing v1 envelopes and initializes their durable fence
+ok 17 - one-time generated upgrade preserves existing v1 envelopes and initializes their durable fence
+  ---
+  duration_ms: 379.865232
+  type: 'test'
+  ...
+# Subtest: failed rotation commit rolls back envelope and generation together; preparation remains retryable
+ok 18 - failed rotation commit rolls back envelope and generation together; preparation remains retryable
+  ---
+  duration_ms: 239.881924
+  type: 'test'
+  ...
+1..18
+# tests 18
+# suites 0
+# pass 18
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 6572.097401
+
+> handrail-agent-sdk@0.2.0 test:vault
+> npm run build:test-reference && node --test --test-concurrency=1 --test-reporter=tap .reference-build/tests/reference/vault-store.test.js
+
+
+> handrail-agent-sdk@0.2.0 build:test-reference
+> tsc -p tests/tsconfig.reference.json
+
+TAP version 13
+# Subtest: all eight variants survive exited writer and fresh reader processes; restart nonces and sinks stay private
+ok 1 - all eight variants survive exited writer and fresh reader processes; restart nonces and sinks stay private
+  ---
+  duration_ms: 1430.615767
+  type: 'test'
+  ...
+# Two distinct child processes exited successfully; 8 variants recovered, 16 unique persisted nonces; private scans passed.
+# Subtest: each ownership dimension denies reads and writes before any key service call
+ok 2 - each ownership dimension denies reads and writes before any key service call
+  ---
+  duration_ms: 223.540106
+  type: 'test'
+  ...
+# Subtest: ciphertext, tag and nonce corruption and malformed encoding fail closed
+ok 3 - ciphertext, tag and nonce corruption and malformed encoding fail closed
+  ---
+  duration_ms: 229.496404
+  type: 'test'
+  ...
+# Subtest: all six swapped scope fields remain authenticated even when host authorizes the altered scope
+ok 4 - all six swapped scope fields remain authenticated even when host authorizes the altered scope
+  ---
+  duration_ms: 216.520716
+  type: 'test'
+  ...
+# Subtest: swapped item, revision and valid type metadata cannot authenticate
+ok 5 - swapped item, revision and valid type metadata cannot authenticate
+  ---
+  duration_ms: 222.287286
+  type: 'test'
+  ...
+# Subtest: missing and wrong keys, unsupported envelope/algorithm/key versions have bounded errors
+ok 6 - missing and wrong keys, unsupported envelope/algorithm/key versions have bounded errors
+  ---
+  duration_ms: 209.660069
+  type: 'test'
+  ...
+# Subtest: token, identity and payment metadata and key identifiers are cryptographically bound
+ok 7 - token, identity and payment metadata and key identifiers are cryptographically bound
+  ---
+  duration_ms: 263.1237
+  type: 'test'
+  ...
+# Subtest: invalid or unavailable active keys never persist a row and need no fallback
+ok 8 - invalid or unavailable active keys never persist a row and need no fallback
+  ---
+  duration_ms: 220.324048
+  type: 'test'
+  ...
+# Subtest: strict value shapes reject incomplete card data and security codes, identity bundles and accessor metadata without key access
+ok 9 - strict value shapes reject incomplete card data and security codes, identity bundles and accessor metadata without key access
+  ---
+  duration_ms: 195.141613
+  type: 'test'
+  ...
+# Subtest: concurrent writes have one winner and duplicate writes never overwrite ciphertext
+ok 10 - concurrent writes have one winner and duplicate writes never overwrite ciphertext
+  ---
+  duration_ms: 228.033598
+  type: 'test'
+  ...
+# Subtest: detached inputs and repeated host checks fence revocation during key resolution
+ok 11 - detached inputs and repeated host checks fence revocation during key resolution
+  ---
+  duration_ms: 232.707985
+  type: 'test'
+  ...
+# Subtest: driver and authorization failures never retain canaries or key bytes in errors or receipts
+ok 12 - driver and authorization failures never retain canaries or key bytes in errors or receipts
+  ---
+  duration_ms: 219.520995
+  type: 'test'
+  ...
+# Subtest: generated migration reruns, uniqueness constraints and owned cleanup preserve independent sentinel
+ok 13 - generated migration reruns, uniqueness constraints and owned cleanup preserve independent sentinel
+  ---
+  duration_ms: 243.398211
+  type: 'test'
+  ...
+# Owned migrated schema removed; independent sentinel preserved; both harness cleanups succeeded.
+1..13
+# tests 13
+# suites 0
+# pass 13
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 4700.803577
+
+> handrail-agent-sdk@0.2.0 test:lease
+> npm run build:reference && npm run build:test-postgres && node --test --test-concurrency=1 --test-reporter=tap tests/job-lease.test.mjs
+
+
+> handrail-agent-sdk@0.2.0 build:reference
+> tsc -p reference/tsconfig.json
+
+
+> handrail-agent-sdk@0.2.0 build:test-postgres
+> tsc -p tests/tsconfig.postgres.json
+
+TAP version 13
+# Subtest: distinct PostgreSQL backends race one admitted job; expiry replaces epoch and fences every old operation
+ok 1 - distinct PostgreSQL backends race one admitted job; expiry replaces epoch and fences every old operation
+  ---
+  duration_ms: 389.652051
+  type: 'test'
+  ...
+# Local PostgreSQL fixture: distinct backends, one winner, newer epoch on same job; stale renew/release/check/append/complete rejected without durable changes; original unknown effect and admission preserved.
+# Subtest: current owner renews, releases and reclaims without resetting epoch, then commits verified success
+ok 2 - current owner renews, releases and reclaims without resetting epoch, then commits verified success
+  ---
+  duration_ms: 260.000023
+  type: 'test'
+  ...
+# Subtest: wrong owner, epoch, original binding, scope and changed grant/cancellation authority fail closed
+ok 3 - wrong owner, epoch, original binding, scope and changed grant/cancellation authority fail closed
+  ---
+  duration_ms: 350.552835
+  type: 'test'
+  ...
+# Subtest: waiting and every terminal state are ineligible even after lease expiry
+ok 4 - waiting and every terminal state are ineligible even after lease expiry
+  ---
+  duration_ms: 341.495217
+  type: 'test'
+  ...
+# Subtest: stale append waits behind replacement transaction and cannot commit with a current journal revision
+ok 5 - stale append waits behind replacement transaction and cannot commit with a current journal revision
+  ---
+  duration_ms: 247.998163
+  type: 'test'
+  ...
+# Local PostgreSQL fixture: pg_stat_activity confirmed stale writer waiting on a database Lock; replacement committed first, old epoch rejected at still-current journal revision 1.
+# Subtest: clock sampled after lock wait rejects expired write; expiry during append rolls back all journal changes
+ok 6 - clock sampled after lock wait rejects expired write; expiry during append rolls back all journal changes
+  ---
+  duration_ms: 251.786584
+  type: 'test'
+  ...
+# Subtest: completion failure rolls back ownership, event, delivery and checkpoint together; invalid inputs are sanitized
+ok 7 - completion failure rolls back ownership, event, delivery and checkpoint together; invalid inputs are sanitized
+  ---
+  duration_ms: 239.914493
+  type: 'test'
+  ...
+# Subtest: fenced journal retries retain canonical and checkpoint behavior; bare runtime writes fail before any lease exists
+ok 8 - fenced journal retries retain canonical and checkpoint behavior; bare runtime writes fail before any lease exists
+  ---
+  duration_ms: 254.534233
+  type: 'test'
+  ...
+# Subtest: unsafe clocks and exhausted epochs fail without mutation; database rejects malformed lease storage
+ok 9 - unsafe clocks and exhausted epochs fail without mutation; database rejects malformed lease storage
+  ---
+  duration_ms: 262.067783
+  type: 'test'
+  ...
+1..9
+# tests 9
+# suites 0
+# pass 9
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 3093.998257
+
+> handrail-agent-sdk@0.2.0 test:effects
+> npm run build:reference && npm run build:test-postgres && node --test --test-concurrency=1 --test-reporter=tap tests/effects.test.mjs
+
+
+> handrail-agent-sdk@0.2.0 build:reference
+> tsc -p reference/tsconfig.json
+
+
+> handrail-agent-sdk@0.2.0 build:test-postgres
+> tsc -p tests/tsconfig.postgres.json
+
+TAP version 13
+# Subtest: SIGKILL after provider commit: fresh worker recovers one effect and original receipt on real PostgreSQL
+ok 1 - SIGKILL after provider commit: fresh worker recovers one effect and original receipt on real PostgreSQL
+  ---
+  duration_ms: 2100.407181
+  type: 'test'
+  ...
+# Fixture only: killed_pid=2226; recovery_pid=2239; job=effect-job; effect=original-effect; dispatches=1; provider_effects=1; receipt=original-provider-receipt; lease_epochs=1,2.
+# Subtest: conflicting request digests and reused provider idempotency fail without dispatch
+ok 2 - conflicting request digests and reused provider idempotency fail without dispatch
+  ---
+  duration_ms: 298.915018
+  type: 'test'
+  ...
+# Subtest: ambiguous/unavailable reads and secret adapter errors never permit redispatch
+ok 3 - ambiguous/unavailable reads and secret adapter errors never permit redispatch
+  ---
+  duration_ms: 260.764968
+  type: 'test'
+  ...
+# Subtest: verified not-applied permits same-identity retry under fresh authority
+ok 4 - verified not-applied permits same-identity retry under fresh authority
+  ---
+  duration_ms: 239.391882
+  type: 'test'
+  ...
+# Subtest: Stop permits factual reconciliation while denying new dispatch and preserving terminal journal
+ok 5 - Stop permits factual reconciliation while denying new dispatch and preserving terminal journal
+  ---
+  duration_ms: 234.48147
+  type: 'test'
+  ...
+# Subtest: dispatch reauthorization, changed scope and expired leases fence execution
+ok 6 - dispatch reauthorization, changed scope and expired leases fence execution
+  ---
+  duration_ms: 209.241428
+  type: 'test'
+  ...
+# Subtest: timeout and late private results stay unknown; malformed receipts and read errors are suppressed
+ok 7 - timeout and late private results stay unknown; malformed receipts and read errors are suppressed
+  ---
+  duration_ms: 242.239337
+  type: 'test'
+  ...
+# Subtest: generic journal cannot resolve an effect without the ledger proof
+ok 8 - generic journal cannot resolve an effect without the ledger proof
+  ---
+  duration_ms: 240.558322
+  type: 'test'
+  ...
+# Subtest: concurrent workers serialize read/dispatch and return the same original receipt
+ok 9 - concurrent workers serialize read/dispatch and return the same original receipt
+  ---
+  duration_ms: 250.975041
+  type: 'test'
+  ...
+# Subtest: expired lease after read prevents dispatch and unresolved reads never use cached not-applied evidence
+ok 10 - expired lease after read prevents dispatch and unresolved reads never use cached not-applied evidence
+  ---
+  duration_ms: 239.074261
+  type: 'test'
+  ...
+# Subtest: provider idempotency key cannot be rebound to a different original job
+ok 11 - provider idempotency key cannot be rebound to a different original job
+  ---
+  duration_ms: 281.708233
+  type: 'test'
+  ...
+1..11
+# tests 11
+# suites 0
+# pass 11
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 5068.880123
+
+> handrail-agent-sdk@0.2.0 test:cancel
+> npm run build:reference && npm run build:test-postgres && node --test --test-concurrency=1 --test-reporter=tap tests/job-cancel.test.mjs
+
+
+> handrail-agent-sdk@0.2.0 build:reference
+> tsc -p reference/tsconfig.json
+
+
+> handrail-agent-sdk@0.2.0 build:test-postgres
+> tsc -p tests/tsconfig.postgres.json
+
+TAP version 13
+# Subtest: Stop wins row lock before two worker claims; no effect can be admitted after the committed fence
+ok 1 - Stop wins row lock before two worker claims; no effect can be admitted after the committed fence
+  ---
+  duration_ms: 316.953932
+  type: 'test'
+  ...
+# Subtest: admitted unknown effect survives Stop; duplicate Stop is stable and stale resume cannot reopen
+ok 2 - admitted unknown effect survives Stop; duplicate Stop is stable and stale resume cannot reopen
+  ---
+  duration_ms: 288.251058
+  type: 'test'
+  ...
+# Subtest: changed, revoked, expired or held authority denies progress at admission
+ok 3 - changed, revoked, expired or held authority denies progress at admission
+  ---
+  duration_ms: 267.70638
+  type: 'test'
+  ...
+1..3
+# tests 3
+# suites 0
+# pass 3
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 1369.692729
+
+> handrail-agent-sdk@0.2.0 test:answer
+> npm run build:reference && npm run build:test-postgres && node --test --test-concurrency=1 --test-reporter=tap tests/job-answer.test.mjs
+
+
+> handrail-agent-sdk@0.2.0 build:reference
+> tsc -p reference/tsconfig.json
+
+
+> handrail-agent-sdk@0.2.0 build:test-postgres
+> tsc -p tests/tsconfig.postgres.json
+
+TAP version 13
+# Subtest: concurrent completions commit one answered event, stable receipt and bounded replay
+ok 1 - concurrent completions commit one answered event, stable receipt and bounded replay
+  ---
+  duration_ms: 348.796162
+  type: 'test'
+  ...
+# Subtest: restart preserves original task and route; changed delivery content conflicts
+ok 2 - restart preserves original task and route; changed delivery content conflicts
+  ---
+  duration_ms: 242.266906
+  type: 'test'
+  ...
+# Subtest: expiry, resolver, scope, grant change and revocation deny unconsumed answer
+ok 3 - expiry, resolver, scope, grant change and revocation deny unconsumed answer
+  ---
+  duration_ms: 225.444265
+  type: 'test'
+  ...
+# Subtest: superseded challenge revision cannot deliver an answer to a later wait
+ok 4 - superseded challenge revision cannot deliver an answer to a later wait
+  ---
+  duration_ms: 275.824148
+  type: 'test'
+  ...
+# Subtest: a consumed challenge can be replaced after a verified same-job resume and later wait
+ok 5 - a consumed challenge can be replaced after a verified same-job resume and later wait
+  ---
+  duration_ms: 266.573917
+  type: 'test'
+  ...
+# Subtest: Stop fences a waiting answer without creating a new task or event
+ok 6 - Stop fences a waiting answer without creating a new task or event
+  ---
+  duration_ms: 257.315643
+  type: 'test'
+  ...
+1..6
+# tests 6
+# suites 0
+# pass 6
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 2143.796338
+
+> handrail-agent-sdk@0.2.0 test:agents
+> npm run build && npm run build:reference && npm run build:test-postgres && node --test --test-concurrency=1 --test-reporter=tap tests/agent-runtime.test.mjs
+
+
+> handrail-agent-sdk@0.2.0 build
+> tsc -p tsconfig.json && node scripts/build-postgres-assets.mjs
+
+
+> handrail-agent-sdk@0.2.0 build:reference
+> tsc -p reference/tsconfig.json
+
+
+> handrail-agent-sdk@0.2.0 build:test-postgres
+> tsc -p tests/tsconfig.postgres.json
+
+TAP version 13
+# Subtest: host structured history survives an approval checkpoint without flattening roles or image references
+ok 1 - host structured history survives an approval checkpoint without flattening roles or image references
+  ---
+  duration_ms: 441.752017
+  type: 'test'
+  ...
+# Subtest: verified effects expose bounded host results and a failed result read never repeats the effect
+ok 2 - verified effects expose bounded host results and a failed result read never repeats the effect
+  ---
+  duration_ms: 591.79646
+  type: 'test'
+  ...
+# Subtest: unknown effects cannot release a domain result
+ok 3 - unknown effects cannot release a domain result
+  ---
+  duration_ms: 283.171515
+  type: 'test'
+  ...
+# Subtest: real Runner executes inventory -> protected reservation -> verification; duplicate delivery has one effect
+ok 4 - real Runner executes inventory -> protected reservation -> verification; duplicate delivery has one effect
+  ---
+  duration_ms: 384.051238
+  type: 'test'
+  ...
+# Subtest: different research task recovers from deliberate read-tool failure and computes a quote
+ok 5 - different research task recovers from deliberate read-tool failure and computes a quote
+  ---
+  duration_ms: 294.860801
+  type: 'test'
+  ...
+# Subtest: durable approval, answer and new input resume same job in a separate process
+ok 6 - durable approval, answer and new input resume same job in a separate process
+  ---
+  duration_ms: 1735.803852
+  type: 'test'
+  ...
+# Subtest: SIGKILL after provider mutation reconciles across processes without duplicate execution
+ok 7 - SIGKILL after provider mutation reconciles across processes without duplicate execution
+  ---
+  duration_ms: 4188.216412
+  type: 'test'
+  ...
+# Subtest: unknown external effect waits for reconciliation; schedule wake cannot authorize replay
+ok 8 - unknown external effect waits for reconciliation; schedule wake cannot authorize replay
+  ---
+  duration_ms: 590.206731
+  type: 'test'
+  ...
+# Subtest: tenant isolation, revoked and changed grants deny private state and execution
+ok 9 - tenant isolation, revoked and changed grants deny private state and execution
+  ---
+  duration_ms: 306.939035
+  type: 'test'
+  ...
+# Subtest: provider failure retains checkpoint and retry recovers without repeating completed tools
+ok 10 - provider failure retains checkpoint and retry recovers without repeating completed tools
+  ---
+  duration_ms: 463.892275
+  type: 'test'
+  ...
+# Subtest: process stop resumes checkpoint; explicit durable Stop fences late output and remains terminal
+ok 11 - process stop resumes checkpoint; explicit durable Stop fences late output and remains terminal
+  ---
+  duration_ms: 233.346272
+  type: 'test'
+  ...
+# Subtest: process shutdown aborts model transport and fresh runtime recovers same job
+ok 12 - process shutdown aborts model transport and fresh runtime recovers same job
+  ---
+  duration_ms: 487.65367
+  type: 'test'
+  ...
+# Subtest: invalid tool schema cannot mutate and repeated provider failure is bounded
+ok 13 - invalid tool schema cannot mutate and repeated provider failure is bounded
+  ---
+  duration_ms: 229.090166
+  type: 'test'
+  ...
+# Subtest: lost lease during a pending read prevents tool result and terminal writes
+ok 14 - lost lease during a pending read prevents tool result and terminal writes
+  ---
+  duration_ms: 446.588682
+  type: 'test'
+  ...
+# Subtest: model context bound fails durably and oversized private state is not committed
+ok 15 - model context bound fails durably and oversized private state is not committed
+  ---
+  duration_ms: 210.162109
+  type: 'test'
+  ...
+# Subtest: concurrent delivery is lease fenced; a second worker cannot execute tools
+ok 16 - concurrent delivery is lease fenced; a second worker cannot execute tools
+  ---
+  duration_ms: 411.276786
+  type: 'test'
+  ...
+# Subtest: revocation after model approval is checked immediately before mutation dispatch
+ok 17 - revocation after model approval is checked immediately before mutation dispatch
+  ---
+  duration_ms: 259.304901
+  type: 'test'
+  ...
+# Subtest: unknown first effect stops other tools emitted in the same model response
+ok 18 - unknown first effect stops other tools emitted in the same model response
+  ---
+  duration_ms: 265.370458
+  type: 'test'
+  ...
+# Subtest: official OpenAI Responses provider/client drive Runner through simulated HTTP SSE transport
+ok 19 - official OpenAI Responses provider/client drive Runner through simulated HTTP SSE transport
+  ---
+  duration_ms: 433.016009
+  type: 'test'
+  ...
+# Subtest: current catalog hides unauthorized tools and opaque attachments resolve only at model boundary
+ok 20 - current catalog hides unauthorized tools and opaque attachments resolve only at model boundary
+  ---
+  duration_ms: 189.557292
+  type: 'test'
+  ...
+# Subtest: concurrent tenant scopes share a namespace without sharing state or effects; stale correction is fenced
+ok 21 - concurrent tenant scopes share a namespace without sharing state or effects; stale correction is fenced
+  ---
+  duration_ms: 448.945463
+  type: 'test'
+  ...
+# Subtest: native answer retries are identical, changed delivery conflicts, and revoked actor cannot answer
+ok 22 - native answer retries are identical, changed delivery conflicts, and revoked actor cannot answer
+  ---
+  duration_ms: 458.312648
+  type: 'test'
+  ...
+# Subtest: injected official provider rejects temperature; default omits it
+ok 23 - injected official provider rejects temperature; default omits it
+  ---
+  duration_ms: 184.658366
+  type: 'test'
+  ...
+# Subtest: injected official provider accepts configured sampling
+ok 24 - injected official provider accepts configured sampling
+  ---
+  duration_ms: 195.42522
+  type: 'test'
+  ...
+# Subtest: public migrations serialize, are repeatable, preserve uncertain identities, and reject drift
+ok 25 - public migrations serialize, are repeatable, preserve uncertain identities, and reject drift
+  ---
+  duration_ms: 293.492696
+  type: 'test'
+  ...
+# Subtest: private state requires host key handles; rotation preserves old decryption and rejects substitution
+ok 26 - private state requires host key handles; rotation preserves old decryption and rejects substitution
+  ---
+  duration_ms: 274.890026
+  type: 'test'
+  ...
+# Subtest: bootstrap failure rolls back new tables and preserves an unknown existing table
+ok 27 - bootstrap failure rolls back new tables and preserves an unknown existing table
+  ---
+  duration_ms: 41.626577
+  type: 'test'
+  ...
+# Subtest: Runner Vault tool composes real custody/grants/effects and never exposes the private token
+ok 28 - Runner Vault tool composes real custody/grants/effects and never exposes the private token
+  ---
+  duration_ms: 663.299633
+  type: 'test'
+  ...
+1..28
+# tests 28
+# suites 0
+# pass 28
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 15899.40408
+
+> handrail-agent-sdk@0.2.0 test:submit
+> npm run build:reference && npm run build:test-postgres && node --test --test-concurrency=1 --test-reporter=tap tests/submit.test.mjs
+
+
+> handrail-agent-sdk@0.2.0 build:reference
+> tsc -p reference/tsconfig.json
+
+
+> handrail-agent-sdk@0.2.0 build:test-postgres
+> tsc -p tests/tsconfig.postgres.json
+
+TAP version 13
+# Subtest: simultaneous identical submissions on independent backends admit exactly one original job
+ok 1 - simultaneous identical submissions on independent backends admit exactly one original job
+  ---
+  duration_ms: 294.158402
+  type: 'test'
+  ...
+# PostgreSQL fixture admission receipts: [{"jobId":"job-submit-2","originTaskRef":"original-task-submit-1","instructionRevision":7,"state":"queued","eventCursor":1,"replayed":true},{"jobId":"job-submit-2","originTaskRef":"original-task-submit-1","instructionRevision":7,"state":"queued","eventCursor":1,"replayed":false}]
+# Subtest: operation, original instruction/task, account, scope and native/origin changes conflict under an existing reservation
+ok 2 - operation, original instruction/task, account, scope and native/origin changes conflict under an existing reservation
+  ---
+  duration_ms: 247.738076
+  type: 'test'
+  ...
+# Subtest: independent authorized tenant, actor, account and environment namespaces are isolated
+ok 3 - independent authorized tenant, actor, account and environment namespaces are isolated
+  ---
+  duration_ms: 348.458641
+  type: 'test'
+  ...
+# Subtest: forged identity/grant claims and unsupported decoded data never reach authorization or persistence
+ok 4 - forged identity/grant claims and unsupported decoded data never reach authorization or persistence
+  ---
+  duration_ms: 221.649437
+  type: 'test'
+  ...
+# Subtest: every retry and inspect require current authority; errors do not leak host causes
+ok 5 - every retry and inspect require current authority; errors do not leak host causes
+  ---
+  duration_ms: 269.167208
+  type: 'test'
+  ...
+# Subtest: canonical object ordering retries and lost responses recover original identity after client close
+ok 6 - canonical object ordering retries and lost responses recover original identity after client close
+  ---
+  duration_ms: 280.330759
+  type: 'test'
+  ...
+# Recovered original synthetic job/task after connection close: job-submit-1/original-task-submit-1; no cancellation or extra event.
+# Subtest: late reservation failure rolls back job/event/checkpoint and permits a clean retry
+ok 7 - late reservation failure rolls back job/event/checkpoint and permits a clean retry
+  ---
+  duration_ms: 262.046283
+  type: 'test'
+  ...
+# Subtest: inspection exposes only allowlisted durable state and cursor; replay stays the initial receipt
+ok 8 - inspection exposes only allowlisted durable state and cursor; replay stays the initial receipt
+  ---
+  duration_ms: 267.447938
+  type: 'test'
+  ...
+# Subtest: submit and inspect detach caller input before asynchronous authorization
+ok 9 - submit and inspect detach caller input before asynchronous authorization
+  ---
+  duration_ms: 231.56019
+  type: 'test'
+  ...
+# Subtest: admission migration and cleanup preserve an independent schema sentinel
+ok 10 - admission migration and cleanup preserve an independent schema sentinel
+  ---
+  duration_ms: 253.074979
+  type: 'test'
+  ...
+# Subtest: authority revoked or changed during persistence suppresses output without undoing admission
+ok 11 - authority revoked or changed during persistence suppresses output without undoing admission
+  ---
+  duration_ms: 232.092003
+  type: 'test'
+  ...
+1..11
+# tests 11
+# suites 0
+# pass 11
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 3610.627421
+
+> handrail-agent-sdk@0.2.0 test:journal
+> npm run build && npm run build:reference && npm run build:test-postgres && node --test --test-concurrency=1 --test-reporter=tap tests/job-journal.test.mjs
+
+
+> handrail-agent-sdk@0.2.0 build
+> tsc -p tsconfig.json && node scripts/build-postgres-assets.mjs
+
+
+> handrail-agent-sdk@0.2.0 build:reference
+> tsc -p reference/tsconfig.json
+
+
+> handrail-agent-sdk@0.2.0 build:test-postgres
+> tsc -p tests/tsconfig.postgres.json
+
+TAP version 13
+# Subtest: migration isolation, rerun and owned cleanup preserve independent sentinel
+ok 1 - migration isolation, rerun and owned cleanup preserve independent sentinel
+  ---
+  duration_ms: 345.361342
+  type: 'test'
+  ...
+# Real SQL: generated migration and ledger applied twice; restricted search_path; owned tables/sequence/schema removed; independent sentinel survived.
+# Subtest: independent concurrent appenders cannot claim one revision
+ok 2 - independent concurrent appenders cannot claim one revision
+  ---
+  duration_ms: 259.075224
+  type: 'test'
+  ...
+# Real SQL: distinct backends raced at revision 2; one committed, one conflicted; exactly two canonical events.
+# Subtest: concurrent identical admission and delivery retries return original canonical fact
+ok 3 - concurrent identical admission and delivery retries return original canonical fact
+  ---
+  duration_ms: 262.986897
+  type: 'test'
+  ...
+# Subtest: changed canonical content conflicts without persisting a new delivery
+ok 4 - changed canonical content conflicts without persisting a new delivery
+  ---
+  duration_ms: 294.983193
+  type: 'test'
+  ...
+# Subtest: fresh connections recover missing and stale checkpoints from validated events
+ok 5 - fresh connections recover missing and stale checkpoints from validated events
+  ---
+  duration_ms: 340.971218
+  type: 'test'
+  ...
+# Real SQL: original connection closed; new backends reconstructed exact revision 3 after missing and stale checkpoints.
+# Subtest: ahead, incompatible and fabricated checkpoints fail closed on reads and writes
+ok 6 - ahead, incompatible and fabricated checkpoints fail closed on reads and writes
+  ---
+  duration_ms: 336.330008
+  type: 'test'
+  ...
+# Subtest: all host, original, native and origin identity leaves are fenced
+ok 7 - all host, original, native and origin identity leaves are fenced
+  ---
+  duration_ms: 377.816738
+  type: 'test'
+  ...
+# Subtest: invalid transitions, revisions and unsupported raw fields leave all tables unchanged
+ok 8 - invalid transitions, revisions and unsupported raw fields leave all tables unchanged
+  ---
+  duration_ms: 248.437191
+  type: 'test'
+  ...
+# Subtest: cancellation remains terminal and unknown effects cannot disappear or authorize success
+ok 9 - cancellation remains terminal and unknown effects cannot disappear or authorize success
+  ---
+  duration_ms: 271.155909
+  type: 'test'
+  ...
+# Subtest: late SQL failure rolls back event, head, delivery and checkpoint with safe errors
+ok 10 - late SQL failure rolls back event, head, delivery and checkpoint with safe errors
+  ---
+  duration_ms: 251.100531
+  type: 'test'
+  ...
+# Real SQL: checkpoint constraint failed after event/head/delivery writes; independent observer verified complete rollback; subsequent append succeeded.
+# Subtest: database constraints reject duplicate event keys and unsafe integer revisions
+ok 11 - database constraints reject duplicate event keys and unsafe integer revisions
+  ---
+  duration_ms: 241.830378
+  type: 'test'
+  ...
+# Subtest: canonical history is validated even when a current checkpoint claims success
+ok 12 - canonical history is validated even when a current checkpoint claims success
+  ---
+  duration_ms: 279.762591
+  type: 'test'
+  ...
+# Subtest: a failed migration rolls back every generated application table
+ok 13 - a failed migration rolls back every generated application table
+  ---
+  duration_ms: 68.614748
+  type: 'test'
+  ...
+# Real SQL: injected final migration failure rolled back all generated tables and ledger insertion.
+# Subtest: append detaches validated input before awaiting SQL
+ok 14 - append detaches validated input before awaiting SQL
+  ---
+  duration_ms: 220.029816
+  type: 'test'
+  ...
+# Subtest: public bootstrap adopts original reference migration ledger without rewriting durable journal rows
+ok 15 - public bootstrap adopts original reference migration ledger without rewriting durable journal rows
+  ---
+  duration_ms: 310.027613
+  type: 'test'
+  ...
+1..15
+# tests 15
+# suites 0
+# pass 15
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 4679.671088
+
+> handrail-agent-sdk@0.2.0 test:postgres
+> npm run build:test-postgres && node --test --test-concurrency=1 --test-reporter=tap tests/postgres.test.mjs
+
+
+> handrail-agent-sdk@0.2.0 build:test-postgres
+> tsc -p tests/tsconfig.postgres.json
+
+TAP version 13
+# Subtest: PostgreSQL isolates transactions, rolls back, and cleans only its owned schema
+ok 1 - PostgreSQL isolates transactions, rolls back, and cleans only its owned schema
+  ---
+  duration_ms: 91.514164
+  type: 'test'
+  ...
+# Independent backends; uncommitted visibility isolated; commit visible; rollback verified; owned schema removed; sentinel preserved.
+1..1
+# tests 1
+# suites 0
+# pass 1
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 608.824533
+Owned temporary PostgreSQL cluster stopped.

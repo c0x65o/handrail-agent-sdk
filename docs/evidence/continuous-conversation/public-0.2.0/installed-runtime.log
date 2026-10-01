@@ -1,0 +1,546 @@
+Fresh isolated PostgreSQL 15 cluster initialized; dedicated disposable database and non-superuser fixture role; connection values withheld.
+TAP version 13
+# (node:1813) SecurityWarning: The flag --allow-child-process must be used with extreme caution. It could invalidate the permission model.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: unchanged original 85, requested 92 and current 100 catalogs reach the actual Runner model boundary
+    # Subtest: 85 unchanged tools
+    ok 1 - 85 unchanged tools
+      ---
+      duration_ms: 1729.129836
+      type: 'test'
+      ...
+    # Subtest: 92 unchanged tools
+    ok 2 - 92 unchanged tools
+      ---
+      duration_ms: 1342.163647
+      type: 'test'
+      ...
+    # Subtest: 100 unchanged tools
+    ok 3 - 100 unchanged tools
+      ---
+      duration_ms: 1342.870373
+      type: 'test'
+      ...
+    1..3
+ok 1 - unchanged original 85, requested 92 and current 100 catalogs reach the actual Runner model boundary
+  ---
+  duration_ms: 4415.831906
+  type: 'test'
+  ...
+# Subtest: all retained historical 22/26 failure schemas reach Runner unchanged
+    # Subtest: mills-catalog
+    ok 1 - mills-catalog
+      ---
+      duration_ms: 523.247995
+      type: 'test'
+      ...
+    # Subtest: current-main-catalog
+    ok 2 - current-main-catalog
+      ---
+      duration_ms: 526.191558
+      type: 'test'
+      ...
+    1..2
+ok 2 - all retained historical 22/26 failure schemas reach Runner unchanged
+  ---
+  duration_ms: 1050.264466
+  type: 'test'
+  ...
+# Subtest: full catalog read/effects preserve omissions, explicit null and nested defaults; duplicate delivery has one effect per call
+ok 3 - full catalog read/effects preserve omissions, explicit null and nested defaults; duplicate delivery has one effect per call
+  ---
+  duration_ms: 2219.265332
+  type: 'test'
+  ...
+# Subtest: invalid catalog arguments never reach approval, authorized IO or effects
+    # Subtest: calendar_update_event {"eventId":"12345678-1234-4234-8234-123456789abc","expectedVersion":1,"patch":{}}
+    ok 1 - calendar_update_event {"eventId":"12345678-1234-4234-8234-123456789abc","expectedVersion":1,"patch":{}}
+      ---
+      duration_ms: 212.406789
+      type: 'test'
+      ...
+    # Subtest: calendar_update_event {"eventId":"bad-uuid","expectedVersion":1,"patch":{"title":"Changed"}}
+    ok 2 - calendar_update_event {"eventId":"bad-uuid","expectedVersion":1,"patch":{"title":"Changed"}}
+      ---
+      duration_ms: 202.579823
+      type: 'test'
+      ...
+    # Subtest: calendar_update_event {"eventId":"12345678-1234-4234-8234-123456789abc","expectedVersion":"1","patch":{"title":"Changed"}}
+    ok 3 - calendar_update_event {"eventId":"12345678-1234-4234-8234-123456789abc","expectedVersion":"1","patch":{"title":"Changed"}}
+      ---
+      duration_ms: 177.331731
+      type: 'test'
+      ...
+    # Subtest: calendar_update_event {"eventId":"12345678-1234-4234-8234-123456789abc","expectedVersion":1,"patch":{"title":null}}
+    ok 4 - calendar_update_event {"eventId":"12345678-1234-4234-8234-123456789abc","expectedVersion":1,"patch":{"title":null}}
+      ---
+      duration_ms: 190.2023
+      type: 'test'
+      ...
+    # Subtest: calendar_update_event {"eventId":"12345678-1234-4234-8234-123456789abc","expectedVersion":1,"patch":{"title":""}}
+    ok 5 - calendar_update_event {"eventId":"12345678-1234-4234-8234-123456789abc","expectedVersion":1,"patch":{"title":""}}
+      ---
+      duration_ms: 191.671849
+      type: 'test'
+      ...
+    # Subtest: calendar_update_event {"eventId":"12345678-1234-4234-8234-123456789abc","expectedVersion":1,"patch":{"title":"xxxxxxxxxxxx
+    ok 6 - calendar_update_event {"eventId":"12345678-1234-4234-8234-123456789abc","expectedVersion":1,"patch":{"title":"xxxxxxxxxxxx
+      ---
+      duration_ms: 190.319994
+      type: 'test'
+      ...
+    # Subtest: calendar_update_event {"eventId":"12345678-1234-4234-8234-123456789abc","expectedVersion":1,"patch":{"accentHex":"red"}}
+    ok 7 - calendar_update_event {"eventId":"12345678-1234-4234-8234-123456789abc","expectedVersion":1,"patch":{"accentHex":"red"}}
+      ---
+      duration_ms: 214.842557
+      type: 'test'
+      ...
+    # Subtest: calendar_update_event {"eventId":"12345678-1234-4234-8234-123456789abc","expectedVersion":1,"patch":{"startsAt":"tomorrow"
+    ok 8 - calendar_update_event {"eventId":"12345678-1234-4234-8234-123456789abc","expectedVersion":1,"patch":{"startsAt":"tomorrow"
+      ---
+      duration_ms: 182.091462
+      type: 'test'
+      ...
+    # Subtest: calendar_update_event {"eventId":"12345678-1234-4234-8234-123456789abc","expectedVersion":1,"patch":{"recurrence":{"freque
+    ok 9 - calendar_update_event {"eventId":"12345678-1234-4234-8234-123456789abc","expectedVersion":1,"patch":{"recurrence":{"freque
+      ---
+      duration_ms: 197.920878
+      type: 'test'
+      ...
+    # Subtest: calendar_update_event {"eventId":"12345678-1234-4234-8234-123456789abc","expectedVersion":1,"patch":{"recurrence":{"freque
+    ok 10 - calendar_update_event {"eventId":"12345678-1234-4234-8234-123456789abc","expectedVersion":1,"patch":{"recurrence":{"freque
+      ---
+      duration_ms: 175.228056
+      type: 'test'
+      ...
+    # Subtest: calendar_update_event {"eventId":"12345678-1234-4234-8234-123456789abc","expectedVersion":1,"patch":{"unknown":true}}
+    ok 11 - calendar_update_event {"eventId":"12345678-1234-4234-8234-123456789abc","expectedVersion":1,"patch":{"unknown":true}}
+      ---
+      duration_ms: 197.062173
+      type: 'test'
+      ...
+    # Subtest: assistance_create_reminder {"title":"Synthetic fixture only","localDate":"2027-02-29","localTime":"17:00","timeZone":"America/C
+    ok 12 - assistance_create_reminder {"title":"Synthetic fixture only","localDate":"2027-02-29","localTime":"17:00","timeZone":"America/C
+      ---
+      duration_ms: 207.918003
+      type: 'test'
+      ...
+    # Subtest: assistance_create_reminder {"title":"Synthetic fixture only","localDate":"2028-02-29","localTime":"25:00","timeZone":"America/C
+    ok 13 - assistance_create_reminder {"title":"Synthetic fixture only","localDate":"2028-02-29","localTime":"25:00","timeZone":"America/C
+      ---
+      duration_ms: 185.299396
+      type: 'test'
+      ...
+    # Subtest: travel_update_trip {"id":"12345678-1234-4234-8234-123456789abc","expectedVersion":1,"patch":{"travelers":["synthetic","
+    ok 14 - travel_update_trip {"id":"12345678-1234-4234-8234-123456789abc","expectedVersion":1,"patch":{"travelers":["synthetic","
+      ---
+      duration_ms: 189.078346
+      type: 'test'
+      ...
+    # Subtest: travel_update_trip {"id":"12345678-1234-4234-8234-123456789abc","expectedVersion":1,"patch":{"travelers":[null]}}
+    ok 15 - travel_update_trip {"id":"12345678-1234-4234-8234-123456789abc","expectedVersion":1,"patch":{"travelers":[null]}}
+      ---
+      duration_ms: 183.251286
+      type: 'test'
+      ...
+    # Subtest: travel_update_trip {"id":"12345678-1234-4234-8234-123456789abc","expectedVersion":0,"patch":{"destination":null}}
+    ok 16 - travel_update_trip {"id":"12345678-1234-4234-8234-123456789abc","expectedVersion":0,"patch":{"destination":null}}
+      ---
+      duration_ms: 182.727497
+      type: 'test'
+      ...
+    # Subtest: travel_update_trip {"id":"12345678-1234-9234-8234-123456789abc","expectedVersion":1,"patch":{"destination":null}}
+    ok 17 - travel_update_trip {"id":"12345678-1234-9234-8234-123456789abc","expectedVersion":1,"patch":{"destination":null}}
+      ---
+      duration_ms: 180.049826
+      type: 'test'
+      ...
+    # Subtest: assistance_list null
+    ok 18 - assistance_list null
+      ---
+      duration_ms: 168.60672
+      type: 'test'
+      ...
+    # Subtest: assistance_list []
+    ok 19 - assistance_list []
+      ---
+      duration_ms: 169.175447
+      type: 'test'
+      ...
+    # Subtest: assistance_list {"unexpected":1}
+    ok 20 - assistance_list {"unexpected":1}
+      ---
+      duration_ms: 167.617444
+      type: 'test'
+      ...
+    # Subtest: malformed JSON
+    ok 21 - malformed JSON
+      ---
+      duration_ms: 179.844772
+      type: 'test'
+      ...
+    1..21
+ok 4 - invalid catalog arguments never reach approval, authorized IO or effects
+  ---
+  duration_ms: 3949.581872
+  type: 'test'
+  ...
+# Subtest: original business refinement remains authoritative before effects
+ok 5 - original business refinement remains authoritative before effects
+  ---
+  duration_ms: 1322.0353
+  type: 'test'
+  ...
+# Subtest: catalog approval recovery revalidates and retains null/omission and effect identity
+ok 6 - catalog approval recovery revalidates and retains null/omission and effect identity
+  ---
+  duration_ms: 1433.012417
+  type: 'test'
+  ...
+# Subtest: catalog rejection, durable cancellation and scope revocation prevent effects
+    # Subtest: reject
+    ok 1 - reject
+      ---
+      duration_ms: 1421.808856
+      type: 'test'
+      ...
+    # Subtest: cancel
+    ok 2 - cancel
+      ---
+      duration_ms: 1299.703486
+      type: 'test'
+      ...
+    # Subtest: scope
+    ok 3 - scope
+      ---
+      duration_ms: 1306.637068
+      type: 'test'
+      ...
+    1..3
+ok 7 - catalog rejection, durable cancellation and scope revocation prevent effects
+  ---
+  duration_ms: 4029.037399
+  type: 'test'
+  ...
+# Subtest: catalog effect result recovery and repeated model call ID do not duplicate dispatch
+ok 8 - catalog effect result recovery and repeated model call ID do not duplicate dispatch
+  ---
+  duration_ms: 1602.542991
+  type: 'test'
+  ...
+# Subtest: reused catalog call ID with different arguments cannot dispatch another effect
+ok 9 - reused catalog call ID with different arguments cannot dispatch another effect
+  ---
+  duration_ms: 1584.509402
+  type: 'test'
+  ...
+# Subtest: non-Mills laboratory schema executes refs, allOf, oneOf, arrays and open patterned metadata without rewriting
+ok 10 - non-Mills laboratory schema executes refs, allOf, oneOf, arrays and open patterned metadata without rewriting
+  ---
+  duration_ms: 264.13833
+  type: 'test'
+  ...
+# Subtest: invalid non-Mills allOf/oneOf input never reaches the effect boundary
+ok 11 - invalid non-Mills allOf/oneOf input never reaches the effect boundary
+  ---
+  duration_ms: 191.963282
+  type: 'test'
+  ...
+# Subtest: unsupported schema semantics fail construction; schema and input cannot be silently mutated
+ok 12 - unsupported schema semantics fail construction; schema and input cannot be silently mutated
+  ---
+  duration_ms: 113.933473
+  type: 'test'
+  ...
+# Subtest: gateway transport uses actual Runner, durable output and reconnect cursor; disconnect does not Stop
+ok 13 - gateway transport uses actual Runner, durable output and reconnect cursor; disconnect does not Stop
+  ---
+  duration_ms: 560.984365
+  type: 'test'
+  ...
+# Subtest: transport explicit Stop is durable; changed identity cannot reconnect or cancel
+ok 14 - transport explicit Stop is durable; changed identity cannot reconnect or cancel
+  ---
+  duration_ms: 235.546354
+  type: 'test'
+  ...
+# Subtest: approval wait remains durable on reconnect; only verified answer can resume execution
+ok 15 - approval wait remains durable on reconnect; only verified answer can resume execution
+  ---
+  duration_ms: 333.354627
+  type: 'test'
+  ...
+# Subtest: standard reader emits validated native protocol frames and stable replay identities
+ok 16 - standard reader emits validated native protocol frames and stable replay identities
+  ---
+  duration_ms: 536.060185
+  type: 'test'
+  ...
+# Subtest: application catalog adapter preserves validation, read/mutation classification and stable native tool identity
+ok 17 - application catalog adapter preserves validation, read/mutation classification and stable native tool identity
+  ---
+  duration_ms: 28.18358
+  type: 'test'
+  ...
+# Subtest: existing assistant durable wrapper consumes the Agent transport with native protocol checkpoints
+ok 18 - existing assistant durable wrapper consumes the Agent transport with native protocol checkpoints
+  ---
+  duration_ms: 478.368952
+  type: 'test'
+  ...
+# Subtest: application JSON-schema catalog executes read/effect/read through Runner and checkpoint reader
+ok 19 - application JSON-schema catalog executes read/effect/read through Runner and checkpoint reader
+  ---
+  duration_ms: 532.989911
+  type: 'test'
+  ...
+# Subtest: installed assistance and notification delivery share public durable effects with no duplicate send
+ok 20 - installed assistance and notification delivery share public durable effects with no duplicate send
+  ---
+  duration_ms: 243.138678
+  type: 'test'
+  ...
+# (node:1927) SecurityWarning: The flag --allow-child-process must be used with extreme caution. It could invalidate the permission model.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: canonical long conversation survives bounded context, upstream Runner session and compaction with exact pinned roles
+ok 21 - canonical long conversation survives bounded context, upstream Runner session and compaction with exact pinned roles
+  ---
+  duration_ms: 709.345362
+  type: 'test'
+  ...
+# Subtest: memory revise/forget, stale reads, scope isolation and authorization are durable
+ok 22 - memory revise/forget, stale reads, scope isolation and authorization are durable
+  ---
+  duration_ms: 129.260237
+  type: 'test'
+  ...
+# Subtest: personal-assistant: same durable composition replies while delegated native work survives fresh-process callback/replay
+ok 23 - personal-assistant: same durable composition replies while delegated native work survives fresh-process callback/replay
+  ---
+  duration_ms: 2494.236777
+  type: 'test'
+  ...
+# Subtest: industrial-inspection: same durable composition replies while delegated native work survives fresh-process callback/replay
+ok 24 - industrial-inspection: same durable composition replies while delegated native work survives fresh-process callback/replay
+  ---
+  duration_ms: 2305.232235
+  type: 'test'
+  ...
+# Subtest: delegated executor preserves native receipt and uncertainty; correction and revoked callback cannot deliver
+ok 25 - delegated executor preserves native receipt and uncertainty; correction and revoked callback cannot deliver
+  ---
+  duration_ms: 115.798457
+  type: 'test'
+  ...
+# Subtest: large RunState is paged under explicit quota; actual Runner and encrypted reload exceed 64KiB without raising envelope bound
+ok 26 - large RunState is paged under explicit quota; actual Runner and encrypted reload exceed 64KiB without raising envelope bound
+  ---
+  duration_ms: 1296.546838
+  type: 'test'
+  ...
+# Subtest: real Runner delegates through existing durable effect ledger and returns without awaiting native work
+ok 27 - real Runner delegates through existing durable effect ledger and returns without awaiting native work
+  ---
+  duration_ms: 1345.671502
+  type: 'test'
+  ...
+# Subtest: compaction racing a correction cannot replace newer context; overfull pins fail explicitly
+ok 28 - compaction racing a correction cannot replace newer context; overfull pins fail explicitly
+  ---
+  duration_ms: 108.788679
+  type: 'test'
+  ...
+# Subtest: reply committed before job checkpoint failure recovers its original receipt without a second canonical reply
+ok 29 - reply committed before job checkpoint failure recovers its original receipt without a second canonical reply
+  ---
+  duration_ms: 251.550588
+  type: 'test'
+  ...
+# Subtest: pause/wait observations keep work; concurrent terminal callbacks deliver at most once and cancelled work cannot reopen
+ok 30 - pause/wait observations keep work; concurrent terminal callbacks deliver at most once and cancelled work cannot reopen
+  ---
+  duration_ms: 114.99345
+  type: 'test'
+  ...
+# (node:2027) SecurityWarning: The flag --allow-child-process must be used with extreme caution. It could invalidate the permission model.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: host structured history survives an approval checkpoint without flattening roles or image references
+ok 31 - host structured history survives an approval checkpoint without flattening roles or image references
+  ---
+  duration_ms: 582.186384
+  type: 'test'
+  ...
+# Subtest: verified effects expose bounded host results and a failed result read never repeats the effect
+ok 32 - verified effects expose bounded host results and a failed result read never repeats the effect
+  ---
+  duration_ms: 512.431329
+  type: 'test'
+  ...
+# Subtest: unknown effects cannot release a domain result
+ok 33 - unknown effects cannot release a domain result
+  ---
+  duration_ms: 299.069709
+  type: 'test'
+  ...
+# Subtest: real Runner executes inventory -> protected reservation -> verification; duplicate delivery has one effect
+ok 34 - real Runner executes inventory -> protected reservation -> verification; duplicate delivery has one effect
+  ---
+  duration_ms: 350.912198
+  type: 'test'
+  ...
+# Subtest: different research task recovers from deliberate read-tool failure and computes a quote
+ok 35 - different research task recovers from deliberate read-tool failure and computes a quote
+  ---
+  duration_ms: 472.033102
+  type: 'test'
+  ...
+# Subtest: durable approval, answer and new input resume same job in a separate process
+ok 36 - durable approval, answer and new input resume same job in a separate process
+  ---
+  duration_ms: 1667.333111
+  type: 'test'
+  ...
+# Subtest: SIGKILL after provider mutation reconciles across processes without duplicate execution
+ok 37 - SIGKILL after provider mutation reconciles across processes without duplicate execution
+  ---
+  duration_ms: 4087.129283
+  type: 'test'
+  ...
+# Subtest: unknown external effect waits for reconciliation; schedule wake cannot authorize replay
+ok 38 - unknown external effect waits for reconciliation; schedule wake cannot authorize replay
+  ---
+  duration_ms: 505.64907
+  type: 'test'
+  ...
+# Subtest: tenant isolation, revoked and changed grants deny private state and execution
+ok 39 - tenant isolation, revoked and changed grants deny private state and execution
+  ---
+  duration_ms: 265.948552
+  type: 'test'
+  ...
+# Subtest: provider failure retains checkpoint and retry recovers without repeating completed tools
+ok 40 - provider failure retains checkpoint and retry recovers without repeating completed tools
+  ---
+  duration_ms: 436.610385
+  type: 'test'
+  ...
+# Subtest: process stop resumes checkpoint; explicit durable Stop fences late output and remains terminal
+ok 41 - process stop resumes checkpoint; explicit durable Stop fences late output and remains terminal
+  ---
+  duration_ms: 257.890371
+  type: 'test'
+  ...
+# Subtest: process shutdown aborts model transport and fresh runtime recovers same job
+ok 42 - process shutdown aborts model transport and fresh runtime recovers same job
+  ---
+  duration_ms: 471.881787
+  type: 'test'
+  ...
+# Subtest: invalid tool schema cannot mutate and repeated provider failure is bounded
+ok 43 - invalid tool schema cannot mutate and repeated provider failure is bounded
+  ---
+  duration_ms: 225.937721
+  type: 'test'
+  ...
+# Subtest: lost lease during a pending read prevents tool result and terminal writes
+ok 44 - lost lease during a pending read prevents tool result and terminal writes
+  ---
+  duration_ms: 401.481768
+  type: 'test'
+  ...
+# Subtest: model context bound fails durably and oversized private state is not committed
+ok 45 - model context bound fails durably and oversized private state is not committed
+  ---
+  duration_ms: 171.623927
+  type: 'test'
+  ...
+# Subtest: concurrent delivery is lease fenced; a second worker cannot execute tools
+ok 46 - concurrent delivery is lease fenced; a second worker cannot execute tools
+  ---
+  duration_ms: 392.752857
+  type: 'test'
+  ...
+# Subtest: revocation after model approval is checked immediately before mutation dispatch
+ok 47 - revocation after model approval is checked immediately before mutation dispatch
+  ---
+  duration_ms: 207.150049
+  type: 'test'
+  ...
+# Subtest: unknown first effect stops other tools emitted in the same model response
+ok 48 - unknown first effect stops other tools emitted in the same model response
+  ---
+  duration_ms: 200.559751
+  type: 'test'
+  ...
+# Subtest: official OpenAI Responses provider/client drive Runner through simulated HTTP SSE transport
+ok 49 - official OpenAI Responses provider/client drive Runner through simulated HTTP SSE transport
+  ---
+  duration_ms: 411.437007
+  type: 'test'
+  ...
+# Subtest: current catalog hides unauthorized tools and opaque attachments resolve only at model boundary
+ok 50 - current catalog hides unauthorized tools and opaque attachments resolve only at model boundary
+  ---
+  duration_ms: 191.040917
+  type: 'test'
+  ...
+# Subtest: concurrent tenant scopes share a namespace without sharing state or effects; stale correction is fenced
+ok 51 - concurrent tenant scopes share a namespace without sharing state or effects; stale correction is fenced
+  ---
+  duration_ms: 522.971898
+  type: 'test'
+  ...
+# Subtest: native answer retries are identical, changed delivery conflicts, and revoked actor cannot answer
+ok 52 - native answer retries are identical, changed delivery conflicts, and revoked actor cannot answer
+  ---
+  duration_ms: 542.612731
+  type: 'test'
+  ...
+# Subtest: injected official provider rejects temperature; default omits it
+ok 53 - injected official provider rejects temperature; default omits it
+  ---
+  duration_ms: 187.428661
+  type: 'test'
+  ...
+# Subtest: injected official provider accepts configured sampling
+ok 54 - injected official provider accepts configured sampling
+  ---
+  duration_ms: 184.931714
+  type: 'test'
+  ...
+# Subtest: public migrations serialize, are repeatable, preserve uncertain identities, and reject drift
+ok 55 - public migrations serialize, are repeatable, preserve uncertain identities, and reject drift
+  ---
+  duration_ms: 292.563754
+  type: 'test'
+  ...
+# Subtest: private state requires host key handles; rotation preserves old decryption and rejects substitution
+ok 56 - private state requires host key handles; rotation preserves old decryption and rejects substitution
+  ---
+  duration_ms: 336.024344
+  type: 'test'
+  ...
+# Subtest: bootstrap failure rolls back new tables and preserves an unknown existing table
+ok 57 - bootstrap failure rolls back new tables and preserves an unknown existing table
+  ---
+  duration_ms: 44.869153
+  type: 'test'
+  ...
+# Subtest: installed fixture actively rejects reference-build module fallback and repository reads
+ok 58 - installed fixture actively rejects reference-build module fallback and repository reads
+  ---
+  duration_ms: 0.936626
+  type: 'test'
+  ...
+1..58
+# tests 87
+# suites 0
+# pass 87
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 51401.293578
+Owned temporary PostgreSQL cluster stopped.
+(node:1807) SecurityWarning: The flag --allow-child-process must be used with extreme caution. It could invalidate the permission model.
+(Use `node --trace-warnings ...` to show where the warning was created)

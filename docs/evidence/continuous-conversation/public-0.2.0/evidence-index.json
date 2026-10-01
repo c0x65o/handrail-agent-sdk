@@ -1,0 +1,106 @@
+{
+  "version": 1,
+  "sha": "8f72cef9d459567acbc54f62e1175081617ab20d",
+  "files": [
+    {
+      "path": "README.md",
+      "bytes": 6066,
+      "sha256": "b5a5ae1f1680853860ef07ddd529a8f6e3968d4ae927603ad3007b2243760f6c"
+    },
+    {
+      "path": "build-comparison.json",
+      "bytes": 29395,
+      "sha256": "68aa86d23cbb7177ac81b99fc94b6d5f88af3098405e1b5e04be9314bdb645ad"
+    },
+    {
+      "path": "bundler-explicit-provider/install.log",
+      "bytes": 16322,
+      "sha256": "659125d52f27cb9756c7a04e3c5cca13ecf42d2fc99e3f3c6257a23e8000ceb9"
+    },
+    {
+      "path": "bundler-explicit-provider/package-lock.json",
+      "bytes": 26401,
+      "sha256": "00c3561f8a435c0e297e5429a4ae68fbcb088481b03380d5b1252ba38e36d45f"
+    },
+    {
+      "path": "bundler-explicit-provider/package.json",
+      "bytes": 581,
+      "sha256": "a519cd83f355cb8038c453b1644d45ac02b68ef0051deca2e0af2a453f0b9266"
+    },
+    {
+      "path": "bundler-explicit-provider/reinstall.log",
+      "bytes": 11444,
+      "sha256": "95b8232b3ac1fae4aae9cb6de791cb99205b0e482aa734779a64207a12e33720"
+    },
+    {
+      "path": "bundler-explicit-provider/typecheck.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "consumer-typecheck.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "installed-profiles.json",
+      "bytes": 4695,
+      "sha256": "354f019711b8c4675f4264e0eb3f88fab8d9b6aa1e76f88fb435c6e3e5575229"
+    },
+    {
+      "path": "installed-runtime.log",
+      "bytes": 22993,
+      "sha256": "62e88bfd1b186d6a0cb3f6105814fc1b86d815126bfceafcc4dd6ecad8b3a6e4"
+    },
+    {
+      "path": "node-next/install.log",
+      "bytes": 16233,
+      "sha256": "313a0c23b16f84ab6bbf510ee3ec24397ede543e5b9aaccfca05d32b3e76eed0"
+    },
+    {
+      "path": "node-next/package-lock.json",
+      "bytes": 26401,
+      "sha256": "b4d49b8813ae7d4f66d8d3bfc99a859113d42aa37f00e13d41585ccd13f61e1a"
+    },
+    {
+      "path": "node-next/package.json",
+      "bytes": 581,
+      "sha256": "57b2eb1f802e40f9bac8b142650a6aea520cd2c71ac4e858119b365b5a8e0adb"
+    },
+    {
+      "path": "node-next/reinstall.log",
+      "bytes": 11442,
+      "sha256": "1a10030c669f695b24fd5e526d7f642b799b96ae8d1217b3df5398311853102b"
+    },
+    {
+      "path": "node-next/typecheck.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "npm-test.log",
+      "bytes": 142004,
+      "sha256": "f997d209b41bce20e6c5c77fae088a3132bc1a0e33f34ac85872d217cc938b2b"
+    },
+    {
+      "path": "postgres-all.log",
+      "bytes": 99514,
+      "sha256": "191c387b952f6b5254f7142a3395b04062653c7620eb94c30c4ddc3c2a742699"
+    },
+    {
+      "path": "qualification.log",
+      "bytes": 26143,
+      "sha256": "298dcb666637f72ba594378206c5a1f3e39f08e1d1ae1cf114cf40fe8912b369"
+    },
+    {
+      "path": "source-comparison.json",
+      "bytes": 11924,
+      "sha256": "6a14c93c1fd5f48aaf1799c9ef744c2de42bf4a8329e9bf9bddefed22c5cd8ee"
+    },
+    {
+      "path": "validation-summary.json",
+      "bytes": 657,
+      "sha256": "a657e44d9b133912391937efceca3717e69bf8df0b17b0532597c37ddc5dfa3a"
+    }
+  ]
+}

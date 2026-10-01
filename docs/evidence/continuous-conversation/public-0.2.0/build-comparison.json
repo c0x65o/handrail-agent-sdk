@@ -1,0 +1,665 @@
+{
+  "sha": "8f72cef9d459567acbc54f62e1175081617ab20d",
+  "files": [
+    {
+      "path": "dist/index.d.ts",
+      "sha256": "ef9242941d31db80ec4fb97a6466c438b1fb644ba16afe18e4c1ccf8512e1fc0",
+      "publicInstallSha256": "ef9242941d31db80ec4fb97a6466c438b1fb644ba16afe18e4c1ccf8512e1fc0",
+      "match": true
+    },
+    {
+      "path": "dist/index.js",
+      "sha256": "ef9242941d31db80ec4fb97a6466c438b1fb644ba16afe18e4c1ccf8512e1fc0",
+      "publicInstallSha256": "ef9242941d31db80ec4fb97a6466c438b1fb644ba16afe18e4c1ccf8512e1fc0",
+      "match": true
+    },
+    {
+      "path": "dist/server/agent-runtime.d.ts",
+      "sha256": "3b3e3366d552fc245aa0f3301a21d073511dca62e8b2d76dea7ccc140a6f9776",
+      "publicInstallSha256": "3b3e3366d552fc245aa0f3301a21d073511dca62e8b2d76dea7ccc140a6f9776",
+      "match": true
+    },
+    {
+      "path": "dist/server/agent-runtime.js",
+      "sha256": "a35c7220229eefeae559ca91ab0d06faa07088234c737fc26f6242fded9a004f",
+      "publicInstallSha256": "a35c7220229eefeae559ca91ab0d06faa07088234c737fc26f6242fded9a004f",
+      "match": true
+    },
+    {
+      "path": "dist/server/agent-state-binding.d.ts",
+      "sha256": "e9654fdb0a59f65cfbfbd629b82c5334726f8a04213238af9ad544bd5971fb18",
+      "publicInstallSha256": "e9654fdb0a59f65cfbfbd629b82c5334726f8a04213238af9ad544bd5971fb18",
+      "match": true
+    },
+    {
+      "path": "dist/server/agent-state-binding.js",
+      "sha256": "6b78e4f494c6e25171139c1928d53caf6ba10a1a3599431017cb4bacafbf118b",
+      "publicInstallSha256": "6b78e4f494c6e25171139c1928d53caf6ba10a1a3599431017cb4bacafbf118b",
+      "match": true
+    },
+    {
+      "path": "dist/server/agent-tool-schema.d.ts",
+      "sha256": "73f291df72d22f97c5cf421375c3d348d97e5c691609e59465b732f82388e51d",
+      "publicInstallSha256": "73f291df72d22f97c5cf421375c3d348d97e5c691609e59465b732f82388e51d",
+      "match": true
+    },
+    {
+      "path": "dist/server/agent-tool-schema.js",
+      "sha256": "169166cb63e6771fb79851cb97a6fcf97308ef6f81d97c7de66e0fa0eb594674",
+      "publicInstallSha256": "169166cb63e6771fb79851cb97a6fcf97308ef6f81d97c7de66e0fa0eb594674",
+      "match": true
+    },
+    {
+      "path": "dist/server/agent-transport.d.ts",
+      "sha256": "e3375ec04d7ac7b160145013f18ee94a0617831a55cf1d5ed181aca355afa036",
+      "publicInstallSha256": "e3375ec04d7ac7b160145013f18ee94a0617831a55cf1d5ed181aca355afa036",
+      "match": true
+    },
+    {
+      "path": "dist/server/agent-transport.js",
+      "sha256": "a16dfd0b41be9c9f971587a497abfe67b68db3f485e75ef571d26b15ae0c5a81",
+      "publicInstallSha256": "a16dfd0b41be9c9f971587a497abfe67b68db3f485e75ef571d26b15ae0c5a81",
+      "match": true
+    },
+    {
+      "path": "dist/server/answer.d.ts",
+      "sha256": "0a46a3084b08cbbcfe1d2a844a0f94bbefe4a76126e811c558e1e2d82c5d3703",
+      "publicInstallSha256": "0a46a3084b08cbbcfe1d2a844a0f94bbefe4a76126e811c558e1e2d82c5d3703",
+      "match": true
+    },
+    {
+      "path": "dist/server/answer.js",
+      "sha256": "25c7bf8302211cc1d3d085e35afb49ffa3263ee6588cf78cff11d685b5b2777b",
+      "publicInstallSha256": "25c7bf8302211cc1d3d085e35afb49ffa3263ee6588cf78cff11d685b5b2777b",
+      "match": true
+    },
+    {
+      "path": "dist/server/application-tools.d.ts",
+      "sha256": "523b6c15bd2f7914fac6257feef8a254b62937ade581511b60d17030fbb1d663",
+      "publicInstallSha256": "523b6c15bd2f7914fac6257feef8a254b62937ade581511b60d17030fbb1d663",
+      "match": true
+    },
+    {
+      "path": "dist/server/application-tools.js",
+      "sha256": "549a90fffba7bf29f49fceabdcf49150e23297e4036533d7c7293ca15507e39e",
+      "publicInstallSha256": "549a90fffba7bf29f49fceabdcf49150e23297e4036533d7c7293ca15507e39e",
+      "match": true
+    },
+    {
+      "path": "dist/server/assistance-notifications.d.ts",
+      "sha256": "f4f55498d9ac5fb348bea5070781d763599a4e8184a89054833cedbc7058a3a5",
+      "publicInstallSha256": "f4f55498d9ac5fb348bea5070781d763599a4e8184a89054833cedbc7058a3a5",
+      "match": true
+    },
+    {
+      "path": "dist/server/assistance-notifications.js",
+      "sha256": "39bebc6b9912a25d2f95929103ab10b2ddc3fd879a4d99764ecbe9c21c1b52d9",
+      "publicInstallSha256": "39bebc6b9912a25d2f95929103ab10b2ddc3fd879a4d99764ecbe9c21c1b52d9",
+      "match": true
+    },
+    {
+      "path": "dist/server/assistance-postgres.d.ts",
+      "sha256": "29e4a274cd7e1734f9abc4c767f703e17d33a76871495198ad5f40552a9f3efb",
+      "publicInstallSha256": "29e4a274cd7e1734f9abc4c767f703e17d33a76871495198ad5f40552a9f3efb",
+      "match": true
+    },
+    {
+      "path": "dist/server/assistance-postgres.js",
+      "sha256": "596840b8451eb0113709ac1fead9236af77b2ed43978f83fa3ed69429286a556",
+      "publicInstallSha256": "596840b8451eb0113709ac1fead9236af77b2ed43978f83fa3ed69429286a556",
+      "match": true
+    },
+    {
+      "path": "dist/server/assistance-time.d.ts",
+      "sha256": "8bbd3392b9f79cd97cc79a2fd627c819aa445edf81fa1b41a9d58b863f109d7c",
+      "publicInstallSha256": "8bbd3392b9f79cd97cc79a2fd627c819aa445edf81fa1b41a9d58b863f109d7c",
+      "match": true
+    },
+    {
+      "path": "dist/server/assistance-time.js",
+      "sha256": "a07989309e0ad968ce44e3941ea0671ab9d7850016a64cc52b701c27c7f68eaa",
+      "publicInstallSha256": "a07989309e0ad968ce44e3941ea0671ab9d7850016a64cc52b701c27c7f68eaa",
+      "match": true
+    },
+    {
+      "path": "dist/server/assistance.d.ts",
+      "sha256": "c78fcea522e438bf88812af0f16ba18968242e5b507e07b29230934d9e50299d",
+      "publicInstallSha256": "c78fcea522e438bf88812af0f16ba18968242e5b507e07b29230934d9e50299d",
+      "match": true
+    },
+    {
+      "path": "dist/server/assistance.js",
+      "sha256": "3e2a19f0232f8e84818827bd0c1245c6aee5b56ae1e5ba469d38fcac4150b88a",
+      "publicInstallSha256": "3e2a19f0232f8e84818827bd0c1245c6aee5b56ae1e5ba469d38fcac4150b88a",
+      "match": true
+    },
+    {
+      "path": "dist/server/browser-policy.d.ts",
+      "sha256": "1345b1540924a5c8a6b572efb353eb4a2b20d3c42ab13f8273497a9e1b62ceed",
+      "publicInstallSha256": "1345b1540924a5c8a6b572efb353eb4a2b20d3c42ab13f8273497a9e1b62ceed",
+      "match": true
+    },
+    {
+      "path": "dist/server/browser-policy.js",
+      "sha256": "8e609bb71c20b858c77f0e9f90bb1319db8477b13f9f965f1a1e18524bf50881",
+      "publicInstallSha256": "8e609bb71c20b858c77f0e9f90bb1319db8477b13f9f965f1a1e18524bf50881",
+      "match": true
+    },
+    {
+      "path": "dist/server/cancel.d.ts",
+      "sha256": "1a201ceb99e218101c4f9de29fa6294ea102d9b6ffe1cf9c6017a2004b93ed3b",
+      "publicInstallSha256": "1a201ceb99e218101c4f9de29fa6294ea102d9b6ffe1cf9c6017a2004b93ed3b",
+      "match": true
+    },
+    {
+      "path": "dist/server/cancel.js",
+      "sha256": "4fa291303bf646c9627e997240b8904946fd878bffcb687be28e57d84191718c",
+      "publicInstallSha256": "4fa291303bf646c9627e997240b8904946fd878bffcb687be28e57d84191718c",
+      "match": true
+    },
+    {
+      "path": "dist/server/connection-store.d.ts",
+      "sha256": "9efeb9ffa951762a8f40931584a710e20a20ef2f1aa23089c35d132ae9ad066c",
+      "publicInstallSha256": "9efeb9ffa951762a8f40931584a710e20a20ef2f1aa23089c35d132ae9ad066c",
+      "match": true
+    },
+    {
+      "path": "dist/server/connection-store.js",
+      "sha256": "8e609bb71c20b858c77f0e9f90bb1319db8477b13f9f965f1a1e18524bf50881",
+      "publicInstallSha256": "8e609bb71c20b858c77f0e9f90bb1319db8477b13f9f965f1a1e18524bf50881",
+      "match": true
+    },
+    {
+      "path": "dist/server/conversation.d.ts",
+      "sha256": "c4eceb11b43d4aa2ddff72b9a1b0146537267a2f421dcb4e152cc8182ce143b6",
+      "publicInstallSha256": "c4eceb11b43d4aa2ddff72b9a1b0146537267a2f421dcb4e152cc8182ce143b6",
+      "match": true
+    },
+    {
+      "path": "dist/server/conversation.js",
+      "sha256": "cb09cf42b7b74addb2f4fa3fa1e6579133fb49355323db80f5f179b72d7efc02",
+      "publicInstallSha256": "cb09cf42b7b74addb2f4fa3fa1e6579133fb49355323db80f5f179b72d7efc02",
+      "match": true
+    },
+    {
+      "path": "dist/server/effects.d.ts",
+      "sha256": "2879c3affe5633d7f46060feba6615931652d1b16f3e5d95e7722d9a9289c5e7",
+      "publicInstallSha256": "2879c3affe5633d7f46060feba6615931652d1b16f3e5d95e7722d9a9289c5e7",
+      "match": true
+    },
+    {
+      "path": "dist/server/effects.js",
+      "sha256": "c5ea0a56d14d2dd097b664d4478dffb5b3c18bcfb7bf4bb43e290ef19046e854",
+      "publicInstallSha256": "c5ea0a56d14d2dd097b664d4478dffb5b3c18bcfb7bf4bb43e290ef19046e854",
+      "match": true
+    },
+    {
+      "path": "dist/server/handrail-feedback.d.ts",
+      "sha256": "64ae3430ad0086d15a5f289dddb2fc9e519ca3580e861f3ed96f915404811188",
+      "publicInstallSha256": "64ae3430ad0086d15a5f289dddb2fc9e519ca3580e861f3ed96f915404811188",
+      "match": true
+    },
+    {
+      "path": "dist/server/handrail-feedback.js",
+      "sha256": "0dc5acc41678abe478eadab702a20fc706a10a780d23a4af55385f2f876175c2",
+      "publicInstallSha256": "0dc5acc41678abe478eadab702a20fc706a10a780d23a4af55385f2f876175c2",
+      "match": true
+    },
+    {
+      "path": "dist/server/index.d.ts",
+      "sha256": "a13251298834eb0cae14d0a2c3bd56f8dceea5ab84391b6e4f8b865e299e7103",
+      "publicInstallSha256": "a13251298834eb0cae14d0a2c3bd56f8dceea5ab84391b6e4f8b865e299e7103",
+      "match": true
+    },
+    {
+      "path": "dist/server/index.js",
+      "sha256": "1661e95bb8331b4a6d9db20fe5de16aa79b273a6d8bce4bfe8b9521d570451d0",
+      "publicInstallSha256": "1661e95bb8331b4a6d9db20fe5de16aa79b273a6d8bce4bfe8b9521d570451d0",
+      "match": true
+    },
+    {
+      "path": "dist/server/job-lease.d.ts",
+      "sha256": "5dcb547afd242c56aa79f0cb5b4cd284a790249c5e7233a3b3938dd1201fd166",
+      "publicInstallSha256": "5dcb547afd242c56aa79f0cb5b4cd284a790249c5e7233a3b3938dd1201fd166",
+      "match": true
+    },
+    {
+      "path": "dist/server/job-lease.js",
+      "sha256": "b56830d8e17560e7bea4b0c87b89dd7587a81cbf952d68fc2b5e919ad9c86805",
+      "publicInstallSha256": "b56830d8e17560e7bea4b0c87b89dd7587a81cbf952d68fc2b5e919ad9c86805",
+      "match": true
+    },
+    {
+      "path": "dist/server/job-store.d.ts",
+      "sha256": "e9d79b45576c27339b467faeb0ecc43970a71a94ebdfbb87224a0304905fadab",
+      "publicInstallSha256": "e9d79b45576c27339b467faeb0ecc43970a71a94ebdfbb87224a0304905fadab",
+      "match": true
+    },
+    {
+      "path": "dist/server/job-store.js",
+      "sha256": "8e609bb71c20b858c77f0e9f90bb1319db8477b13f9f965f1a1e18524bf50881",
+      "publicInstallSha256": "8e609bb71c20b858c77f0e9f90bb1319db8477b13f9f965f1a1e18524bf50881",
+      "match": true
+    },
+    {
+      "path": "dist/server/payment-vault.d.ts",
+      "sha256": "c307aeaed703ebcbe6f0e869b1d50880413503a3cc8aacd95af3bb98251f5a83",
+      "publicInstallSha256": "c307aeaed703ebcbe6f0e869b1d50880413503a3cc8aacd95af3bb98251f5a83",
+      "match": true
+    },
+    {
+      "path": "dist/server/payment-vault.js",
+      "sha256": "ad761c9b847a6aa8779cbe165000b22e492623e7dabcea6163a3e5567de09fc4",
+      "publicInstallSha256": "ad761c9b847a6aa8779cbe165000b22e492623e7dabcea6163a3e5567de09fc4",
+      "match": true
+    },
+    {
+      "path": "dist/server/submit.d.ts",
+      "sha256": "213b0dd78ee0a065a3a4b2493809c3446857efdd1f6aaec5cb02efb4defd8d40",
+      "publicInstallSha256": "213b0dd78ee0a065a3a4b2493809c3446857efdd1f6aaec5cb02efb4defd8d40",
+      "match": true
+    },
+    {
+      "path": "dist/server/submit.js",
+      "sha256": "b5768a0ca8cb8b842bf35972f02a532bd4f678684c63ddc6adb0070265273279",
+      "publicInstallSha256": "b5768a0ca8cb8b842bf35972f02a532bd4f678684c63ddc6adb0070265273279",
+      "match": true
+    },
+    {
+      "path": "dist/server/vault-entry.d.ts",
+      "sha256": "a9232a49f199bbfbd323f98a61732245d5d44bfcc8268cd9d3cbd078ec1a6dc6",
+      "publicInstallSha256": "a9232a49f199bbfbd323f98a61732245d5d44bfcc8268cd9d3cbd078ec1a6dc6",
+      "match": true
+    },
+    {
+      "path": "dist/server/vault-entry.js",
+      "sha256": "2dcc8ac6b7956cc12de0fb87408ef75424b102b0579295124262d2b5b1c702c2",
+      "publicInstallSha256": "2dcc8ac6b7956cc12de0fb87408ef75424b102b0579295124262d2b5b1c702c2",
+      "match": true
+    },
+    {
+      "path": "dist/server/vault-policy.d.ts",
+      "sha256": "9bb0a2bbdc0bf263e00d70eb891000d973e4d9f36d8fd9bb7f7de31ec5318c46",
+      "publicInstallSha256": "9bb0a2bbdc0bf263e00d70eb891000d973e4d9f36d8fd9bb7f7de31ec5318c46",
+      "match": true
+    },
+    {
+      "path": "dist/server/vault-policy.js",
+      "sha256": "8e609bb71c20b858c77f0e9f90bb1319db8477b13f9f965f1a1e18524bf50881",
+      "publicInstallSha256": "8e609bb71c20b858c77f0e9f90bb1319db8477b13f9f965f1a1e18524bf50881",
+      "match": true
+    },
+    {
+      "path": "dist/server/vault-request.d.ts",
+      "sha256": "f73728ba2be41abeb263f146f831469f7f9c7be834fdc2fabfbfba343dca9b3b",
+      "publicInstallSha256": "f73728ba2be41abeb263f146f831469f7f9c7be834fdc2fabfbfba343dca9b3b",
+      "match": true
+    },
+    {
+      "path": "dist/server/vault-request.js",
+      "sha256": "1c5b0f5859df10fb845759800de4373fca9acb77b6fe6e085aef411d14131129",
+      "publicInstallSha256": "1c5b0f5859df10fb845759800de4373fca9acb77b6fe6e085aef411d14131129",
+      "match": true
+    },
+    {
+      "path": "dist/server/vault-use.d.ts",
+      "sha256": "333b3836a2df615e15d82be6802f7a1f1aa50b9b6cf43141636564bd0811d6ab",
+      "publicInstallSha256": "333b3836a2df615e15d82be6802f7a1f1aa50b9b6cf43141636564bd0811d6ab",
+      "match": true
+    },
+    {
+      "path": "dist/server/vault-use.js",
+      "sha256": "fc7223d4fb051cf68e622175bfb3d2ff2e5c5ac6f3694752b487f8ebe8be5d51",
+      "publicInstallSha256": "fc7223d4fb051cf68e622175bfb3d2ff2e5c5ac6f3694752b487f8ebe8be5d51",
+      "match": true
+    },
+    {
+      "path": "dist/server/postgres/agent-state-store.d.ts",
+      "sha256": "f9d27b2626dcf495cfcdcb049c1324c1450099e167c21e416f2a2e4d7a7ee1ee",
+      "publicInstallSha256": "f9d27b2626dcf495cfcdcb049c1324c1450099e167c21e416f2a2e4d7a7ee1ee",
+      "match": true
+    },
+    {
+      "path": "dist/server/postgres/agent-state-store.js",
+      "sha256": "561dad44f519f766ab5965d0baf21b795b27393cde1524089baed0f9cb026426",
+      "publicInstallSha256": "561dad44f519f766ab5965d0baf21b795b27393cde1524089baed0f9cb026426",
+      "match": true
+    },
+    {
+      "path": "dist/server/postgres/conversation-store.d.ts",
+      "sha256": "fcce84896f64beaf3d9e42fb3b592959abd00dea7f03e09729b61d401acd1fd6",
+      "publicInstallSha256": "fcce84896f64beaf3d9e42fb3b592959abd00dea7f03e09729b61d401acd1fd6",
+      "match": true
+    },
+    {
+      "path": "dist/server/postgres/conversation-store.js",
+      "sha256": "51b63defe5ff1612007412e1cde64d18bf0af9bb04b59fb451eb544bd6119ca8",
+      "publicInstallSha256": "51b63defe5ff1612007412e1cde64d18bf0af9bb04b59fb451eb544bd6119ca8",
+      "match": true
+    },
+    {
+      "path": "dist/server/postgres/effect-resolution.d.ts",
+      "sha256": "7eefabed89b436f35f198a894d733a1e945aa554beadfdf1bd6be8f49cd460da",
+      "publicInstallSha256": "7eefabed89b436f35f198a894d733a1e945aa554beadfdf1bd6be8f49cd460da",
+      "match": true
+    },
+    {
+      "path": "dist/server/postgres/effect-resolution.js",
+      "sha256": "477540d74373ffc15a2aa3217502cf5b03324c860b08f19d50caef4f9c7240d9",
+      "publicInstallSha256": "477540d74373ffc15a2aa3217502cf5b03324c860b08f19d50caef4f9c7240d9",
+      "match": true
+    },
+    {
+      "path": "dist/server/postgres/effects.d.ts",
+      "sha256": "95da4f289617c50e67ab3cc648523bf71231b15288594af05db9b99a3f0fc806",
+      "publicInstallSha256": "95da4f289617c50e67ab3cc648523bf71231b15288594af05db9b99a3f0fc806",
+      "match": true
+    },
+    {
+      "path": "dist/server/postgres/effects.js",
+      "sha256": "ee7f358fe52948c1271025adaf0ab3cdc9b76e5bab3e297753a63bff8935813a",
+      "publicInstallSha256": "ee7f358fe52948c1271025adaf0ab3cdc9b76e5bab3e297753a63bff8935813a",
+      "match": true
+    },
+    {
+      "path": "dist/server/postgres/index.d.ts",
+      "sha256": "f9fa09687465d0c1bb9c37b2fbb1c041149b04f99e06032cf50644520ef2ce94",
+      "publicInstallSha256": "f9fa09687465d0c1bb9c37b2fbb1c041149b04f99e06032cf50644520ef2ce94",
+      "match": true
+    },
+    {
+      "path": "dist/server/postgres/index.js",
+      "sha256": "cba27272156fa15013cc2a0fde2ba50547a2ec66d906d0e5a6eae0a5f446aef5",
+      "publicInstallSha256": "cba27272156fa15013cc2a0fde2ba50547a2ec66d906d0e5a6eae0a5f446aef5",
+      "match": true
+    },
+    {
+      "path": "dist/server/postgres/job-admission.d.ts",
+      "sha256": "811117ecaaa4f876e7f6075c42e34678d39c939cfd63e2f9c790c599d9643089",
+      "publicInstallSha256": "811117ecaaa4f876e7f6075c42e34678d39c939cfd63e2f9c790c599d9643089",
+      "match": true
+    },
+    {
+      "path": "dist/server/postgres/job-admission.js",
+      "sha256": "c3852db0254999754e5aa4ea7f83006c454b92d7fd1f7334e5950edf3c045bba",
+      "publicInstallSha256": "c3852db0254999754e5aa4ea7f83006c454b92d7fd1f7334e5950edf3c045bba",
+      "match": true
+    },
+    {
+      "path": "dist/server/postgres/job-answer.d.ts",
+      "sha256": "79e2b8855d06fc5a79ecb20cb4a890bcfa216562effb4d25c5d00086c1a82a96",
+      "publicInstallSha256": "79e2b8855d06fc5a79ecb20cb4a890bcfa216562effb4d25c5d00086c1a82a96",
+      "match": true
+    },
+    {
+      "path": "dist/server/postgres/job-answer.js",
+      "sha256": "295f2d952275f3fb1078a93808f4377b851f8d1d2b4ac761fc01aa9ecaf96191",
+      "publicInstallSha256": "295f2d952275f3fb1078a93808f4377b851f8d1d2b4ac761fc01aa9ecaf96191",
+      "match": true
+    },
+    {
+      "path": "dist/server/postgres/job-cancellation.d.ts",
+      "sha256": "ec1296c7e402b343270fd23c842a18e44d2f93deaf91238d4c7f54ca6c705c5b",
+      "publicInstallSha256": "ec1296c7e402b343270fd23c842a18e44d2f93deaf91238d4c7f54ca6c705c5b",
+      "match": true
+    },
+    {
+      "path": "dist/server/postgres/job-cancellation.js",
+      "sha256": "77dbaa8b91bb20cd906a679de8fa01184e11e6ae808213ff0373fa34ef59ea94",
+      "publicInstallSha256": "77dbaa8b91bb20cd906a679de8fa01184e11e6ae808213ff0373fa34ef59ea94",
+      "match": true
+    },
+    {
+      "path": "dist/server/postgres/job-journal.d.ts",
+      "sha256": "6e442427a5bbc5708c0aeff8e0dcab3c4a7121105874cae5f8a2c533868b8d76",
+      "publicInstallSha256": "6e442427a5bbc5708c0aeff8e0dcab3c4a7121105874cae5f8a2c533868b8d76",
+      "match": true
+    },
+    {
+      "path": "dist/server/postgres/job-journal.js",
+      "sha256": "b22461594dbfa51efe5fcc5fac4f0a31c665780d963863eff3863a092ff3acd4",
+      "publicInstallSha256": "b22461594dbfa51efe5fcc5fac4f0a31c665780d963863eff3863a092ff3acd4",
+      "match": true
+    },
+    {
+      "path": "dist/server/postgres/job-lease-fence.d.ts",
+      "sha256": "741ef01e29f53d2b938075ce064605f0123f2b6db54b466eeeb9849e50c91311",
+      "publicInstallSha256": "741ef01e29f53d2b938075ce064605f0123f2b6db54b466eeeb9849e50c91311",
+      "match": true
+    },
+    {
+      "path": "dist/server/postgres/job-lease-fence.js",
+      "sha256": "07bb32a35e27edf5f19c4c39da752264c4ab197ec29670219bb7aee418aa05e6",
+      "publicInstallSha256": "07bb32a35e27edf5f19c4c39da752264c4ab197ec29670219bb7aee418aa05e6",
+      "match": true
+    },
+    {
+      "path": "dist/server/postgres/job-lease.d.ts",
+      "sha256": "c7b95e4b00057af65b87e02f6657d4c38f5ec164c0a26bf97cf4700cb50401c6",
+      "publicInstallSha256": "c7b95e4b00057af65b87e02f6657d4c38f5ec164c0a26bf97cf4700cb50401c6",
+      "match": true
+    },
+    {
+      "path": "dist/server/postgres/job-lease.js",
+      "sha256": "705542127c3d899c0a074e0ac0233371ec3a3e0c120263e4d63ca7e2ab6ada90",
+      "publicInstallSha256": "705542127c3d899c0a074e0ac0233371ec3a3e0c120263e4d63ca7e2ab6ada90",
+      "match": true
+    },
+    {
+      "path": "dist/server/postgres/keys.d.ts",
+      "sha256": "94a5facb101db9809ead70527a609fa25e8a8771bc23b348970a505b3f79fbb7",
+      "publicInstallSha256": "94a5facb101db9809ead70527a609fa25e8a8771bc23b348970a505b3f79fbb7",
+      "match": true
+    },
+    {
+      "path": "dist/server/postgres/keys.js",
+      "sha256": "8e609bb71c20b858c77f0e9f90bb1319db8477b13f9f965f1a1e18524bf50881",
+      "publicInstallSha256": "8e609bb71c20b858c77f0e9f90bb1319db8477b13f9f965f1a1e18524bf50881",
+      "match": true
+    },
+    {
+      "path": "dist/server/postgres/migrate.d.ts",
+      "sha256": "df8dd674df4dabaa4e86590529ff73ec21325d6208092e5b98d2d14e1f92dbcd",
+      "publicInstallSha256": "df8dd674df4dabaa4e86590529ff73ec21325d6208092e5b98d2d14e1f92dbcd",
+      "match": true
+    },
+    {
+      "path": "dist/server/postgres/migrate.js",
+      "sha256": "55f8a4ea6e8933eefab127bbedce82e2c3a5d1e0626176d6d04d985afc5881eb",
+      "publicInstallSha256": "55f8a4ea6e8933eefab127bbedce82e2c3a5d1e0626176d6d04d985afc5881eb",
+      "match": true
+    },
+    {
+      "path": "dist/server/postgres/paged-envelope.d.ts",
+      "sha256": "b6b41e318a9b18cb2624017217484fdce327c9444d45531076daca5bd1b9a0f0",
+      "publicInstallSha256": "b6b41e318a9b18cb2624017217484fdce327c9444d45531076daca5bd1b9a0f0",
+      "match": true
+    },
+    {
+      "path": "dist/server/postgres/paged-envelope.js",
+      "sha256": "78f20809967c3fe93536fab8e74f535b2480f04d8084d3c415c2e7485dfdd2a6",
+      "publicInstallSha256": "78f20809967c3fe93536fab8e74f535b2480f04d8084d3c415c2e7485dfdd2a6",
+      "match": true
+    },
+    {
+      "path": "dist/server/postgres/private-envelope.d.ts",
+      "sha256": "9cb96d9e842c8f98e6601c7ebf1cbebf9f160f0fd0b7a2a5efd2f80c80098aeb",
+      "publicInstallSha256": "9cb96d9e842c8f98e6601c7ebf1cbebf9f160f0fd0b7a2a5efd2f80c80098aeb",
+      "match": true
+    },
+    {
+      "path": "dist/server/postgres/private-envelope.js",
+      "sha256": "ebed22d654f2d3a86af59f5352ff267d29d6e962659bd82d51a11288d3440299",
+      "publicInstallSha256": "ebed22d654f2d3a86af59f5352ff267d29d6e962659bd82d51a11288d3440299",
+      "match": true
+    },
+    {
+      "path": "dist/server/postgres/migrations/0000_brainy_wraith.sql",
+      "sha256": "a139d522f8a2b32fa937414f917c3a30a5a11db134553cbe0f5556f66bdb5d64",
+      "publicInstallSha256": "a139d522f8a2b32fa937414f917c3a30a5a11db134553cbe0f5556f66bdb5d64",
+      "match": true
+    },
+    {
+      "path": "dist/server/postgres/migrations/0001_round_garia.sql",
+      "sha256": "109d200d5b77287350bb9d90fecf749a3553e1a606cac4f0c5036d3d7b8f4211",
+      "publicInstallSha256": "109d200d5b77287350bb9d90fecf749a3553e1a606cac4f0c5036d3d7b8f4211",
+      "match": true
+    },
+    {
+      "path": "dist/server/postgres/migrations/0002_outgoing_night_thrasher.sql",
+      "sha256": "8f67560970841da2d258cc8d1052e37edc08bb74aee9d4bbd4e773b2a2174de4",
+      "publicInstallSha256": "8f67560970841da2d258cc8d1052e37edc08bb74aee9d4bbd4e773b2a2174de4",
+      "match": true
+    },
+    {
+      "path": "dist/server/postgres/migrations/0003_vault_items.sql",
+      "sha256": "52fbb59a9dac81a9664cf2b584e8d15b549f4fa85eb4cf48d700c5d035e2753f",
+      "publicInstallSha256": "52fbb59a9dac81a9664cf2b584e8d15b549f4fa85eb4cf48d700c5d035e2753f",
+      "match": true
+    },
+    {
+      "path": "dist/server/postgres/migrations/0004_vault_lifecycle.sql",
+      "sha256": "acd25ae34cacaedca2317ed09169c2a78b6316941def8cbb9ac02ce3a93950ae",
+      "publicInstallSha256": "acd25ae34cacaedca2317ed09169c2a78b6316941def8cbb9ac02ce3a93950ae",
+      "match": true
+    },
+    {
+      "path": "dist/server/postgres/migrations/0005_vault_lifecycle_backfill.sql",
+      "sha256": "a61d7c6a6013c02159bf3a0e000f129dd52a1f7bb20b208a370e65d4e6f2c406",
+      "publicInstallSha256": "a61d7c6a6013c02159bf3a0e000f129dd52a1f7bb20b208a370e65d4e6f2c406",
+      "match": true
+    },
+    {
+      "path": "dist/server/postgres/migrations/0006_job_cancellation.sql",
+      "sha256": "a9658974ca38dc2290e10ee312885027ac8612724e0133334000a50926103048",
+      "publicInstallSha256": "a9658974ca38dc2290e10ee312885027ac8612724e0133334000a50926103048",
+      "match": true
+    },
+    {
+      "path": "dist/server/postgres/migrations/0007_job_answers.sql",
+      "sha256": "2be6a4dffee75c8fbb72511bd83b3f5709c1536b40c5dcf36327274ba78aaa24",
+      "publicInstallSha256": "2be6a4dffee75c8fbb72511bd83b3f5709c1536b40c5dcf36327274ba78aaa24",
+      "match": true
+    },
+    {
+      "path": "dist/server/postgres/migrations/0008_job_effects.sql",
+      "sha256": "b0a98bd65793b437a329c6ee3c7c298b485642537df38d8282eb1ec96387f222",
+      "publicInstallSha256": "b0a98bd65793b437a329c6ee3c7c298b485642537df38d8282eb1ec96387f222",
+      "match": true
+    },
+    {
+      "path": "dist/server/postgres/migrations/0009_vault_item_grants.sql",
+      "sha256": "feaee98eae0a82250979726ed23521d3099bb643dc1e229900d0c593ee2fcf2e",
+      "publicInstallSha256": "feaee98eae0a82250979726ed23521d3099bb643dc1e229900d0c593ee2fcf2e",
+      "match": true
+    },
+    {
+      "path": "dist/server/postgres/migrations/0010_vault_entry.sql",
+      "sha256": "ccb607b2e46924cd3498f3afa59cf1a7ba91a6a1c8e22d28935d1a10020b5f6d",
+      "publicInstallSha256": "ccb607b2e46924cd3498f3afa59cf1a7ba91a6a1c8e22d28935d1a10020b5f6d",
+      "match": true
+    },
+    {
+      "path": "dist/server/postgres/migrations/0011_browser_profiles.sql",
+      "sha256": "6b39f03b21560dadbbc6c3411323d62c65b8dfda22b6df1c1a7dcf836ea2a8c5",
+      "publicInstallSha256": "6b39f03b21560dadbbc6c3411323d62c65b8dfda22b6df1c1a7dcf836ea2a8c5",
+      "match": true
+    },
+    {
+      "path": "dist/server/postgres/migrations/0012_connection_store.sql",
+      "sha256": "e39a7d3b94324d54cbd5dc59f722d02e6fefda8c1b61b2546876acccf0f7cf75",
+      "publicInstallSha256": "e39a7d3b94324d54cbd5dc59f722d02e6fefda8c1b61b2546876acccf0f7cf75",
+      "match": true
+    },
+    {
+      "path": "dist/server/postgres/migrations/0013_agent_run_states.sql",
+      "sha256": "59b83959be6d1bf377e19daa1058d0819d5993a8d740d0ef96b116c0e6c23b3b",
+      "publicInstallSha256": "59b83959be6d1bf377e19daa1058d0819d5993a8d740d0ef96b116c0e6c23b3b",
+      "match": true
+    },
+    {
+      "path": "dist/server/postgres/migrations/0014_conversation_records.sql",
+      "sha256": "1244cc9e4f1498a67f11280fc3fd91f68afbabcb3f3eed117b8c3b618646cefb",
+      "publicInstallSha256": "1244cc9e4f1498a67f11280fc3fd91f68afbabcb3f3eed117b8c3b618646cefb",
+      "match": true
+    },
+    {
+      "path": "dist/server/postgres/migrations/meta/_journal.json",
+      "sha256": "aa7eee3ab5f1c401fef62efa1987d905ca0b53cccbf366e48fc7ecc571104956",
+      "publicInstallSha256": "aa7eee3ab5f1c401fef62efa1987d905ca0b53cccbf366e48fc7ecc571104956",
+      "match": true
+    },
+    {
+      "path": "dist/server/postgres/db/database.d.ts",
+      "sha256": "68c45ced4326e53ac5e3a313abd08b5171ecd98e5b10880cd242013fc962cc77",
+      "publicInstallSha256": "68c45ced4326e53ac5e3a313abd08b5171ecd98e5b10880cd242013fc962cc77",
+      "match": true
+    },
+    {
+      "path": "dist/server/postgres/db/database.js",
+      "sha256": "9d4b3fdc654ba5fecacb0a1b79d97a9c8f5a5a9466f68b1f815b0bdad3d450b0",
+      "publicInstallSha256": "9d4b3fdc654ba5fecacb0a1b79d97a9c8f5a5a9466f68b1f815b0bdad3d450b0",
+      "match": true
+    },
+    {
+      "path": "dist/server/postgres/db/schema.d.ts",
+      "sha256": "7ebb2e44132c68698b73589f6d5607006e8bec0ef74ec71862e91eba958b6fed",
+      "publicInstallSha256": "7ebb2e44132c68698b73589f6d5607006e8bec0ef74ec71862e91eba958b6fed",
+      "match": true
+    },
+    {
+      "path": "dist/server/postgres/db/schema.js",
+      "sha256": "fcbe8194f67c682c0236d14429520a69fceba4fa5d18dfb8e05899fa7e87027d",
+      "publicInstallSha256": "fcbe8194f67c682c0236d14429520a69fceba4fa5d18dfb8e05899fa7e87027d",
+      "match": true
+    },
+    {
+      "path": "dist/contracts/browser.d.ts",
+      "sha256": "793440db44092c8ce0dfef300d54323d098cf7d00766eb88f1afe9b4e7a16b39",
+      "publicInstallSha256": "793440db44092c8ce0dfef300d54323d098cf7d00766eb88f1afe9b4e7a16b39",
+      "match": true
+    },
+    {
+      "path": "dist/contracts/browser.js",
+      "sha256": "9f3bdfcea7226bf9676be2d3195a45fce805f4f1b2e39b08283281156fbc39ab",
+      "publicInstallSha256": "9f3bdfcea7226bf9676be2d3195a45fce805f4f1b2e39b08283281156fbc39ab",
+      "match": true
+    },
+    {
+      "path": "dist/contracts/connection.d.ts",
+      "sha256": "c887aa14744ff6a72f2e8388990ec6c58a7dde4f35300432dbcefdb33ddfbead",
+      "publicInstallSha256": "c887aa14744ff6a72f2e8388990ec6c58a7dde4f35300432dbcefdb33ddfbead",
+      "match": true
+    },
+    {
+      "path": "dist/contracts/connection.js",
+      "sha256": "4bf50410b636eb46b0981cd4728a4ce0f9aa3fe42d8a718719cef7960cf928f8",
+      "publicInstallSha256": "4bf50410b636eb46b0981cd4728a4ce0f9aa3fe42d8a718719cef7960cf928f8",
+      "match": true
+    },
+    {
+      "path": "dist/contracts/job.d.ts",
+      "sha256": "2781fa209e243d5779975097e9e1625e5d3c8642d2a068f7d2e74f41da94aa9c",
+      "publicInstallSha256": "2781fa209e243d5779975097e9e1625e5d3c8642d2a068f7d2e74f41da94aa9c",
+      "match": true
+    },
+    {
+      "path": "dist/contracts/job.js",
+      "sha256": "c421b142909b61b9288381db76adba5fcc7d482560ecf0a5986fa29e9ce66678",
+      "publicInstallSha256": "c421b142909b61b9288381db76adba5fcc7d482560ecf0a5986fa29e9ce66678",
+      "match": true
+    },
+    {
+      "path": "dist/contracts/vault.d.ts",
+      "sha256": "859d442f07437da8df29b12c0a6873c357d59f02089ac3f6aa2b6d159a1728eb",
+      "publicInstallSha256": "859d442f07437da8df29b12c0a6873c357d59f02089ac3f6aa2b6d159a1728eb",
+      "match": true
+    },
+    {
+      "path": "dist/contracts/vault.js",
+      "sha256": "868064844aac306d39962bddd9cb58389f6eb3b8915e3d0179a0486b4eb49924",
+      "publicInstallSha256": "868064844aac306d39962bddd9cb58389f6eb3b8915e3d0179a0486b4eb49924",
+      "match": true
+    }
+  ]
+}

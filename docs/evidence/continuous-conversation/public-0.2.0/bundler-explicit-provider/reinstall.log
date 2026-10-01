@@ -1,0 +1,126 @@
+
+> @handrail/ai-assistant@0.2.64 prepare
+> npm run build
+
+
+> @handrail/ai-assistant@0.2.64 build
+> node -e "require('node:fs').rmSync('dist', { recursive: true, force: true })" && tsc -p tsconfig.build.json
+
+
+> handrail-agent-sdk@0.2.0 prepare
+> npm run build
+
+
+> handrail-agent-sdk@0.2.0 build
+> tsc -p tsconfig.json && node scripts/build-postgres-assets.mjs
+
+
+added 51 packages in 55s
+npm http fetch GET 200 https://registry.npmjs.org/npm 262ms
+npm warn skipping integrity check for git dependency https://git@github.com/c0x65o/handrail-agent-sdk.git
+npm warn skipping integrity check for git dependency https://git@github.com/c0x65o/handrail-sdk-ai-assistant-js.git
+npm http cache zod@https://registry.npmjs.org/zod/-/zod-4.3.6.tgz 0ms (cache hit)
+npm http cache xtend@https://registry.npmjs.org/xtend/-/xtend-4.0.2.tgz 0ms (cache hit)
+npm http cache ws@https://registry.npmjs.org/ws/-/ws-8.22.0.tgz 0ms (cache hit)
+npm http cache which@https://registry.npmjs.org/which/-/which-2.0.2.tgz 0ms (cache hit)
+npm http cache typescript@https://registry.npmjs.org/typescript/-/typescript-5.9.3.tgz 0ms (cache hit)
+npm http cache undici-types@https://registry.npmjs.org/undici-types/-/undici-types-6.21.0.tgz 0ms (cache hit)
+npm http cache split2@https://registry.npmjs.org/split2/-/split2-4.2.0.tgz 0ms (cache hit)
+npm http cache shebang-regex@https://registry.npmjs.org/shebang-regex/-/shebang-regex-3.0.0.tgz 0ms (cache hit)
+npm http cache shebang-command@https://registry.npmjs.org/shebang-command/-/shebang-command-2.0.0.tgz 0ms (cache hit)
+npm http cache postgres-interval@https://registry.npmjs.org/postgres-interval/-/postgres-interval-1.2.0.tgz 0ms (cache hit)
+npm http cache require-from-string@https://registry.npmjs.org/require-from-string/-/require-from-string-2.0.2.tgz 0ms (cache hit)
+npm http cache postgres-date@https://registry.npmjs.org/postgres-date/-/postgres-date-1.0.7.tgz 0ms (cache hit)
+npm http cache postgres-bytea@https://registry.npmjs.org/postgres-bytea/-/postgres-bytea-1.0.1.tgz 0ms (cache hit)
+npm http cache pkce-challenge@https://registry.npmjs.org/pkce-challenge/-/pkce-challenge-5.0.1.tgz 0ms (cache hit)
+npm http cache postgres-array@https://registry.npmjs.org/postgres-array/-/postgres-array-2.0.0.tgz 0ms (cache hit)
+npm http cache pgpass@https://registry.npmjs.org/pgpass/-/pgpass-1.0.5.tgz 0ms (cache hit)
+npm http cache pg-types@https://registry.npmjs.org/pg-types/-/pg-types-2.2.0.tgz 0ms (cache hit)
+npm http cache pg-protocol@https://registry.npmjs.org/pg-protocol/-/pg-protocol-1.16.1.tgz 0ms (cache hit)
+npm http cache pg-pool@https://registry.npmjs.org/pg-pool/-/pg-pool-3.14.0.tgz 0ms (cache hit)
+npm http cache pg-int8@https://registry.npmjs.org/pg-int8/-/pg-int8-1.0.1.tgz 0ms (cache hit)
+npm http cache pg-connection-string@https://registry.npmjs.org/pg-connection-string/-/pg-connection-string-2.14.1.tgz 0ms (cache hit)
+npm http cache pg-cloudflare@https://registry.npmjs.org/pg-cloudflare/-/pg-cloudflare-1.4.1.tgz 0ms (cache hit)
+npm http cache pg@https://registry.npmjs.org/pg/-/pg-8.23.0.tgz 0ms (cache hit)
+npm http cache path-key@https://registry.npmjs.org/path-key/-/path-key-3.1.1.tgz 0ms (cache hit)
+npm http cache openai@https://registry.npmjs.org/openai/-/openai-7.25.0.tgz 0ms (cache hit)
+npm http cache ms@https://registry.npmjs.org/ms/-/ms-2.1.3.tgz 0ms (cache hit)
+npm http cache json-schema-traverse@https://registry.npmjs.org/json-schema-traverse/-/json-schema-traverse-1.0.0.tgz 0ms (cache hit)
+npm http cache jose@https://registry.npmjs.org/jose/-/jose-6.2.12.tgz 0ms (cache hit)
+npm http cache isexe@https://registry.npmjs.org/isexe/-/isexe-2.0.0.tgz 0ms (cache hit)
+npm http cache fflate@https://registry.npmjs.org/fflate/-/fflate-0.8.3.tgz 0ms (cache hit)
+npm http cache fast-uri@https://registry.npmjs.org/fast-uri/-/fast-uri-3.1.8.tgz 0ms (cache hit)
+npm http cache fast-deep-equal@https://registry.npmjs.org/fast-deep-equal/-/fast-deep-equal-3.1.3.tgz 0ms (cache hit)
+npm http cache eventsource-parser@https://registry.npmjs.org/eventsource-parser/-/eventsource-parser-3.1.1.tgz 0ms (cache hit)
+npm http cache eventsource@https://registry.npmjs.org/eventsource/-/eventsource-3.0.7.tgz 0ms (cache hit)
+npm http cache drizzle-orm@https://registry.npmjs.org/drizzle-orm/-/drizzle-orm-0.45.3.tgz 0ms (cache hit)
+npm http cache debug@https://registry.npmjs.org/debug/-/debug-4.4.3.tgz 0ms (cache hit)
+npm http cache cross-spawn@https://registry.npmjs.org/cross-spawn/-/cross-spawn-7.0.6.tgz 0ms (cache hit)
+npm http cache ajv-formats@https://registry.npmjs.org/ajv-formats/-/ajv-formats-3.0.1.tgz 0ms (cache hit)
+npm http cache ajv@https://registry.npmjs.org/ajv/-/ajv-8.20.0.tgz 0ms (cache hit)
+npm http cache @types/ws@https://registry.npmjs.org/@types/ws/-/ws-8.18.2.tgz 0ms (cache hit)
+npm http cache @types/pg@https://registry.npmjs.org/@types/pg/-/pg-8.23.1.tgz 0ms (cache hit)
+npm http cache @types/node@https://registry.npmjs.org/@types/node/-/node-22.18.0.tgz 0ms (cache hit)
+npm http cache @standard-schema/spec@https://registry.npmjs.org/@standard-schema/spec/-/spec-1.1.0.tgz 0ms (cache hit)
+npm http cache @openai/agents-realtime@https://registry.npmjs.org/@openai/agents-realtime/-/agents-realtime-0.18.0.tgz 0ms (cache hit)
+npm http cache @openai/agents-openai@https://registry.npmjs.org/@openai/agents-openai/-/agents-openai-0.18.0.tgz 0ms (cache hit)
+npm http cache @openai/agents-core@https://registry.npmjs.org/@openai/agents-core/-/agents-core-0.18.0.tgz 0ms (cache hit)
+npm http cache @openai/agents@https://registry.npmjs.org/@openai/agents/-/agents-0.18.0.tgz 0ms (cache hit)
+npm http cache @modelcontextprotocol/core@https://registry.npmjs.org/@modelcontextprotocol/core/-/core-2.2.0.tgz 0ms (cache hit)
+npm http cache @modelcontextprotocol/client@https://registry.npmjs.org/@modelcontextprotocol/client/-/client-2.2.0.tgz 0ms (cache hit)
+npm http fetch GET 200 https://registry.npmjs.org/postgres-interval/-/postgres-interval-1.2.0.tgz 330ms (cache miss)
+npm http fetch GET 200 https://registry.npmjs.org/pgpass/-/pgpass-1.0.5.tgz 329ms (cache miss)
+npm http fetch GET 200 https://registry.npmjs.org/xtend/-/xtend-4.0.2.tgz 369ms (cache miss)
+npm http fetch GET 200 https://registry.npmjs.org/postgres-bytea/-/postgres-bytea-1.0.1.tgz 363ms (cache miss)
+npm http fetch GET 200 https://registry.npmjs.org/split2/-/split2-4.2.0.tgz 383ms (cache miss)
+npm http fetch GET 200 https://registry.npmjs.org/which/-/which-2.0.2.tgz 385ms (cache miss)
+npm http fetch GET 200 https://registry.npmjs.org/require-from-string/-/require-from-string-2.0.2.tgz 382ms (cache miss)
+npm http fetch GET 200 https://registry.npmjs.org/postgres-array/-/postgres-array-2.0.0.tgz 381ms (cache miss)
+npm http fetch GET 200 https://registry.npmjs.org/shebang-regex/-/shebang-regex-3.0.0.tgz 385ms (cache miss)
+npm http fetch GET 200 https://registry.npmjs.org/pg-cloudflare/-/pg-cloudflare-1.4.1.tgz 389ms (cache miss)
+npm http fetch GET 200 https://registry.npmjs.org/shebang-command/-/shebang-command-2.0.0.tgz 395ms (cache miss)
+npm http fetch GET 200 https://registry.npmjs.org/postgres-date/-/postgres-date-1.0.7.tgz 401ms (cache miss)
+npm http fetch GET 200 https://registry.npmjs.org/ms/-/ms-2.1.3.tgz 397ms (cache miss)
+npm http fetch GET 200 https://registry.npmjs.org/pg-connection-string/-/pg-connection-string-2.14.1.tgz 402ms (cache miss)
+npm http fetch GET 200 https://registry.npmjs.org/pg-int8/-/pg-int8-1.0.1.tgz 403ms (cache miss)
+npm http fetch GET 200 https://registry.npmjs.org/path-key/-/path-key-3.1.1.tgz 405ms (cache miss)
+npm http fetch GET 200 https://registry.npmjs.org/pg-types/-/pg-types-2.2.0.tgz 412ms (cache miss)
+npm http fetch GET 200 https://registry.npmjs.org/isexe/-/isexe-2.0.0.tgz 409ms (cache miss)
+npm http fetch GET 200 https://registry.npmjs.org/pkce-challenge/-/pkce-challenge-5.0.1.tgz 421ms (cache miss)
+npm http fetch GET 200 https://registry.npmjs.org/@types/pg/-/pg-8.23.1.tgz 414ms (cache miss)
+npm http fetch GET 200 https://registry.npmjs.org/pg-pool/-/pg-pool-3.14.0.tgz 423ms (cache miss)
+npm http fetch GET 200 https://registry.npmjs.org/@types/ws/-/ws-8.18.2.tgz 421ms (cache miss)
+npm http fetch GET 200 https://registry.npmjs.org/fast-deep-equal/-/fast-deep-equal-3.1.3.tgz 431ms (cache miss)
+npm http fetch GET 200 https://registry.npmjs.org/@standard-schema/spec/-/spec-1.1.0.tgz 429ms (cache miss)
+npm http fetch GET 200 https://registry.npmjs.org/json-schema-traverse/-/json-schema-traverse-1.0.0.tgz 443ms (cache miss)
+npm http fetch GET 200 https://registry.npmjs.org/debug/-/debug-4.4.3.tgz 497ms (cache miss)
+npm http fetch GET 200 https://registry.npmjs.org/cross-spawn/-/cross-spawn-7.0.6.tgz 518ms (cache miss)
+npm http fetch GET 200 https://registry.npmjs.org/ajv-formats/-/ajv-formats-3.0.1.tgz 569ms (cache miss)
+npm http fetch GET 200 https://registry.npmjs.org/eventsource/-/eventsource-3.0.7.tgz 590ms (cache miss)
+npm http fetch GET 200 https://registry.npmjs.org/undici-types/-/undici-types-6.21.0.tgz 631ms (cache miss)
+npm http fetch GET 200 https://registry.npmjs.org/ws/-/ws-8.22.0.tgz 651ms (cache miss)
+npm http fetch GET 200 https://registry.npmjs.org/eventsource-parser/-/eventsource-parser-3.1.1.tgz 650ms (cache miss)
+npm http fetch GET 200 https://registry.npmjs.org/pg/-/pg-8.23.0.tgz 675ms (cache miss)
+npm http fetch GET 200 https://registry.npmjs.org/fflate/-/fflate-0.8.3.tgz 717ms (cache miss)
+npm http fetch GET 200 https://registry.npmjs.org/fast-uri/-/fast-uri-3.1.8.tgz 720ms (cache miss)
+npm http fetch GET 200 https://registry.npmjs.org/pg-protocol/-/pg-protocol-1.16.1.tgz 742ms (cache miss)
+npm http fetch GET 200 https://registry.npmjs.org/@modelcontextprotocol/core/-/core-2.2.0.tgz 755ms (cache miss)
+npm http fetch GET 200 https://registry.npmjs.org/@openai/agents/-/agents-0.18.0.tgz 768ms (cache miss)
+npm http fetch GET 200 https://registry.npmjs.org/@types/node/-/node-22.18.0.tgz 837ms (cache miss)
+npm http fetch GET 200 https://registry.npmjs.org/jose/-/jose-6.2.12.tgz 1009ms (cache miss)
+npm http fetch GET 200 https://registry.npmjs.org/@openai/agents-openai/-/agents-openai-0.18.0.tgz 1086ms (cache miss)
+npm http fetch GET 200 https://registry.npmjs.org/@modelcontextprotocol/client/-/client-2.2.0.tgz 1096ms (cache miss)
+npm http fetch GET 200 https://registry.npmjs.org/@openai/agents-realtime/-/agents-realtime-0.18.0.tgz 1453ms (cache miss)
+npm http fetch GET 200 https://registry.npmjs.org/typescript/-/typescript-5.9.3.tgz 1636ms (cache miss)
+npm http fetch GET 200 https://codeload.github.com/c0x65o/handrail-agent-sdk/tar.gz/8f72cef9d459567acbc54f62e1175081617ab20d 1628ms (cache miss)
+npm http fetch GET 200 https://registry.npmjs.org/ajv/-/ajv-8.20.0.tgz 1860ms (cache miss)
+npm http fetch GET 200 https://registry.npmjs.org/zod/-/zod-4.3.6.tgz 2167ms (cache miss)
+npm http fetch GET 200 https://codeload.github.com/c0x65o/handrail-sdk-ai-assistant-js/tar.gz/921a5650f1937504a124574ad795ea222555a684 2344ms (cache miss)
+npm http fetch GET 200 https://registry.npmjs.org/@openai/agents-core/-/agents-core-0.18.0.tgz 2494ms (cache miss)
+npm http fetch GET 200 https://registry.npmjs.org/drizzle-orm/-/drizzle-orm-0.45.3.tgz 2927ms (cache miss)
+npm http fetch GET 200 https://registry.npmjs.org/openai/-/openai-7.25.0.tgz 3638ms (cache miss)
+npm notice
+npm notice New major version of npm available! 10.9.8 -> 12.2.0
+npm notice Changelog: https://github.com/npm/cli/releases/tag/v12.2.0
+npm notice To update run: npm install -g npm@12.2.0
+npm notice

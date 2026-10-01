@@ -1,0 +1,35 @@
+{
+  "sha": "8f72cef9d459567acbc54f62e1175081617ab20d",
+  "version": "0.2.0",
+  "observedAt": "2026-10-01T16:10:57.281Z",
+  "candidateSourceOverlay": false,
+  "checks": [
+    {
+      "file": "npm-test.log",
+      "tests": 777,
+      "pass": 777,
+      "fail": 0,
+      "cancelled": 0,
+      "skipped": 0,
+      "todo": 0
+    },
+    {
+      "file": "installed-runtime.log",
+      "tests": 87,
+      "pass": 87,
+      "fail": 0,
+      "cancelled": 0,
+      "skipped": 0,
+      "todo": 0
+    },
+    {
+      "file": "postgres-all.log",
+      "tests": 401,
+      "pass": 401,
+      "fail": 0,
+      "cancelled": 0,
+      "skipped": 0,
+      "todo": 0
+    }
+  ]
+}
