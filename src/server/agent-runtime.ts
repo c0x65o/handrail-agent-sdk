@@ -132,7 +132,7 @@ export interface AgentRuntimeLimits {
   readonly pollMs: number;
 }
 export type AgentRuntimeEvent = { readonly kind: 'model_progress' | 'tool_completed' | 'checkpoint' | 'waiting' | 'succeeded' }
-  | { readonly kind: 'error'; readonly code: 'execution_failed' | 'limit_exceeded' | 'stopped' | 'lease_lost' | 'not_authorized' | 'invalid_checkpoint' }
+  | { readonly kind: 'error'; readonly code: 'execution_failed' | 'preparation_failed' | 'limit_exceeded' | 'stopped' | 'lease_lost' | 'not_authorized' | 'invalid_checkpoint' }
   | { readonly kind: 'usage'; readonly usage: AgentUsage };
 export type AgentOutcome = 'succeeded' | 'failed' | 'waiting' | 'cancelled' | 'busy' | 'stopped' | 'retryable';
 class Halt extends Error { constructor(readonly code: 'limit_exceeded' | 'stopped') { super(code); } }
@@ -210,6 +210,9 @@ export function createAgentRuntime(deps: {
     let persisted: AgentCheckpoint | null = null;
     let save: ((change?: AgentCommit) => Promise<void>) | undefined;
     let fatal: unknown;
+    let preparationFailed = false;
+    let preparing = false;
+    let preparationExpired = false;
     try {
       let snapshot = await load(identity);
       if (['succeeded', 'failed', 'cancelled', 'waiting'].includes(snapshot.state))
@@ -217,7 +220,19 @@ export function createAgentRuntime(deps: {
       fence = unwrap(await deps.lease.claim(identity, limits.leaseTtlMs));
       if (!fence) return { ok: true, value: 'busy' };
       active.add(controller);
-      timer = setTimeout(() => controller.abort(), limits.maxElapsedMs);
+      timer = setTimeout(() => {
+        preparationExpired = preparing;
+        controller.abort();
+      }, limits.maxElapsedMs);
+      // A missing attachment/invalid saved input is an execution failure, not
+      // an indefinitely running job. Keep this classification outside Runner:
+      // upstream may wrap errors thrown by its model-input filter.
+      const prepare = async <T>(run: () => Promise<T>): Promise<T> => {
+        preparing = true;
+        try { return await abortable(Promise.resolve().then(run), controller.signal); }
+        catch (error) { preparationFailed = true; throw error; }
+        finally { preparing = false; }
+      };
       const check = async () => {
         if (controller.signal.aborted || stopped) throw new Halt('stopped');
         unwrap(await deps.lease.check(fence!));
@@ -237,7 +252,7 @@ export function createAgentRuntime(deps: {
       record = await authorized(identity, a => deps.states.load(identity, a));
       if (record && record.definitionRef !== deps.definitionRef) throw new StoreFailure('invalid_checkpoint');
       record ??= { version: 0, definitionRef: deps.definitionRef, dispatches: 0,
-        input: await deps.host.input(copy(identity)), results: {} };
+        input: await prepare(() => deps.host.input(copy(identity))), results: {} };
       save = async (change = { kind: 'checkpoint' }) => {
         await check();
         const control = deps.states.checkpointQuotaBytes === undefined ? record
@@ -341,7 +356,7 @@ export function createAgentRuntime(deps: {
           await check();
           if (size(modelData) > limits.maxContextBytes) throw new Halt('limit_exceeded');
           const prepared = deps.host.prepareModelInput
-            ? { ...modelData, input: await deps.host.prepareModelInput(copy(identity), copy(modelData.input), controller.signal) }
+            ? { ...modelData, input: await prepare(() => deps.host.prepareModelInput!(copy(identity), copy(modelData.input), controller.signal)) }
             : modelData;
           await check();
           if (size(prepared) > limits.maxContextBytes) throw new Halt('limit_exceeded');
@@ -380,7 +395,7 @@ export function createAgentRuntime(deps: {
             }
           }
         }
-        const result: Awaited<ReturnType<typeof invoke>> = await invoke(state ?? record!.input);
+        const result: Awaited<ReturnType<typeof invoke>> = await abortable(invoke(state ?? record!.input), controller.signal);
         await abortable((async () => {
           for await (const event of result) {
             if (event.type === 'raw_model_stream_event') {
@@ -415,6 +430,22 @@ export function createAgentRuntime(deps: {
       }
     } catch (caught) {
       const error = fatal ?? caught;
+      if (fence && !fatal && !stopped && (preparationExpired || (preparationFailed && !controller.signal.aborted))) {
+        try {
+          // Use the durable fence, not the aborted local deadline, to settle.
+          // Stop/revocation/lease loss must win. Never discard uncertain effects
+          // or the completed output retained for host-commit recovery.
+          unwrap(await deps.lease.check(fence));
+          const current = await load(identity);
+          if (!current.effects.some(effect => effect.outcome === 'unknown') && record?.output === undefined) {
+            unwrap(await deps.lease.complete({ kind: 'failed', previousRevision: current.revision,
+              snapshot: { identity, revision: current.revision + 1, state: 'failed', effects: current.effects,
+                error: { code: 'execution_failed', correlationRef: identity.origin.correlationRef } } }, fence));
+            emit({ kind: 'error', code: preparationExpired ? 'limit_exceeded' : 'preparation_failed' });
+            return { ok: true, value: 'failed' };
+          }
+        } catch { /* Current durable authority owns any competing transition. */ }
+      }
       if (error instanceof Reconcile && save) {
         try {
           await save({ kind: 'waiting', requirement: deps.host.requirement(error.call, 'reconciliation') });

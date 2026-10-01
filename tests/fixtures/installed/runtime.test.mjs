@@ -5,6 +5,7 @@ import test from 'node:test';
 import { createPostgresHarness } from './database.mjs';
 import { migrations } from './database.mjs';
 import { services, identity, modelBoundary, requirement } from './host.mjs';
+import './preparation.test.mjs';
 const ok = r => { assert.equal(r.ok,true,r.code); return r.value; };
 
 test('host structured history survives an approval checkpoint without flattening roles or image references', async t => {

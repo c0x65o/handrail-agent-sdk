@@ -246,6 +246,14 @@ Already-started remote actions cannot be undone; the original effect remains
 unknown until an authorized read-only reconciler establishes its outcome.
 
 Tool read failures return a fixed error result so Runner can seek an alternative.
+Host input/pre-model preparation failures (for example unavailable attachment
+storage) settle the job as failed under its current lease. Preparation is bounded
+by the existing execution deadline; its expiry also settles failure. Diagnostics
+contain only `preparation_failed` or `limit_exceeded`, never the private error.
+Reconnect observes that terminal result without redispatch. Durable Stop,
+revocation and uncertain effects remain authoritative; process shutdown leaves
+unfinished work recoverable.
+
 Provider failures retain the last durable boundary for a later delivery. Limits
 bound turns, dispatch attempts, tool calls, context bytes, state, output and wall
 time. Context overflow fails closed instead of silently deleting tool/result
