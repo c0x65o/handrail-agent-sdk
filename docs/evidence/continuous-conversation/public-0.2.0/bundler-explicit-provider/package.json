@@ -4,7 +4,7 @@
   "type": "module",
   "dependencies": {
     "handrail-agent-sdk": "git+https://git@github.com/c0x65o/handrail-agent-sdk.git#8f72cef9d459567acbc54f62e1175081617ab20d",
-    "@handrail/ai-assistant": "git+https://git@github.com/c0x65o/handrail-sdk-ai-assistant-js.git#921a5650f1937504a124574ad795ea222555a684",
+    "@handrail/ai-assistant": "git+https://github.com/c0x65o/handrail-sdk-ai-assistant-js.git#884a9f30d825a7a1f60f73a2c0ec31b5f2d691ef",
     "pg": "8.23.0",
     "openai": "7.25.0",
     "@openai/agents": "0.18.0",

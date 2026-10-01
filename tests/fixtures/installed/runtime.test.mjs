@@ -147,6 +147,26 @@ test('provider failure retains checkpoint and retry recovers without repeating c
   assert.equal(s.calls.filter(c=>c.input.topic==='inventory').length,1);
   assert.ok(!JSON.stringify(s.events).includes('PRIVATE_TRANSPORT_FAILURE'));
 });
+test('final output commit failure recovers the saved answer in a fresh runtime without another model call', async t => {
+  let attempted;
+  const s = await setup(t, { host: { output: async (_identity, text) => {
+    attempted = text;
+    throw Error('PRIVATE_OUTPUT_COMMIT_FAILURE');
+  } } });
+  assert.equal(ok(await s.runtime.wake(identity)), 'retryable');
+  assert.equal(attempted, 'Reserved synthetic item.');
+  const staged = ok(await s.states.load(identity, s.authority()));
+  assert.equal(staged.output, attempted);
+  const next = await services(s.harness.schema, s.key, {
+    modelHooks: { before: async () => { throw Error('MODEL_MUST_NOT_REPEAT'); } },
+  });
+  t.after(() => next.close());
+  assert.equal(ok(await next.runtime.wake(identity)), 'succeeded');
+  assert.equal(next.model.requests, 0);
+  assert.equal(ok(await next.states.load(identity, next.authority())).dispatches, staged.dispatches);
+  assert.equal((await s.client.query(`SELECT sum(attempts)::int AS attempts FROM ${s.harness.table('synthetic_provider')}`)).rows[0].attempts, 1);
+  assert.ok(!JSON.stringify(s.events).includes('PRIVATE_OUTPUT_COMMIT_FAILURE'));
+});
 test('process stop resumes checkpoint; explicit durable Stop fences late output and remains terminal', async t => {
   let entered, release;
   const started = new Promise(r=>entered=r), hold = new Promise(r=>release=r);

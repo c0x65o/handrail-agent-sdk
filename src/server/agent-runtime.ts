@@ -95,6 +95,7 @@ export interface AgentRuntimeHost extends JobLeaseHost {
   /** Verify durable answer/schedule facts and current principal, never just receipt possession. */
   resolveWait(snapshot: JobSnapshot & { state: 'waiting' }): Promise<AgentResolution | null>;
   /** Verify task evidence and filter terminal text; issue an idempotent safe receipt.
+   * Recovery can repeat this commit for the same identity after a lost receipt.
    * A model success claim is not host verification of the requested outcome. */
   output(identity: JobIdentity, text: string): Promise<{ text: string; receiptRef: string }>;
 }
@@ -247,6 +248,20 @@ export function createAgentRuntime(deps: {
           { authority, fence: fence!, now: () => deps.host.now() }));
         record = next; persisted = next;
       };
+      const commitOutput = async (): Promise<JobStoreResult<AgentOutcome>> => {
+        await check();
+        const output = await deps.host.output(copy(identity), record!.output!);
+        if (size(output.text) > limits.maxOutputBytes) throw new Halt('limit_exceeded');
+        record = { ...record!, output: output.text };
+        await save!({ kind: 'succeeded', receiptRef: output.receiptRef });
+        if (record.usage) emit({ kind: 'usage', usage: record.usage });
+        emit({ kind: 'succeeded' });
+        return { ok: true, value: 'succeeded' };
+      };
+      // A completed provider response may outlive a failed/lost host output
+      // commit. Reauthorize and commit its saved answer without another model
+      // dispatch, tool replay, or provider charge.
+      if (typeof record.output === 'string') return await commitOutput();
       if (record.dispatches >= limits.maxDispatches || size(record.input) > limits.maxContextBytes) throw new Halt('limit_exceeded');
       record = { ...record, dispatches: record.dispatches + 1 };
       await save();
@@ -391,12 +406,12 @@ export function createAgentRuntime(deps: {
           continue;
         }
         if (typeof result.finalOutput !== 'string') throw Error('missing_output');
-        const output = await deps.host.output(copy(identity), result.finalOutput);
-        if (size(output.text) > limits.maxOutputBytes) throw new Halt('limit_exceeded');
-        record = { ...record, output: output.text };
-        await save({ kind: 'succeeded', receiptRef: output.receiptRef });
-        emit({ kind: 'usage', usage }); emit({ kind: 'succeeded' });
-        return { ok: true, value: 'succeeded' };
+        if (size(result.finalOutput) > limits.maxOutputBytes) throw new Halt('limit_exceeded');
+        record = { ...record, output: result.finalOutput };
+        // Encrypted state owns the completed model answer before the separate
+        // host output transaction. Only its verified receipt marks success.
+        await save();
+        return await commitOutput();
       }
     } catch (caught) {
       const error = fatal ?? caught;
