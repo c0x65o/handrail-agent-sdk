@@ -317,7 +317,8 @@ test('public migrations serialize, are repeatable, preserve uncertain identities
   const before=(await s.client.query(`SELECT * FROM ${s.harness.table('job_effects')}`)).rows;
   await Promise.all([migrateAgentPostgres(s.pool,s.harness.schema),migrateAgentPostgres(s.pool,s.harness.schema)]);
   assert.deepEqual((await s.client.query(`SELECT * FROM ${s.harness.table('job_effects')}`)).rows,before);
-  assert.equal((await agentPostgresMigrations(s.harness.schema)).length,7);
+  assert.equal((await agentPostgresMigrations(s.harness.schema)).length,8);
+  assert.equal((await agentPostgresMigrations(s.harness.schema)).at(-1).id,'0014_conversation_records');
   await assert.rejects(agentPostgresMigrations('public'),/invalid_agent_postgres_schema/);
   await s.client.query(`UPDATE ${s.harness.table('journal_migrations')} SET hash='drift' WHERE id=(SELECT min(id) FROM ${s.harness.table('journal_migrations')})`);
   await assert.rejects(migrateAgentPostgres(s.pool,s.harness.schema),/agent_migration_history_conflict/);

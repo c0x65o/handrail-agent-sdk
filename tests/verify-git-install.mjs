@@ -60,6 +60,9 @@ for (const profile of profiles) {
   const originalResolved = lock.packages['node_modules/handrail-agent-sdk'].resolved;
   if (!reproduce) {
     assertSdkGitLock(manifest, lock, sha);
+    for (const [path, entry] of Object.entries(lock.packages)) {
+      if (path.endsWith('node_modules/@handrail/ai-assistant')) assert.equal(entry.resolved, assistantSpec, 'ASSISTANT_RESOLVED_LOCK_NOT_PINNED_HTTPS');
+    }
     const before = await readFile(lockPath, 'utf8');
     // npm ci removes node_modules itself. An empty cache forces a new download
     // and normal Git prepare/build. No SSH protocol or credential helper exists.
@@ -94,6 +97,8 @@ for (const profile of profiles) {
   if (!baseline && !reproduce) {
     await copyFile(join(root, 'examples/postgres-application.mts'), join(dir, 'postgres-application.mts'));
     files.push('postgres-application.mts');
+    await copyFile(join(root, 'examples/continuous-conversation.mts'), join(dir, 'continuous-conversation.mts'));
+    files.push('continuous-conversation.mts');
   }
   if (profile.provider) {
     await copyFile(join(root, 'examples/headless.mts'), join(dir, 'headless.mts'));

@@ -37,10 +37,10 @@ try {
   console.log('Fresh isolated PostgreSQL 15 cluster initialized; dedicated disposable database and non-superuser fixture role; connection values withheld.');
   const installedConsumer = process.argv[2] === '--installed-consumer' ? process.argv[3] : null;
   const suites = installedConsumer ? [] : process.argv.slice(2);
-  const allowed = ['test:assistance', 'test:connection-store', 'test:browser-profile', 'test:vault-request', 'test:payment-vault', 'test:vault-entry', 'test:vault-use', 'test:vault-lifecycle', 'test:vault', 'test:lease', 'test:effects', 'test:cancel', 'test:answer', 'test:agents', 'test:submit', 'test:journal', 'test:postgres'];
+  const allowed = ['test:conversation', 'test:assistance', 'test:connection-store', 'test:browser-profile', 'test:vault-request', 'test:payment-vault', 'test:vault-entry', 'test:vault-use', 'test:vault-lifecycle', 'test:vault', 'test:lease', 'test:effects', 'test:cancel', 'test:answer', 'test:agents', 'test:submit', 'test:journal', 'test:postgres'];
   if (suites.some(suite => !allowed.includes(suite))) throw Error('INVALID_FIXTURE_SUITE');
   if (installedConsumer) {
-    result = spawnSync(process.execPath, ['--permission', `--allow-fs-read=${resolve(installedConsumer)}`, '--allow-child-process', '--import', './guard.mjs', '--test', '--test-concurrency=1', '--test-reporter=tap', 'runtime.test.mjs', 'application.test.mjs'], {
+    result = spawnSync(process.execPath, ['--permission', `--allow-fs-read=${resolve(installedConsumer)}`, '--allow-child-process', '--import', './guard.mjs', '--test', '--test-concurrency=1', '--test-reporter=tap', 'runtime.test.mjs', 'application.test.mjs', 'conversation.test.mjs'], {
       cwd: resolve(installedConsumer), env: { PATH: process.env.PATH, NODE_OPTIONS: '', NODE_PATH: '',
         HANDRAIL_TEST_POSTGRES_URL: env.HANDRAIL_TEST_POSTGRES_URL, HANDRAIL_TEST_POSTGRES_DISPOSABLE: '1',
         HANDRAIL_INSTALLED_BOUNDARY: '1', HANDRAIL_FORBIDDEN_REPO_FILE: resolve('package.json') }, stdio: 'inherit',

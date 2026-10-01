@@ -54,7 +54,7 @@ export async function services(schema, keyHex, options = {}) {
   const pool = new pg.Pool({ connectionString: process.env.HANDRAIL_TEST_POSTGRES_URL,
     options: '-c search_path=pg_catalog', max: 5, statement_timeout: 4000 });
   const key = createSecretKey(Buffer.from(keyHex,'hex'));
-  const stores = createPostgresAgentStores({ client: pool, schema, keys: { current: async () => ({ ref: 'fixture-key', key }), resolve: async ref => { if (ref !== 'fixture-key') throw Error('UNKNOWN_KEY'); return key; } } });
+  const stores = createPostgresAgentStores({ client: pool, schema, checkpointQuotaBytes: options.checkpointQuotaBytes, keys: { current: async () => ({ ref: 'fixture-key', key }), resolve: async ref => { if (ref !== 'fixture-key') throw Error('UNKNOWN_KEY'); return key; } } });
   const state = { denied: false, grantRevision: 1, approved: false, resolution: null, uncertain: false, ...options.state };
   const authority = () => ({ host: identity.host, grantRevision: state.grantRevision, cancellationRevision: 0 });
   const { journal, admission, states } = stores;
@@ -93,7 +93,7 @@ export async function services(schema, keyHex, options = {}) {
         : { outcome: 'not_applied', evidenceRef: 'synthetic-serial-provider-proof' };
     },
   };
-  const effects = sdk.createEffects(host,stores.effects,adapter,3000);
+  const effects = sdk.createEffects(host,stores.effects,options.adapter ?? adapter,3000);
   const events = [], calls = [];
   const tools = [
     { name: 'lookup', description: 'Read synthetic fixture facts.', kind: 'read', parameters: z.object({ topic: z.string().max(40) }).strict(),
@@ -110,7 +110,7 @@ export async function services(schema, keyHex, options = {}) {
   if (options.reserve) tools[2] = options.reserve;
   if (options.readEffectResult) tools[2] = { ...tools[2], readResult: options.readEffectResult };
   const model = options.model ?? modelBoundary(options.scenario,options.modelHooks);
-  const runtime = sdk.createAgentRuntime({ definitionRef: 'fixture-agent-v1', instructions: 'Use only the synthetic tools. Recover from read errors.',
+  const runtime = (options.runtimeFactory ?? sdk.createAgentRuntime)({ definitionRef: 'fixture-agent-v1', instructions: 'Use only the synthetic tools. Recover from read errors.',
     model, sampling: options.sampling, tools: options.transformTools?.(tools) ?? options.tools ?? tools, host, admission, journal, lease, states, effects, limits: {...limits,...options.limits}, observe: e => { events.push(e); options.observe?.(e); } });
   return { identity, tools, runtime, pool, journal, admission, lease, states, effects, authority, host, state, events, calls, model,
     cancel: sdk.createJobCancellation(host,stores.cancellation),

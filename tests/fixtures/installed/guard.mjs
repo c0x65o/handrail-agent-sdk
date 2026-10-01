@@ -5,7 +5,7 @@ import { realpathSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, sep } from 'node:path';
 const root = realpathSync(dirname(fileURLToPath(import.meta.url))) + sep;
-const inputs = new Set(['runtime.test.mjs','application.test.mjs','catalog.test.mjs','host.mjs','database.mjs','process.mjs','guard.mjs']);
+const inputs = new Set(['conversation.test.mjs','conversation-process.mjs','conversation-host.mjs','runtime.test.mjs','application.test.mjs','catalog.test.mjs','host.mjs','database.mjs','process.mjs','guard.mjs']);
 registerHooks({ resolve(specifier, context, next) {
   const result = next(specifier, context);
   if (result.url.startsWith('file:')) {

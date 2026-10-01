@@ -1,0 +1,407 @@
+Fresh isolated PostgreSQL 15 cluster initialized; dedicated disposable database and non-superuser fixture role; connection values withheld.
+
+> handrail-agent-sdk@0.1.8 test:conversation
+> npm run build && node --test --test-concurrency=1 tests/fixtures/installed/conversation.test.mjs
+
+
+> handrail-agent-sdk@0.1.8 build
+> tsc -p tsconfig.json && node scripts/build-postgres-assets.mjs
+
+TAP version 13
+# Subtest: canonical long conversation survives bounded context, upstream Runner session and compaction with exact pinned roles
+ok 1 - canonical long conversation survives bounded context, upstream Runner session and compaction with exact pinned roles
+  ---
+  duration_ms: 833.665798
+  type: 'test'
+  ...
+# Subtest: memory revise/forget, stale reads, scope isolation and authorization are durable
+ok 2 - memory revise/forget, stale reads, scope isolation and authorization are durable
+  ---
+  duration_ms: 119.763717
+  type: 'test'
+  ...
+# Subtest: personal-assistant: same durable composition replies while delegated native work survives fresh-process callback/replay
+ok 3 - personal-assistant: same durable composition replies while delegated native work survives fresh-process callback/replay
+  ---
+  duration_ms: 2248.288897
+  type: 'test'
+  ...
+# Subtest: industrial-inspection: same durable composition replies while delegated native work survives fresh-process callback/replay
+ok 4 - industrial-inspection: same durable composition replies while delegated native work survives fresh-process callback/replay
+  ---
+  duration_ms: 2072.365411
+  type: 'test'
+  ...
+# Subtest: delegated executor preserves native receipt and uncertainty; correction and revoked callback cannot deliver
+ok 5 - delegated executor preserves native receipt and uncertainty; correction and revoked callback cannot deliver
+  ---
+  duration_ms: 112.951091
+  type: 'test'
+  ...
+# Subtest: large RunState is paged under explicit quota; actual Runner and encrypted reload exceed 64KiB without raising envelope bound
+ok 6 - large RunState is paged under explicit quota; actual Runner and encrypted reload exceed 64KiB without raising envelope bound
+  ---
+  duration_ms: 251.263594
+  type: 'test'
+  ...
+# Subtest: real Runner delegates through existing durable effect ledger and returns without awaiting native work
+ok 7 - real Runner delegates through existing durable effect ledger and returns without awaiting native work
+  ---
+  duration_ms: 1297.682558
+  type: 'test'
+  ...
+# Subtest: compaction racing a correction cannot replace newer context; overfull pins fail explicitly
+ok 8 - compaction racing a correction cannot replace newer context; overfull pins fail explicitly
+  ---
+  duration_ms: 114.883896
+  type: 'test'
+  ...
+# Subtest: reply committed before job checkpoint failure recovers its original receipt without a second canonical reply
+ok 9 - reply committed before job checkpoint failure recovers its original receipt without a second canonical reply
+  ---
+  duration_ms: 256.140968
+  type: 'test'
+  ...
+# Subtest: pause/wait observations keep work; concurrent terminal callbacks deliver at most once and cancelled work cannot reopen
+ok 10 - pause/wait observations keep work; concurrent terminal callbacks deliver at most once and cancelled work cannot reopen
+  ---
+  duration_ms: 115.383577
+  type: 'test'
+  ...
+1..10
+# tests 10
+# suites 0
+# pass 10
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 8420.830311
+npm notice
+npm notice New major version of npm available! 10.9.8 -> 12.2.0
+npm notice Changelog: https://github.com/npm/cli/releases/tag/v12.2.0
+npm notice To update run: npm install -g npm@12.2.0
+npm notice
+
+> handrail-agent-sdk@0.1.8 test:vault-lifecycle
+> npm run build:test-reference && node --test --test-concurrency=1 --test-reporter=tap .reference-build/tests/reference/vault-lifecycle.test.js
+
+
+> handrail-agent-sdk@0.1.8 build:test-reference
+> tsc -p tests/tsconfig.reference.json
+
+TAP version 13
+# Subtest: fresh processes resume durable preparation for eight variants with unchanged references and exact target keys
+ok 1 - fresh processes resume durable preparation for eight variants with unchanged references and exact target keys
+  ---
+  duration_ms: 1415.893899
+  type: 'test'
+  ...
+# Writer exited after preparation; fresh reader recovered all 8 variants without source key access; references unchanged; captured diagnostics and SQL scans passed.
+# Subtest: concurrent commits have one winner; stale preparations and receipts cannot replace newer key state
+ok 2 - concurrent commits have one winner; stale preparations and receipts cannot replace newer key state
+  ---
+  duration_ms: 239.793479
+  type: 'test'
+  ...
+# Subtest: deleted fences pending recovery, reads, recreation and replayed backups before and after cleanup
+ok 3 - deleted fences pending recovery, reads, recreation and replayed backups before and after cleanup
+  ---
+  duration_ms: 208.409553
+  type: 'test'
+  ...
+# Subtest: revoked fences pending recovery, reads, recreation and replayed backups before and after cleanup
+ok 4 - revoked fences pending recovery, reads, recreation and replayed backups before and after cleanup
+  ---
+  duration_ms: 277.404534
+  type: 'test'
+  ...
+# Subtest: durable tombstone during read key resolution prevents decryption/output or persistence
+ok 5 - durable tombstone during read key resolution prevents decryption/output or persistence
+  ---
+  duration_ms: 211.347292
+  type: 'test'
+  ...
+# Subtest: durable tombstone during prepare key resolution prevents decryption/output or persistence
+ok 6 - durable tombstone during prepare key resolution prevents decryption/output or persistence
+  ---
+  duration_ms: 206.600921
+  type: 'test'
+  ...
+# Subtest: durable tombstone during prepare-target key resolution prevents decryption/output or persistence
+ok 7 - durable tombstone during prepare-target key resolution prevents decryption/output or persistence
+  ---
+  duration_ms: 205.647094
+  type: 'test'
+  ...
+# Subtest: durable tombstone during resume key resolution prevents decryption/output or persistence
+ok 8 - durable tombstone during resume key resolution prevents decryption/output or persistence
+  ---
+  duration_ms: 206.565238
+  type: 'test'
+  ...
+# Subtest: durable tombstone during create key resolution prevents decryption/output or persistence
+ok 9 - durable tombstone during create key resolution prevents decryption/output or persistence
+  ---
+  duration_ms: 206.547699
+  type: 'test'
+  ...
+# Subtest: final private output fence observes a deletion after decryption during authorization
+ok 10 - final private output fence observes a deletion after decryption during authorization
+  ---
+  duration_ms: 200.132606
+  type: 'test'
+  ...
+# Subtest: cleanup SQL interruption rolls back private removal but leaves committed tombstone retryable
+ok 11 - cleanup SQL interruption rolls back private removal but leaves committed tombstone retryable
+  ---
+  duration_ms: 254.862383
+  type: 'test'
+  ...
+# Subtest: missing and wrong exact keys fail closed; target-only recovery is retryable without key retirement
+ok 12 - missing and wrong exact keys fail closed; target-only recovery is retryable without key retirement
+  ---
+  duration_ms: 238.46119
+  type: 'test'
+  ...
+# Subtest: all six scopes and current host denial fence preparation/recovery/cleanup; changed scope during key access fails closed
+ok 13 - all six scopes and current host denial fence preparation/recovery/cleanup; changed scope during key access fails closed
+  ---
+  duration_ms: 243.037238
+  type: 'test'
+  ...
+# Subtest: missing/unavailable authoritative ledger and stale ciphertext fail closed without reconstruction
+ok 14 - missing/unavailable authoritative ledger and stale ciphertext fail closed without reconstruction
+  ---
+  duration_ms: 219.644734
+  type: 'test'
+  ...
+# Subtest: tampered prepared bindings cannot authenticate even with current host authorization
+ok 15 - tampered prepared bindings cannot authenticate even with current host authorization
+  ---
+  duration_ms: 227.598947
+  type: 'test'
+  ...
+# Subtest: generated migrations rerun safely; owned lifecycle schemas removed with independent sentinel intact
+ok 16 - generated migrations rerun safely; owned lifecycle schemas removed with independent sentinel intact
+  ---
+  duration_ms: 232.671144
+  type: 'test'
+  ...
+# Owned migrated lifecycle schema removed; independent sentinel preserved; migration reruns did not clear tombstones.
+# Subtest: one-time generated upgrade preserves existing v1 envelopes and initializes their durable fence
+ok 17 - one-time generated upgrade preserves existing v1 envelopes and initializes their durable fence
+  ---
+  duration_ms: 346.990517
+  type: 'test'
+  ...
+# Subtest: failed rotation commit rolls back envelope and generation together; preparation remains retryable
+ok 18 - failed rotation commit rolls back envelope and generation together; preparation remains retryable
+  ---
+  duration_ms: 235.478124
+  type: 'test'
+  ...
+1..18
+# tests 18
+# suites 0
+# pass 18
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 5886.191782
+
+> handrail-agent-sdk@0.1.8 test:agents
+> npm run build && npm run build:reference && npm run build:test-postgres && node --test --test-concurrency=1 --test-reporter=tap tests/agent-runtime.test.mjs
+
+
+> handrail-agent-sdk@0.1.8 build
+> tsc -p tsconfig.json && node scripts/build-postgres-assets.mjs
+
+
+> handrail-agent-sdk@0.1.8 build:reference
+> tsc -p reference/tsconfig.json
+
+
+> handrail-agent-sdk@0.1.8 build:test-postgres
+> tsc -p tests/tsconfig.postgres.json
+
+TAP version 13
+# Subtest: host structured history survives an approval checkpoint without flattening roles or image references
+ok 1 - host structured history survives an approval checkpoint without flattening roles or image references
+  ---
+  duration_ms: 362.76401
+  type: 'test'
+  ...
+# Subtest: verified effects expose bounded host results and a failed result read never repeats the effect
+ok 2 - verified effects expose bounded host results and a failed result read never repeats the effect
+  ---
+  duration_ms: 526.052196
+  type: 'test'
+  ...
+# Subtest: unknown effects cannot release a domain result
+ok 3 - unknown effects cannot release a domain result
+  ---
+  duration_ms: 256.664819
+  type: 'test'
+  ...
+# Subtest: real Runner executes inventory -> protected reservation -> verification; duplicate delivery has one effect
+ok 4 - real Runner executes inventory -> protected reservation -> verification; duplicate delivery has one effect
+  ---
+  duration_ms: 363.86099
+  type: 'test'
+  ...
+# Subtest: different research task recovers from deliberate read-tool failure and computes a quote
+ok 5 - different research task recovers from deliberate read-tool failure and computes a quote
+  ---
+  duration_ms: 316.039304
+  type: 'test'
+  ...
+# Subtest: durable approval, answer and new input resume same job in a separate process
+ok 6 - durable approval, answer and new input resume same job in a separate process
+  ---
+  duration_ms: 1458.041943
+  type: 'test'
+  ...
+# Subtest: SIGKILL after provider mutation reconciles across processes without duplicate execution
+ok 7 - SIGKILL after provider mutation reconciles across processes without duplicate execution
+  ---
+  duration_ms: 3992.780871
+  type: 'test'
+  ...
+# Subtest: unknown external effect waits for reconciliation; schedule wake cannot authorize replay
+ok 8 - unknown external effect waits for reconciliation; schedule wake cannot authorize replay
+  ---
+  duration_ms: 654.047917
+  type: 'test'
+  ...
+# Subtest: tenant isolation, revoked and changed grants deny private state and execution
+ok 9 - tenant isolation, revoked and changed grants deny private state and execution
+  ---
+  duration_ms: 252.070357
+  type: 'test'
+  ...
+# Subtest: provider failure retains checkpoint and retry recovers without repeating completed tools
+ok 10 - provider failure retains checkpoint and retry recovers without repeating completed tools
+  ---
+  duration_ms: 447.732586
+  type: 'test'
+  ...
+# Subtest: process stop resumes checkpoint; explicit durable Stop fences late output and remains terminal
+ok 11 - process stop resumes checkpoint; explicit durable Stop fences late output and remains terminal
+  ---
+  duration_ms: 225.805591
+  type: 'test'
+  ...
+# Subtest: process shutdown aborts model transport and fresh runtime recovers same job
+ok 12 - process shutdown aborts model transport and fresh runtime recovers same job
+  ---
+  duration_ms: 422.032489
+  type: 'test'
+  ...
+# Subtest: invalid tool schema cannot mutate and repeated provider failure is bounded
+ok 13 - invalid tool schema cannot mutate and repeated provider failure is bounded
+  ---
+  duration_ms: 302.545276
+  type: 'test'
+  ...
+# Subtest: lost lease during a pending read prevents tool result and terminal writes
+ok 14 - lost lease during a pending read prevents tool result and terminal writes
+  ---
+  duration_ms: 487.882394
+  type: 'test'
+  ...
+# Subtest: model context bound fails durably and oversized private state is not committed
+ok 15 - model context bound fails durably and oversized private state is not committed
+  ---
+  duration_ms: 208.502641
+  type: 'test'
+  ...
+# Subtest: concurrent delivery is lease fenced; a second worker cannot execute tools
+ok 16 - concurrent delivery is lease fenced; a second worker cannot execute tools
+  ---
+  duration_ms: 442.653308
+  type: 'test'
+  ...
+# Subtest: revocation after model approval is checked immediately before mutation dispatch
+ok 17 - revocation after model approval is checked immediately before mutation dispatch
+  ---
+  duration_ms: 288.026142
+  type: 'test'
+  ...
+# Subtest: unknown first effect stops other tools emitted in the same model response
+ok 18 - unknown first effect stops other tools emitted in the same model response
+  ---
+  duration_ms: 242.575942
+  type: 'test'
+  ...
+# Subtest: official OpenAI Responses provider/client drive Runner through simulated HTTP SSE transport
+ok 19 - official OpenAI Responses provider/client drive Runner through simulated HTTP SSE transport
+  ---
+  duration_ms: 444.87108
+  type: 'test'
+  ...
+# Subtest: current catalog hides unauthorized tools and opaque attachments resolve only at model boundary
+ok 20 - current catalog hides unauthorized tools and opaque attachments resolve only at model boundary
+  ---
+  duration_ms: 190.839443
+  type: 'test'
+  ...
+# Subtest: concurrent tenant scopes share a namespace without sharing state or effects; stale correction is fenced
+ok 21 - concurrent tenant scopes share a namespace without sharing state or effects; stale correction is fenced
+  ---
+  duration_ms: 578.138431
+  type: 'test'
+  ...
+# Subtest: native answer retries are identical, changed delivery conflicts, and revoked actor cannot answer
+ok 22 - native answer retries are identical, changed delivery conflicts, and revoked actor cannot answer
+  ---
+  duration_ms: 632.275387
+  type: 'test'
+  ...
+# Subtest: injected official provider rejects temperature; default omits it
+ok 23 - injected official provider rejects temperature; default omits it
+  ---
+  duration_ms: 208.140471
+  type: 'test'
+  ...
+# Subtest: injected official provider accepts configured sampling
+ok 24 - injected official provider accepts configured sampling
+  ---
+  duration_ms: 219.142486
+  type: 'test'
+  ...
+# Subtest: public migrations serialize, are repeatable, preserve uncertain identities, and reject drift
+ok 25 - public migrations serialize, are repeatable, preserve uncertain identities, and reject drift
+  ---
+  duration_ms: 338.844861
+  type: 'test'
+  ...
+# Subtest: private state requires host key handles; rotation preserves old decryption and rejects substitution
+ok 26 - private state requires host key handles; rotation preserves old decryption and rejects substitution
+  ---
+  duration_ms: 309.656755
+  type: 'test'
+  ...
+# Subtest: bootstrap failure rolls back new tables and preserves an unknown existing table
+ok 27 - bootstrap failure rolls back new tables and preserves an unknown existing table
+  ---
+  duration_ms: 77.298347
+  type: 'test'
+  ...
+# Subtest: Runner Vault tool composes real custody/grants/effects and never exposes the private token
+ok 28 - Runner Vault tool composes real custody/grants/effects and never exposes the private token
+  ---
+  duration_ms: 637.44705
+  type: 'test'
+  ...
+1..28
+# tests 28
+# suites 0
+# pass 28
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 15739.811758
+Owned temporary PostgreSQL cluster stopped.

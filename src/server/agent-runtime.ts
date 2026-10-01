@@ -56,6 +56,9 @@ export type AgentCommit = { readonly kind: 'checkpoint' }
   | { readonly kind: 'succeeded'; readonly receiptRef: string }
   | { readonly kind: 'failed' };
 export interface AgentStateStore {
+  /** Opt-in paged private custody. The host supplies a total storage quota;
+   * maxStateBytes still bounds control metadata, not the encrypted pages. */
+  readonly checkpointQuotaBytes?: number;
   /** Authenticate ownership before returning private state. */
   load(identity: JobIdentity, authority: JobLeaseAuthority): Promise<JobStoreResult<AgentCheckpoint | null>>;
   /** CAS private state AND journal transition in one transaction under the job
@@ -70,6 +73,9 @@ export interface AgentStateStore {
 export interface AgentRuntimeHost extends JobLeaseHost {
   recover(): Promise<readonly JobIdentity[]>;
   authorize(identity: JobIdentity): Promise<JobAuthority | null>;
+  /** Ephemeral, host-filtered stream; reconnect reads the canonical final output.
+   * Observation failure must not cancel admitted work. Never send raw provider events. */
+  textDelta?(identity: JobIdentity, delta: string): void;
   /** Resolve admitted private input; exclude credentials/cookies/Vault values. */
   input(identity: JobIdentity): Promise<AgentInput>;
   /** Current catalog visibility, evaluated on every dispatch/reconstruction.
@@ -233,7 +239,9 @@ export function createAgentRuntime(deps: {
         input: await deps.host.input(copy(identity)), results: {} };
       save = async (change = { kind: 'checkpoint' }) => {
         await check();
-        if (size(record) > limits.maxStateBytes) throw new Halt('limit_exceeded');
+        const control = deps.states.checkpointQuotaBytes === undefined ? record
+          : { ...record, input: undefined, state: undefined, results: undefined, output: undefined };
+        if (size(control) > limits.maxStateBytes || size(record) > (deps.states.checkpointQuotaBytes ?? limits.maxStateBytes)) throw new Halt('limit_exceeded');
         const next = { ...record!, version: record!.version + 1 };
         await authorized(identity, authority => deps.states.commit(identity, record!.version, next, change,
           { authority, fence: fence!, now: () => deps.host.now() }));
@@ -360,7 +368,13 @@ export function createAgentRuntime(deps: {
         const result: Awaited<ReturnType<typeof invoke>> = await invoke(state ?? record!.input);
         await abortable((async () => {
           for await (const event of result) {
-            if (event.type === 'raw_model_stream_event') emit({ kind: 'model_progress' });
+            if (event.type === 'raw_model_stream_event') {
+              emit({ kind: 'model_progress' });
+              if (event.data.type === 'output_text_delta') {
+                await check();
+                try { deps.host.textDelta?.(copy(identity), event.data.delta); } catch { /* observation close is not Stop */ }
+              }
+            }
           }
           await result.completed;
         })(), controller.signal);

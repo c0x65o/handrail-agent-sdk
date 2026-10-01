@@ -8,6 +8,7 @@ assistance module owns schedule/watch lifecycle and notification orchestration.
 - `handrail-agent-sdk`: pure job, connection, Vault and browser contracts.
 - `handrail-agent-sdk/server`: admission, leases, Stop, answers, effects and Vault boundaries.
 - `handrail-agent-sdk/server/postgres`: supported durable stores, additive migrations and host key handles.
+- `handrail-agent-sdk/server/conversation`: continuous transcript/context, scoped memory and durable native work return.
 - `handrail-agent-sdk/server/agents`: `createAgentRuntime` and its typed host/store/tool ports.
 - `handrail-agent-sdk/server/application`: existing assistant gateway transport and checkpoint projection.
 - `handrail-agent-sdk/server/application-tools`: trusted application tool catalog/presentation adapters.
@@ -39,6 +40,9 @@ The [PostgreSQL composition guide](docs/postgres-runtime.md) and
 [complete installed application example](examples/postgres-application.mts)
 compose runtime, gateway, native answers and notifications using public factories.
 The reference host reuses these implementations. Nothing starts automatically.
+The [continuous conversation guide](docs/continuous-conversation.md) and
+[headless host](examples/continuous-conversation.mts) add bounded history, scoped
+memory and native work handoffs before application cutover.
 
 Consumers install from the public HTTPS Git repository
 `https://github.com/c0x65o/handrail-agent-sdk.git`, pinned to the **full 40-character

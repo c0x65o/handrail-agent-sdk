@@ -11,6 +11,7 @@ import type { AgentPostgresDatabase } from './db/database.js';
 import { createJobJournal } from './job-journal.js';
 import { copyAppendFence, matchesJobFence, releasedLease } from './job-lease-fence.js';
 import { open, seal } from './private-envelope.js';
+import { openPages, sealPages } from './paged-envelope.js';
 
 import type { AgentStateKeys } from './keys.js';
 export type { AgentStateKeys } from './keys.js';
@@ -21,7 +22,8 @@ async function safe<T>(run: () => Promise<T>): Promise<JobStoreResult<T>> {
   try { return { ok: true, value: await run() }; }
   catch (e) { return { ok: false, code: e instanceof Rejected ? e.code : 'unavailable' }; }
 }
-export function createAgentStateStore(db: AgentPostgresDatabase, keys: AgentStateKeys, namespace?: string): AgentStateStore {
+export function createAgentStateStore(db: AgentPostgresDatabase, keys: AgentStateKeys, namespace?: string, checkpointQuotaBytes?: number): AgentStateStore {
+  if (checkpointQuotaBytes !== undefined && (!Number.isSafeInteger(checkpointQuotaBytes) || checkpointQuotaBytes < 65_536)) throw Error('INVALID_CHECKPOINT_QUOTA');
   const tables = journalTables(namespace), { states } = agentStateTables(namespace);
   type Tx = Parameters<Parameters<AgentPostgresDatabase['transaction']>[0]>[0];
   type Row = typeof states.$inferSelect;
@@ -36,7 +38,10 @@ export function createAgentStateStore(db: AgentPostgresDatabase, keys: AgentStat
     return { head, row };
   }
   async function decode(identity: JobIdentity, row: Row): Promise<AgentCheckpoint> {
-    const result = open(row.envelope, await keys.resolve(row.keyRef), aad(identity, row)) as AgentCheckpoint;
+    const key = await keys.resolve(row.keyRef);
+    const result = ('format' in row.envelope
+      ? openPages(row.envelope, key, aad(identity, row), checkpointQuotaBytes ?? 65_536)
+      : open(row.envelope, key, aad(identity, row))) as AgentCheckpoint;
     if (!result || result.version !== row.version || typeof result.definitionRef !== 'string'
       || !Number.isSafeInteger(result.dispatches) || !(typeof result.input === 'string' || Array.isArray(result.input))
       || !result.results || (result.state !== undefined && typeof result.state !== 'string')) reject('invalid_checkpoint');
@@ -44,15 +49,16 @@ export function createAgentStateStore(db: AgentPostgresDatabase, keys: AgentStat
   }
   async function write(tx: Tx, identity: JobIdentity, checkpoint: AgentCheckpoint, grantRevision: number) {
     // Bound private custody independently of caller-provided runtime limits.
-    if (Buffer.byteLength(JSON.stringify(checkpoint)) > 65_536) reject('invalid_checkpoint');
+    if (Buffer.byteLength(JSON.stringify(checkpoint)) > (checkpointQuotaBytes ?? 65_536)) reject('invalid_checkpoint');
     const key = await keys.current();
     if (typeof key.ref !== 'string' || key.ref.length === 0
       || key.key.type !== 'secret' || key.key.symmetricKeySize !== 32) reject('invalid_checkpoint');
     const row = { jobId: identity.jobId, version: checkpoint.version, grantRevision, keyRef: key.ref };
-    const record = { ...row, envelope: seal(checkpoint, key.key, aad(identity, row)) };
+    const record = { ...row, envelope: checkpointQuotaBytes === undefined ? seal(checkpoint, key.key, aad(identity, row)) : sealPages(checkpoint, key.key, aad(identity, row), checkpointQuotaBytes) };
     await tx.insert(states).values(record).onConflictDoUpdate({ target: states.jobId, set: record });
   }
   return {
+    checkpointQuotaBytes,
     load(identity, authority) {
       return safe(() => db.transaction(async tx => {
         const { row } = await lock(tx, identity, authority);

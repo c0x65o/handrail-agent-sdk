@@ -1,0 +1,8 @@
+
+> handrail-agent-sdk@0.1.8 prepare
+> npm run build
+
+
+> handrail-agent-sdk@0.1.8 build
+> tsc -p tsconfig.json && node scripts/build-postgres-assets.mjs
+

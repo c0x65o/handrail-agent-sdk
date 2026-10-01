@@ -1,0 +1,80 @@
+[
+  {
+    "profile": "node-next",
+    "sha": "18ca76ff5e8f41c5afda69da52c0210a9f706d54",
+    "candidateSourceOverlay": true,
+    "node": "v22.23.1",
+    "npm": "10.9.8",
+    "originalResolved": "git+https://git@github.com/c0x65o/handrail-agent-sdk.git#18ca76ff5e8f41c5afda69da52c0210a9f706d54",
+    "sdkLock": {
+      "version": "0.1.8",
+      "resolved": "git+https://git@github.com/c0x65o/handrail-agent-sdk.git#18ca76ff5e8f41c5afda69da52c0210a9f706d54",
+      "integrity": "sha512-+c2AS+AbO87OYJvhRyAwOVFVzfHf+lwsJGuN8qCyk7gdpBe+hYDMmXwEWB87psP/yHsHi8SR1JWxoHsD/nLRTA==",
+      "dependencies": {
+        "@handrail/ai-assistant": "git+https://github.com/c0x65o/handrail-sdk-ai-assistant-js.git#921a5650f1937504a124574ad795ea222555a684",
+        "@openai/agents": "0.18.0",
+        "ajv": "8.20.0",
+        "ajv-formats": "3.0.1",
+        "drizzle-orm": "0.45.3",
+        "pg": "8.23.0",
+        "zod": "4.3.6"
+      },
+      "engines": {
+        "node": ">=22.0.0"
+      }
+    },
+    "versions": {
+      "node_modules/@openai/agents": "0.18.0",
+      "node_modules/@openai/agents-core": "0.18.0",
+      "node_modules/@openai/agents-openai": "0.18.0",
+      "node_modules/@openai/agents-realtime": "0.18.0",
+      "node_modules/@types/node": "22.20.4",
+      "node_modules/@types/ws": "8.18.2",
+      "node_modules/handrail-agent-sdk": "0.1.8",
+      "node_modules/openai": "7.25.0",
+      "node_modules/typescript": "5.9.3",
+      "node_modules/zod": "4.3.6"
+    },
+    "typecheckExit": 0,
+    "status": "passed"
+  },
+  {
+    "profile": "bundler-explicit-provider",
+    "sha": "18ca76ff5e8f41c5afda69da52c0210a9f706d54",
+    "candidateSourceOverlay": true,
+    "node": "v22.23.1",
+    "npm": "10.9.8",
+    "originalResolved": "git+https://git@github.com/c0x65o/handrail-agent-sdk.git#18ca76ff5e8f41c5afda69da52c0210a9f706d54",
+    "sdkLock": {
+      "version": "0.1.8",
+      "resolved": "git+https://git@github.com/c0x65o/handrail-agent-sdk.git#18ca76ff5e8f41c5afda69da52c0210a9f706d54",
+      "integrity": "sha512-+c2AS+AbO87OYJvhRyAwOVFVzfHf+lwsJGuN8qCyk7gdpBe+hYDMmXwEWB87psP/yHsHi8SR1JWxoHsD/nLRTA==",
+      "dependencies": {
+        "@handrail/ai-assistant": "git+https://github.com/c0x65o/handrail-sdk-ai-assistant-js.git#921a5650f1937504a124574ad795ea222555a684",
+        "@openai/agents": "0.18.0",
+        "ajv": "8.20.0",
+        "ajv-formats": "3.0.1",
+        "drizzle-orm": "0.45.3",
+        "pg": "8.23.0",
+        "zod": "4.3.6"
+      },
+      "engines": {
+        "node": ">=22.0.0"
+      }
+    },
+    "versions": {
+      "node_modules/@openai/agents": "0.18.0",
+      "node_modules/@openai/agents-core": "0.18.0",
+      "node_modules/@openai/agents-openai": "0.18.0",
+      "node_modules/@openai/agents-realtime": "0.18.0",
+      "node_modules/@types/node": "22.18.0",
+      "node_modules/@types/ws": "8.18.2",
+      "node_modules/handrail-agent-sdk": "0.1.8",
+      "node_modules/openai": "7.25.0",
+      "node_modules/typescript": "5.9.3",
+      "node_modules/zod": "4.3.6"
+    },
+    "typecheckExit": 0,
+    "status": "passed"
+  }
+]

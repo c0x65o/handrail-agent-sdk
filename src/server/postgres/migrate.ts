@@ -12,7 +12,7 @@ export async function agentPostgresMigrations(schema: string): Promise<readonly 
   const journal = JSON.parse(await readFile(new URL('./migrations/meta/_journal.json', import.meta.url), 'utf8')) as {
     entries: { idx: number; tag: string; when: number }[];
   };
-  const runtime = new Set([0, 1, 2, 6, 7, 8, 13]);
+  const runtime = new Set([0, 1, 2, 6, 7, 8, 13, 14]);
   return Promise.all(journal.entries.filter(e => runtime.has(e.idx)).map(async e => {
     const sql = (await readFile(new URL(`./migrations/${e.tag}.sql`, import.meta.url), 'utf8'))
       .replaceAll('"agent_reference"', `"${schema}"`);

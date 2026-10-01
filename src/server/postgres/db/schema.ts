@@ -108,7 +108,7 @@ export function agentStateTables(namespace = agentPostgresDefaultSchema) {
     version: bigint('version', { mode: 'number' }).notNull(),
     grantRevision: bigint('grant_revision', { mode: 'number' }).notNull(),
     keyRef: text('key_ref').notNull(),
-    envelope: jsonb('envelope').$type<import('../private-envelope.js').PrivateEnvelope>().notNull(),
+    envelope: jsonb('envelope').$type<import('../private-envelope.js').PrivateEnvelope | import('../paged-envelope.js').PagedEnvelope>().notNull(),
   }, t => [check('agent_run_states_version', sql`${t.version} between 1 and 9007199254740991`),
     check('agent_run_states_grant_revision', sql`${t.grantRevision} between 1 and 9007199254740991`)]) };
 }

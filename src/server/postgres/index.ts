@@ -30,6 +30,7 @@ export function createPostgresAgentStores(options: {
   readonly client: Pool;
   readonly schema: string;
   readonly keys: AgentStateKeys;
+  readonly checkpointQuotaBytes?: number;
 }): PostgresAgentStores {
   assertAgentPostgresSchema(options.schema);
   const db = agentPostgresDatabase(options.client), tables = journalTables(options.schema);
@@ -40,7 +41,7 @@ export function createPostgresAgentStores(options: {
     effects: createEffectStoreImpl(db, tables),
     cancellation: createJobCancellationStoreImpl(db, tables),
     answer: createJobAnswerStoreImpl(db, tables),
-    states: createAgentStateStoreImpl(db, options.keys, options.schema),
+    states: createAgentStateStoreImpl(db, options.keys, options.schema, options.checkpointQuotaBytes),
   };
 }
 
@@ -74,9 +75,9 @@ export function createJobAnswerStore(client: Pool, schema: string): JobAnswerSto
   return createJobAnswerStoreImpl(agentPostgresDatabase(client), journalTables(schema));
 }
 
-export function createAgentStateStore(client: Pool, keys: AgentStateKeys, schema: string): AgentStateStore {
+export function createAgentStateStore(client: Pool, keys: AgentStateKeys, schema: string, checkpointQuotaBytes?: number): AgentStateStore {
   assertAgentPostgresSchema(schema);
-  return createAgentStateStoreImpl(agentPostgresDatabase(client), keys, schema);
+  return createAgentStateStoreImpl(agentPostgresDatabase(client), keys, schema, checkpointQuotaBytes);
 }
 
 /** pg.Pool bridge for the existing assistance SQL API. No connection is opened
@@ -98,3 +99,5 @@ export function createPostgresAssistanceDatabase(pool: Pool): import('../assista
     },
   };
 }
+
+export { createPostgresConversationStorage } from './conversation-store.js';

@@ -1,6 +1,6 @@
 {
   "name": "handrail-agent-sdk",
-  "version": "0.1.8",
+  "version": "0.2.0",
   "private": true,
   "description": "Headless durable agent execution powered by OpenAI Agents SDK",
   "type": "module",
@@ -17,7 +17,9 @@
     "docs/agent-runtime.md",
     "docs/assistance.md",
     "examples/postgres-application.mts",
-    "docs/postgres-runtime.md"
+    "docs/postgres-runtime.md",
+    "docs/continuous-conversation.md",
+    "examples/continuous-conversation.mts"
   ],
   "exports": {
     ".": {
@@ -59,6 +61,10 @@
     "./server/postgres": {
       "types": "./dist/server/postgres/index.d.ts",
       "import": "./dist/server/postgres/index.js"
+    },
+    "./server/conversation": {
+      "types": "./dist/server/conversation.d.ts",
+      "import": "./dist/server/conversation.js"
     }
   },
   "scripts": {
@@ -92,7 +98,8 @@
     "test:browser-profile": "npm run build:test-reference && node --test --test-concurrency=1 --test-reporter=tap .reference-build/tests/reference/browser-profile-store.test.js",
     "test:connection-store": "npm run build:test-reference && node --test --test-concurrency=1 --test-reporter=tap .reference-build/tests/reference/connection-store.test.js",
     "test:agents": "npm run build && npm run build:reference && npm run build:test-postgres && node --test --test-concurrency=1 --test-reporter=tap tests/agent-runtime.test.mjs",
-    "test:assistance": "npm run build && npm run build:reference && npm run build:test-postgres && node --test --test-concurrency=1 --test-reporter=tap tests/assistance.test.mjs tests/agent-transport.test.mjs"
+    "test:assistance": "npm run build && npm run build:reference && npm run build:test-postgres && node --test --test-concurrency=1 --test-reporter=tap tests/assistance.test.mjs tests/agent-transport.test.mjs",
+    "test:conversation": "npm run build && node --test --test-concurrency=1 tests/fixtures/installed/conversation.test.mjs"
   },
   "devDependencies": {
     "@types/node": "22.20.4",
@@ -102,7 +109,7 @@
     "typescript": "5.9.3"
   },
   "dependencies": {
-    "@handrail/ai-assistant": "git+https://github.com/c0x65o/handrail-sdk-ai-assistant-js.git#921a5650f1937504a124574ad795ea222555a684",
+    "@handrail/ai-assistant": "git+https://git@github.com/c0x65o/handrail-sdk-ai-assistant-js.git#921a5650f1937504a124574ad795ea222555a684",
     "@openai/agents": "0.18.0",
     "ajv": "8.20.0",
     "ajv-formats": "3.0.1",

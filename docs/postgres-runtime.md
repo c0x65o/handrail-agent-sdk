@@ -41,7 +41,7 @@ Use the same explicit schema when adopting an existing reference database.
 Run `migrateAgentPostgres(pool, schema)` from the host's approved migration phase
 **before** starting workers. It takes a transaction-level schema advisory lock,
 creates the schema/ledger if absent and applies the unchanged additive runtime
-migrations 0000, 0001, 0002, 0006, 0007, 0008 and 0013. SQL ships in the ordinary
+migrations 0000, 0001, 0002, 0006, 0007, 0008, 0013 and 0014. SQL ships in the ordinary
 built package. The entire call commits or rolls back on one checked-out connection;
 concurrent calls serialize. The original per-schema `journal_migrations` ledger
 (hash/created_at) is recognized, including partial reference installs. Existing
@@ -77,6 +77,12 @@ PostgreSQL RLS: possession of the Pool is trusted server access. Hosts must deri
 all identity/namespace/ACL facts from current authenticated context and keep
 `withAuthority`/`withToolAuthority` valid through the awaited operation. Never
 accept browser-supplied authority or treat a visible catalog as execution permission.
+
+Conversation records are added by migration 0014. The optional
+`checkpointQuotaBytes` store setting enables authenticated paged checkpoints;
+without it the original 64 KiB whole-record bound remains. See the
+[continuous conversation guide](continuous-conversation.md) for sizing,
+canonical storage, memory and rollback constraints.
 
 ## Encrypted state and host-controlled keys
 

@@ -13,6 +13,7 @@
     "git-consumer.mts",
     "convergence-v1.ts",
     "../../examples/headless.mts",
-    "../../examples/postgres-application.mts"
+    "../../examples/postgres-application.mts",
+    "../../examples/continuous-conversation.mts"
   ]
 }

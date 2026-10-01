@@ -6,6 +6,9 @@ validated tool dispatch, tool-result continuation, streaming and RunState.
 Handrail still owns durable admission, permissions, leases, cancellation,
 answers, effects, scheduling, encrypted state and Vault custody.
 
+For continuous context, scoped memory, native work return and opt-in paged
+checkpoints, see [continuous conversations](continuous-conversation.md).
+
 For the reusable schedule/watch, notification, canonical feedback and existing
 application-gateway adapters, see [assistance composition](assistance.md).
 For supported durable store composition, migrations and key custody, use the
