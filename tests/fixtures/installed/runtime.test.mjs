@@ -167,6 +167,45 @@ test('final output commit failure recovers the saved answer in a fresh runtime w
   assert.equal((await s.client.query(`SELECT sum(attempts)::int AS attempts FROM ${s.harness.table('synthetic_provider')}`)).rows[0].attempts, 1);
   assert.ok(!JSON.stringify(s.events).includes('PRIVATE_OUTPUT_COMMIT_FAILURE'));
 });
+test('staged final output still honors revoked authority and durable Stop', async t => {
+  let commits = 0;
+  const s = await setup(t, { host: { output: async () => {
+    commits++;
+    throw Error('output unavailable');
+  } } });
+  assert.equal(ok(await s.runtime.wake(identity)), 'retryable');
+  assert.equal(commits, 1);
+  s.state.denied = true;
+  assert.equal((await s.runtime.wake(identity)).ok, false);
+  assert.equal(commits, 1);
+  s.state.denied = false;
+  const current = ok(await s.journal.load(identity));
+  ok(await s.cancel.stop({ command:'cancel', identity, expectedRevision:current.revision, reason:'explicit_stop' }, 'actor'));
+  assert.equal(ok(await s.runtime.wake(identity)), 'cancelled');
+  assert.equal(commits, 1);
+});
+test('lost final output acknowledgement repeats only the idempotent host commit', async t => {
+  const receipts = new Map();
+  let attempts = 0;
+  const output = async (id, text) => {
+    const key = JSON.stringify(id);
+    const saved = receipts.get(key) ?? { text, receiptRef:'canonical-output-one' };
+    assert.equal(saved.text, text);
+    receipts.set(key, saved);
+    if (++attempts === 1) throw Error('lost output receipt');
+    return saved;
+  };
+  const s = await setup(t, { host:{ output } });
+  assert.equal(ok(await s.runtime.wake(identity)), 'retryable');
+  const next = await services(s.harness.schema, s.key, { host:{ output },
+    modelHooks:{ before:async () => { throw Error('MODEL_MUST_NOT_REPEAT'); } } });
+  t.after(() => next.close());
+  assert.equal(ok(await next.runtime.wake(identity)), 'succeeded');
+  assert.equal(ok(await next.runtime.wake(identity)), 'succeeded');
+  assert.equal(receipts.size, 1);
+  assert.equal(attempts, 2);
+  assert.equal(next.model.requests, 0);
+});
 test('process stop resumes checkpoint; explicit durable Stop fences late output and remains terminal', async t => {
   let entered, release;
   const started = new Promise(r=>entered=r), hold = new Promise(r=>release=r);
