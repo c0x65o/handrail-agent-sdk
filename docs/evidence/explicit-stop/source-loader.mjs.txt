@@ -1,0 +1,14 @@
+import { readFileSync } from 'node:fs';
+import { pathToFileURL } from 'node:url';
+const roots = {"@handrail/ai-assistant": "/opt/handrail/repos/handrail/handrail-ai-assistant-sdk/handrail-sdk-ai-assistant-js", "handrail-agent-sdk": "/opt/handrail/repos/handrail/handrail-agent-sdk/handrail-agent-sdk"};
+export async function resolve(specifier, context, nextResolve) {
+  for (const [name, root] of Object.entries(roots)) {
+    if (specifier === name || specifier.startsWith(name + '/')) {
+      const subpath = specifier === name ? '.' : '.' + specifier.slice(name.length);
+      const entry = JSON.parse(readFileSync(root + '/package.json', 'utf8')).exports[subpath];
+      if (!entry?.import) return nextResolve(specifier, context);
+      return { url: pathToFileURL(root + '/' + entry.import).href, shortCircuit: true };
+    }
+  }
+  return nextResolve(specifier, context);
+}

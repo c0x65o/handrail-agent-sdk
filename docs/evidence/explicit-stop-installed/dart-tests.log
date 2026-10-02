@@ -1,0 +1,13 @@
+00:00 +0: loading test/cancellation_reason_test.dart
+00:00 +0: test/cancellation_reason_test.dart: explicit_stop survives stream replay and canonical reload
+00:00 +1: test/cancellation_reason_test.dart: deadline_exceeded survives stream replay and canonical reload
+00:00 +2: test/cancellation_reason_test.dart: policy_revoked survives stream replay and canonical reload
+00:00 +3: test/cancellation_reason_test.dart: runtime_shutdown survives stream replay and canonical reload
+00:00 +4: test/cancellation_reason_test.dart: bounded controls preserve user and reject unknown values
+00:00 +5: test/cancellation_reason_test.dart: bounded controls preserve timeout and reject unknown values
+00:00 +6: test/cancellation_reason_test.dart: bounded controls preserve superseded and reject unknown values
+00:00 +7: test/cancellation_reason_test.dart: bounded controls preserve runtime_shutdown and reject unknown values
+00:00 +8: test/cancellation_reason_test.dart: coarse completed activity turn cannot relabel a known user Stop
+00:00 +9: test/cancellation_reason_test.dart: coarse completed activity null cannot relabel a known user Stop
+00:00 +10: test/cancellation_reason_test.dart: unknown cancellation is rejected instead of relabelled
+00:00 +11: All tests passed!

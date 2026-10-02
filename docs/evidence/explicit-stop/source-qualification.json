@@ -1,0 +1,20 @@
+{
+  "proof_class": "source fixture; not installed-consumer, native app or live provider proof",
+  "source_roots": {
+    "agent": "/opt/handrail/repos/handrail/handrail-agent-sdk/handrail-agent-sdk",
+    "js": "/opt/handrail/repos/handrail/handrail-ai-assistant-sdk/handrail-sdk-ai-assistant-js",
+    "flutter": "/opt/handrail/repos/handrail/handrail-ai-assistant-sdk/handrail-sdk-ai-assistant-flutter"
+  },
+  "typescript": "The task-local source-tsc.cjs compiles each actual tsconfig using the repo TypeScript version with paths resolved to the sibling JS dist public declarations. npm script-shell uses source-shell and a task-local bin/tsc wrapper to invoke this compiler. All package.json/lockfiles remain unchanged.",
+  "runtime": "NODE_OPTIONS=--import=/opt/handrail/.handrail/codex-runs/3775ac11-35ac-445d-95b5-4700f18e5ad6/tmp/register-source.mjs explicitly redirects public SDK exports to source builds for disposable fixture tests; undeclared exports still resolve through normal package enforcement. No dependencies were installed/substituted.",
+  "dart": "HANDRAIL_TEST_JS_SDK_DIST selects the existing Flutter gateway source-qualification seam. Cross-SDK test HANDRAIL_PROJECTION_DART_PACKAGES selects the current client package config. The standalone Dart binary and Flutter tool snapshot use the read-only assigned Flutter SDK.",
+  "commands": {
+    "js": "npm run build; npm run typecheck; npm test -- --maxWorkers=1 --minWorkers=1 <scoped files listed in logs>",
+    "agent_pinned": "npm test (expected type failure: existing public JS dependency lacks explicit_stop)",
+    "agent_source": "npm test && node <task-temp>/source-tsc.cjs -p tests/fixtures/tsconfig.json && node tests/run-local-postgres.mjs (source compiler/loader env above)",
+    "cross_sdk": "NODE_OPTIONS=--import=<task-temp>/register-source.mjs HANDRAIL_PROJECTION_DART=<flutter>/bin/cache/dart-sdk/bin/dart HANDRAIL_PROJECTION_DART_PACKAGES=<flutter-repo>/packages/handrail_ai_client/.dart_tool/package_config.json node test/run-agent-stop-postgres.mjs",
+    "client": "dart analyze --fatal-infos; HANDRAIL_TEST_JS_SDK_DIST=<js>/dist dart test --concurrency=1",
+    "widgets": "FLUTTER_ALREADY_LOCKED=true dart <flutter>/bin/cache/flutter_tools.snapshot analyze --no-pub --fatal-infos; same launcher test --no-pub --concurrency=1 test/conversation_transcript_test.dart test/settled_transcript_regression_test.dart test/display_transcript_test.dart"
+  },
+  "isolation": "Each PostgreSQL runner creates its own random loopback PostgreSQL 15 cluster, database and non-superuser role, applies real SDK migrations, and stops/removes the cluster. Model responses/external business effect adapters are simulated. No shared runtime, remote DB, historical QA key or held resource was used."
+}

@@ -1,0 +1,91 @@
+TAP version 13
+# Subtest: installed execution preserves explicit_stop through cancellation and reload
+not ok 1 - installed execution preserves explicit_stop through cancellation and reload
+  ---
+  duration_ms: 19.639588
+  type: 'test'
+  location: '/opt/handrail/repos/handrail/handrail-agent-sdk/handrail-agent-sdk/docs/evidence/explicit-stop-installed/installed-reasons.test.mjs:19:3'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly equal:
+    + actual - expected
+    
+    + 'runtime_shutdown'
+    - 'user'
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 'user'
+  actual: 'runtime_shutdown'
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///opt/handrail/repos/handrail/handrail-agent-sdk/handrail-agent-sdk/docs/evidence/explicit-stop-installed/installed-reasons.test.mjs:62:14)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async startSubtestAfterBootstrap (node:internal/test_runner/harness:296:3)
+  ...
+# Subtest: installed execution preserves deadline_exceeded through cancellation and reload
+ok 2 - installed execution preserves deadline_exceeded through cancellation and reload
+  ---
+  duration_ms: 30.286942
+  type: 'test'
+  ...
+# Subtest: installed execution preserves policy_revoked through cancellation and reload
+not ok 3 - installed execution preserves policy_revoked through cancellation and reload
+  ---
+  duration_ms: 4.113316
+  type: 'test'
+  location: '/opt/handrail/repos/handrail/handrail-agent-sdk/handrail-agent-sdk/docs/evidence/explicit-stop-installed/installed-reasons.test.mjs:19:3'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly equal:
+    + actual - expected
+    
+    + 'runtime_shutdown'
+    - 'superseded'
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 'superseded'
+  actual: 'runtime_shutdown'
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///opt/handrail/repos/handrail/handrail-agent-sdk/handrail-agent-sdk/docs/evidence/explicit-stop-installed/installed-reasons.test.mjs:62:14)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: installed execution preserves runtime_shutdown through cancellation and reload
+ok 4 - installed execution preserves runtime_shutdown through cancellation and reload
+  ---
+  duration_ms: 4.257654
+  type: 'test'
+  ...
+# Subtest: installed strict decoder rejects unsupported cancellation values
+not ok 5 - installed strict decoder rejects unsupported cancellation values
+  ---
+  duration_ms: 0.754687
+  type: 'test'
+  location: '/opt/handrail/repos/handrail/handrail-agent-sdk/handrail-agent-sdk/docs/evidence/explicit-stop-installed/installed-reasons.test.mjs:72:1'
+  failureType: 'testCodeFailure'
+  error: '$events[0].type: must be response.started'
+  code: 'ERR_TEST_FAILURE'
+  name: 'ProtocolValidationError'
+  stack: |-
+    fail (file:///opt/handrail/repos/handrail/handrail-agent-sdk/handrail-agent-sdk/node_modules/@handrail/ai-assistant/dist/protocol.js:211:11)
+    parseStreamEvents (file:///opt/handrail/repos/handrail/handrail-agent-sdk/handrail-agent-sdk/node_modules/@handrail/ai-assistant/dist/protocol.js:919:9)
+    TestContext.<anonymous> (file:///opt/handrail/repos/handrail/handrail-agent-sdk/handrail-agent-sdk/docs/evidence/explicit-stop-installed/installed-reasons.test.mjs:76:16)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:744:18)
+    Test.postRun (node:internal/test_runner/test:1173:19)
+    Test.run (node:internal/test_runner/test:1101:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+1..5
+# tests 5
+# suites 0
+# pass 2
+# fail 3
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 256.214412

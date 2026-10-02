@@ -1,0 +1,10 @@
+{
+  "js/test/run-agent-stop-postgres.mjs": "caf2d3c21a97588dda834e3ca7c9dc70852b0721b652cc9773ec74e4187b4f9c",
+  "js/test/agent-durable-stop.test.mjs": "3d36fafe22d2efa57809e3850dd8419c946fa33bdabc87ffff2f2e756e8ff6cd",
+  "js/test/agent-stop-process.mjs": "7b4bd61ac8e508a2dad7280f26a8ca2a463a2c09df74bd3a01cfa661a076bef5",
+  "js/test/fixtures/agent-cancellation/api.mjs": "39b1ee85751354a01b1195aee77c41bddb075b8022e76cf2b171961098e58e0d",
+  "js/test/fixtures/agent-cancellation/database.mjs": "eb3834a2555b1f1d3539cee4ec48197db8ccdb6dfb6b42681987bd10ac4b29e6",
+  "js/test/fixtures/agent-cancellation/host.mjs": "0a88776286354d78a72ac5603a38b434d81ffbe128bc83b9536b21198395fcaa",
+  "js/test/fixtures/agent-cancellation/dart/projection.dart": "2f4105542aef29fc3d91754294cee852ead050db061804e0bb8875697782272b",
+  "flutter/packages/handrail_ai_client/test/cancellation_reason_test.dart": "d349436c3d8fd994a352045bde06718037ab1f8abf9dae359b6007ad499d5e9a"
+}

@@ -1,0 +1,438 @@
+{
+  "schema_version": 1,
+  "work_request_id": "6f99044c-3c83-5269-a5dc-83078491a3c6",
+  "worker_run_id": "3775ac11-35ac-445d-95b5-4700f18e5ad6",
+  "original_request_id": "412cfd3d-6e28-40b3-a2bb-dadd9ba32c05",
+  "finding_id": "41fb985e-cff7-43bb-af2b-edc701ec216b",
+  "recorded_at": "2026-10-02T08:55:04.748120+00:00",
+  "verdict": "Source repair qualified across the three SDK checkouts; publication and installed/live acceptance remain with Avery.",
+  "destination": "Reusable Agent and AI Assistant web/Flutter SDK source for eventual Mills web production and mobile adoption. This worker performed no application adoption or release.",
+  "context": {
+    "handrail_current_context": "verified active project and work request",
+    "frozen_instructions": "Complete instruction_sources_chunk offset 0 read and understood; next_offset=null; sha256=081823136c044280e4fe189522f482911b81865ada87348341670ef7cf1ae77b",
+    "saved_decisions": [],
+    "initial_worktrees": "All three writable SDK worktrees clean; final HEADs unchanged.",
+    "read_only_source_report": "Mills docs/qa/agent-execution-repair-2026-10-02/result.json read for secondaryStop diagnosis only; unchanged."
+  },
+  "reproduction": {
+    "status": "reproduced",
+    "log": "agent-baseline.log",
+    "result": "63 passed; two new PostgreSQL tests failed exactly because active-work and approval-wait explicit_stop snapshots projected policy_revoked."
+  },
+  "changes": [
+    "Agent checkpoint projection now emits the validated snapshot cancellation reason explicit_stop; journal, authority, identity, leases and cancellation transactions are unchanged.",
+    "JS v1 wire validator/types accept explicit_stop. Shared exact translations map it to canonical user, and preserve timeout, revocation/supersession and shutdown separately. Unsupported values throw; no reason alias/shim.",
+    "Direct/application transports and all five provider adapters preserve typed abort causes; preparation, retained-provider and tool-loop cancellation use the same contract. Runtime terminal reason takes precedence over a racing local request. Recovery synthesizes only from a retained cancellation reason.",
+    "Canonical sync validates the claimed reason against retained wire evidence. Bounded display controls and JS/Flutter presentation retain cancellationReason; PostgreSQL existing missing-control backfill includes it. No deployed data/backfill or old canonical cancellation was changed.",
+    "Flutter retains canonical cancellationReason through live frames, full snapshots and bounded controls; terminal/old-turn fencing prevents late frames or coarse completed activity from replacing Stop. Standard web/Flutter status distinguishes user Stop, timeout, revocation/supersession and shutdown.",
+    "Regression fixtures use real SDK admission, Runner, cancellation, projector, gateway SSE, durable writer, SQL persistence and browser/Dart decoding/reload. Only model responses, external business effects and controlled failure boundaries are simulated."
+  ],
+  "contract": {
+    "wire_protocol": "handrail.ai-runtime.v1; new closed-enum value explicit_stop",
+    "mapping": {
+      "explicit_stop": "user",
+      "deadline_exceeded": "timeout",
+      "policy_revoked": "superseded",
+      "runtime_shutdown": "runtime_shutdown"
+    },
+    "display": "Optional cancellationReason preserves a supported canonical reason or null. Missing old control summaries remain unavailable; unsupported values are rejected. No inferred user Stop.",
+    "versions_unchanged": {
+      "agent": "0.2.5",
+      "js": "0.2.70",
+      "flutter_client": "0.1.30",
+      "flutter_widgets": "0.1.1"
+    },
+    "compatibility": "Old strict wire decoders reject explicit_stop. The unchanged Agent JS full-SHA pin e69d3c09f4da91a66bbc5a17159a2b8af3d49f7f lacks this enum member, so the normal pinned Agent build currently fails TS2322. Publish JS and update Agent pin+lock before normal installation/build qualification.",
+    "dependency_policy": "All manifests and lockfiles unchanged. No file/workspace/tarball/tag/branch/registry Handrail dependency substitution; no commit, push or deployment. Source compiler paths and runtime resolution are explicitly fixture-only (source-qualification.json)."
+  },
+  "checks": [
+    {
+      "name": "JS build and complete TypeScript typecheck",
+      "status": "passed",
+      "logs": [
+        "js-build-final.log",
+        "js-typecheck-final.log"
+      ]
+    },
+    {
+      "name": "JS scoped contracts, transports, providers, durable recovery, PGlite display persistence, browser presentation",
+      "status": "passed",
+      "tests": 452,
+      "files": 19,
+      "log": "js-tests-final.log"
+    },
+    {
+      "name": "Final JS reconciliation/sync-authority and display-control additions",
+      "status": "passed",
+      "tests": 49,
+      "log": "js-final-additional-tests.log",
+      "note": "Overlaps preceding group; includes spontaneous reasons, missing-reason rejection and forged-reason denial."
+    },
+    {
+      "name": "Final provider-loop actual deadline/Stop, durable replay and attachment-preparation regressions",
+      "status": "passed",
+      "tests": 59,
+      "log": "js-provider-final-tests.log",
+      "note": "7 tests overlap preceding group. Provider responses are simulated; the active execution deadline is a real timer."
+    },
+    {
+      "name": "Normal Agent npm test with unchanged pinned JS dependency",
+      "status": "failed",
+      "log": "agent-locked-dependency-check.log",
+      "cause_class": "missing credential or authority",
+      "cause": "Existing public pin predates explicit_stop. No compatible unpublished SHA can be pinned in this no-commit/no-push assignment. Source-qualified below; ordinary pin/build must be rerun after JS publication."
+    },
+    {
+      "name": "Agent npm test with explicit source compiler/loader",
+      "status": "passed",
+      "tests": 777,
+      "log": "agent-source-test-final.log"
+    },
+    {
+      "name": "Agent consumer fixture scoped compile with source public declarations",
+      "status": "passed",
+      "command": "node <task-temp>/source-tsc.cjs -p tests/fixtures/tsconfig.json",
+      "log": "agent-consumer-typecheck.log"
+    },
+    {
+      "name": "Full existing disposable PostgreSQL 15 runner with source resolution",
+      "status": "passed",
+      "tests": 411,
+      "suites": 18,
+      "failed": 0,
+      "skipped": 0,
+      "log": "agent-postgres-all.log",
+      "suite_totals": {
+        "test:conversation": {
+          "tests": 10,
+          "pass": 10,
+          "fail": 0,
+          "skipped": 0
+        },
+        "test:assistance": {
+          "tests": 65,
+          "pass": 65,
+          "fail": 0,
+          "skipped": 0
+        },
+        "test:connection-store": {
+          "tests": 23,
+          "pass": 23,
+          "fail": 0,
+          "skipped": 0
+        },
+        "test:browser-profile": {
+          "tests": 16,
+          "pass": 16,
+          "fail": 0,
+          "skipped": 0
+        },
+        "test:vault-request": {
+          "tests": 15,
+          "pass": 15,
+          "fail": 0,
+          "skipped": 0
+        },
+        "test:payment-vault": {
+          "tests": 25,
+          "pass": 25,
+          "fail": 0,
+          "skipped": 0
+        },
+        "test:vault-entry": {
+          "tests": 50,
+          "pass": 50,
+          "fail": 0,
+          "skipped": 0
+        },
+        "test:vault-use": {
+          "tests": 84,
+          "pass": 84,
+          "fail": 0,
+          "skipped": 0
+        },
+        "test:vault-lifecycle": {
+          "tests": 18,
+          "pass": 18,
+          "fail": 0,
+          "skipped": 0
+        },
+        "test:vault": {
+          "tests": 13,
+          "pass": 13,
+          "fail": 0,
+          "skipped": 0
+        },
+        "test:lease": {
+          "tests": 9,
+          "pass": 9,
+          "fail": 0,
+          "skipped": 0
+        },
+        "test:effects": {
+          "tests": 11,
+          "pass": 11,
+          "fail": 0,
+          "skipped": 0
+        },
+        "test:cancel": {
+          "tests": 3,
+          "pass": 3,
+          "fail": 0,
+          "skipped": 0
+        },
+        "test:answer": {
+          "tests": 6,
+          "pass": 6,
+          "fail": 0,
+          "skipped": 0
+        },
+        "test:agents": {
+          "tests": 36,
+          "pass": 36,
+          "fail": 0,
+          "skipped": 0
+        },
+        "test:submit": {
+          "tests": 11,
+          "pass": 11,
+          "fail": 0,
+          "skipped": 0
+        },
+        "test:journal": {
+          "tests": 15,
+          "pass": 15,
+          "fail": 0,
+          "skipped": 0
+        },
+        "test:postgres": {
+          "tests": 1,
+          "pass": 1,
+          "fail": 0,
+          "skipped": 0
+        }
+      }
+    },
+    {
+      "name": "Cross-SDK PostgreSQL/gateway/browser/Dart fixture",
+      "status": "passed",
+      "tests": 5,
+      "log": "cross-sdk-postgres-final-5.log",
+      "cases": [
+        "Stop during native approval wait",
+        "Stop recovered by a separate Node process",
+        "already-completed result preserved",
+        "Stop while generating with late model output fenced",
+        "independent Agent Stop projected and persisted as explicit_stop, decoded through gateway SSE, replayed from its terminal cursor without duplicates"
+      ],
+      "shared_assertions": "For cancelled cases: durable user reason, browser and fresh Dart HTTP reload, exactly one canonical cancellation, scope denial, subsequent authorized reply, no resumed cancelled business effect."
+    },
+    {
+      "name": "Dart client full analyzer",
+      "status": "passed",
+      "log": "dart-analyze-final.log"
+    },
+    {
+      "name": "Dart client full test suite with existing source gateway override",
+      "status": "passed",
+      "tests": 258,
+      "log": "dart-tests-final.log"
+    },
+    {
+      "name": "Flutter widgets full analyzer",
+      "status": "passed",
+      "log": "flutter-analyze.log"
+    },
+    {
+      "name": "Flutter scoped transcript/widget tests",
+      "status": "passed",
+      "tests": 37,
+      "log": "flutter-tests.log"
+    },
+    {
+      "name": "Three-repo diff whitespace checks, fixture JS syntax, unchanged manifests/locks",
+      "status": "passed",
+      "note": "git diff --check; node --check test/agent-durable-stop.test.mjs; git diff --exit-code for manifests and locks."
+    }
+  ],
+  "resolved_intermediate_failures": [
+    {
+      "logs": [
+        "agent-source-test.log"
+      ],
+      "detail": "One packaging test initially failed because the task-local source loader threw its own missing-export error. Loader now delegates unexported paths to normal package enforcement; final 777/777 passed."
+    },
+    {
+      "logs": [
+        "cross-sdk-postgres.log",
+        "cross-sdk-postgres-2.log",
+        "cross-sdk-postgres-3.log"
+      ],
+      "detail": "Expanded fixtures initially released the held model before cancellation acknowledgement, reused stopped/closed fixture scopes, and read terminal history before settlement. Corrected fixture sequencing. Reload also exposed and led to the actual bounded cancellationReason projection repair. Final five cases passed."
+    },
+    {
+      "logs": [
+        "dart-tests.log"
+      ],
+      "detail": "Initial full suite: 254 passed, two existing submission assertions ran before deferred history refresh. Tests now explicitly refresh canonical state before inspecting admitted messages. Final suite 258/258 passed, including new coarse-activity fencing cases."
+    },
+    {
+      "detail": "A temporary source build caught exactOptionalPropertyTypes on an omitted display reason; corrected omission handling before final build/typecheck. An initial inline Node import option failed quoting before fixture startup; replaced by the retained task-local register-source.mjs."
+    }
+  ],
+  "tooling_warning": "Flutter tool snapshot bypassed only the read-only launcher lock via existing FLUTTER_ALREADY_LOCKED convention. Read-only libimobiledevice/libusbmuxd stamp warnings occurred; analyzer/tests completed successfully. No shared SDK changes.",
+  "publication_adoption_order": [
+    {
+      "step": 1,
+      "owner": "Avery/publication workflow",
+      "requirement": "Review and publish JS repair at a new public full 40-character SHA in https://github.com/c0x65o/handrail-sdk-ai-assistant-js.git. Retain normal prepare/build pipeline and verify the public commit is fetchable. No repair SHA exists from this worker."
+    },
+    {
+      "step": 2,
+      "owner": "Avery/publication workflow",
+      "requirement": "Update Agent @handrail/ai-assistant to git+https://github.com/c0x65o/handrail-sdk-ai-assistant-js.git#<published-full-JS-SHA> with matching package-lock.json. Run ordinary locked npm install/build/test and consumer typecheck without source overrides, then publish Agent at a new public full SHA in https://github.com/c0x65o/handrail-agent-sdk.git."
+    },
+    {
+      "step": 3,
+      "owner": "Avery/publication workflow",
+      "requirement": "Publish Flutter repair at a new public full SHA in https://github.com/c0x65o/handrail-sdk-ai-assistant-flutter.git. Refresh SDK cross-language fixture pins/locks to published compatible JS/Agent/Flutter SHAs and rerun installed-consumer checks without source overrides."
+    },
+    {
+      "step": 4,
+      "owner": "Avery/application adoption; coordinate existing Mills mobile worker",
+      "requirement": "Adopt the published JS and Agent full HTTPS Git SHAs plus matching web lockfile; adopt the Flutter full HTTPS Git SHA at packages/handrail_ai_client and packages/handrail_ai_widgets with matching pubspec.lock. Ship compatible decoders before/enabling the new producer. Keep reusable orchestration in SDK and Mills domain adapters only."
+    },
+    {
+      "step": 5,
+      "owner": "Avery/native QA and release",
+      "requirement": "In the intended installed web/Flutter environments use a new synthetic identity disjoint from held work: real text reply, Stop during generation, Stop during approval wait, truthful user-stopped history after reload, one subsequent reply, no resumed cancelled effect. Then complete separately authorized production/mobile release and notification obligations."
+    }
+  ],
+  "remaining": [
+    "Public repair commits, Agent pin+lock update and ordinary installed builds/tests are unverified and outside this worker authority.",
+    "Installed current web/Flutter canary, rendered native/device QA and production/mobile adoption/release remain unverified. Source fixtures are not live proof.",
+    "Original memory/reminder/flight/feedback and other release obligations remain with Avery; this repair is not original-outcome completion."
+  ],
+  "holds_preserved": "No Mills edits or runtime, no historical interactive QA replay, no shared/production database fixtures, no held storage resource operations or migration replay, no parallel mobile adoption, no Handrail database/queue writes, no PR/commit/push/deploy.",
+  "changed_files_sha256": {
+    "agent": {
+      "root": "/opt/handrail/repos/handrail/handrail-agent-sdk/handrail-agent-sdk",
+      "base_sha": "0b29f250c7f9cf42ca063519a15544ccf205ee3a",
+      "files": {
+        "docs/continuous-conversation.md": "fb5e5e840a278d3973709defa53a24643d718159c05f8f5e3f2d0c964045c7be",
+        "src/server/agent-transport.ts": "e3747c4464d49bd0b6e34ba9e7821fa0d197239277de33aa5c74a490596f2e57",
+        "tests/fixtures/installed/application.test.mjs": "db75df20b83f107775ef2a23a8d4e316de19dcb20c1347835362a021d3c04ec2"
+      }
+    },
+    "js": {
+      "root": "/opt/handrail/repos/handrail/handrail-ai-assistant-sdk/handrail-sdk-ai-assistant-js",
+      "base_sha": "ca7c2f34749767ddcef7fdcc3ee896cb796247e5",
+      "files": {
+        "docs/wire-protocol.md": "9f607022445dcb6ac95adaa29bc496f434f2eee9bd2967867509bddbde8e3eb4",
+        "src/cancellation.ts": "f844e9ed8d4b92c87e03a51e1681b764afcb21f05baba08332ab4a6173f39c97",
+        "src/client/application-runtime.ts": "22a25ac1e936bf78644841770c11c3ddf393db24e514483efbfba967a04de4b6",
+        "src/conversation/display-control.ts": "6ada17f6db818ecc2a96416d941d95aed13017117ed11a2863d4b46151583a49",
+        "src/conversation/presentation.ts": "504530ee463aae3c8d51dc8b8d6539f4f842a84a350fbca85763faec46eab3b3",
+        "src/postgres/display-history.ts": "d8ec2297ca2a9cbf7786a8d7240ca6faea4dea1e1ee7356342536db54540e32e",
+        "src/protocol.ts": "9b31e7b54145a817293df2a2aa3ec65492173f4af40cab1ef5c18df773ffc18f",
+        "src/providers/anthropic.ts": "83fddc323518ab4ba0760ce0d1219c91a20e682ac7dc4569b8dc66b9157f20f7",
+        "src/providers/gemini.ts": "4d1d44320e5b20b182b43a9ff6efd5c893b55cf47ef1164cd439286b66ba48bd",
+        "src/providers/openai-responses.ts": "f799e82ce4a857b3bab4ee0c4cc626e35abf1ae81b4f4146e01ba3ba4b49c07f",
+        "src/providers/openai.ts": "21440248afc580bb36cf44cb50d9d066b4403240f6322308f505469e00b37adc",
+        "src/providers/xai.ts": "463b4e1e2a250f481408519b04704361ec17e3c7b968bc0146ada8ace356728b",
+        "src/react-styled/request-status.tsx": "e5db6c189286a3721ff6ca3ee8d4fd9003734da550126904c5173bdec8e7486c",
+        "src/runtime.ts": "bd2463806e2ec1dfb103708d56933b4de2c660e3bf16593d015d8c6c28977e8f",
+        "src/server/openai-responses.ts": "d3c908151badaf9d237d85f7c9c077c5374c9e33c0663ac72808126d974658d7",
+        "src/server/provider-invocations.ts": "e0b6aecfed1cc09439c9b4cb17c6f980db2a26fcb5432dfecdb652a89765e1b5",
+        "src/server/provider-tool-loop.ts": "f79f88937e79b0d1df1f19adb3f407c5b56f7ad96ed2eb827f6131aefdd5aa1b",
+        "src/server/reconcile-conversation.ts": "6e21ed7e86650db80015e0c4f271bf9ff820d744e5ec54ae6204a64eceabde03",
+        "src/sync/durable-application-adapter.ts": "5383c00c8901b57fc1ac9f3b2f30aaa04a6beb876eba82fa7d0f57bcf6e3b7a1",
+        "src/transports/application-turn.ts": "a6f9ac9919a5d884e64137bed6febc2ebdc1cf101fc72a79bfc9dbc090b0c583",
+        "src/transports/direct-provider.ts": "3aeb80b86bd2f5274c7d2887821e139eb8e6563e88c76b1aafcaeab667bfe151",
+        "test/agent-durable-stop.test.mjs": "3d36fafe22d2efa57809e3850dd8419c946fa33bdabc87ffff2f2e756e8ff6cd",
+        "test/cancellation-contract.test.ts": "c5fd06a39febcbb55776500d9061b4c44b43987baef104f2c2ff4ed4a790e25e",
+        "test/direct-provider-transport.test.ts": "5100f793b1419bd52485831b61f7a719886d4c13bf8bb87b30f5f22d8b9991c6",
+        "test/display-control.test.ts": "3d39d97a42b35e4f3d467df35b3b926db43dda331b6f14e979bbe7a4622bd4b7",
+        "test/fixtures/agent-cancellation/README.md": "961e38cb8b0c2decaa07c93cef3d6785617cde8b4a87643a3258c191bd011cb7",
+        "test/fixtures/agent-cancellation/dart/projection.dart": "2f4105542aef29fc3d91754294cee852ead050db061804e0bb8875697782272b",
+        "test/managed-runtime-transport.test.ts": "24ee45b3065fe2a3a9f25dcdd29030d3cc6ace7e902763096edbd16e1d2cf004",
+        "test/provider-tool-loop.test.ts": "3df36235eae398622d5de36704d5d1d1d1340dd91cfb35d0627a34228e311050",
+        "test/providers-openai.test.ts": "849f3e267f75162b7360abadfce073210987898b94b679607becdd2e4cee8153",
+        "test/react-request-status.test.tsx": "6dd249dbe8c5d1d1848d18c1c235b30a844a6e70c204dab76dac2aef3ee570df",
+        "test/runtime-cancellation.test.ts": "671220781acaade1805e4cfc56dfdb20a854227e0d39543d470a87e5831052af",
+        "test/server-reconcile-conversation.test.ts": "06222efca8ed03b0c364dda3e110ae19297db8e845b9dc26402d5439ba1fe265"
+      }
+    },
+    "flutter": {
+      "root": "/opt/handrail/repos/handrail/handrail-ai-assistant-sdk/handrail-sdk-ai-assistant-flutter",
+      "base_sha": "dc4b343353cc56052ced4088305d0572251da2dd",
+      "files": {
+        "docs/display-history.md": "df65c53a6742a0a2fa09d3169137481a331fb675ae7d01b03994c2a30e98f715",
+        "packages/handrail_ai_client/lib/handrail_ai_client.dart": "2fb69fa2f61c9d00f5cd406300efb20af924aa556b34fe91dbffd05ebba55876",
+        "packages/handrail_ai_client/lib/src/display_control.dart": "0738666baa2d630eb7e5396bc0f112f6c408630307f81321d8f5bbd4c289837c",
+        "packages/handrail_ai_client/lib/src/display_session.dart": "0efcdfb6d5687d4ee29267d302b6fd71122d74cdccefe2fc306e0e87e1946c32",
+        "packages/handrail_ai_client/lib/src/session.dart": "4ecd2759995f6496134bea39fb4e006fe6bff35b3c93b123aeeaf0e9b080e7af",
+        "packages/handrail_ai_client/test/cancellation_reason_test.dart": "d349436c3d8fd994a352045bde06718037ab1f8abf9dae359b6007ad499d5e9a",
+        "packages/handrail_ai_client/test/submission_gateway_test.dart": "4c8d04b935e711446106ed00bdf146ec7353fbe2408304955f7b1042bf60e94f",
+        "packages/handrail_ai_widgets/lib/conversation_transcript.dart": "20bb7a8c9a6891e7d943b8b29fb98c96c4d726fd0e4da447f3a9ef571c2b5e98",
+        "packages/handrail_ai_widgets/test/conversation_transcript_test.dart": "1844f7044349b40a7b0c92a689604e7bf2bfeddb693d5dd0cb2d8c3912a73041"
+      }
+    }
+  },
+  "unchanged_manifests_and_locks_sha256": {
+    "agent": {
+      "package.json": "29a7185bda3603f2e03a53df48614a4c80c439fe443d2ac0e0ccfae63fc79be1",
+      "package-lock.json": "6f788de46b38fa55da815a72cc8751ac0ca93bca081ed21410c596e8e531f411"
+    },
+    "js": {
+      "package.json": "b48c8b6681218eadd9f679d2c486d46ac3b49ffb09916478343ee41f8c74f7c9",
+      "package-lock.json": "608f8e05fcb1545346b176506260bb383e26e7dda7f9de0045fa5da373b707bc",
+      "test/fixtures/agent-cancellation/package.json": "ff4744cc457a3811fcd70982de583e30a1a147d0fa683a7a442fd844852843eb",
+      "test/fixtures/agent-cancellation/package-lock.json": "80301d20035db4d383bc52a8ab14daac8078e1815ced09a10e588de467903406",
+      "test/fixtures/agent-cancellation/dart/pubspec.yaml": "dc9495bcfbda4753b62d5fda54d5bdc312b35dca81dce916c217d58d9e5090df",
+      "test/fixtures/agent-cancellation/dart/pubspec.lock": "a021267063b2f512e99647e58e6b1b188fefb93c1d76472c7cd5874039b2ad02"
+    },
+    "flutter": {
+      "packages/handrail_ai_client/pubspec.yaml": "54a0612cd19d0dd35957520088305cd3b76a736f1c7fd4baee6b64a5fc025ee2",
+      "packages/handrail_ai_client/pubspec.lock": "7804094a52ebbf46c2881cb7112dc51a250437aac25ab33549e65f6b939000f1",
+      "packages/handrail_ai_widgets/pubspec.yaml": "99d7ddf9f5f3a984c555908ab5ff2a666d38bdb020111f95a733bbaa196376f2",
+      "packages/handrail_ai_widgets/pubspec.lock": "d49a9ad198e64066190bc9333619987666222eb76e3b92567bb4c6144ce3b7fb",
+      "tool/gateway/package.json": "4c99363060d7ddd8c059bda026896bcd2fef0acb23105172986a7b94a5122dea",
+      "tool/gateway/package-lock.json": "6de3d02c598d3c0b04667362168fd902d1a17aaecd8d733c8060930406547c95"
+    }
+  },
+  "evidence_files_sha256": {
+    "agent-baseline.log": "0d37b2c7f76f46a6b8fee2795972214a812e5874e4038a67aed3e11d05d08817",
+    "agent-consumer-typecheck.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "agent-locked-dependency-check.log": "9f218343a6a817d22a4dcaea9f52699a534cb2c6513eff1661232ab8fc9fe475",
+    "agent-postgres-all.log": "5fb407d1d9046ebeb035fa5090c291ad213fc3491e353e225fa26ee3e5371b9c",
+    "agent-source-build.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "agent-source-test-final.log": "41555fc330f2fb29deaa684867667b65f53db634d9055a4cd78a6abbee253d99",
+    "agent-source-test.log": "161f84a637a82fbef04a899e1cb638315163eed3c053280bb5b01f63eaa97661",
+    "cross-sdk-postgres-2.log": "dcbf332a3d9a26ae4d8e7c9c05a149bee6c3b1a66537e06f74c634c6c68c9e76",
+    "cross-sdk-postgres-3.log": "be1de762aed14b164bd2a83f94c3a00cbf8f757dabbd40cdf3b12490119b83b0",
+    "cross-sdk-postgres-final-5.log": "028334adf2caea4d75fd58bc91769803028812dc3ee8abde85ab28cbdd759697",
+    "cross-sdk-postgres-final.log": "0c60510a5e35dc116f097a3b8d76adf8f0134e9589ce2b4b6096fb66ff4176eb",
+    "cross-sdk-postgres.log": "417e7952e3ce00723c89acfba883c23546c1dcf32f0c82f291b2b005cc064f19",
+    "dart-analyze-final.log": "927812f15272c5406260cee26ae8ae5fc42ab1b29a872de866b1f673449f7f71",
+    "dart-analyze.log": "927812f15272c5406260cee26ae8ae5fc42ab1b29a872de866b1f673449f7f71",
+    "dart-format.log": "d8bb5546c6da6254f827ea59a76fc1e9e3e538e69280aec10e0c82eb50a4ef44",
+    "dart-tests-final.log": "f0c7502e9b36895c739e41a2941ee922004d45f2d7435725af70d2adaf2bc85a",
+    "dart-tests.log": "f16e9b468e5c4d99b89f853bbc4718fb2df2b97ca004ef7d49d5b41861cc0e65",
+    "flutter-analyze.log": "a9bd00b6c0c8eb98604c477f2daf1784c5c17f9f7a348ca89524f9690be04d0f",
+    "flutter-tests.log": "5a2f09c8ead82dec7d3f36b7dd563e68da78d27d61d68d9edf88fb84aaa261eb",
+    "js-build-final.log": "e9a6bb44ee7f1e78dba7e369ada99bb868c169ae171ca98c082de1c77669f8d9",
+    "js-build.log": "e9a6bb44ee7f1e78dba7e369ada99bb868c169ae171ca98c082de1c77669f8d9",
+    "js-final-additional-tests.log": "fa9baec26a5221a9e2916cc6a2eb2b902634d55f6253e0452b6356772b545841",
+    "js-provider-final-tests.log": "e158e1daa5c0d3fe5e156fcbb1be5dc45db4a91e6958e43f4c759844b634c33e",
+    "js-tests-final.log": "c296a5d6e133d49163781f8168a98e6b1bbfdc38d55c9407ac6d995bd230e2de",
+    "js-tests.log": "5c8a82bcca384e5e754ca052f8872c0d8adb7dc81c8e3121d1c1639d009480f8",
+    "js-typecheck-final.log": "f70de2a9e94a55a09663c1e3bd4f8e8c14ef943c6cb091ba2d64e5cab0793642",
+    "js-typecheck.log": "b1e01fa8470ba16e6abbac5269582694374ab27daead43566ea66addd4d526ec",
+    "register-source.mjs.txt": "5ad25618ae7eba824d23d793449a09d8d2123b6a74a3b11aadb8f2578d80c212",
+    "source-loader.mjs.txt": "598bc7c5ba18c5b752fb7f5a85ebc85b68b9987b60afbf64bb12f7918ecfa245",
+    "source-qualification.json": "3cc7015939b6ed9b83d321bdd81eae4a257d2ba671abd8ac2b9682db8b905e92",
+    "source-shell.txt": "eab7117a07aa7e32d033d2029c09e0bf92c3e2ef09d1788e3e09708fa95a7439",
+    "source-tsc.cjs.txt": "68fb9728dcd9c2791697b61e6a3a6c23301785192d0d73b2172642e2a28c8e9a"
+  }
+}

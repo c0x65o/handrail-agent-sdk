@@ -190,3 +190,19 @@ web/Flutter-compatible transport, tools, approvals, notifications and schedules.
 No browser/mobile protocol, provider configuration or business authority changed.
 Install only the eventual public full Git SHA with ordinary prepare/build and a
 matching lock. Candidate-source qualification is explicitly not that publication.
+
+### Explicit Stop projection
+
+The checkpoint reader emits `response.cancelled.reason` directly from the
+validated cancelled snapshot (`explicit_stop`). Only the authorized Agent
+cancellation operation creates that snapshot. Failed jobs and authority loss
+are not relabelled as user cancellation. The AI Assistant SDK's matching protocol
+maps it to canonical `user` history, independently of the observing device.
+Cursor replay and cancelled-job fencing remain unchanged.
+
+This source requires the AI Assistant SDK protocol revision adding
+`explicit_stop`. Before publishing Agent, update its public HTTPS full-SHA JS
+pin and matching lock to the published repair. Source-path compile/fixture
+qualification does not replace that install check. See
+[evidence](evidence/explicit-stop/result.json) for the source qualification and
+ordered publication/adoption requirements.

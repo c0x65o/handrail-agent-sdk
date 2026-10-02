@@ -1,0 +1,49 @@
+
+> @handrail/ai-assistant@0.2.70 test
+> vitest run --maxWorkers=1 --minWorkers=1 test/cancellation-contract.test.ts test/runtime-cancellation.test.ts test/server-reconcile-conversation.test.ts test/durable-stop-recovery.test.ts test/direct-provider-transport.test.ts test/managed-runtime-transport.test.ts test/protocol.test.ts test/provider-tool-loop.test.ts test/providers-openai.test.ts test/openai-responses-tools.test.ts test/providers-anthropic.test.ts test/providers-gemini.test.ts test/providers-xai.test.ts test/display-control.test.ts test/application-session.test.ts test/application-display-history.test.ts test/postgres-display-history.integration.test.ts test/react-request-status.test.tsx test/react-application-session.test.tsx
+
+
+ RUN  v3.2.4 /opt/handrail/repos/handrail/handrail-ai-assistant-sdk/handrail-sdk-ai-assistant-js
+
+ ✓ test/react-application-session.test.tsx (6 tests) 4593ms
+   ✓ keeps unloaded approvals visible and opens their inbox from the fixed request status  600ms
+   ✓ uses negotiated large text and bounded activity navigation through the standard preset  1039ms
+   ✓ places activity paging above history and loads activity on an upward scroll before older messages  645ms
+   ✓ negotiates bounded history in the standard React preset with no snapshot, saved stream replay, or approval-list hydration  1846ms
+ ✓ test/react-request-status.test.tsx (17 tests) 550ms
+   ✓ keeps successive approvals and continuation visible outside the transcript until actual completion  301ms
+ ✓ test/server-reconcile-conversation.test.ts (38 tests) 3748ms
+   ✓ server stored-output reconciliation > repairs legacy snapshot clients without rerunning work; completes before reload: true, history events: 0  787ms
+   ✓ server stored-output reconciliation > repairs legacy snapshot clients without rerunning work; completes before reload: false, history events: 0  986ms
+   ✓ server stored-output reconciliation > repairs legacy snapshot clients without rerunning work; completes before reload: true, history events: 120  817ms
+   ✓ server stored-output reconciliation > repairs legacy snapshot clients without rerunning work; completes before reload: false, history events: 120  1052ms
+ ✓ test/postgres-display-history.integration.test.ts (21 tests) 3547ms
+   ✓ indexed display history > discovers old pending approvals without loading their messages and pages decisions independently  333ms
+ ✓ test/durable-stop-recovery.test.ts (15 tests) 2547ms
+   ✓ keeps timeout cancellation discoverable beyond execution retry exhaustion  1108ms
+ ✓ test/runtime-cancellation.test.ts (18 tests) 1182ms
+ ✓ test/application-display-history.test.ts (10 tests) 830ms
+   ✓ returns bounded idempotent decision receipts and refuses mismatched review bindings before mutation  650ms
+ ✓ test/application-session.test.ts (33 tests) 419ms
+ ✓ test/managed-runtime-transport.test.ts (45 tests) 165ms
+ ✓ test/providers-openai.test.ts (42 tests) 268ms
+ ✓ test/provider-tool-loop.test.ts (7 tests) 44ms
+ ✓ test/providers-anthropic.test.ts (22 tests) 25ms
+ ✓ test/protocol.test.ts (68 tests) 58ms
+ ✓ test/providers-xai.test.ts (31 tests) 37ms
+ ✓ test/openai-responses-tools.test.ts (22 tests) 23ms
+ ✓ test/providers-gemini.test.ts (27 tests) 27ms
+ ✓ test/direct-provider-transport.test.ts (19 tests) 33ms
+ ✓ test/cancellation-contract.test.ts (5 tests) 8ms
+ ✓ test/display-control.test.ts (6 tests) 10ms
+
+ Test Files  19 passed (19)
+      Tests  452 passed (452)
+   Start at  03:36:34
+   Duration  29.83s (transform 2.92s, setup 0ms, collect 6.71s, tests 18.11s, environment 988ms, prepare 1.28s)
+
+npm notice
+npm notice New major version of npm available! 10.9.8 -> 12.2.0
+npm notice Changelog: https://github.com/npm/cli/releases/tag/v12.2.0
+npm notice To update run: npm install -g npm@12.2.0
+npm notice

@@ -1,0 +1,3 @@
+#!/bin/bash
+export PATH="/opt/handrail/.handrail/codex-runs/3775ac11-35ac-445d-95b5-4700f18e5ad6/tmp/bin:$PATH"
+exec /bin/bash "$@"

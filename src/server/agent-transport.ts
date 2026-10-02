@@ -132,7 +132,7 @@ export function createAgentCheckpointReader(deps: {
         usage: { input_tokens: state.usage.inputTokens, output_tokens: state.usage.outputTokens, total_tokens: state.usage.totalTokens } });
       frames.push({ ...envelope, sequence: frames.length, type: 'response.completed', outcome: 'stop' });
     } else if (snapshot.state === 'cancelled') {
-      frames.push({ ...envelope, sequence: 1, type: 'response.cancelled', reason: 'policy_revoked' });
+      frames.push({ ...envelope, sequence: 1, type: 'response.cancelled', reason: snapshot.cancellation.reason });
     } else if (snapshot.state === 'failed') {
       frames.push({ ...envelope, sequence: 1, type: 'response.error', error: { category: 'internal', code: 'internal_error',
         message: 'Assistant execution failed.', retryable: false } });

@@ -1,0 +1,86 @@
+Fresh isolated PostgreSQL 15 cluster initialized; dedicated disposable database and non-superuser fixture role; connection values withheld.
+TAP version 13
+# gateway fixture diagnostic live_conversation_projection projection_failed 
+# gateway fixture diagnostic conversations TypeError Invalid display control response
+# Subtest: native Stop preserves the original Agent after observation ends (mode=false)
+not ok 1 - native Stop preserves the original Agent after observation ends (mode=false)
+  ---
+  duration_ms: 1502.350933
+  type: 'test'
+  location: '/opt/handrail/repos/handrail/handrail-ai-assistant-sdk/handrail-sdk-ai-assistant-js/test/agent-durable-stop.test.mjs:29:122'
+  failureType: 'testCodeFailure'
+  error: 'The application gateway is temporarily unavailable.'
+  code: 'unavailable'
+  name: 'ApplicationConversationSessionError'
+  stack: |-
+    normalize (file:///opt/handrail/repos/handrail/handrail-ai-assistant-sdk/handrail-sdk-ai-assistant-js/dist/client/application-session.js:28:11)
+    file:///opt/handrail/repos/handrail/handrail-ai-assistant-sdk/handrail-sdk-ai-assistant-js/dist/client/application-session.js:386:31
+    process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+  ...
+# gateway fixture diagnostic durable_turn cancellation_pending 
+# Fresh Node process: persisted native Stop reached the original PostgreSQL Agent job.
+# Subtest: native Stop preserves the original Agent after observation ends (mode=true)
+not ok 2 - native Stop preserves the original Agent after observation ends (mode=true)
+  ---
+  duration_ms: 2664.099411
+  type: 'test'
+  location: '/opt/handrail/repos/handrail/handrail-ai-assistant-sdk/handrail-sdk-ai-assistant-js/test/agent-durable-stop.test.mjs:29:122'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly equal:
+    + actual - expected
+    
+    + undefined
+    - 'user'
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 'user'
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///opt/handrail/repos/handrail/handrail-ai-assistant-sdk/handrail-sdk-ai-assistant-js/test/agent-durable-stop.test.mjs:198:10)
+    process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Completed native effect/result preserved; Stop did not relabel or replay it.
+# Subtest: native Stop preserves the original Agent after observation ends (mode=completed)
+ok 3 - native Stop preserves the original Agent after observation ends (mode=completed)
+  ---
+  duration_ms: 1194.561997
+  type: 'test'
+  ...
+# Subtest: native Stop preserves the original Agent after observation ends (mode=generating)
+not ok 4 - native Stop preserves the original Agent after observation ends (mode=generating)
+  ---
+  duration_ms: 1200.255892
+  type: 'test'
+  location: '/opt/handrail/repos/handrail/handrail-ai-assistant-sdk/handrail-sdk-ai-assistant-js/test/agent-durable-stop.test.mjs:29:122'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly equal:
+    + actual - expected
+    
+    + undefined
+    - 'user'
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 'user'
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///opt/handrail/repos/handrail/handrail-ai-assistant-sdk/handrail-sdk-ai-assistant-js/test/agent-durable-stop.test.mjs:198:10)
+    process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+1..4
+# tests 4
+# suites 0
+# pass 1
+# fail 3
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 7917.964735
+Owned temporary PostgreSQL cluster stopped.

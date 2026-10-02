@@ -1,0 +1,19 @@
+
+> @handrail/ai-assistant@0.2.70 test
+> vitest run --maxWorkers=1 --minWorkers=1 test/server-reconcile-conversation.test.ts test/display-control.test.ts
+
+
+ RUN  v3.2.4 /opt/handrail/repos/handrail/handrail-ai-assistant-sdk/handrail-sdk-ai-assistant-js
+
+ ✓ test/server-reconcile-conversation.test.ts (43 tests) 3801ms
+   ✓ server stored-output reconciliation > repairs legacy snapshot clients without rerunning work; completes before reload: true, history events: 0  803ms
+   ✓ server stored-output reconciliation > repairs legacy snapshot clients without rerunning work; completes before reload: false, history events: 0  996ms
+   ✓ server stored-output reconciliation > repairs legacy snapshot clients without rerunning work; completes before reload: true, history events: 120  812ms
+   ✓ server stored-output reconciliation > repairs legacy snapshot clients without rerunning work; completes before reload: false, history events: 120  1084ms
+ ✓ test/display-control.test.ts (6 tests) 8ms
+
+ Test Files  2 passed (2)
+      Tests  49 passed (49)
+   Start at  03:42:44
+   Duration  6.24s (transform 1.51s, setup 0ms, collect 1.99s, tests 3.81s, environment 0ms, prepare 128ms)
+

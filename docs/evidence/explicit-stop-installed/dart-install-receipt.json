@@ -1,0 +1,8 @@
+{
+  "client_git_sha": "9e36132de9ecb6bdcb46f622e67588cff1649575",
+  "client_source": "https://github.com/c0x65o/handrail-sdk-ai-assistant-flutter.git",
+  "client_subdirectory": "packages/handrail_ai_client",
+  "package_config_root": "/opt/handrail/.handrail/codex-runs/b12ebe8c-3886-434a-8761-cff8d7fa6100/tmp/pub-cache/git/handrail-sdk-ai-assistant-flutter-9e36132de9ecb6bdcb46f622e67588cff1649575/packages/handrail_ai_client",
+  "dart_sdk": "Dart SDK version: 3.11.5 (stable) (Wed Apr 15 00:36:32 2026 -0700) on \"linux_x64\"",
+  "lock_sha256": "f353e9dd81cf9ee37c96d65d94dc1313702468975b3f7bed2616146c0148d87a"
+}

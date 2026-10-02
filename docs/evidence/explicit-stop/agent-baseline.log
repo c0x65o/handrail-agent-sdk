@@ -1,0 +1,465 @@
+Fresh isolated PostgreSQL 15 cluster initialized; dedicated disposable database and non-superuser fixture role; connection values withheld.
+
+> handrail-agent-sdk@0.2.5 test:assistance
+> npm run build && npm run build:reference && npm run build:test-postgres && node --test --test-concurrency=1 --test-reporter=tap tests/assistance.test.mjs tests/agent-transport.test.mjs
+
+
+> handrail-agent-sdk@0.2.5 build
+> tsc -p tsconfig.json && node scripts/build-postgres-assets.mjs
+
+
+> handrail-agent-sdk@0.2.5 build:reference
+> tsc -p reference/tsconfig.json
+
+
+> handrail-agent-sdk@0.2.5 build:test-postgres
+> tsc -p tests/tsconfig.postgres.json
+
+TAP version 13
+# Subtest: unchanged original 85, requested 92 and current 100 catalogs reach the actual Runner model boundary
+    # Subtest: 85 unchanged tools
+    ok 1 - 85 unchanged tools
+      ---
+      duration_ms: 1620.825802
+      type: 'test'
+      ...
+    # Subtest: 92 unchanged tools
+    ok 2 - 92 unchanged tools
+      ---
+      duration_ms: 1269.967689
+      type: 'test'
+      ...
+    # Subtest: 100 unchanged tools
+    ok 3 - 100 unchanged tools
+      ---
+      duration_ms: 1511.500858
+      type: 'test'
+      ...
+    1..3
+ok 1 - unchanged original 85, requested 92 and current 100 catalogs reach the actual Runner model boundary
+  ---
+  duration_ms: 4403.72148
+  type: 'test'
+  ...
+# Subtest: all retained historical 22/26 failure schemas reach Runner unchanged
+    # Subtest: mills-catalog
+    ok 1 - mills-catalog
+      ---
+      duration_ms: 456.063473
+      type: 'test'
+      ...
+    # Subtest: current-main-catalog
+    ok 2 - current-main-catalog
+      ---
+      duration_ms: 513.817386
+      type: 'test'
+      ...
+    1..2
+ok 2 - all retained historical 22/26 failure schemas reach Runner unchanged
+  ---
+  duration_ms: 971.055656
+  type: 'test'
+  ...
+# Subtest: full catalog read/effects preserve omissions, explicit null and nested defaults; duplicate delivery has one effect per call
+ok 3 - full catalog read/effects preserve omissions, explicit null and nested defaults; duplicate delivery has one effect per call
+  ---
+  duration_ms: 1938.046668
+  type: 'test'
+  ...
+# Subtest: invalid catalog arguments never reach approval, authorized IO or effects
+    # Subtest: calendar_update_event {"eventId":"12345678-1234-4234-8234-123456789abc","expectedVersion":1,"patch":{}}
+    ok 1 - calendar_update_event {"eventId":"12345678-1234-4234-8234-123456789abc","expectedVersion":1,"patch":{}}
+      ---
+      duration_ms: 208.214546
+      type: 'test'
+      ...
+    # Subtest: calendar_update_event {"eventId":"bad-uuid","expectedVersion":1,"patch":{"title":"Changed"}}
+    ok 2 - calendar_update_event {"eventId":"bad-uuid","expectedVersion":1,"patch":{"title":"Changed"}}
+      ---
+      duration_ms: 238.506631
+      type: 'test'
+      ...
+    # Subtest: calendar_update_event {"eventId":"12345678-1234-4234-8234-123456789abc","expectedVersion":"1","patch":{"title":"Changed"}}
+    ok 3 - calendar_update_event {"eventId":"12345678-1234-4234-8234-123456789abc","expectedVersion":"1","patch":{"title":"Changed"}}
+      ---
+      duration_ms: 170.238572
+      type: 'test'
+      ...
+    # Subtest: calendar_update_event {"eventId":"12345678-1234-4234-8234-123456789abc","expectedVersion":1,"patch":{"title":null}}
+    ok 4 - calendar_update_event {"eventId":"12345678-1234-4234-8234-123456789abc","expectedVersion":1,"patch":{"title":null}}
+      ---
+      duration_ms: 174.304893
+      type: 'test'
+      ...
+    # Subtest: calendar_update_event {"eventId":"12345678-1234-4234-8234-123456789abc","expectedVersion":1,"patch":{"title":""}}
+    ok 5 - calendar_update_event {"eventId":"12345678-1234-4234-8234-123456789abc","expectedVersion":1,"patch":{"title":""}}
+      ---
+      duration_ms: 208.390006
+      type: 'test'
+      ...
+    # Subtest: calendar_update_event {"eventId":"12345678-1234-4234-8234-123456789abc","expectedVersion":1,"patch":{"title":"xxxxxxxxxxxx
+    ok 6 - calendar_update_event {"eventId":"12345678-1234-4234-8234-123456789abc","expectedVersion":1,"patch":{"title":"xxxxxxxxxxxx
+      ---
+      duration_ms: 190.889736
+      type: 'test'
+      ...
+    # Subtest: calendar_update_event {"eventId":"12345678-1234-4234-8234-123456789abc","expectedVersion":1,"patch":{"accentHex":"red"}}
+    ok 7 - calendar_update_event {"eventId":"12345678-1234-4234-8234-123456789abc","expectedVersion":1,"patch":{"accentHex":"red"}}
+      ---
+      duration_ms: 179.748831
+      type: 'test'
+      ...
+    # Subtest: calendar_update_event {"eventId":"12345678-1234-4234-8234-123456789abc","expectedVersion":1,"patch":{"startsAt":"tomorrow"
+    ok 8 - calendar_update_event {"eventId":"12345678-1234-4234-8234-123456789abc","expectedVersion":1,"patch":{"startsAt":"tomorrow"
+      ---
+      duration_ms: 206.67947
+      type: 'test'
+      ...
+    # Subtest: calendar_update_event {"eventId":"12345678-1234-4234-8234-123456789abc","expectedVersion":1,"patch":{"recurrence":{"freque
+    ok 9 - calendar_update_event {"eventId":"12345678-1234-4234-8234-123456789abc","expectedVersion":1,"patch":{"recurrence":{"freque
+      ---
+      duration_ms: 222.832589
+      type: 'test'
+      ...
+    # Subtest: calendar_update_event {"eventId":"12345678-1234-4234-8234-123456789abc","expectedVersion":1,"patch":{"recurrence":{"freque
+    ok 10 - calendar_update_event {"eventId":"12345678-1234-4234-8234-123456789abc","expectedVersion":1,"patch":{"recurrence":{"freque
+      ---
+      duration_ms: 274.780791
+      type: 'test'
+      ...
+    # Subtest: calendar_update_event {"eventId":"12345678-1234-4234-8234-123456789abc","expectedVersion":1,"patch":{"unknown":true}}
+    ok 11 - calendar_update_event {"eventId":"12345678-1234-4234-8234-123456789abc","expectedVersion":1,"patch":{"unknown":true}}
+      ---
+      duration_ms: 211.196884
+      type: 'test'
+      ...
+    # Subtest: assistance_create_reminder {"title":"Synthetic fixture only","localDate":"2027-02-29","localTime":"17:00","timeZone":"America/C
+    ok 12 - assistance_create_reminder {"title":"Synthetic fixture only","localDate":"2027-02-29","localTime":"17:00","timeZone":"America/C
+      ---
+      duration_ms: 174.657776
+      type: 'test'
+      ...
+    # Subtest: assistance_create_reminder {"title":"Synthetic fixture only","localDate":"2028-02-29","localTime":"25:00","timeZone":"America/C
+    ok 13 - assistance_create_reminder {"title":"Synthetic fixture only","localDate":"2028-02-29","localTime":"25:00","timeZone":"America/C
+      ---
+      duration_ms: 189.507686
+      type: 'test'
+      ...
+    # Subtest: travel_update_trip {"id":"12345678-1234-4234-8234-123456789abc","expectedVersion":1,"patch":{"travelers":["synthetic","
+    ok 14 - travel_update_trip {"id":"12345678-1234-4234-8234-123456789abc","expectedVersion":1,"patch":{"travelers":["synthetic","
+      ---
+      duration_ms: 200.59367
+      type: 'test'
+      ...
+    # Subtest: travel_update_trip {"id":"12345678-1234-4234-8234-123456789abc","expectedVersion":1,"patch":{"travelers":[null]}}
+    ok 15 - travel_update_trip {"id":"12345678-1234-4234-8234-123456789abc","expectedVersion":1,"patch":{"travelers":[null]}}
+      ---
+      duration_ms: 225.50357
+      type: 'test'
+      ...
+    # Subtest: travel_update_trip {"id":"12345678-1234-4234-8234-123456789abc","expectedVersion":0,"patch":{"destination":null}}
+    ok 16 - travel_update_trip {"id":"12345678-1234-4234-8234-123456789abc","expectedVersion":0,"patch":{"destination":null}}
+      ---
+      duration_ms: 187.371899
+      type: 'test'
+      ...
+    # Subtest: travel_update_trip {"id":"12345678-1234-9234-8234-123456789abc","expectedVersion":1,"patch":{"destination":null}}
+    ok 17 - travel_update_trip {"id":"12345678-1234-9234-8234-123456789abc","expectedVersion":1,"patch":{"destination":null}}
+      ---
+      duration_ms: 215.829117
+      type: 'test'
+      ...
+    # Subtest: assistance_list null
+    ok 18 - assistance_list null
+      ---
+      duration_ms: 185.485109
+      type: 'test'
+      ...
+    # Subtest: assistance_list []
+    ok 19 - assistance_list []
+      ---
+      duration_ms: 167.347691
+      type: 'test'
+      ...
+    # Subtest: assistance_list {"unexpected":1}
+    ok 20 - assistance_list {"unexpected":1}
+      ---
+      duration_ms: 202.783337
+      type: 'test'
+      ...
+    # Subtest: malformed JSON
+    ok 21 - malformed JSON
+      ---
+      duration_ms: 208.705081
+      type: 'test'
+      ...
+    1..21
+ok 4 - invalid catalog arguments never reach approval, authorized IO or effects
+  ---
+  duration_ms: 4248.173443
+  type: 'test'
+  ...
+# Subtest: original business refinement remains authoritative before effects
+ok 5 - original business refinement remains authoritative before effects
+  ---
+  duration_ms: 1341.150488
+  type: 'test'
+  ...
+# Subtest: catalog approval recovery revalidates and retains null/omission and effect identity
+ok 6 - catalog approval recovery revalidates and retains null/omission and effect identity
+  ---
+  duration_ms: 1554.556487
+  type: 'test'
+  ...
+# Subtest: catalog rejection, durable cancellation and scope revocation prevent effects
+    # Subtest: reject
+    ok 1 - reject
+      ---
+      duration_ms: 1462.472238
+      type: 'test'
+      ...
+    # Subtest: cancel
+    ok 2 - cancel
+      ---
+      duration_ms: 1371.811272
+      type: 'test'
+      ...
+    # Subtest: scope
+    ok 3 - scope
+      ---
+      duration_ms: 1319.519747
+      type: 'test'
+      ...
+    1..3
+ok 7 - catalog rejection, durable cancellation and scope revocation prevent effects
+  ---
+  duration_ms: 4154.576611
+  type: 'test'
+  ...
+# Subtest: catalog effect result recovery and repeated model call ID do not duplicate dispatch
+ok 8 - catalog effect result recovery and repeated model call ID do not duplicate dispatch
+  ---
+  duration_ms: 1568.382388
+  type: 'test'
+  ...
+# Subtest: reused catalog call ID with different arguments cannot dispatch another effect
+ok 9 - reused catalog call ID with different arguments cannot dispatch another effect
+  ---
+  duration_ms: 1561.534071
+  type: 'test'
+  ...
+# Subtest: non-Mills laboratory schema executes refs, allOf, oneOf, arrays and open patterned metadata without rewriting
+ok 10 - non-Mills laboratory schema executes refs, allOf, oneOf, arrays and open patterned metadata without rewriting
+  ---
+  duration_ms: 304.382841
+  type: 'test'
+  ...
+# Subtest: invalid non-Mills allOf/oneOf input never reaches the effect boundary
+ok 11 - invalid non-Mills allOf/oneOf input never reaches the effect boundary
+  ---
+  duration_ms: 212.878441
+  type: 'test'
+  ...
+# Subtest: unsupported schema semantics fail construction; schema and input cannot be silently mutated
+ok 12 - unsupported schema semantics fail construction; schema and input cannot be silently mutated
+  ---
+  duration_ms: 123.369832
+  type: 'test'
+  ...
+# Subtest: gateway transport uses actual Runner, durable output and reconnect cursor; disconnect does not Stop
+ok 13 - gateway transport uses actual Runner, durable output and reconnect cursor; disconnect does not Stop
+  ---
+  duration_ms: 494.636135
+  type: 'test'
+  ...
+# Subtest: transport explicit Stop is durable; changed identity cannot reconnect or cancel
+ok 14 - transport explicit Stop is durable; changed identity cannot reconnect or cancel
+  ---
+  duration_ms: 206.314569
+  type: 'test'
+  ...
+# Subtest: approval wait remains durable on reconnect; only verified answer can resume execution
+ok 15 - approval wait remains durable on reconnect; only verified answer can resume execution
+  ---
+  duration_ms: 290.374481
+  type: 'test'
+  ...
+# Subtest: standard reader emits validated native protocol frames and stable replay identities
+ok 16 - standard reader emits validated native protocol frames and stable replay identities
+  ---
+  duration_ms: 483.793426
+  type: 'test'
+  ...
+# Subtest: application catalog adapter preserves validation, read/mutation classification and stable native tool identity
+ok 17 - application catalog adapter preserves validation, read/mutation classification and stable native tool identity
+  ---
+  duration_ms: 38.067175
+  type: 'test'
+  ...
+# Subtest: existing assistant durable wrapper consumes the Agent transport with native protocol checkpoints
+ok 18 - existing assistant durable wrapper consumes the Agent transport with native protocol checkpoints
+  ---
+  duration_ms: 495.508428
+  type: 'test'
+  ...
+# Subtest: application JSON-schema catalog executes read/effect/read through Runner and checkpoint reader
+ok 19 - application JSON-schema catalog executes read/effect/read through Runner and checkpoint reader
+  ---
+  duration_ms: 550.820258
+  type: 'test'
+  ...
+# Subtest: installed assistance and notification delivery share public durable effects with no duplicate send
+ok 20 - installed assistance and notification delivery share public durable effects with no duplicate send
+  ---
+  duration_ms: 322.158639
+  type: 'test'
+  ...
+# Subtest: explicit Stop projects its durable reason (approval wait=false)
+not ok 21 - explicit Stop projects its durable reason (approval wait=false)
+  ---
+  duration_ms: 220.137049
+  type: 'test'
+  location: '/opt/handrail/repos/handrail/handrail-agent-sdk/handrail-agent-sdk/tests/fixtures/installed/application.test.mjs:190:38'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly equal:
+    + actual - expected
+    
+    + 'policy_revoked'
+    - 'explicit_stop'
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 'explicit_stop'
+  actual: 'policy_revoked'
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///opt/handrail/repos/handrail/handrail-agent-sdk/handrail-agent-sdk/tests/fixtures/installed/application.test.mjs:208:10)
+    process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: explicit Stop projects its durable reason (approval wait=true)
+not ok 22 - explicit Stop projects its durable reason (approval wait=true)
+  ---
+  duration_ms: 269.704305
+  type: 'test'
+  location: '/opt/handrail/repos/handrail/handrail-agent-sdk/handrail-agent-sdk/tests/fixtures/installed/application.test.mjs:190:38'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly equal:
+    + actual - expected
+    
+    + 'policy_revoked'
+    - 'explicit_stop'
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 'explicit_stop'
+  actual: 'policy_revoked'
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///opt/handrail/repos/handrail/handrail-agent-sdk/handrail-agent-sdk/tests/fixtures/installed/application.test.mjs:208:10)
+    process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: wall clock: gaps, folds, quarter-hour zones and no arbitrary one-year horizon
+ok 23 - wall clock: gaps, folds, quarter-hour zones and no arbitrary one-year horizon
+  ---
+  duration_ms: 78.7638
+  type: 'test'
+  ...
+# Subtest: durable schedule, duplicate creation, immutable binding, concurrent delivery and reconstruction
+ok 24 - durable schedule, duplicate creation, immutable binding, concurrent delivery and reconstruction
+  ---
+  duration_ms: 109.253786
+  type: 'test'
+  ...
+# Subtest: reschedule retries keep receipt and cancel serializes with delivery; scope/current identity checks
+ok 25 - reschedule retries keep receipt and cancel serializes with delivery; scope/current identity checks
+  ---
+  duration_ms: 83.000833
+  type: 'test'
+  ...
+# Subtest: watch landing fixtures: delayed and stale never imply arrival; one durable match after restart
+ok 26 - watch landing fixtures: delayed and stale never imply arrival; one durable match after restart
+  ---
+  duration_ms: 82.24879
+  type: 'test'
+  ...
+# Subtest: cancelled flight, wrong occurrence, future and reordered observations cannot notify arrival
+ok 27 - cancelled flight, wrong occurrence, future and reordered observations cannot notify arrival
+  ---
+  duration_ms: 62.098072
+  type: 'test'
+  ...
+# Subtest: materially different consumer: industrial pump inspection watch uses the same lifecycle and adapter
+ok 28 - materially different consumer: industrial pump inspection watch uses the same lifecycle and adapter
+  ---
+  duration_ms: 50.40946
+  type: 'test'
+  ...
+# Subtest: batch size bounds work, not user capability; fair catch-up and expiration
+ok 29 - batch size bounds work, not user capability; fair catch-up and expiration
+  ---
+  duration_ms: 61.194602
+  type: 'test'
+  ...
+# Subtest: notification delivery reuses effect ledger: concurrent retry, reconstruction and uncertain remote result
+ok 30 - notification delivery reuses effect ledger: concurrent retry, reconstruction and uncertain remote result
+  ---
+  duration_ms: 419.27416
+  type: 'test'
+  ...
+# Subtest: canonical readiness requires verified matching environment and target containment, not worker success
+ok 31 - canonical readiness requires verified matching environment and target containment, not worker success
+  ---
+  duration_ms: 0.644879
+  type: 'test'
+  ...
+# Subtest: canonical feedback fixture status/questions/approvals wait and verified-ready notification survive reconstruction
+ok 32 - canonical feedback fixture status/questions/approvals wait and verified-ready notification survive reconstruction
+  ---
+  duration_ms: 71.699494
+  type: 'test'
+  ...
+# Subtest: canonical submission adapter retains stable dedupe key and canonical ID; uncertainty never means retry
+ok 33 - canonical submission adapter retains stable dedupe key and canonical ID; uncertainty never means retry
+  ---
+  duration_ms: 0.863752
+  type: 'test'
+  ...
+# Subtest: durable mandate revocation is terminal even when account access returns
+ok 34 - durable mandate revocation is terminal even when account access returns
+  ---
+  duration_ms: 53.198212
+  type: 'test'
+  ...
+# Subtest: a crash/failure before transaction commit rolls back both lifecycle and inbox fact
+ok 35 - a crash/failure before transaction commit rolls back both lifecycle and inbox fact
+  ---
+  duration_ms: 87.903961
+  type: 'test'
+  ...
+# Subtest: shared worker coalesces wakeups, drains on shutdown and leaves durable intent intact
+ok 36 - shared worker coalesces wakeups, drains on shutdown and leaves durable intent intact
+  ---
+  duration_ms: 60.251766
+  type: 'test'
+  ...
+1..36
+# tests 65
+# suites 0
+# pass 63
+# fail 2
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 28740.664687
+npm notice
+npm notice New major version of npm available! 10.9.8 -> 12.2.0
+npm notice Changelog: https://github.com/npm/cli/releases/tag/v12.2.0
+npm notice To update run: npm install -g npm@12.2.0
+npm notice
+Owned temporary PostgreSQL cluster stopped.

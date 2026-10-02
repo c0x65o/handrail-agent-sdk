@@ -64,7 +64,7 @@ test('transport explicit Stop is durable; changed identity cannot reconnect or c
   let entered,release;const started=new Promise(r=>entered=r),hold=new Promise(r=>release=r);
   const s=await setup(t,{read:async()=>{entered();await hold;return 'late';}});
   const opened=await s.transport.startTurn(start);await started;
-  const cancelled=await s.transport.capabilities.authoritativeCancellation.capability.cancelTurn({conversationId:'conversation-one',turnId:'turn-one',mutationId:'stop',idempotencyKey:'stop',reason:'user_requested'});
+  const cancelled=await s.transport.capabilities.authoritativeCancellation.capability.cancelTurn({conversationId:'conversation-one',turnId:'turn-one',mutationId:'stop',idempotencyKey:'stop',reason:'user'});
   assert.equal(cancelled.ok,true);release();opened.value.observation.disconnect();
   assert.equal((await s.runtime.wake(identity)).value,'cancelled');
   const stopped=await s.runtime.inspect(identity);assert.equal(stopped.ok,true);assert.equal(stopped.value.checkpoint,null);assert.equal(stopped.value.snapshot.state,'cancelled');
@@ -183,4 +183,40 @@ test('installed assistance and notification delivery share public durable effect
   assert.equal((await db.query(`SELECT sum(attempts)::int AS n FROM ${harness.table('synthetic_provider')}`)).rows[0].n,1);
   revoked=true;await assert.rejects(delivery.deliver(facts[0],'push'),/denied/);
   assert.equal((await db.query(`SELECT count(*)::int AS n FROM ${harness.table('assistance_facts')}`)).rows[0].n,1);
+});
+
+// Real Agent admission, Runner, cancellation and journal; only provider/read
+// boundaries are controlled. Validate the public wire decoder and replay cursor.
+for (const waiting of [false, true]) test(`explicit Stop projects its durable reason (approval wait=${waiting})`, async t => {
+  const { createAgentCheckpointReader } = await import('handrail-agent-sdk/server/application');
+  const { parseStreamEvent } = await import('@handrail/ai-assistant');
+  let entered, release;
+  const started = new Promise(r => entered = r), held = new Promise(r => release = r);
+  t.after(() => release());
+  const s = await setup(t, waiting ? { wait: true } : { read: async () => { entered(); await held; return 'late result'; } });
+  const binding = await s.host.admit(start);
+  const running = s.runtime.wake(identity);
+  if (waiting) await running; else await started;
+  assert.equal((await s.runtime.inspect(identity)).value.snapshot.state, waiting ? 'waiting' : 'running');
+  await s.host.cancel();
+  release(); await running;
+  const member = { id: 'fixture', source: 'server_derived', trust: 'authoritative' };
+  const read = createAgentCheckpointReader({ runtime: s.runtime, attribution: async () => ({
+    organization: member, project: member, service_environment: member, known_user: member, session: member, automation: { ...member, id: null },
+  }), pendingToolCallIds: async () => [] });
+  const page = await read(binding, empty);
+  assert.equal(page.events.at(-1).reason, 'explicit_stop');
+  assert.equal(parseStreamEvent(page.events.at(-1)).reason, 'explicit_stop');
+  assert.equal(page.result.status, 'cancelled');
+  assert.deepEqual((await read(binding, page.checkpoint)).events, []);
+  assert.deepEqual((await read(binding, empty)).events, page.events);
+  const stopped = (await s.runtime.inspect(identity)).value;
+  assert.equal(stopped.snapshot.cancellation.reason, 'explicit_stop');
+  assert.equal(stopped.checkpoint, null);
+  assert.equal(await s.host.cancel(), 'already_terminal');
+  assert.equal((await s.runtime.wake(identity)).value, 'cancelled');
+  s.state.denied = true;
+  assert.equal((await s.transport.capabilities.authoritativeCancellation.capability.cancelTurn({
+    conversationId: 'conversation-one', turnId: 'turn-one', mutationId: 'denied', idempotencyKey: 'denied', reason: 'user',
+  })).ok, false);
 });

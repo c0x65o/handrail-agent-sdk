@@ -1,0 +1,2 @@
+Clean-cache npm ci; GIT_CONFIG_NOSYSTEM=1 GIT_CONFIG_GLOBAL=/dev/null GIT_TERMINAL_PROMPT=0 GIT_ALLOW_PROTOCOL=https. npm used its ordinary HTTPS Git-host fetch implementation (no tarball dependency).
+358 http fetch GET 200 https://codeload.github.com/c0x65o/handrail-sdk-ai-assistant-js/tar.gz/d851e7a62a14754972adeb8be84ea64cddb567d6 2754ms (cache miss)

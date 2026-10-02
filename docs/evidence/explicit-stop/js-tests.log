@@ -1,0 +1,31 @@
+
+> @handrail/ai-assistant@0.2.70 test
+> vitest run --maxWorkers=1 --minWorkers=1 test/cancellation-contract.test.ts test/runtime-cancellation.test.ts test/server-reconcile-conversation.test.ts test/durable-stop-recovery.test.ts test/direct-provider-transport.test.ts test/managed-runtime-transport.test.ts test/protocol.test.ts test/provider-tool-loop.test.ts
+
+
+ RUN  v3.2.4 /opt/handrail/repos/handrail/handrail-ai-assistant-sdk/handrail-sdk-ai-assistant-js
+
+ ✓ test/server-reconcile-conversation.test.ts (38 tests) 3835ms
+   ✓ server stored-output reconciliation > repairs legacy snapshot clients without rerunning work; completes before reload: true, history events: 0  804ms
+   ✓ server stored-output reconciliation > repairs legacy snapshot clients without rerunning work; completes before reload: false, history events: 0  1004ms
+   ✓ server stored-output reconciliation > repairs legacy snapshot clients without rerunning work; completes before reload: true, history events: 120  817ms
+   ✓ server stored-output reconciliation > repairs legacy snapshot clients without rerunning work; completes before reload: false, history events: 120  1084ms
+ ✓ test/durable-stop-recovery.test.ts (15 tests) 2540ms
+   ✓ keeps timeout cancellation discoverable beyond execution retry exhaustion  1105ms
+ ✓ test/runtime-cancellation.test.ts (18 tests) 1182ms
+ ✓ test/managed-runtime-transport.test.ts (42 tests) 161ms
+ ✓ test/provider-tool-loop.test.ts (7 tests) 43ms
+ ✓ test/protocol.test.ts (68 tests) 36ms
+ ✓ test/direct-provider-transport.test.ts (16 tests) 25ms
+ ✓ test/cancellation-contract.test.ts (5 tests) 6ms
+
+ Test Files  8 passed (8)
+      Tests  209 passed (209)
+   Start at  03:25:29
+   Duration  12.84s (transform 1.86s, setup 0ms, collect 3.27s, tests 7.83s, environment 2ms, prepare 585ms)
+
+npm notice
+npm notice New major version of npm available! 10.9.8 -> 12.2.0
+npm notice Changelog: https://github.com/npm/cli/releases/tag/v12.2.0
+npm notice To update run: npm install -g npm@12.2.0
+npm notice

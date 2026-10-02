@@ -1,0 +1,310 @@
+00:00 +0: loading test/approval_decisions_test.dart
+00:00 +0: test/approval_decisions_test.dart: loads bound executed history after reload without renewing decision controls
+00:00 +1: test/approval_decisions_test.dart: loads bound rejected history after reload without renewing decision controls
+00:00 +2: test/approval_decisions_test.dart: loads bound expired history after reload without renewing decision controls
+00:00 +3: test/approval_decisions_test.dart: loads bound failed history after reload without renewing decision controls
+00:00 +4: test/approval_decisions_test.dart: loads bound confirmed history after reload without renewing decision controls
+00:00 +5: test/approval_decisions_test.dart: loads bound executing history after reload without renewing decision controls
+00:00 +6: test/approval_decisions_test.dart: review gates confirmation and exact receipt is not execution
+00:00 +7: test/approval_decisions_test.dart: lost reply retains exact decision across restart; opposite choice blocked
+00:00 +8: test/approval_decisions_test.dart: version conflict discards review, never silently retries new version
+00:00 +9: test/approval_decisions_test.dart: mismatched receipt remains uncertain and blocks conversation deletion
+00:00 +10: test/approval_decisions_test.dart: opaque arguments require trusted complete host review
+00:00 +11: test/approval_decisions_test.dart: late review cannot cross selection or sign out
+00:00 +12: test/approval_decisions_test.dart: changed arguments invalidate a cached review even at the same version
+00:00 +13: test/approval_decisions_test.dart: domain permission veto cannot be overridden by complete review
+00:00 +14: test/approval_decisions_test.dart: failed durable write prevents dispatch
+00:00 +15: test/approval_decisions_test.dart: two stores sharing an account atomically reject opposite saved decisions
+00:00 +16: test/approval_decisions_test.dart: concurrent controller adopts the original durable choice before retry
+00:00 +17: test/approval_decisions_test.dart: sign out while saving intent prevents dispatch; saved choice resumes only in that account
+00:00 +18: test/approval_decisions_test.dart: pending approvals have no deadline, including older timestamped proposals
+00:00 +19: test/approval_decisions_test.dart: historical expired or unavailable approval capability never dispatches
+00:00 +20: loading test/submission_gateway_test.dart
+00:00 +20: test/submission_gateway_test.dart: (setUpAll)
+00:02 +20: test/submission_gateway_test.dart: headless file receipt recovery uses metadata only after interrupted byte cleanup
+00:03 +21: test/submission_gateway_test.dart: exact draft cleanup recovers partial device failure through the real gateway
+00:03 +22: test/submission_gateway_test.dart: deletion replays a lost real-gateway receipt after controller restart
+00:04 +23: test/submission_gateway_test.dart: approval lost reply recovers exact decision after execution advances through the real JS gateway
+00:04 +24: test/submission_gateway_test.dart: shared assistant controller creates, sends, archives and restores through the real gateway
+00:04 +25: test/submission_gateway_test.dart: real indexed history pages stay bounded and do not replace canonical context
+00:05 +26: test/submission_gateway_test.dart: oversized review uses compact durable receipts through the real JS gateway
+00:05 +27: test/submission_gateway_test.dart: large message reader uses bounded plaintext HTTP and rejects content after deletion
+00:06 +28: test/submission_gateway_test.dart: Stop queued before admission targets its original chat; failed cancel=false
+00:06 +29: test/submission_gateway_test.dart: Stop queued before admission targets its original chat; failed cancel=true
+00:06 +30: test/submission_gateway_test.dart: cancelling a completion wait leaves the server turn running and reusable
+00:07 +31: test/submission_gateway_test.dart: closing the account settles terminal observers without cancelling server work
+00:07 +32: test/submission_gateway_test.dart: file-only draft admits durable attachment metadata without an empty content violation
+00:07 +33: test/submission_gateway_test.dart: admission is atomic, concurrent submit deduplicates, reload resumes and completed retries never restart
+00:07 +33 -1: test/submission_gateway_test.dart: admission is atomic, concurrent submit deduplicates, reload resumes and completed retries never restart [E]
+  Expected: an object with length of <1>
+    Actual: WhereIterable<Map<String, Object?>>:[]
+     Which: has length of <0>
+  
+  package:matcher                          expect
+  test/submission_gateway_test.dart 857:5  main.<fn>
+  
+00:07 +33 -1: test/submission_gateway_test.dart: independent threads finish unread after disconnect and read acknowledgement survives reload
+00:08 +34 -1: test/submission_gateway_test.dart: attachment references are admitted with their message before execution
+00:08 +34 -2: test/submission_gateway_test.dart: attachment references are admitted with their message before execution [E]
+  Bad state: No element
+  dart:collection                           ListBase.singleWhere
+  test/submission_gateway_test.dart 926:33  main.<fn>
+  
+00:08 +34 -2: test/submission_gateway_test.dart: pending journal is saved before admission and recovered after lost start acknowledgement
+00:09 +35 -2: test/submission_gateway_test.dart: lost local journal acknowledgement cannot replace the saved request
+00:09 +36 -2: test/submission_gateway_test.dart: lost admission response reuses persisted intent after session recreation
+00:10 +37 -2: test/submission_gateway_test.dart: lost start response reuses persisted intent after session recreation
+00:10 +38 -2: test/submission_gateway_test.dart: changed payload under a reused identity is refused before a second execution
+00:10 +39 -2: test/submission_gateway_test.dart: (tearDownAll)
+00:11 +39 -2: loading test/session_test.dart
+00:11 +39 -2: test/session_test.dart: outgoing feedback precedes slow preflight and disappears on pre-admission failure
+00:11 +40 -2: test/session_test.dart: approval waits restore without a running observer and leave comments available
+00:11 +41 -2: test/session_test.dart: disconnect aborts pending response headers without closing the shared HTTP client
+00:11 +42 -2: test/session_test.dart: reload resumes an existing turn, then canonical completion and read acknowledgement win
+00:11 +43 -2: test/session_test.dart: overlapping refreshes share a request and disposal rejects late results
+00:11 +44 -2: test/session_test.dart: a delayed read response keeps a newer failed result unread
+00:11 +45 -2: test/session_test.dart: an expired upload rejects admission without a retry or provider start
+00:11 +46 -2: test/session_test.dart: a failed synchronization keeps the last known server run
+00:11 +47 -2: test/session_test.dart: cancellation requests do not report idle before server confirmation
+00:11 +48 -2: test/session_test.dart: initial transient failure keeps polling until recovery
+00:16 +49 -2: test/session_test.dart: canonical snapshots reject cross-conversation or replay-error evidence and retain immutable data
+00:16 +50 -2: loading test/attachment_drafts_test.dart
+00:16 +50 -2: test/attachment_drafts_test.dart: persists immutable source once and restores only the selected account/chat
+00:16 +51 -2: test/attachment_drafts_test.dart: captures new caller bytes before the first asynchronous storage operation
+00:16 +52 -2: test/attachment_drafts_test.dart: binary acknowledgement loss retains old rows and journals staged-source cleanup
+00:16 +53 -2: test/attachment_drafts_test.dart: uncertain manifest commit recovers authoritative state: landed=false
+00:16 +54 -2: test/attachment_drafts_test.dart: uncertain manifest commit recovers authoritative state: landed=true
+00:16 +55 -2: test/attachment_drafts_test.dart: cleanup failure remains durable and retry never hydrates deleted sources
+00:16 +56 -2: test/attachment_drafts_test.dart: separate same-scope writers conflict and exact cleanup preserves other scopes
+00:16 +57 -2: test/attachment_drafts_test.dart: confirmed deletion fences old writers even when source cleanup initially fails
+00:16 +58 -2: test/attachment_drafts_test.dart: caps files and conversations without reading bodies or evicting work
+00:16 +59 -2: test/attachment_drafts_test.dart: checks source integrity and refuses cleanup keys outside the account
+00:16 +60 -2: test/attachment_drafts_test.dart: key-value fallback persists separated bytes with identical cleanup semantics
+00:16 +61 -2: loading test/realtime_workspace_test.dart
+00:16 +61 -2: test/realtime_workspace_test.dart: oversized scopes fence late reads, retain evidence and recover on a valid scope
+00:17 +62 -2: test/realtime_workspace_test.dart: invalid references retain stale evidence without leaking rejected values
+00:17 +63 -2: test/realtime_workspace_test.dart: parses only valid public workspace records
+00:17 +64 -2: test/realtime_workspace_test.dart: discovers independent paged calls and retained unread without acknowledging them
+00:17 +65 -2: test/realtime_workspace_test.dart: retains all evidence on failures, foreign calls, missing pages and lifecycle regression
+00:17 +66 -2: test/realtime_workspace_test.dart: joins reads and drops late replies after scope changes or disposal
+00:17 +67 -2: test/realtime_workspace_test.dart: chunks large catalogs and stops on repeated cursors without publishing partial state
+00:17 +68 -2: loading test/handrail_ai_client_test.dart
+00:17 +68 -2: test/handrail_ai_client_test.dart: attachment file parts preserve the declared supported media type
+00:17 +69 -2: test/handrail_ai_client_test.dart: reduces typed cross-platform turn state and calls thread resources
+00:17 +70 -2: test/handrail_ai_client_test.dart: negotiates capabilities and parses SSE frames
+00:17 +71 -2: test/handrail_ai_client_test.dart: terminal frames preserve server status while disconnection only ends observation
+00:17 +72 -2: test/handrail_ai_client_test.dart: workspace keeps background conversations running and marks completion unread
+00:17 +73 -2: test/handrail_ai_client_test.dart: reports safe gateway diagnostics for resource failures
+00:17 +74 -2: test/handrail_ai_client_test.dart: replay deduplicates text and old turns cannot overwrite a new turn
+00:17 +75 -2: test/handrail_ai_client_test.dart: server completion and read state override stale open state, rejecting older activity
+00:17 +76 -2: test/handrail_ai_client_test.dart: stale same-turn activity cannot revive canonical completion
+00:17 +77 -2: test/handrail_ai_client_test.dart: truncated turn streams report disconnected with the last durable checkpoint
+00:17 +78 -2: test/handrail_ai_client_test.dart: loads typed cross-device activity records
+00:17 +79 -2: test/handrail_ai_client_test.dart: streams typed cross-device activity records
+00:17 +80 -2: loading test/assistant_observation_test.dart
+00:17 +80 -2: test/assistant_observation_test.dart: one account cycle coalesces activity and skips idle unselected sessions
+00:17 +81 -2: test/assistant_observation_test.dart: failed activity retains unread evidence and late disposal replies stay discarded
+00:17 +82 -2: loading test/conversation_permissions_test.dart
+00:17 +82 -2: test/conversation_permissions_test.dart: read-only catalog loads without automatic creation or writes (empty false)
+00:18 +83 -2: test/conversation_permissions_test.dart: read-only catalog loads without automatic creation or writes (empty true)
+00:18 +84 -2: test/conversation_permissions_test.dart: metadata sampling cannot dispatch creation after permission changes
+00:18 +85 -2: test/conversation_permissions_test.dart: archive rechecks permission after reading its target descriptor
+00:18 +86 -2: test/conversation_permissions_test.dart: revocation during deletion journaling prevents dispatch and preserves exact recovery intent
+00:18 +87 -2: loading test/display_history_test.dart
+00:18 +87 -2: test/display_history_test.dart: negotiated content (false) enforces encoding, Unicode offsets and revision binding
+00:18 +88 -2: test/display_history_test.dart: negotiated content (true) enforces encoding, Unicode offsets and revision binding
+00:18 +89 -2: test/display_history_test.dart: reads bounded changes with tombstones and preserves the paging watermark
+00:18 +90 -2: test/display_history_test.dart: negotiates display history without treating a partial page as a canonical snapshot
+00:18 +91 -2: test/display_history_test.dart: uses protected requests and keeps paging explicit
+00:18 +92 -2: test/display_history_test.dart: preserves explicit clear/content conflicts and rejects wrong-account response identities
+00:18 +93 -2: test/display_history_test.dart: reads Unicode content using server offsets and rejects mixed revisions
+00:18 +94 -2: test/display_history_test.dart: cancels an obsolete selection while credentials are pending without issuing a request
+00:18 +95 -2: test/display_history_test.dart: rejects oversized responses before parsing content
+00:18 +96 -2: loading test/pending_approval_inbox_test.dart
+00:18 +96 -2: test/pending_approval_inbox_test.dart: old approval discovery and bound review use the durable decision path without transcript hydration
+00:18 +97 -2: test/pending_approval_inbox_test.dart: page replacement and close cancel held reads and clear inbox across chat selection
+00:18 +98 -2: test/pending_approval_inbox_test.dart: deferred tool details cannot authorize confirmation
+00:18 +99 -2: loading test/attachment_download_test.dart
+00:18 +99 -2: test/attachment_download_test.dart: negotiates protected saved reads independently of upload and keeps old gateways compatible
+00:18 +100 -2: test/attachment_download_test.dart: rejects capability escapes before requesting authentication
+00:19 +101 -2: test/attachment_download_test.dart: rejects wrong MIME, changed size, oversized and empty bodies
+00:19 +102 -2: test/attachment_download_test.dart: bounds a streaming body and releases observation
+00:19 +103 -2: test/attachment_download_test.dart: cancels during authentication and excludes late bytes
+00:19 +104 -2: test/attachment_download_test.dart: cancels during fetch and excludes late bytes
+00:19 +105 -2: test/attachment_download_test.dart: cancels during body and excludes late bytes
+00:19 +106 -2: test/attachment_download_test.dart: bounds stalled reads with a deadline
+00:19 +107 -2: test/attachment_download_test.dart: maps expired and denied reads without exposing server payloads
+00:19 +108 -2: loading test/display_session_test.dart
+00:19 +108 -2: test/display_session_test.dart: history throttle backs off reads but preserves owned cancellation
+00:20 +109 -2: test/display_session_test.dart: stream event bursts cannot bypass the configured refresh interval
+00:22 +110 -2: test/display_session_test.dart: acknowledges delivery before a held history refresh and replaces the local echo by identity
+00:22 +111 -2: test/display_session_test.dart: clearing saved history releases an unprojected sent message
+00:22 +112 -2: test/display_session_test.dart: does not acknowledge uncertain admission
+00:22 +113 -2: test/display_session_test.dart: does not acknowledge rejected admission
+00:22 +114 -2: test/display_session_test.dart: presentation version changes for paging but not an unchanged poll
+00:22 +115 -2: test/display_session_test.dart: related state covers the retained window and ignores an obsolete activity page
+00:22 +116 -2: test/display_session_test.dart: a live removal overtakes a held activity page without resurrection
+00:22 +117 -2: test/display_session_test.dart: partial presentation pairs citations with retained sources across pages and removals
+00:22 +118 -2: test/display_session_test.dart: activity pages retain loaded records, apply live tombstones and explicitly bound memory
+00:22 +119 -2: test/display_session_test.dart: denied activity page clears all presentation and publishes a nonretryable error
+00:22 +120 -2: test/display_session_test.dart: long context references remain bounded and later groups load only on demand
+00:22 +121 -2: test/display_session_test.dart: standard session selects one bounded page and refreshes live text without snapshots or event replay
+00:22 +122 -2: test/display_session_test.dart: uses requested-turn controls for old completion and never restarts an admitted terminal turn
+00:22 +123 -2: test/display_session_test.dart: preparing blocks sends and revoked access evicts all visible content
+00:22 +124 -2: test/display_session_test.dart: disposal cancels a stalled bounded read and late completion cannot republish
+00:22 +125 -2: test/display_session_test.dart: sends through canonical admission and verifies the exact turn without loading the log
+00:22 +126 -2: loading test/transcription_test.dart
+00:22 +126 -2: test/transcription_test.dart: negotiates formats and rejects invalid limits or foreign endpoints
+00:22 +127 -2: test/transcription_test.dart: uses protected raw HTTP with stable request identity and no content diagnostics
+00:22 +128 -2: test/transcription_test.dart: cancellation excludes a late result without changing in-flight audio
+00:22 +129 -2: test/transcription_test.dart: response observation is bounded even when a transport ignores abort
+00:22 +130 -2: test/transcription_test.dart: safe outcome_unknown errors preserve retry policy and hide provider details
+00:22 +131 -2: test/transcription_test.dart: safe idempotency_conflict errors preserve retry policy and hide provider details
+00:22 +132 -2: test/transcription_test.dart: safe service_unavailable errors preserve retry policy and hide provider details
+00:22 +133 -2: test/transcription_test.dart: oversized responses and unsupported capture never expose body text
+00:22 +134 -2: loading test/display_window_test.dart
+00:22 +134 -2: test/display_window_test.dart: latest queues once behind changes and respects ready
+00:22 +135 -2: test/display_window_test.dart: latest queues once behind changes and respects select
+00:22 +136 -2: test/display_window_test.dart: latest queues once behind changes and respects dispose
+00:22 +137 -2: test/display_window_test.dart: latest queues once behind changes and respects stale_cursor
+00:22 +138 -2: test/display_window_test.dart: latest queues once behind changes and respects forbidden
+00:22 +139 -2: test/display_window_test.dart: latest queues once behind changes and respects unavailable
+00:22 +140 -2: test/display_window_test.dart: content (false) reads cancel on replacement, selection and disposal
+00:22 +141 -2: test/display_window_test.dart: content (true) reads cancel on replacement, selection and disposal
+00:22 +142 -2: test/display_window_test.dart: widget binding preserves anchor navigation, errors and selection cancellation
+00:22 +143 -2: test/display_window_test.dart: bounds retained messages, loads both directions, coalesces reads and restores an anchor
+00:22 +144 -2: test/display_window_test.dart: bounds bytes independently of the message-count limit
+00:22 +145 -2: test/display_window_test.dart: advances changes watermark only after the final page without disturbing the reading window
+00:22 +146 -2: test/display_window_test.dart: preserves a failed page for retry but evicts text after access revocation
+00:22 +147 -2: test/display_window_test.dart: switches while a transport is stalled and ignores its late completion
+00:22 +148 -2: loading test/conversation_drafts_test.dart
+00:23 +148 -2: test/conversation_drafts_test.dart: reloads account-scoped drafts and refuses stale writes or clears across adapters
+00:23 +149 -2: test/conversation_drafts_test.dart: bounds UTF-8 bytes and count without evicting unsent drafts
+00:23 +150 -2: test/conversation_drafts_test.dart: rejects malformed storage without replacing it
+00:23 +151 -2: loading test/realtime_calls_test.dart
+00:23 +151 -2: test/realtime_calls_test.dart: restores all pages and retains unfinished evidence after failed, partial or omitted reads
+00:23 +152 -2: test/realtime_calls_test.dart: serializes reads and ends, rejects stale reads and preserves confirmed terminal evidence
+00:23 +153 -2: test/realtime_calls_test.dart: keeps accepted and failed termination uncertain and rejects a foreign acknowledgement
+00:23 +154 -2: test/realtime_calls_test.dart: polling never overlaps a stalled read and stops on disposal
+00:24 +155 -2: test/realtime_calls_test.dart: isolates conversation monitors and discards late responses after disposal
+00:24 +156 -2: loading test/realtime_activity_test.dart
+00:24 +156 -2: test/realtime_activity_test.dart: pending approval is distinct from running and failed voice work
+00:24 +157 -2: test/realtime_activity_test.dart: read tokens must match the displayed call and counts
+00:24 +158 -2: test/realtime_activity_test.dart: acknowledges the displayed token without optimistically clearing newer outcomes
+00:24 +159 -2: test/realtime_activity_test.dart: queues a different displayed token behind an acknowledgement already in flight
+00:24 +160 -2: test/realtime_activity_test.dart: failed or disposed read acknowledgements retain evidence and never trigger a new request
+00:24 +161 -2: test/realtime_activity_test.dart: parses counts and optional details without accepting malformed state
+00:24 +162 -2: test/realtime_activity_test.dart: retains evidence on failed, foreign or regressed reads and marks ended tools unresolved
+00:24 +163 -2: test/realtime_activity_test.dart: older lifecycle responses cannot clear a displayed voice unread token
+00:24 +164 -2: test/realtime_activity_test.dart: details are opt-in, bounded, paged and retained across polling
+00:24 +165 -2: test/realtime_activity_test.dart: joins concurrent reads and ignores late details after hiding or disposal
+00:24 +166 -2: loading test/attachment_gateway_test.dart
+00:24 +166 -2: test/attachment_gateway_test.dart: JS gateway: UI binding uploads to the original conversation, admits the file, downloads and preserves ownership/expiry
+00:28 +167 -2: loading test/display_positions_test.dart
+00:28 +167 -2: test/display_positions_test.dart: scroll journal survives recreation, isolates accounts and bounds concurrent writers
+00:28 +168 -2: loading test/assistant_voice_history_test.dart
+00:28 +168 -2: test/assistant_voice_history_test.dart: catalog growth beyond the voice limit reports stale activity without async failure
+00:37 +169 -2: test/assistant_voice_history_test.dart: voice unread and unfinished effects stay independent of text controls
+00:37 +170 -2: test/assistant_voice_history_test.dart: unchanged text/catalog publishes do not restart voice observation
+00:37 +171 -2: test/assistant_voice_history_test.dart: history retry preserves offline evidence and restores current status
+00:37 +172 -2: test/assistant_voice_history_test.dart: account disposal excludes a late voice result and stops polling
+00:38 +173 -2: loading test/document_submission_test.dart
+00:38 +173 -2: test/document_submission_test.dart: preserves invoice.png bytes and emits canonical saved references
+00:38 +174 -2: test/document_submission_test.dart: preserves invoice.pdf bytes and emits canonical saved references
+00:38 +175 -2: test/document_submission_test.dart: preserves invoice-scan.pdf bytes and emits canonical saved references
+00:38 +176 -2: test/document_submission_test.dart: preserves invoice.docx bytes and emits canonical saved references
+00:38 +177 -2: loading test/turn_approval_mode_test.dart
+00:38 +177 -2: test/turn_approval_mode_test.dart: negotiated binding updates the exact running turn with the server revision
+00:38 +178 -2: loading test/cancellation_reason_test.dart
+00:38 +178 -2: test/cancellation_reason_test.dart: explicit_stop survives stream replay and canonical reload
+00:38 +179 -2: test/cancellation_reason_test.dart: deadline_exceeded survives stream replay and canonical reload
+00:38 +180 -2: test/cancellation_reason_test.dart: policy_revoked survives stream replay and canonical reload
+00:38 +181 -2: test/cancellation_reason_test.dart: runtime_shutdown survives stream replay and canonical reload
+00:38 +182 -2: test/cancellation_reason_test.dart: bounded controls preserve user and reject unknown values
+00:38 +183 -2: test/cancellation_reason_test.dart: bounded controls preserve timeout and reject unknown values
+00:38 +184 -2: test/cancellation_reason_test.dart: bounded controls preserve superseded and reject unknown values
+00:38 +185 -2: test/cancellation_reason_test.dart: bounded controls preserve runtime_shutdown and reject unknown values
+00:38 +186 -2: test/cancellation_reason_test.dart: unknown cancellation is rejected instead of relabelled
+00:38 +187 -2: loading test/conversation_deletion_test.dart
+00:39 +187 -2: test/conversation_deletion_test.dart: confirmed remote deletion keeps its journal until native file cleanup recovers
+00:39 +188 -2: test/conversation_deletion_test.dart: an unresolved deletion does not block other conversations after restart
+00:39 +189 -2: test/conversation_deletion_test.dart: a failed durable-intent write prevents deletion dispatch
+00:39 +190 -2: test/conversation_deletion_test.dart: late catalog reads cannot resurrect deleted descriptors
+00:39 +191 -2: test/conversation_deletion_test.dart: failed local cleanup keeps the verified deletion replayable after restart
+00:39 +192 -2: test/conversation_deletion_test.dart: verified deletion evicts its transcript/activity and preserves another selected session
+00:39 +193 -2: test/conversation_deletion_test.dart: lost reply survives controller restart and replays before any history or send recovery
+00:39 +194 -2: test/conversation_deletion_test.dart: mismatched conversationId keeps transcript and exact retry intent
+00:39 +195 -2: test/conversation_deletion_test.dart: mismatched deletedVersion keeps transcript and exact retry intent
+00:39 +196 -2: test/conversation_deletion_test.dart: mismatched operation keeps transcript and exact retry intent
+00:39 +197 -2: test/conversation_deletion_test.dart: mismatched status keeps transcript and exact retry intent
+00:39 +198 -2: test/conversation_deletion_test.dart: version conflict discards rejected intent; a newer version requires a new call
+00:39 +199 -2: test/conversation_deletion_test.dart: unsupported deletion performs no destructive request or journal write
+00:39 +200 -2: test/conversation_deletion_test.dart: concurrent calls coalesce; changed version cannot replace uncertain intent
+00:39 +201 -2: test/conversation_deletion_test.dart: deletion journal serializes adapters, isolates accounts, and acknowledges only exact requests
+00:39 +202 -2: loading test/display_control_test.dart
+00:39 +202 -2: test/display_control_test.dart: pending approval indicator is optional and strictly boolean
+00:39 +203 -2: test/display_control_test.dart: rejects incomplete, future and contradictory controls before session use
+00:39 +204 -2: test/display_control_test.dart: reads protected scalar controls and rejects cross-conversation and turn responses
+00:39 +205 -2: test/display_control_test.dart: old gateways do not opt in, and pending credentials can be cancelled without a request
+00:39 +206 -2: loading test/attachments_test.dart
+00:39 +206 -2: test/attachments_test.dart: uploads through protected account HTTP with stable identity and redacted diagnostics
+00:39 +207 -2: test/attachments_test.dart: cancellation settles even when transport ignores abort; late result is excluded
+00:39 +208 -2: test/attachments_test.dart: rejects unsafe input before sending
+00:39 +209 -2: test/attachments_test.dart: bounds response and rejects malformed, mismatched, or extra reference fields
+00:39 +210 -2: test/attachments_test.dart: uploader binding preserves safe retry policy without server text
+00:39 +211 -2: test/attachments_test.dart: stalled response times out and releases stream observation
+00:39 +212 -2: loading test/approval_display_review_test.dart
+00:39 +212 -2: test/approval_display_review_test.dart: sections and compact receipts share protected bounded HTTP without argument assembly
+00:40 +213 -2: test/approval_display_review_test.dart: rejects changed identities, invalid Unicode page bounds and forged decision receipts
+00:40 +214 -2: test/approval_display_review_test.dart: cancels a stalled approval review before receiving its body
+00:40 +215 -2: loading test/pending_turn_store_test.dart
+00:40 +215 -2: test/pending_turn_store_test.dart: version-two origins survive storage and malformed or downgraded receipts fail
+00:40 +216 -2: test/pending_turn_store_test.dart: restores account-scoped intent and rejects replacement until acknowledgement
+00:40 +217 -2: test/pending_turn_store_test.dart: separate adapters sharing an account serialize overlapping writes
+00:40 +218 -2: loading test/assistant_controller_test.dart
+00:40 +218 -2: test/assistant_controller_test.dart: account activity honors host throttling across polling and manual retries
+00:40 +219 -2: test/assistant_controller_test.dart: definite attachment rejection keeps drafts and unlocks correction; recovery=false
+00:40 +220 -2: test/assistant_controller_test.dart: definite attachment rejection keeps drafts and unlocks correction; recovery=true
+00:40 +221 -2: test/assistant_controller_test.dart: standard UI exposes account-owned draft persistence from the pending adapter
+00:40 +222 -2: test/assistant_controller_test.dart: bounded account switching cancels obsolete reads, releases hidden pages and evicts idle sessions
+00:40 +223 -2: test/assistant_controller_test.dart: single conversation disables titles and clear retries retain identity and refresh context
+00:40 +224 -2: test/assistant_controller_test.dart: external activity title refresh uses server state without text turns (true)
+00:40 +225 -2: test/assistant_controller_test.dart: external activity title refresh uses server state without text turns (false)
+00:40 +226 -2: test/assistant_controller_test.dart: external activity title refresh preserves server failure without rename
+00:40 +227 -2: test/assistant_controller_test.dart: external activity title refresh does not call unsupported servers
+00:40 +228 -2: test/assistant_controller_test.dart: external activity title refresh rechecks live permission after capability read
+00:40 +229 -2: test/assistant_controller_test.dart: failed server title generation does not race recovery with a fallback rename
+00:40 +230 -2: test/assistant_controller_test.dart: initial titles support return-only and legacy servers (true)
+00:40 +231 -2: test/assistant_controller_test.dart: initial titles support return-only and legacy servers (false)
+00:40 +232 -2: test/assistant_controller_test.dart: server title generation preserves saved title (manual: false)
+00:40 +233 -2: test/assistant_controller_test.dart: server title generation preserves saved title (manual: true)
+00:40 +234 -2: test/assistant_controller_test.dart: configured creation context is sampled once and frozen across lost replies
+00:40 +235 -2: test/assistant_controller_test.dart: an empty loaded catalog is an empty transcript, not permanent loading
+00:40 +236 -2: test/assistant_controller_test.dart: domain presentation retry retains creation and observers can update filters
+00:40 +237 -2: test/assistant_controller_test.dart: initialization coalesces and a failed history read cannot create a chat
+00:40 +238 -2: test/assistant_controller_test.dart: lost New response retains exact request metadata and identity across retry
+00:40 +239 -2: test/assistant_controller_test.dart: New retry after hydration/history failure never creates another chat
+00:40 +240 -2: test/assistant_controller_test.dart: a late active catalog cannot overwrite the archived view
+00:40 +241 -2: test/assistant_controller_test.dart: selection generation excludes late selection while both sessions remain independent
+00:40 +242 -2: test/assistant_controller_test.dart: archive/restore use SDK state and keep an archived transcript read-only
+00:40 +243 -2: test/assistant_controller_test.dart: lost archive response reuses its original mutation identity
+00:40 +244 -2: test/assistant_controller_test.dart: an opposite lifecycle action waits for canonical resolution of the uncertain change
+00:40 +245 -2: test/assistant_controller_test.dart: pagination handles overlap and rejects a repeated cursor while preserving visible history
+00:40 +246 -2: test/assistant_controller_test.dart: unread filtering uses remote activity for unopened conversations
+00:40 +247 -2: loading test/paged_approval_review_test.dart
+00:40 +247 -2: test/paged_approval_review_test.dart: reviews deferred arguments in bounded sections and durably retries the identical decision
+00:41 +248 -2: test/paged_approval_review_test.dart: compact decision intent resumes after controller restart without saved arguments
+00:41 +249 -2: test/paged_approval_review_test.dart: changed preflight cannot save a decision
+00:41 +250 -2: test/paged_approval_review_test.dart: switching chats cancels a held verification without persisting or sending its intent
+00:41 +251 -2: loading test/protected_http_test.dart
+00:41 +251 -2: test/protected_http_test.dart: rejects escaped gateway destinations before requesting credentials
+00:41 +252 -2: test/protected_http_test.dart: keeps abort identity, disables redirects and captures session headers before returning a stream
+00:41 +253 -2: test/protected_http_test.dart: closed client cannot send after credentials finish loading
+00:41 +254 -2: Some tests failed.
+
+Failing tests:
+  test/submission_gateway_test.dart: admission is atomic, concurrent submit deduplicates, reload resumes and completed retries never restart
+  test/submission_gateway_test.dart: attachment references are admitted with their message before execution
+
+Consider enabling the flag chain-stack-traces to receive more detailed exceptions.
+For example, 'dart test --chain-stack-traces'.

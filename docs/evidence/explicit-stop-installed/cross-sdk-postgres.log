@@ -1,0 +1,53 @@
+Fresh isolated PostgreSQL 15 cluster initialized; dedicated disposable database and non-superuser fixture role; connection values withheld.
+TAP version 13
+# Fresh Dart process: cancelled, reason=user, remoteMayBeRunning=false
+# PostgreSQL Agent Stop -> canonical user cancellation -> browser/Dart reload; replay and scope fencing; subsequent authorized reply, no cancelled effect.
+# Subtest: native Stop preserves the original Agent after observation ends (mode=false)
+ok 1 - native Stop preserves the original Agent after observation ends (mode=false)
+  ---
+  duration_ms: 4092.417043
+  type: 'test'
+  ...
+# gateway fixture diagnostic durable_turn cancellation_pending 
+# Fresh Node process: persisted native Stop reached the original PostgreSQL Agent job.
+# Fresh Dart process: cancelled, reason=user, remoteMayBeRunning=false
+# PostgreSQL Agent Stop -> canonical user cancellation -> browser/Dart reload; replay and scope fencing; subsequent authorized reply, no cancelled effect.
+# Subtest: native Stop preserves the original Agent after observation ends (mode=true)
+ok 2 - native Stop preserves the original Agent after observation ends (mode=true)
+  ---
+  duration_ms: 4941.109192
+  type: 'test'
+  ...
+# Completed native effect/result preserved; Stop did not relabel or replay it.
+# Subtest: native Stop preserves the original Agent after observation ends (mode=completed)
+ok 3 - native Stop preserves the original Agent after observation ends (mode=completed)
+  ---
+  duration_ms: 1205.703716
+  type: 'test'
+  ...
+# Fresh Dart process: cancelled, reason=user, remoteMayBeRunning=false
+# PostgreSQL Agent Stop -> canonical user cancellation -> browser/Dart reload; replay and scope fencing; subsequent authorized reply, no cancelled effect.
+# Subtest: native Stop preserves the original Agent after observation ends (mode=generating)
+ok 4 - native Stop preserves the original Agent after observation ends (mode=generating)
+  ---
+  duration_ms: 3813.265483
+  type: 'test'
+  ...
+# Fresh Dart process: cancelled, reason=user, remoteMayBeRunning=false
+# PostgreSQL Agent Stop -> canonical user cancellation -> browser/Dart reload; replay and scope fencing; subsequent authorized reply, no cancelled effect.
+# Subtest: native Stop preserves the original Agent after observation ends (mode=projector)
+ok 5 - native Stop preserves the original Agent after observation ends (mode=projector)
+  ---
+  duration_ms: 3917.976594
+  type: 'test'
+  ...
+1..5
+# tests 5
+# suites 0
+# pass 5
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 19044.155577
+Owned temporary PostgreSQL cluster stopped.

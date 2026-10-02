@@ -1,0 +1,321 @@
+{
+  "schema_version": 1,
+  "recorded_at": "2026-10-02T10:00:03.763457+00:00",
+  "work_request_id": "4bd50483-3c74-5bd1-94ac-02dea7cb9cb9",
+  "worker_run_id": "b12ebe8c-3886-434a-8761-cff8d7fa6100",
+  "original_request_id": "412cfd3d-6e28-40b3-a2bb-dadd9ba32c05",
+  "verdict": "Compatible dependency adopted and qualified through ordinary installed builds and tests; ready for configured native source publication. Application readiness is not established.",
+  "destination": "Reusable Agent SDK for Avery to adopt in Mills web/mobile after native publication. No application adoption or deployment in this assignment.",
+  "context": {
+    "active_project": "acc927b7-48c7-46b2-a8d3-09e33e2e84e6",
+    "mcp": "handrail_current_context and complete handrail_read_work_request_context read successfully",
+    "frozen_instruction_sources_sha256": "0608ba5f6ad4c1f9e8de56b9c68f259ac319667ddb707f69e1765b4df4a8414b",
+    "instruction_next_offset": null,
+    "saved_decisions": []
+  },
+  "changes": [
+    "Updated only Agent JS dependency and its three matching manifest/lock references to the frozen released SHA; npm regenerated dependency version/integrity. Normalized npm-generated SSH resolved URL back to required public HTTPS.",
+    "Added installed-qualification logs, focused public-API test and unchanged upstream fixture staging recipe. No SDK implementation repair was repeated."
+  ],
+  "candidate": {
+    "base_agent_sha": "0b29f250c7f9cf42ca063519a15544ccf205ee3a",
+    "agent_version_before_native_publication": "0.2.5",
+    "candidate_source_hashes": "candidate-files.sha256",
+    "candidate_source_manifest_sha256": "27eee4c94bb227ef558a2e42937f60c3ceae6991e60f3fed9f3bff5c690e47e2",
+    "package_json_sha256": "dc2e787719d90393cab85834ad9075dc2e805584e995ddd0bc5d66a99d04501c",
+    "package_lock_sha256": "dd86e565fc85062868dd6ea2827628a35c693d63e20580676d7474e4abcc0ae2",
+    "preserved_source_repair_files_sha256": {
+      "docs/continuous-conversation.md": "fb5e5e840a278d3973709defa53a24643d718159c05f8f5e3f2d0c964045c7be",
+      "src/server/agent-transport.ts": "e3747c4464d49bd0b6e34ba9e7821fa0d197239277de33aa5c74a490596f2e57",
+      "tests/fixtures/installed/application.test.mjs": "db75df20b83f107775ef2a23a8d4e316de19dcb20c1347835362a021d3c04ec2"
+    },
+    "prior_source_evidence": "../explicit-stop/result.json"
+  },
+  "dependencies": {
+    "js": {
+      "spec": "git+https://github.com/c0x65o/handrail-sdk-ai-assistant-js.git#d851e7a62a14754972adeb8be84ea64cddb567d6",
+      "version": "0.2.71",
+      "lock_resolved": "git+https://github.com/c0x65o/handrail-sdk-ai-assistant-js.git#d851e7a62a14754972adeb8be84ea64cddb567d6",
+      "lock_integrity": "sha512-TjLEdTs5CzmDIPJAZmd4tiWsNUhw2ca5OmFflgIPDYfhXwQtAbd6unHJuFcFl53wR+cAxRWqpmmhNWjBWG905g==",
+      "normal_prepare_build": true,
+      "installed_artifacts_sha256": {
+        "package.json": "07e608bff401cb4e5a61945274c8e06e2fd1824eb7dbef46b1d993a77e747df3",
+        "dist/index.js": "54d71380e849bb6b83bad67e4bef1a1495fe7c1170e848e150e4fc4394759793",
+        "dist/protocol.js": "ffca3218efe1876c18ef59961eb51450fb01c691bf3c8269ad62ad42c77b3a09",
+        "dist/runtime.js": "0b05349d982c5099f04f6ed8af32dd82dc5a3002daabd5916f676947cde21856",
+        "dist/server/provider-tool-loop.js": "bbc6b14407afca1bac5064431f1005a5bf3bcc2162d872f34da103fc4269a8ff"
+      }
+    },
+    "dart": {
+      "client_git_sha": "9e36132de9ecb6bdcb46f622e67588cff1649575",
+      "client_source": "https://github.com/c0x65o/handrail-sdk-ai-assistant-flutter.git",
+      "client_subdirectory": "packages/handrail_ai_client",
+      "package_config_root": "/opt/handrail/.handrail/codex-runs/b12ebe8c-3886-434a-8761-cff8d7fa6100/tmp/pub-cache/git/handrail-sdk-ai-assistant-flutter-9e36132de9ecb6bdcb46f622e67588cff1649575/packages/handrail_ai_client",
+      "dart_sdk": "Dart SDK version: 3.11.5 (stable) (Wed Apr 15 00:36:32 2026 -0700) on \"linux_x64\"",
+      "lock_sha256": "f353e9dd81cf9ee37c96d65d94dc1313702468975b3f7bed2616146c0148d87a"
+    }
+  },
+  "installation": {
+    "node": "v22.23.1",
+    "npm": "10.9.8",
+    "npm_command": "env -u NODE_OPTIONS -u NODE_PATH -u npm_config_script_shell GIT_CONFIG_NOSYSTEM=1 GIT_CONFIG_GLOBAL=/dev/null GIT_TERMINAL_PROMPT=0 GIT_ALLOW_PROTOCOL=https npm ci --include=dev --foreground-scripts --no-audit --no-fund --cache <empty-task-local-npm-cache>",
+    "public_fetch": "public-fetch.log records npm HTTP 200 cache-miss HTTPS retrieval of the exact commit; Git SSH disabled and system/global Git configuration disabled. npm internal SSH warning is GitHub canonicalization; manifest and both lock references remain HTTPS. npm host-fetch implementation is not a tarball dependency.",
+    "dart_command": "GIT_CONFIG_NOSYSTEM=1 GIT_CONFIG_GLOBAL=/dev/null GIT_TERMINAL_PROMPT=0 GIT_ALLOW_PROTOCOL=https:file PUB_CACHE=<task-local-pub-cache> dart pub get; dart pub get --enforce-lockfile",
+    "dart_public_source": "Fresh Pub Git cache origin independently checked as https://github.com/c0x65o/handrail-sdk-ai-assistant-flutter.git; installed checkout HEAD is the frozen SHA. file protocol permits Pub internal cache copy only; no file/path SDK dependency.",
+    "overrides": "No compiler paths, SDK source redirection, loader, NODE_PATH, dependency overrides, or edits to node_modules. Related SDK source mounts remain clean/read-only."
+  },
+  "checks": [
+    {
+      "name": "Clean locked npm install with normal JS and Agent prepare/build",
+      "status": "passed",
+      "exit_code": 0,
+      "log": "npm-ci.log"
+    },
+    {
+      "name": "Agent standard compile/acceptance/reference and contracts",
+      "command": "npm test",
+      "status": "passed",
+      "tests": 777,
+      "failed": 0,
+      "skipped": 0,
+      "log": "agent-tests.log"
+    },
+    {
+      "name": "Agent consumer typecheck",
+      "command": "node node_modules/typescript/bin/tsc -p tests/fixtures/tsconfig.json",
+      "status": "passed",
+      "exit_code": 0,
+      "log": "consumer-typecheck.log"
+    },
+    {
+      "name": "All existing disposable PostgreSQL suites",
+      "command": "node tests/run-local-postgres.mjs",
+      "status": "passed",
+      "tests": 411,
+      "failed": 0,
+      "skipped": 0,
+      "suites": 18,
+      "suite_totals": {
+        "test:conversation": {
+          "tests": 10,
+          "pass": 10,
+          "fail": 0,
+          "skipped": 0
+        },
+        "test:assistance": {
+          "tests": 65,
+          "pass": 65,
+          "fail": 0,
+          "skipped": 0
+        },
+        "test:connection-store": {
+          "tests": 23,
+          "pass": 23,
+          "fail": 0,
+          "skipped": 0
+        },
+        "test:browser-profile": {
+          "tests": 16,
+          "pass": 16,
+          "fail": 0,
+          "skipped": 0
+        },
+        "test:vault-request": {
+          "tests": 15,
+          "pass": 15,
+          "fail": 0,
+          "skipped": 0
+        },
+        "test:payment-vault": {
+          "tests": 25,
+          "pass": 25,
+          "fail": 0,
+          "skipped": 0
+        },
+        "test:vault-entry": {
+          "tests": 50,
+          "pass": 50,
+          "fail": 0,
+          "skipped": 0
+        },
+        "test:vault-use": {
+          "tests": 84,
+          "pass": 84,
+          "fail": 0,
+          "skipped": 0
+        },
+        "test:vault-lifecycle": {
+          "tests": 18,
+          "pass": 18,
+          "fail": 0,
+          "skipped": 0
+        },
+        "test:vault": {
+          "tests": 13,
+          "pass": 13,
+          "fail": 0,
+          "skipped": 0
+        },
+        "test:lease": {
+          "tests": 9,
+          "pass": 9,
+          "fail": 0,
+          "skipped": 0
+        },
+        "test:effects": {
+          "tests": 11,
+          "pass": 11,
+          "fail": 0,
+          "skipped": 0
+        },
+        "test:cancel": {
+          "tests": 3,
+          "pass": 3,
+          "fail": 0,
+          "skipped": 0
+        },
+        "test:answer": {
+          "tests": 6,
+          "pass": 6,
+          "fail": 0,
+          "skipped": 0
+        },
+        "test:agents": {
+          "tests": 36,
+          "pass": 36,
+          "fail": 0,
+          "skipped": 0
+        },
+        "test:submit": {
+          "tests": 11,
+          "pass": 11,
+          "fail": 0,
+          "skipped": 0
+        },
+        "test:journal": {
+          "tests": 15,
+          "pass": 15,
+          "fail": 0,
+          "skipped": 0
+        },
+        "test:postgres": {
+          "tests": 1,
+          "pass": 1,
+          "fail": 0,
+          "skipped": 0
+        }
+      },
+      "log": "agent-postgres.log"
+    },
+    {
+      "name": "Installed JS execution cancellation and strict decoding",
+      "command": "node --test --test-concurrency=1 docs/evidence/explicit-stop-installed/installed-reasons.test.mjs",
+      "status": "passed",
+      "tests": 5,
+      "failed": 0,
+      "skipped": 0,
+      "log": "installed-reasons.log",
+      "proof": "Actual execution-budget timer produces TimeoutError/ETIMEDOUT; actual authoritative cancel APIs abort executing simulated provider with explicit_stop/policy_revoked/runtime_shutdown. Installed runtime retains distinct canonical reasons across event-store reload. This focused unit uses SDK InMemoryConversationEventStore; durable Stop persistence is covered separately with PostgreSQL."
+    },
+    {
+      "name": "Cross-SDK installed JS + installed Dart + built candidate Agent PostgreSQL fixture",
+      "command": "From .reference-build/installed-stop: HANDRAIL_PROJECTION_DART=<read-only-dart-binary> node test/run-agent-stop-postgres.mjs",
+      "status": "passed",
+      "tests": 5,
+      "failed": 0,
+      "skipped": 0,
+      "log": "cross-sdk-postgres.log",
+      "proof": "Unmodified released fixture tests admission/Runner/Stop during approval or generation, independent checkpoint projection, restart recovery, completed-result preservation, durable writer/SSE/browser-client/fresh Dart HTTP reload, duplicate/late fencing, no resumed cancelled business effect, and subsequent authorized reply."
+    },
+    {
+      "name": "Dart exact-SHA locked install",
+      "status": "passed",
+      "exit_code": 0,
+      "logs": [
+        "dart-pub-get.log",
+        "dart-locked-install.log"
+      ],
+      "lock": "dart-pubspec.lock"
+    },
+    {
+      "name": "Dart installed-consumer analyzer",
+      "command": "dart analyze --fatal-infos",
+      "status": "passed",
+      "exit_code": 0,
+      "log": "dart-analyze.log"
+    },
+    {
+      "name": "Dart installed-client cancellation/control/replay tests",
+      "command": "dart test --concurrency=1 --reporter=expanded",
+      "status": "passed",
+      "tests": 11,
+      "log": "dart-tests.log"
+    },
+    {
+      "name": "Diff whitespace, exact manifest/lock SHA equality, preservation and fixture provenance",
+      "status": "passed",
+      "proof": "git diff --check; matching manifest/root/resolved lock; all three prior Agent repair file hashes unchanged; every copied upstream fixture byte-matches the exact released Git commit."
+    }
+  ],
+  "proof_boundaries": [
+    "Agent is the current normally built package, resolved via standard package self-reference; its new release SHA does not exist yet. JS is the normal npm-installed frozen release, and Dart is the normal Pub-installed frozen release.",
+    "Existing upstream public-API fixture code was copied unchanged into ignored disposable scratch. No SDK implementation was copied. prepare-fixture.py and fixture-source-hashes.json reproduce/bind the setup.",
+    "Both PostgreSQL runners created their own loopback PostgreSQL 15 cluster, fresh database, random credentials and non-superuser fixture role, then stopped/removed the cluster. No shared/production database or app runtime used.",
+    "Provider/model responses and business effects are simulated; no real notifications, flights, purchases, rendered browser or native-device QA.",
+    "All expensive tests ran sequentially with existing worker/concurrency limits."
+  ],
+  "resolved_setup_findings": [
+    {
+      "log": "npm-ci-before-https-normalization.log",
+      "detail": "Initial npm install passed but generated SSH lock resolution violated dependency policy. Normalized only resolved URL, then final clean-cache npm ci passed with HTTPS-only Git transport."
+    },
+    {
+      "log": "dart-pub-get-protocol-restriction.log",
+      "detail": "Initial Pub install fetched public Git then failed copying its internal cache because task-local GIT_ALLOW_PROTOCOL excluded file. Added file solely for normal Pub cache cloning; reran successful ordinary and enforced-lock installs."
+    },
+    {
+      "log": "installed-reasons-fixture-first.log",
+      "detail": "First new qualifier failed 3 of 5: simulated adapter incorrectly returned authoritative runtime_shutdown for every abort, while assertions expected user/policy; decoder assertion also passed a terminal-only array to whole-stream validation. Corrected the test provider to honor typed AbortSignal reasons and used the single-event decoder. Actual timed deadline remains real. No SDK implementation changed; final 5/5 passed."
+    }
+  ],
+  "publication_handoff": {
+    "settings": {
+      "ci_cd": "off",
+      "auto_commit_push": "on",
+      "deploy_env": "none"
+    },
+    "agent_release_sha": null,
+    "native_commit_push_receipt": null,
+    "status": "Pending post-agent native pipeline; worker deliberately left changes uncommitted and performed no version bump, commit, push, PR, or deployment.",
+    "next": "Native pipeline owns version bump/commit/push and must attach the resulting full Agent SHA and successful receipt to Avery. Do not use base_agent_sha as the qualified release SHA."
+  },
+  "remaining": [
+    "Native publication receipt and full new Agent SHA must be supplied by the configured post-agent pipeline.",
+    "Avery retains Mills production-web adoption, installed native QA, memory/reminder/event/feedback parity and tester delivery; existing mobile adoption 226458cd remains separate. No claim of application readiness."
+  ],
+  "holds_preserved": "No Mills source access/edits, runtime/browser QA, Handrail database/queue writes, Avery migration, old canary replay, migrations 0106/0107/0111, or operations on held storage712f7b61/recovery3c7e4a85. Historical mills_reply_770a148_staging_canary_v1 effects remain unknown.",
+  "evidence_files_sha256": {
+    "agent-postgres.log": "8742daa4b2ba985161bdecb2845d5e10a73775bc229af3bd3be369107fb92bcb",
+    "agent-tests.log": "fdb06bee16042c51b20962abc35a40adedda9c76b51486bc2d634b6c2040286a",
+    "candidate-files.sha256": "27eee4c94bb227ef558a2e42937f60c3ceae6991e60f3fed9f3bff5c690e47e2",
+    "consumer-typecheck.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "cross-sdk-postgres.log": "16644deedad363991fe35a24de1c903fd793e8a5b6171594e548ad6b1ca447a6",
+    "dart-analyze.log": "cf666b19aee4c05e7165986f38e383b0c9060b4a33719850547bc3c827441c7f",
+    "dart-install-receipt.json": "480154e0b541517b26e9c38b37899fe43ce952e0e7bab790606da83fe10fff8a",
+    "dart-locked-install.log": "d666eb0dddd074a7df9269bd0eb0d2f3a3bc577c828c1e83d6194e02fd556ed5",
+    "dart-pub-get-protocol-restriction.log": "df8adbd8ffcb18f52d8c6667214fd60b44ee2b7945ad9e42e352b4113948017b",
+    "dart-pub-get.log": "8442fc92c49ec3c9bd6753355c49bdef333f05585f6880614b1fb21305c50e51",
+    "dart-pubspec.lock": "f353e9dd81cf9ee37c96d65d94dc1313702468975b3f7bed2616146c0148d87a",
+    "dart-pubspec.yaml": "bf2ceed63243bedf6fd41c2562e8543b0ef09f945742c63bb80373bec5770c3b",
+    "dart-tests.log": "b33ee01b327f5206f58ad16e3c476bc0d9e498726b233956933da70823dad26e",
+    "fixture-source-hashes.json": "08a965503fc6ea2725f9b71e4712fdc4352324e9d7feca74eb344965669dbe3e",
+    "installed-reasons-fixture-first.log": "2a9774df85c2e2b2ade1958f64fcfda91ee308155963ed3a6e970f72151cbed1",
+    "installed-reasons.log": "8ac5221ba49ac7d4de0c8aa51d1120c5e53c3fbf46c103403a68266669074c4e",
+    "installed-reasons.test.mjs": "942b7d1f9fc5dab836aa253f1956b93f6b1cf813e457af1f6e76303acc755017",
+    "lock-update.log": "bb3ffc654d9f60e596ef07cbe5aaaf4d76abcbd8b46fbe5b291628ac042e88b9",
+    "npm-ci-before-https-normalization.log": "5c43021e32024edf308e24efa4508bdb0f3e0d56a0b17a3a87a946ed1e2c8b5e",
+    "npm-ci.log": "6b79aaef0eba04aab6e05082fa8e113861476a222dbbf0146892148d0327bd8f",
+    "prepare-fixture.py": "e1f3303a21bc73286928d5b668fdeeedb24956e22372a3dae593fef0aec01fd6",
+    "public-fetch.log": "2b2defd0673d6d237720bd0ed2f168964eb6bf331bb75417728eeb469e0083b6"
+  }
+}

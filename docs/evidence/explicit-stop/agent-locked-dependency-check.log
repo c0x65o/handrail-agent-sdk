@@ -1,0 +1,14 @@
+
+> handrail-agent-sdk@0.2.5 pretest
+> npm run build && npm run typecheck:acceptance && npm run build:test-postgres && npm run build:reference
+
+
+> handrail-agent-sdk@0.2.5 build
+> tsc -p tsconfig.json && node scripts/build-postgres-assets.mjs
+
+src/server/agent-transport.ts(135,75): error TS2322: Type '"explicit_stop"' is not assignable to type '"deadline_exceeded" | "policy_revoked" | "runtime_shutdown"'.
+npm notice
+npm notice New major version of npm available! 10.9.8 -> 12.2.0
+npm notice Changelog: https://github.com/npm/cli/releases/tag/v12.2.0
+npm notice To update run: npm install -g npm@12.2.0
+npm notice
