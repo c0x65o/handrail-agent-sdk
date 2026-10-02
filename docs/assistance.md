@@ -245,3 +245,27 @@ the actual installed Runner and an installed industrial-watch reconstruction
 against disposable PostgreSQL. That final-SHA check is a downstream delivery gate,
 not something a local source test proves. Current source verification and known
 limitations are recorded in `docs/evidence/assistance-core/README.md`.
+
+### Unattended canonical feedback
+
+`createHandrailDelegatedFeedbackObserver` from
+`handrail-agent-sdk/server/handrail-feedback` accepts `now`, a host `load(key)`
+that resolves the saved `FeedbackObservationGrant`, and `read(grant, signal)`
+through MCP's server-only observation transport. A current application session
+must explicitly admit that grant before background work can use it. Do not
+implement `HandrailFeedbackSession.withClient` by persisting a user session.
+
+The grant binds the canonical report, project, runtime, environment, principal,
+tenant, original conversation and expiry. The host owns the authenticated
+application binding and current membership/conversation checks, including a
+fresh canonical authority check before a conversation result is published.
+The SDK observer verifies returned authority identity and canonical readiness;
+the existing Assistance and conversation work-result stores own polling,
+expiry, cancellation, deduplication and durable result publication. A question
+is `needs_input`, not permission to generate an answer. Ready requires verified
+canonical delivery in the exact bound environment. Uncertain submission effects
+retain their existing effect-ledger state and are never replayed by observation.
+
+The foreground `HandrailFeedbackSession` and effect adapter remain session-only.
+Email notification consent is a separate contract. Observation authority grants
+no submit, clarification, staff approval, release, or cross-user history rights.

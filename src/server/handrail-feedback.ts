@@ -23,6 +23,46 @@ export interface HandrailFeedbackSession {
    * and hold current authorization through the callback. Never persist tokens. */
   withClient<T>(key: AssistanceKey, run: (client: HandrailFeedbackClient) => Promise<T>): Promise<T>;
 }
+export interface FeedbackObservationGrant {
+  readonly id: string;
+  readonly kind: HandrailFeedbackKind;
+  readonly report_id: string;
+  readonly binding: { readonly project_id: string; readonly service_env_id: string; readonly environment: string;
+    readonly tenant_ref: string; readonly user_ref: string; readonly conversation_id: string };
+  readonly expires_at: string;
+  readonly cancelled: boolean;
+}
+
+/** A foreground-admitted grant is a separate authority from Known User sessions.
+ * The host checks current membership and original-conversation existence on
+ * every operation. Handrail checks current runtime credentials/source membership.
+ * Reuses Assistance's durable scheduling, expiry, cancellation and fact dedupe. */
+export function createHandrailDelegatedFeedbackObserver(deps: {
+  readonly now: () => number;
+  readonly load: (key: AssistanceKey) => Promise<FeedbackObservationGrant>;
+  readonly read: (grant: FeedbackObservationGrant, signal: AbortSignal) => Promise<unknown>;
+}): ObservationAdapter {
+  return { async read(key, spec, signal) {
+    const grant = await deps.load(key);
+    const feedback = parseSubject(spec.subjectRef);
+    if (grant.kind !== feedback.kind || grant.report_id !== feedback.id
+      || grant.binding.tenant_ref !== key.scope.tenantRef || grant.binding.user_ref !== key.scope.userRef
+      || grant.binding.service_env_id !== key.scope.environmentRef || grant.cancelled
+      || !Number.isFinite(Date.parse(grant.expires_at)) || Date.parse(grant.expires_at) <= deps.now()) throw Error('feedback_observation_scope_denied');
+    const raw = object(await deps.read(grant, signal));
+    const returned = object(raw.observation);
+    if (raw.contract_version !== 'v1' || assistanceDigest(returned) !== assistanceDigest(grant)) throw Error('feedback_observation_identity_mismatch');
+    signal.throwIfAborted();
+    if (Date.parse(grant.expires_at) <= deps.now()) throw Error('feedback_observation_expired');
+    const record = object(raw.record);
+    if (record.id !== feedback.id) throw Error('feedback_identity_mismatch');
+    const status = canonicalFeedbackReady(feedback, record, null, grant.binding.environment) ? 'matched'
+      : ['cancelled','declined','closed','wont_fix','not_reproduced'].includes(record.status) ? 'cancelled'
+        : record.status_group === 'needs_attention' || record.resolution_journey?.approval_required === true ? 'needs_input' : 'pending';
+    return { subjectRef: spec.subjectRef, observedAt: deps.now(), status,
+      evidenceRef: `feedback:${assistanceDigest([grant.id, status, record])}`, detailRef: feedbackSubject(feedback) };
+  } };
+}
 const object = (v: unknown): Record<string, any> => v && typeof v === 'object' && !Array.isArray(v) ? v as Record<string, any> : {};
 const id = (v: unknown): string => {
   if (typeof v !== 'string' || !/^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$/.test(v)) throw Error('invalid_canonical_feedback');
