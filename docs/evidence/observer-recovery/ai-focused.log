@@ -1,0 +1,22 @@
+
+ RUN  v3.2.4 /opt/handrail/repos/handrail/handrail-ai-assistant-sdk/handrail-sdk-ai-assistant-js
+
+ ✓ test/durable-canonical-start.test.ts (21 tests) 3750ms
+   ✓ admits a saved follow-up at PostgreSQL revision 1167 after a failed action  2845ms
+ ✓ test/durable-stop-recovery.test.ts (15 tests) 2547ms
+   ✓ keeps timeout cancellation discoverable beyond execution retry exhaustion  1106ms
+ ✓ test/durable-execution-identity.test.ts (6 tests) 2850ms
+   ✓ durable execution identity > retains the old claim after takeover and never re-executes terminal replay (postgres)  2541ms
+ ✓ test/durable-application-transport.test.ts (18 tests) 1070ms
+ ✓ test/durable-recovery-page.test.ts (4 tests) 371ms
+
+ Test Files  5 passed (5)
+      Tests  64 passed (64)
+   Start at  21:08:22
+   Duration  13.25s (transform 1.09s, setup 0ms, collect 1.62s, tests 10.59s, environment 1ms, prepare 316ms)
+
+npm notice
+npm notice New major version of npm available! 10.9.8 -> 12.2.0
+npm notice Changelog: https://github.com/npm/cli/releases/tag/v12.2.0
+npm notice To update run: npm install -g npm@12.2.0
+npm notice

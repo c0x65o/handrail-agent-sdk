@@ -1,0 +1,47 @@
+TAP version 13
+# {"scenario":"composed-retryable","idleLease":false,"recovery":"started","wakes":2,"reads":2,"model":"simulated runtime boundary"}
+# Subtest: composed retryable wake releases idle observer lease and recovers the same turn
+ok 1 - composed retryable wake releases idle observer lease and recovers the same turn
+  ---
+  duration_ms: 576.254593
+  type: 'test'
+  ...
+# Subtest: direct consumer bounds retryable exit with a final fresh projection
+ok 2 - direct consumer bounds retryable exit with a final fresh projection
+  ---
+  duration_ms: 10.894689
+  type: 'test'
+  ...
+# Subtest: direct consumer bounds busy exit with a final fresh projection
+ok 3 - direct consumer bounds busy exit with a final fresh projection
+  ---
+  duration_ms: 11.405622
+  type: 'test'
+  ...
+# Subtest: direct consumer bounds stopped exit with a final fresh projection
+ok 4 - direct consumer bounds stopped exit with a final fresh projection
+  ---
+  duration_ms: 11.442301
+  type: 'test'
+  ...
+# Subtest: direct consumer bounds not_authorized exit with a final fresh projection
+ok 5 - direct consumer bounds not_authorized exit with a final fresh projection
+  ---
+  duration_ms: 11.454222
+  type: 'test'
+  ...
+# Subtest: direct consumer bounds throw exit with a final fresh projection
+ok 6 - direct consumer bounds throw exit with a final fresh projection
+  ---
+  duration_ms: 11.086271
+  type: 'test'
+  ...
+1..6
+# tests 6
+# suites 0
+# pass 6
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 805.698066

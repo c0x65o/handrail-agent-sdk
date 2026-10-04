@@ -336,3 +336,22 @@ new worker before a host rollback, retain the private states and effect ledger,
 and reconcile outstanding effects. An old deterministic worker cannot recover
 OpenAI states; never reintroduce it as an automatic fallback. Changes to the
 pinned SDK serialization format need an explicit state migration or drain.
+
+### Nonterminal execution exits at the conversation boundary
+
+`createAgentConversationTransport` observes while its resume/wake attempt runs.
+When that attempt returns or rejects, it makes a final fresh authorized read.
+Canonical completion, cancellation, failure, and approval waits take precedence.
+If the job remains nonterminal, the observation ends with `disconnected` and its
+last applied checkpoint. This includes `retryable`, `busy`, process shutdown,
+and authorization failures. A read begun before exit is not the final read.
+A failed resume other than the normal non-waiting `invalid_transition` does not
+start another wake. Existing runtime and host authorization fences still apply.
+
+Direct consumers should reconnect/recover the same turn after disconnection;
+a concurrent busy dispatch can finish separately. Observation close never means
+explicit Stop and never grants approval. The AI durable wrapper must preserve a
+disconnected delegate as pending, clear only its fenced observer claim, and use
+its existing authenticated recovery path. Deploy both SDK corrections together:
+an older wrapper treats disconnection as terminal failure. No journal, effect,
+turn, or cancellation identity is reset, and no new timeout is introduced.

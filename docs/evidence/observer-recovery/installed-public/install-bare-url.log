@@ -1,0 +1,31 @@
+npm warn skipping integrity check for git dependency ssh://git@github.com/c0x65o/handrail-sdk-ai-assistant-js.git
+
+> handrail-agent-sdk@0.2.8 prepare
+> npm run build
+
+
+> handrail-agent-sdk@0.2.8 build
+> tsc -p tsconfig.json && node scripts/build-postgres-assets.mjs
+
+
+changed 1 package, and audited 68 packages in 59s
+
+6 packages are looking for funding
+  run `npm fund` for details
+
+4 moderate severity vulnerabilities
+
+To address all issues (including breaking changes), run:
+  npm audit fix --force
+
+Run `npm audit` for details.
+npm notice
+npm notice New major version of npm available! 10.9.8 -> 12.2.0
+npm notice Changelog: https://github.com/npm/cli/releases/tag/v12.2.0
+npm notice To update run: npm install -g npm@12.2.0
+npm notice
+
+> handrail-agent-sdk@0.2.8 build
+> tsc -p tsconfig.json && node scripts/build-postgres-assets.mjs
+
+Public HTTPS full-SHA dependencies and lockfile verified; normal install/prepare/build completed. Review all changes and continue the original qualifier.

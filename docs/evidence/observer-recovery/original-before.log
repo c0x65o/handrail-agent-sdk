@@ -1,0 +1,1 @@
+{"verdict":"SDK_DEFECT_REPRODUCED","runtimeWake":"retryable","wakeCount":1,"repeatedReads":52,"durableStatus":"running","heartbeatRenewed":true,"recovery":"already_running","model":"not invoked","database":"in-memory only","runtimeAcceptance":false}

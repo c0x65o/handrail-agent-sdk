@@ -1,0 +1,71 @@
+
+> @handrail/ai-assistant@0.2.74 lint
+> eslint .
+
+
+/opt/handrail/repos/handrail/handrail-ai-assistant-sdk/handrail-sdk-ai-assistant-js/.markdown-qualification/compact-conversations/verify.mjs
+    7:14  error  'process' is not defined           no-undef
+   60:5   error  'document' is not defined          no-undef
+   61:5   error  'document' is not defined          no-undef
+   64:19  error  'document' is not defined          no-undef
+   71:35  error  'getComputedStyle' is not defined  no-undef
+  104:83  error  'getComputedStyle' is not defined  no-undef
+  119:3   error  'console' is not defined           no-undef
+
+/opt/handrail/repos/handrail/handrail-ai-assistant-sdk/handrail-sdk-ai-assistant-js/examples/feedback-contract-qualification.mjs
+  25:42  error  'Response' is not defined  no-undef
+  44:13  error  'URL' is not defined       no-undef
+  52:13  error  'URL' is not defined       no-undef
+
+/opt/handrail/repos/handrail/handrail-ai-assistant-sdk/handrail-sdk-ai-assistant-js/scripts/benchmark-display-postgres.mjs
+  38:31  error  'Buffer' is not defined  no-undef
+  70:71  error  'Buffer' is not defined  no-undef
+
+/opt/handrail/repos/handrail/handrail-ai-assistant-sdk/handrail-sdk-ai-assistant-js/scripts/check-consumer-contracts.mjs
+  30:17  error  'performance' is not defined  no-undef
+  37:28  error  'performance' is not defined  no-undef
+
+/opt/handrail/repos/handrail/handrail-ai-assistant-sdk/handrail-sdk-ai-assistant-js/scripts/check-recovery-postgres.mjs
+  33:47   error  'performance' is not defined  no-undef
+  33:111  error  'performance' is not defined  no-undef
+  33:145  error  'Buffer' is not defined       no-undef
+
+/opt/handrail/repos/handrail/handrail-ai-assistant-sdk/handrail-sdk-ai-assistant-js/scripts/check-single-conversation.mjs
+  44:58  error  'innerWidth' is not defined   no-undef
+  44:78  error  'document' is not defined     no-undef
+  45:24  error  'document' is not defined     no-undef
+  46:23  error  'document' is not defined     no-undef
+  46:98  error  'innerHeight' is not defined  no-undef
+
+/opt/handrail/repos/handrail/handrail-ai-assistant-sdk/handrail-sdk-ai-assistant-js/src/server/turn-approval-mode.ts
+  17:109  error  Unexpected control character(s) in regular expression: \x00, \x1f  no-control-regex
+
+/opt/handrail/repos/handrail/handrail-ai-assistant-sdk/handrail-sdk-ai-assistant-js/test/conversation-title-generation.test.ts
+  304:31  error  '_request' is defined but never used  @typescript-eslint/no-unused-vars
+
+/opt/handrail/repos/handrail/handrail-ai-assistant-sdk/handrail-sdk-ai-assistant-js/test/durable-recovery-page.test.ts
+  12:34  error  '_input' is defined but never used  @typescript-eslint/no-unused-vars
+
+/opt/handrail/repos/handrail/handrail-ai-assistant-sdk/handrail-sdk-ai-assistant-js/test/feedback-contract-qualification.test.mjs
+  69:28  error  'AbortController' is not defined  no-undef
+
+/opt/handrail/repos/handrail/handrail-ai-assistant-sdk/handrail-sdk-ai-assistant-js/test/feedback-gateway.integration.test.mjs
+   18:110  error  'setTimeout' is not defined       no-undef
+   55:148  error  'AbortController' is not defined  no-undef
+   79:38   error  'AbortController' is not defined  no-undef
+   84:79   error  'AbortController' is not defined  no-undef
+   86:77   error  'AbortController' is not defined  no-undef
+   88:82   error  'AbortController' is not defined  no-undef
+  126:30   error  'AbortController' is not defined  no-undef
+  141:76   error  'AbortSignal' is not defined      no-undef
+  149:75   error  'AbortController' is not defined  no-undef
+  191:56   error  'Request' is not defined          no-undef
+
+/opt/handrail/repos/handrail/handrail-ai-assistant-sdk/handrail-sdk-ai-assistant-js/test/react-pending-approvals.test.tsx
+  22:36  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/opt/handrail/repos/handrail/handrail-ai-assistant-sdk/handrail-sdk-ai-assistant-js/test/react-settled-details.test.tsx
+  26:36  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+✖ 38 problems (38 errors, 0 warnings)
+

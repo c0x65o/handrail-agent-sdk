@@ -1,0 +1,228 @@
+
+> @handrail/ai-assistant@0.2.74 check:public-surface
+> node scripts/check-provider-public-surface.mjs
+
+node:internal/modules/run_main:123
+    triggerUncaughtException(
+    ^
+
+AssertionError [ERR_ASSERTION]: public declarations contain provider-native marker \bfetch\b
+    at file:///opt/handrail/repos/handrail/handrail-ai-assistant-sdk/handrail-sdk-ai-assistant-js/scripts/check-provider-public-surface.mjs:276:10
+    at ModuleJob.run (node:internal/modules/esm/module_job:343:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:681:26)
+    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:117:5) {
+  generatedMessage: false,
+  code: 'ERR_ASSERTION',
+  actual: 'import { type CitationRecordSet } from "../citations.js";\n' +
+    'import type { ApplicationToolExecutor, ApplicationToolOutput, ApplicationToolPolicy } from "../tools/executor.js";\n' +
+    'import { type ToolPlugin, type ToolPluginPresentation } from "../tools/plugin.js";\n' +
+    'export declare const MILLS_FAMILY_ADAPTER_VERSION: "handrail.mills-family.v1";\n' +
+    'export interface MillsFamilyToolDefinition {\n' +
+    '    readonly type: "function";\n' +
+    '    readonly name: string;\n' +
+    '    readonly description: string;\n' +
+    '    readonly parameters: Readonly<Record<string, unknown>>;\n' +
+    '    readonly strict?: boolean;\n' +
+    '}\n' +
+    'export interface MillsFamilyReadOutcome<TCitation = unknown> {\n' +
+    '    readonly kind: "read";\n' +
+    '    readonly data: unknown;\n' +
+    '    readonly citation: TCitation;\n' +
+    '}\n' +
+    'export interface MillsFamilyExternalOutcome {\n' +
+    '    readonly kind: "external";\n' +
+    '    readonly data: unknown;\n' +
+    '}\n' +
+    'export interface MillsFamilyProposalOutcome<TProposal = unknown> {\n' +
+    '    readonly kind: "proposal";\n' +
+    '    readonly proposal: TProposal;\n' +
+    '}\n' +
+    'export type MillsFamilyToolOutcome<TProposal = unknown, TCitation = unknown> = MillsFamilyReadOutcome<TCitation> | MillsFamilyExternalOutcome | MillsFamilyProposalOutcome<TProposal>;\n' +
+    'export interface MillsFamilyToolRuntime<TSession, TProposal = unknown, TCitation = unknown> {\n' +
+    '    readonly definitions: readonly MillsFamilyToolDefinition[];\n' +
+    '    execute(input: {\n' +
+    '        readonly name: string;\n' +
+    '        readonly arguments: unknown;\n' +
+    '        readonly session: TSession;\n' +
+    '        readonly requestId?: string;\n' +
+    '        readonly conversationId?: string;\n' +
+    '        readonly interaction?: "text_chat" | "realtime_voice";\n' +
+    '        readonly reportActivity?: import("../tools/executor.js").ApplicationToolActivityReporter;\n' +
+    '    }): Promise<MillsFamilyToolOutcome<TProposal, TCitation>>;\n' +
+    '}\n' +
+    'export interface MillsFamilyApplicationContext<TSession> {\n' +
+    '    readonly session: TSession;\n' +
+    '    readonly requestId?: string;\n' +
+    '    readonly conversationId?: string;\n' +
+    '    readonly interaction?: "text_chat" | "realtime_voice";\n' +
+    '}\n' +
+    'export interface MillsFamilyCitationLike {\n' +
+    '    readonly sourceType: string;\n' +
+    '    readonly sourceId: string;\n' +
+    '    readonly label: string;\n' +
+    '    readonly locator?: string;\n' +
+    '}\n' +
+    'export interface MillsFamilyProposalInput<TSession, TProposal> {\n' +
+    '    readonly proposal: TProposal;\n' +
+    '    readonly applicationContext: MillsFamilyApplicationContext<TSession>;\n' +
+    '    readonly toolName: string;\n' +
+    '    readonly toolCallId: string;\n' +
+    '    readonly signal: AbortSignal;\n' +
+    '}\n' +
+    'export interface MillsFamilyPluginOptions<TSession, TProposal = unknown, TCitation = MillsFamilyCitationLike> {\n' +
+    '    readonly runtime: MillsFamilyToolRuntime<TSession, TProposal, TCitation>;\n' +
+    '    \n' +
+    '    readonly proposalToolNames: readonly string[];\n' +
+    '    \n' +
+    '    readonly propose: (input: MillsFamilyProposalInput<TSession, TProposal>) => ApplicationToolOutput | Promise<ApplicationToolOutput>;\n' +
+    '    readonly policy: ApplicationToolPolicy<MillsFamilyApplicationContext<TSession>>;\n' +
+    '    readonly citationRecords?: (citation: TCitation, input: {\n' +
+    '        readonly toolName: string;\n' +
+    '        readonly toolCallId: string;\n' +
+    '    }) => CitationRecordSet;\n' +
+    '    readonly presentationFor?: (toolName: string, kind: "read" | "proposal") => Omit<ToolPluginPresentation, "toolName"> | undefined;\n' +
+    '}\n' +
+    '\n' +
+    'export declare function createMillsFamilyPlugin<TSession, TProposal = unknown, TCitation = MillsFamilyCitationLike>(options: MillsFamilyPluginOptions<TSession, TProposal, TCitation>): ToolPlugin<ApplicationToolExecutor<MillsFamilyApplicationContext<TSession>>, MillsFamilyApplicationContext<TSession>, undefined, MillsFamilyApplicationContext<TSession>> & {\n' +
+    '    readonly adapterVersion: typeof MILLS_FAMILY_ADAPTER_VERSION;\n' +
+    '};\n' +
+    '\n' +
+    'import type { ApplicationToolExecutor, ApplicationToolOutput, ApplicationToolPolicy } from "../tools/executor.js";\n' +
+    'import { type ToolPlugin, type ToolPluginPresentation } from "../tools/plugin.js";\n' +
+    'export declare const SPARTAN_AEGIS_ADAPTER_VERSION: "handrail.spartan-aegis.v1";\n' +
+    'export interface SpartanAegisFunctionDefinition {\n' +
+    '    readonly name: string;\n' +
+    '    readonly description?: string | null;\n' +
+    '    \n' +
+    '    readonly parameters?: unknown;\n' +
+    '}\n' +
+    'export interface SpartanAegisActionCatalog<TActor> {\n' +
+    '    catalogFunctions(actor: TActor): readonly SpartanAegisFunctionDefinition[];\n' +
+    '    validate(name: string, args: unknown): Record<string, unknown>;\n' +
+    '    summarizeForActor(actor: TActor, name: string, args: unknown): Promise<string>;\n' +
+    '}\n' +
+    'export interface SpartanAegisProposalInput<TActor> {\n' +
+    '    readonly actor: TActor;\n' +
+    '    readonly name: string;\n' +
+    '    readonly validatedArguments: Record<string, unknown>;\n' +
+    '    readonly summary: string;\n' +
+    '    readonly toolCallId: string;\n' +
+    '    readonly signal: AbortSignal;\n' +
+    '}\n' +
+    'export interface SpartanAegisPluginOptions<TActor> {\n' +
+    '    \n' +
+    '    readonly actor: TActor;\n' +
+    '    readonly readDefinitions: readonly SpartanAegisFunctionDefinition[];\n' +
+    '    readonly runReadTool: (name: string, input: unknown, context: {\n' +
+    '        readonly toolCallId: string;\n' +
+    '        readonly signal: AbortSignal;\n' +
+    '    }) => ApplicationToolOutput | Promise<ApplicationToolOutput>;\n' +
+    '    readonly actionRegistry: SpartanAegisActionCatalog<TActor>;\n' +
+    '    \n' +
+    '    readonly proposeAction: (input: SpartanAegisProposalInput<TActor>) => ApplicationToolOutput | Promise<ApplicationToolOutput>;\n' +
+    '    readonly policy?: ApplicationToolPolicy<TActor>;\n' +
+    '    readonly presentationFor?: (toolName: string, kind: "read" | "proposal") => Omit<ToolPluginPresentation, "toolName"> | undefined;\n' +
+    '}\n' +
+    '\n' +
+    'export declare function createSpartanAegisPlugin<TActor>(options: SpartanAegisPluginOptions<TActor>): ToolPlugin<ApplicationToolExecutor<TActor>, TActor, undefined, TActor> & {\n' +
+    '    readonly adapterVersion: typeof SPARTAN_AEGIS_ADAPTER_VERSION;\n' +
+    '};\n' +
+    'export declare const SPARTAN_AEGIS_TOOL_LOOP_LIMITS: Readonly<import("../tools/loop.js").ToolLoopLimits>;\n' +
+    'export declare const SPARTAN_AEGIS_MAXIMUM_INPUT_MESSAGES = 30;\n' +
+    '\n' +
+    '\n' +
+    'export interface AttachmentDownloadCapability {\n' +
+    '    readonly maximumBytes: number;\n' +
+    '    readonly url?: string;\n' +
+    '}\n' +
+    'export interface AttachmentDownloadInput {\n' +
+    '    readonly conversationId: string;\n' +
+    '    readonly attachmentId: string;\n' +
+    '    readonly mediaType: string;\n' +
+    '    readonly byteSize?: number;\n' +
+    '    readonly signal: AbortSignal;\n' +
+    '}\n' +
+    'export declare class AttachmentDownloadError extends Error {\n' +
+    '    readonly code: "invalid_input" | "unavailable" | "cancelled" | "expired" | "deadline_exceeded";\n' +
+    '    constructor(code: "invalid_input" | "unavailable" | "cancelled" | "expired" | "deadline_exceeded");\n' +
+    '}\n' +
+    '\n' +
+    'export declare function resolveAttachmentDownloadEndpoint(baseUrl: string, capability: AttachmentDownloadCapability): string;\n' +
+    'export interface AttachmentDownloadClientOptions {\n' +
+    '    readonly endpoint: string;\n' +
+    '    readonly capability: AttachmentDownloadCapability;\n' +
+    '    readonly fetch?: typeof globalThis.fetch;\n' +
+    '    readonly protectedRequest?: (input: RequestInit & {\n' +
+    '        readonly url: string;\n' +
+    '    }) => RequestInit | Promise<RequestInit>;\n' +
+    '    readonly timeoutMilliseconds?: number;\n' +
+    '}\n' +
+    '\n' +
+    'export declare function createAttachmentDownloadClient(options: AttachmentDownloadClientOptions): (input: AttachmentDownloadInput) => Promise<Uint8Array>;\n' +
+    '\n' +
+    'import type { AttachmentReference } from "../protocol.js";\n' +
+    'import type { AttachmentSelection } from "./types.js";\n' +
+    '\n' +
+    'export interface AttachmentDraftFile<TSource> {\n' +
+    '    readonly id: string;\n' +
+    '    readonly selection: AttachmentSelection<TSource>;\n' +
+    '    \n' +
+    '    readonly reference?: AttachmentReference;\n' +
+    '}\n' +
+    'export interface AttachmentDraftRecord<TSource> {\n' +
+    '    readonly version: string;\n' +
+    '    readonly files: readonly AttachmentDraftFile<TSource>[];\n' +
+    '}\n' +
+    'export interface AttachmentDraftStore<TSource> {\n' +
+    '    readAttachmentDraft(conversationId: string): Promise<AttachmentDraftRecord<TSource> | null>;\n' +
+    '    \n' +
+    '    writeAttachmentDraft(conversationId: string, files: readonly AttachmentDraftFile<TSource>[], expectedVersion: string | null): Promise<AttachmentDraftRecord<TSource> | null>;\n' +
+    '    eraseConversation?(conversationId: string): Promise<void>;\n' +
+    '    \n' +
+    '    discardAcceptedFiles?(conversationId: string, fileIds: readonly string[]): Promise<AttachmentDraftCleanup>;\n' +
+    '}\n' +
+    'export interface AttachmentDraftCleanup {\n' +
+    '    readonly previousVersion: string | null;\n' +
+    '    readonly version: string | null;\n' +
+    '}\n' +
+    'export declare function validateAttachmentDraftFileIds(ids: readonly string[]): void;\n' +
+    '\n' +
+    'export declare function discardAcceptedAttachmentFiles<TSource>(store: AttachmentDraftStore<TSource>, conversationId: string, ids: readonly string[]): Promise<AttachmentDraftCleanup>;\n' +
+    'export declare const ATTACHMENT_DRAFT_LIMITS: Readonly<{\n' +
+    '    conversations: 32;\n' +
+    '    files: 64;\n' +
+    '    bytes: number;\n' +
+    '}>;\n' +
+    'export declare class AttachmentDraftConflictError extends Error {\n' +
+    '    constructor();\n' +
+    '}\n' +
+    'export declare class AttachmentDraftCapacityError extends Error {\n' +
+    '    constructor();\n' +
+    '}\n' +
+    'export declare function isAttachmentDraftStore<TSource>(value: unknown): value is AttachmentDraftStore<TSource>;\n' +
+    '\n' +
+    'export declare function parseAttachmentDraftFile<TSource>(input: AttachmentDraftFile<TSource>, conversationId: string): AttachmentDraftFile<TSource>;\n' +
+    'export declare function parseAttachmentDraftFiles<TSource>(input: readonly AttachmentDraftFile<TSource>[], conversationId: string): readonly AttachmentDraftFile<TSource>[];\n' +
+    '\n' +
+    'export declare class InMemoryAttachmentDraftStore<TSource> implements AttachmentDraftStore<TSource> {\n' +
+    '    private readonly drafts;\n' +
+    '    private readonly deleted;\n' +
+    '    readAttachmentDraft(id: string): Promise<AttachmentDraftRecord<TSource> | null>;\n' +
+    '    writeAttachmentDraft(id: string, input: readonly AttachmentDraftFile<TSource>[], expectedVersion: string | null): Promise<AttachmentDraftRecord<TSource> | null>;\n' +
+    '    eraseConversation(id: string): Promise<void>;\n' +
+    '    discardAcceptedFiles(id: string, fileIds: readonly string[]): Promise<AttachmentDraftCleanup>;\n' +
+    '    dispose(): void;\n' +
+    '}\n' +
+    '\n' +
+    'import type { AttachmentSelection, AttachmentUploadAdapter } from "./types.js";\n' +
+    'import { AttachmentUploader } from "./uploader.js";\n' +
+    'import { type AttachmentDraftFile, type AttachmentDraftStore } from "./draft-store.js";\n' +
+    'export interface AttachmentDraftEntry<TSource> extends AttachmentDraftFile<TSource> {\n' +
+    '    readonly uploadId: string;\n' +
+    '}'... 281480 more characters,
+  expected: /\bfetch\b/,
+  operator: 'doesNotMatch',
+  diff: 'simple'
+}
+
+Node.js v22.23.1

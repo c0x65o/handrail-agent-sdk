@@ -1,0 +1,79 @@
+TAP version 13
+# Subtest: composed retryable wake releases idle observer lease and recovers the same turn
+not ok 1 - composed retryable wake releases idle observer lease and recovers the same turn
+  ---
+  duration_ms: 2006.38796
+  type: 'test'
+  location: '/opt/handrail/repos/handrail/handrail-agent-sdk/handrail-agent-sdk/tests/observer-recovery.test.mjs:17:1'
+  failureType: 'testCodeFailure'
+  error: 'execution exit retained an observer worker'
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: true
+  actual: false
+  operator: '=='
+  stack: |-
+    within (file:///opt/handrail/repos/handrail/handrail-agent-sdk/handrail-agent-sdk/tests/observer-recovery.test.mjs:13:39)
+    async TestContext.<anonymous> (file:///opt/handrail/repos/handrail/handrail-agent-sdk/handrail-agent-sdk/tests/observer-recovery.test.mjs:33:3)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async startSubtestAfterBootstrap (node:internal/test_runner/harness:296:3)
+  ...
+# Subtest: direct consumer bounds retryable exit with a final fresh projection
+not ok 2 - direct consumer bounds retryable exit with a final fresh projection
+  ---
+  duration_ms: 3003.12408
+  type: 'test'
+  location: '/opt/handrail/repos/handrail/handrail-agent-sdk/handrail-agent-sdk/tests/observer-recovery.test.mjs:47:81'
+  failureType: 'testTimeoutFailure'
+  error: 'test timed out after 3000ms'
+  code: 'ERR_TEST_FAILURE'
+  ...
+# Subtest: direct consumer bounds busy exit with a final fresh projection
+not ok 3 - direct consumer bounds busy exit with a final fresh projection
+  ---
+  duration_ms: 3002.154729
+  type: 'test'
+  location: '/opt/handrail/repos/handrail/handrail-agent-sdk/handrail-agent-sdk/tests/observer-recovery.test.mjs:47:81'
+  failureType: 'testTimeoutFailure'
+  error: 'test timed out after 3000ms'
+  code: 'ERR_TEST_FAILURE'
+  ...
+# Subtest: direct consumer bounds stopped exit with a final fresh projection
+not ok 4 - direct consumer bounds stopped exit with a final fresh projection
+  ---
+  duration_ms: 3001.944704
+  type: 'test'
+  location: '/opt/handrail/repos/handrail/handrail-agent-sdk/handrail-agent-sdk/tests/observer-recovery.test.mjs:47:81'
+  failureType: 'testTimeoutFailure'
+  error: 'test timed out after 3000ms'
+  code: 'ERR_TEST_FAILURE'
+  ...
+# Subtest: direct consumer bounds not_authorized exit with a final fresh projection
+not ok 5 - direct consumer bounds not_authorized exit with a final fresh projection
+  ---
+  duration_ms: 3001.822156
+  type: 'test'
+  location: '/opt/handrail/repos/handrail/handrail-agent-sdk/handrail-agent-sdk/tests/observer-recovery.test.mjs:47:81'
+  failureType: 'testTimeoutFailure'
+  error: 'test timed out after 3000ms'
+  code: 'ERR_TEST_FAILURE'
+  ...
+# Subtest: direct consumer bounds throw exit with a final fresh projection
+not ok 6 - direct consumer bounds throw exit with a final fresh projection
+  ---
+  duration_ms: 3001.126018
+  type: 'test'
+  location: '/opt/handrail/repos/handrail/handrail-agent-sdk/handrail-agent-sdk/tests/observer-recovery.test.mjs:47:81'
+  failureType: 'testTimeoutFailure'
+  error: 'test timed out after 3000ms'
+  code: 'ERR_TEST_FAILURE'
+  ...
+1..6
+# tests 6
+# suites 0
+# pass 0
+# fail 1
+# cancelled 5
+# skipped 0
+# todo 0
+# duration_ms 17164.22934

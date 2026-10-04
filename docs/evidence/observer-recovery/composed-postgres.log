@@ -1,0 +1,87 @@
+Fresh isolated PostgreSQL 15 cluster initialized; dedicated disposable database and non-superuser fixture role; connection values withheld.
+
+> handrail-agent-sdk@0.2.8 test:observer-recovery
+> npm run build && node --test --test-concurrency=1 tests/observer-recovery.test.mjs tests/observer-recovery-postgres.test.mjs
+
+
+> handrail-agent-sdk@0.2.8 build
+> tsc -p tsconfig.json && node scripts/build-postgres-assets.mjs
+
+TAP version 13
+# {"scenario":"verified-effect-provider-exit","database":"disposable PostgreSQL 15","runner":"actual","externalModel":"simulated","coldProcess":true,"effectDispatches":1,"canonical":"completed","diagnostics":[{"operation":"durable_turn","phase":"started"},{"operation":"durable_turn","phase":"failed"}]}
+# Subtest: real Runner + PostgreSQL: provider failure after verified effect, cold same-turn recovery and truthful canonical projection
+ok 1 - real Runner + PostgreSQL: provider failure after verified effect, cold same-turn recovery and truthful canonical projection
+  ---
+  duration_ms: 3428.921753
+  type: 'test'
+  ...
+# Subtest: research consumer process shutdown disconnects and duplicate resumes recover without a mutation
+ok 2 - research consumer process shutdown disconnects and duplicate resumes recover without a mutation
+  ---
+  duration_ms: 613.548027
+  type: 'test'
+  ...
+# Subtest: unknown effect and disconnected exit preserve receipts; explicit Stop=false
+ok 3 - unknown effect and disconnected exit preserve receipts; explicit Stop=false
+  ---
+  duration_ms: 507.801282
+  type: 'test'
+  ...
+# Subtest: unknown effect and disconnected exit preserve receipts; explicit Stop=true
+ok 4 - unknown effect and disconnected exit preserve receipts; explicit Stop=true
+  ---
+  duration_ms: 359.888432
+  type: 'test'
+  ...
+# {"scenario":"composed-retryable","idleLease":false,"recovery":"started","wakes":2,"reads":2,"model":"simulated runtime boundary"}
+# Subtest: composed retryable wake releases idle observer lease and recovers the same turn
+ok 5 - composed retryable wake releases idle observer lease and recovers the same turn
+  ---
+  duration_ms: 575.670871
+  type: 'test'
+  ...
+# Subtest: direct consumer bounds retryable exit with a final fresh projection
+ok 6 - direct consumer bounds retryable exit with a final fresh projection
+  ---
+  duration_ms: 12.028614
+  type: 'test'
+  ...
+# Subtest: direct consumer bounds busy exit with a final fresh projection
+ok 7 - direct consumer bounds busy exit with a final fresh projection
+  ---
+  duration_ms: 11.985202
+  type: 'test'
+  ...
+# Subtest: direct consumer bounds stopped exit with a final fresh projection
+ok 8 - direct consumer bounds stopped exit with a final fresh projection
+  ---
+  duration_ms: 11.007932
+  type: 'test'
+  ...
+# Subtest: direct consumer bounds not_authorized exit with a final fresh projection
+ok 9 - direct consumer bounds not_authorized exit with a final fresh projection
+  ---
+  duration_ms: 11.781903
+  type: 'test'
+  ...
+# Subtest: direct consumer bounds throw exit with a final fresh projection
+ok 10 - direct consumer bounds throw exit with a final fresh projection
+  ---
+  duration_ms: 11.215981
+  type: 'test'
+  ...
+1..10
+# tests 10
+# suites 0
+# pass 10
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 6817.792876
+npm notice
+npm notice New major version of npm available! 10.9.8 -> 12.2.0
+npm notice Changelog: https://github.com/npm/cli/releases/tag/v12.2.0
+npm notice To update run: npm install -g npm@12.2.0
+npm notice
+Owned temporary PostgreSQL cluster stopped.

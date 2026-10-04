@@ -31,7 +31,10 @@ const failure = (): { ok: false; error: { code: 'unavailable'; message: string; 
 
 /** Drop-in provider.createTransport result for the existing application gateway.
  * Its local observation never owns execution. No second provider/tool loop,
- * conversation history, or process-local authority is introduced. */
+ * conversation history, or process-local authority is introduced. After the
+ * resume/wake attempt exits, one fresh authorized read projects any canonical
+ * outcome; otherwise observation disconnects. This includes busy/shutdown:
+ * callers recover the same turn, never infer a terminal job from disconnection. */
 export function createAgentConversationTransport<TEvent, TRequest>(deps: {
   readonly runtime: Pick<ReturnType<typeof createAgentRuntime>, 'wake' | 'resume'>;
   readonly host: AgentConversationHost<TEvent, TRequest>;
@@ -39,10 +42,13 @@ export function createAgentConversationTransport<TEvent, TRequest>(deps: {
   readonly pollMs: number;
 }): ConversationTransport<TEvent, TRequest> {
   if (!Number.isSafeInteger(deps.pollMs) || deps.pollMs < 1) throw Error('invalid_observation_interval');
-  function observe(input: { conversationId: string; turnId: string }, from: TurnResumePoint): TurnObservation<TEvent> {
+  function observe(input: { conversationId: string; turnId: string }, from: TurnResumePoint,
+    execution: Promise<void>): TurnObservation<TEvent> {
     let disconnected = false, finished = false;
+    let exited = false;
     let checkpoint = structuredClone(from);
     let wake: (() => void) | undefined;
+    void execution.then(() => { exited = true; wake?.(); });
     let settle!: (value: TurnObservationResult) => void;
     const result = new Promise<TurnObservationResult>(resolve => { settle = resolve; });
     const finish = (value: TurnObservationResult) => { if (!finished) { finished = true; settle(value); } };
@@ -52,6 +58,9 @@ export function createAgentConversationTransport<TEvent, TRequest>(deps: {
       events: (async function* () {
         try {
           while (!disconnected) {
+            // Read once AFTER this dispatch exits. A page read before/during
+            // settlement cannot establish its final canonical outcome.
+            const finalRead = exited;
             // A reconnect/poll must never rely on the admission's old session.
             const binding = await deps.host.lookup(input);
             if (disconnected) break;
@@ -61,6 +70,11 @@ export function createAgentConversationTransport<TEvent, TRequest>(deps: {
             if (disconnected) break;
             checkpoint = page.checkpoint;
             if (page.result) { finish(page.result); return; }
+            // Execution exit is not job completion (including busy, retryable,
+            // shutdown and authority loss). Release the observer so its caller
+            // can recover the same identity through the normal durable fences.
+            if (finalRead) { finish({ status: 'disconnected', checkpoint }); return; }
+            if (exited) continue;
             await new Promise<void>(resolve => {
               const timer = setTimeout(() => { wake = undefined; resolve(); }, deps.pollMs);
               wake = () => { clearTimeout(timer); wake = undefined; resolve(); };
@@ -71,11 +85,15 @@ export function createAgentConversationTransport<TEvent, TRequest>(deps: {
       })(),
     };
   }
-  const kick = (binding: AgentConversationBinding) => {
-    void (async () => {
+  const kick = (binding: AgentConversationBinding): Promise<void> => {
+    return (async () => {
       // resume resolves only persisted host-verified answers. Reconnect itself
       // is never approval; missing answers leave the exact wait intact.
-      await deps.runtime.resume(binding.identity);
+      const resumed = await deps.runtime.resume(binding.identity);
+      // A non-waiting job normally returns invalid_transition. Other failures
+      // must not trigger another dispatch; the final authorized read may still
+      // project an unresolved wait or a concurrent Stop.
+      if (!resumed.ok && resumed.code !== 'invalid_transition') return;
       await deps.runtime.wake(binding.identity);
     })().catch(() => {});
   };
@@ -89,17 +107,15 @@ export function createAgentConversationTransport<TEvent, TRequest>(deps: {
     async startTurn(input) {
       try {
         const binding = await deps.host.admit(structuredClone(input));
-        kick(binding);
         return { ok: true, value: { conversationId: input.conversationId, turnId: binding.turnId,
-          mutationId: binding.mutationId, observation: observe({ conversationId: input.conversationId, turnId: binding.turnId }, empty) } };
+          mutationId: binding.mutationId, observation: observe({ conversationId: input.conversationId, turnId: binding.turnId }, empty, kick(binding)) } };
       } catch { return failure(); }
     },
     async resumeTurn(input: ResumeTurnInput): Promise<TransportResult<TurnObservation<TEvent>>> {
       try {
         const binding = await deps.host.lookup(input);
         // Wake can recover execution but cannot resolve a durable approval wait.
-        kick(binding);
-        return { ok: true, value: observe(input, input.resumeFrom) };
+        return { ok: true, value: observe(input, input.resumeFrom, kick(binding)) };
       } catch { return failure(); }
     },
   };

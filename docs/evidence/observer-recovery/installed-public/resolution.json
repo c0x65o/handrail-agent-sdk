@@ -1,0 +1,34 @@
+{
+  "verdict": "installed-public-pin-verified",
+  "aiVersion": "0.2.75",
+  "pin": "git+https://git@github.com/c0x65o/handrail-sdk-ai-assistant-js.git#5c59f2f71830eb1f23cec28d56db51ca23d7cc3e",
+  "sourceOverride": false,
+  "reviewedAgentSourceAndInstalledAiRuntimeMatch": true,
+  "agent": "current source built through normal prepare/build; not yet published",
+  "exports": {
+    "@handrail/ai-assistant": {
+      "location": "/opt/handrail/repos/handrail/handrail-agent-sdk/handrail-agent-sdk/node_modules/@handrail/ai-assistant/dist/index.js",
+      "sha256": "54d71380e849bb6b83bad67e4bef1a1495fe7c1170e848e150e4fc4394759793"
+    },
+    "@handrail/ai-assistant/server/application": {
+      "location": "/opt/handrail/repos/handrail/handrail-agent-sdk/handrail-agent-sdk/node_modules/@handrail/ai-assistant/dist/server/application.js",
+      "sha256": "3f4672751011b542f7171e054a44169f169fd89afa37a40a338ae98a8ce1c3d4"
+    },
+    "@handrail/ai-assistant/persistence/postgres": {
+      "location": "/opt/handrail/repos/handrail/handrail-agent-sdk/handrail-agent-sdk/node_modules/@handrail/ai-assistant/dist/postgres/index.js",
+      "sha256": "818b660348f62178311ef3beaf30731c782f1a54b09ebff4dcfa51726f163c7c"
+    },
+    "handrail-agent-sdk/server/application": {
+      "location": "/opt/handrail/repos/handrail/handrail-agent-sdk/handrail-agent-sdk/dist/server/agent-transport.js",
+      "sha256": "2406655994a161a26e896274661ed7cd1f8e3799624d5df85a086d63b901de36"
+    },
+    "handrail-agent-sdk/server/agents": {
+      "location": "/opt/handrail/repos/handrail/handrail-agent-sdk/handrail-agent-sdk/dist/server/agent-runtime.js",
+      "sha256": "d1e5e0295f53c55e552511a9baa4edf0ee321cb0bc9b99d26a634c1df5e47ae9"
+    },
+    "handrail-agent-sdk/server/postgres": {
+      "location": "/opt/handrail/repos/handrail/handrail-agent-sdk/handrail-agent-sdk/dist/server/postgres/index.js",
+      "sha256": "cba27272156fa15013cc2a0fde2ba50547a2ec66d906d0e5a6eae0a5f446aef5"
+    }
+  }
+}

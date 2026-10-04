@@ -54,7 +54,21 @@ test('gateway transport uses actual Runner, durable output and reconnect cursor;
   release();
   const resumed=await s.transport.resumeTurn({conversationId:'conversation-one',turnId:'turn-one',resumeFrom:empty});
   assert.equal(resumed.ok,true);const events=[];for await(const event of resumed.value.events)events.push(event);
-  const result=await resumed.value.result;assert.equal(result.status,'completed');assert.equal(events[0].text,'Reserved synthetic item.');
+  let result=await resumed.value.result;
+  if(result.status==='disconnected') {
+    // The duplicate dispatch was busy. Its observation ends; the original
+    // executor still owns progress. Reconnect with the retained cursor.
+    const deadline=Date.now()+5000;
+    while((await s.journal.load(identity)).value.state!=='succeeded') {
+      assert.ok(Date.now()<deadline,'original execution did not finish');
+      await new Promise(resolve=>setTimeout(resolve,5));
+    }
+    const recovered=await s.transport.resumeTurn({conversationId:'conversation-one',turnId:'turn-one',resumeFrom:result.checkpoint});
+    assert.equal(recovered.ok,true);
+    for await(const event of recovered.value.events)events.push(event);
+    result=await recovered.value.result;
+  }
+  assert.equal(result.status,'completed');assert.equal(events[0].text,'Reserved synthetic item.');
   const duplicate=await s.transport.startTurn(start);assert.equal(duplicate.ok,true);duplicate.value.observation.disconnect();
   const replay=await s.transport.resumeTurn({conversationId:'conversation-one',turnId:'turn-one',resumeFrom:result.checkpoint});
   const replayed=[];for await(const event of replay.value.events)replayed.push(event);assert.deepEqual(replayed,[]);
