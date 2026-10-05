@@ -36,14 +36,15 @@ checks both run with `skipLibCheck: false`. The Bundler fixture also qualifies
 dependencies, and the typed headless worker's provider/model/tool composition.
 No other runtime/type version combination is qualified here.
 
-A minimal application manifest contains these entries (replace the placeholder
-with the full delivered SHA):
+A qualified application manifest contains these entries (replace the placeholders
+with the full delivered SDK SHA and its frozen Assistant dependency SHA):
 
 ```json
 {
   "type": "module",
   "dependencies": {
-    "handrail-agent-sdk": "git+https://git@github.com/c0x65o/handrail-agent-sdk.git#FULL_40_CHARACTER_DELIVERED_SHA"
+    "handrail-agent-sdk": "git+https://git@github.com/c0x65o/handrail-agent-sdk.git#FULL_40_CHARACTER_DELIVERED_SHA",
+    "@handrail/ai-assistant": "git+https://git@github.com/c0x65o/handrail-sdk-ai-assistant-js.git#FULL_40_CHARACTER_ASSISTANT_SHA"
   },
   "devDependencies": {
     "@types/node": "22.20.4",
@@ -56,6 +57,18 @@ If the application imports Agents or Zod directly, declare their exact versions
 above as direct dependencies too. Do not depend on incidental npm hoisting for
 application imports. The installed runtime qualification declares its OpenAI
 client and PostgreSQL dependencies directly too.
+
+The explicit `@handrail/ai-assistant` dependency selects npm's HTTPS resolution
+for that shared package too. Pin it to the **same full Git SHA as the chosen
+Agent SDK's dependency**.
+Upgrade both pins and regenerate the consumer lock together. Combining an old
+Agent SDK with a newer direct Assistant SDK can install two revisions whose
+branded conversation/citation types are incompatible. Do not cast away these
+errors. The current verifier derives the Assistant pin from this checkout's
+manifest, preserves its SHA, and rejects mismatching nested lock entries.
+Historical manifests under `docs/evidence` are frozen run records, not consumer
+examples to upgrade or rerun as current acceptance; use the verifier to generate
+fresh consumers for the selected committed SDK.
 
 With npm 10.9.8, a bare public GitHub HTTPS URL becomes
 `git+ssh://git@github.com/…` in the generated lock. Use the exact **HTTPS** URL

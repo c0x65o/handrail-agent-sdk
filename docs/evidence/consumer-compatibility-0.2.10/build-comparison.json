@@ -1,0 +1,662 @@
+[
+  {
+    "file": "dist/contracts/browser.d.ts",
+    "publicSha256": "793440db44092c8ce0dfef300d54323d098cf7d00766eb88f1afe9b4e7a16b39",
+    "localSha256": "793440db44092c8ce0dfef300d54323d098cf7d00766eb88f1afe9b4e7a16b39",
+    "equal": true
+  },
+  {
+    "file": "dist/contracts/browser.js",
+    "publicSha256": "9f3bdfcea7226bf9676be2d3195a45fce805f4f1b2e39b08283281156fbc39ab",
+    "localSha256": "9f3bdfcea7226bf9676be2d3195a45fce805f4f1b2e39b08283281156fbc39ab",
+    "equal": true
+  },
+  {
+    "file": "dist/contracts/connection.d.ts",
+    "publicSha256": "c887aa14744ff6a72f2e8388990ec6c58a7dde4f35300432dbcefdb33ddfbead",
+    "localSha256": "c887aa14744ff6a72f2e8388990ec6c58a7dde4f35300432dbcefdb33ddfbead",
+    "equal": true
+  },
+  {
+    "file": "dist/contracts/connection.js",
+    "publicSha256": "4bf50410b636eb46b0981cd4728a4ce0f9aa3fe42d8a718719cef7960cf928f8",
+    "localSha256": "4bf50410b636eb46b0981cd4728a4ce0f9aa3fe42d8a718719cef7960cf928f8",
+    "equal": true
+  },
+  {
+    "file": "dist/contracts/job.d.ts",
+    "publicSha256": "2781fa209e243d5779975097e9e1625e5d3c8642d2a068f7d2e74f41da94aa9c",
+    "localSha256": "2781fa209e243d5779975097e9e1625e5d3c8642d2a068f7d2e74f41da94aa9c",
+    "equal": true
+  },
+  {
+    "file": "dist/contracts/job.js",
+    "publicSha256": "c421b142909b61b9288381db76adba5fcc7d482560ecf0a5986fa29e9ce66678",
+    "localSha256": "c421b142909b61b9288381db76adba5fcc7d482560ecf0a5986fa29e9ce66678",
+    "equal": true
+  },
+  {
+    "file": "dist/contracts/vault.d.ts",
+    "publicSha256": "859d442f07437da8df29b12c0a6873c357d59f02089ac3f6aa2b6d159a1728eb",
+    "localSha256": "859d442f07437da8df29b12c0a6873c357d59f02089ac3f6aa2b6d159a1728eb",
+    "equal": true
+  },
+  {
+    "file": "dist/contracts/vault.js",
+    "publicSha256": "868064844aac306d39962bddd9cb58389f6eb3b8915e3d0179a0486b4eb49924",
+    "localSha256": "868064844aac306d39962bddd9cb58389f6eb3b8915e3d0179a0486b4eb49924",
+    "equal": true
+  },
+  {
+    "file": "dist/index.d.ts",
+    "publicSha256": "ef9242941d31db80ec4fb97a6466c438b1fb644ba16afe18e4c1ccf8512e1fc0",
+    "localSha256": "ef9242941d31db80ec4fb97a6466c438b1fb644ba16afe18e4c1ccf8512e1fc0",
+    "equal": true
+  },
+  {
+    "file": "dist/index.js",
+    "publicSha256": "ef9242941d31db80ec4fb97a6466c438b1fb644ba16afe18e4c1ccf8512e1fc0",
+    "localSha256": "ef9242941d31db80ec4fb97a6466c438b1fb644ba16afe18e4c1ccf8512e1fc0",
+    "equal": true
+  },
+  {
+    "file": "dist/server/agent-runtime.d.ts",
+    "publicSha256": "b5c6717bb355dd77e1868aeb700390486ba0546697ef4aad90e124902f1b4fb1",
+    "localSha256": "b5c6717bb355dd77e1868aeb700390486ba0546697ef4aad90e124902f1b4fb1",
+    "equal": true
+  },
+  {
+    "file": "dist/server/agent-runtime.js",
+    "publicSha256": "d1e5e0295f53c55e552511a9baa4edf0ee321cb0bc9b99d26a634c1df5e47ae9",
+    "localSha256": "d1e5e0295f53c55e552511a9baa4edf0ee321cb0bc9b99d26a634c1df5e47ae9",
+    "equal": true
+  },
+  {
+    "file": "dist/server/agent-state-binding.d.ts",
+    "publicSha256": "e9654fdb0a59f65cfbfbd629b82c5334726f8a04213238af9ad544bd5971fb18",
+    "localSha256": "e9654fdb0a59f65cfbfbd629b82c5334726f8a04213238af9ad544bd5971fb18",
+    "equal": true
+  },
+  {
+    "file": "dist/server/agent-state-binding.js",
+    "publicSha256": "6b78e4f494c6e25171139c1928d53caf6ba10a1a3599431017cb4bacafbf118b",
+    "localSha256": "6b78e4f494c6e25171139c1928d53caf6ba10a1a3599431017cb4bacafbf118b",
+    "equal": true
+  },
+  {
+    "file": "dist/server/agent-tool-schema.d.ts",
+    "publicSha256": "73f291df72d22f97c5cf421375c3d348d97e5c691609e59465b732f82388e51d",
+    "localSha256": "73f291df72d22f97c5cf421375c3d348d97e5c691609e59465b732f82388e51d",
+    "equal": true
+  },
+  {
+    "file": "dist/server/agent-tool-schema.js",
+    "publicSha256": "169166cb63e6771fb79851cb97a6fcf97308ef6f81d97c7de66e0fa0eb594674",
+    "localSha256": "169166cb63e6771fb79851cb97a6fcf97308ef6f81d97c7de66e0fa0eb594674",
+    "equal": true
+  },
+  {
+    "file": "dist/server/agent-transport.d.ts",
+    "publicSha256": "38cc64606296a1dbd76452310ca1aa52de2b747e8d2cd8e651e1b9e3a63e3fa1",
+    "localSha256": "38cc64606296a1dbd76452310ca1aa52de2b747e8d2cd8e651e1b9e3a63e3fa1",
+    "equal": true
+  },
+  {
+    "file": "dist/server/agent-transport.js",
+    "publicSha256": "2406655994a161a26e896274661ed7cd1f8e3799624d5df85a086d63b901de36",
+    "localSha256": "2406655994a161a26e896274661ed7cd1f8e3799624d5df85a086d63b901de36",
+    "equal": true
+  },
+  {
+    "file": "dist/server/answer.d.ts",
+    "publicSha256": "0a46a3084b08cbbcfe1d2a844a0f94bbefe4a76126e811c558e1e2d82c5d3703",
+    "localSha256": "0a46a3084b08cbbcfe1d2a844a0f94bbefe4a76126e811c558e1e2d82c5d3703",
+    "equal": true
+  },
+  {
+    "file": "dist/server/answer.js",
+    "publicSha256": "25c7bf8302211cc1d3d085e35afb49ffa3263ee6588cf78cff11d685b5b2777b",
+    "localSha256": "25c7bf8302211cc1d3d085e35afb49ffa3263ee6588cf78cff11d685b5b2777b",
+    "equal": true
+  },
+  {
+    "file": "dist/server/application-tools.d.ts",
+    "publicSha256": "523b6c15bd2f7914fac6257feef8a254b62937ade581511b60d17030fbb1d663",
+    "localSha256": "523b6c15bd2f7914fac6257feef8a254b62937ade581511b60d17030fbb1d663",
+    "equal": true
+  },
+  {
+    "file": "dist/server/application-tools.js",
+    "publicSha256": "549a90fffba7bf29f49fceabdcf49150e23297e4036533d7c7293ca15507e39e",
+    "localSha256": "549a90fffba7bf29f49fceabdcf49150e23297e4036533d7c7293ca15507e39e",
+    "equal": true
+  },
+  {
+    "file": "dist/server/assistance-notifications.d.ts",
+    "publicSha256": "f4f55498d9ac5fb348bea5070781d763599a4e8184a89054833cedbc7058a3a5",
+    "localSha256": "f4f55498d9ac5fb348bea5070781d763599a4e8184a89054833cedbc7058a3a5",
+    "equal": true
+  },
+  {
+    "file": "dist/server/assistance-notifications.js",
+    "publicSha256": "39bebc6b9912a25d2f95929103ab10b2ddc3fd879a4d99764ecbe9c21c1b52d9",
+    "localSha256": "39bebc6b9912a25d2f95929103ab10b2ddc3fd879a4d99764ecbe9c21c1b52d9",
+    "equal": true
+  },
+  {
+    "file": "dist/server/assistance-postgres.d.ts",
+    "publicSha256": "29e4a274cd7e1734f9abc4c767f703e17d33a76871495198ad5f40552a9f3efb",
+    "localSha256": "29e4a274cd7e1734f9abc4c767f703e17d33a76871495198ad5f40552a9f3efb",
+    "equal": true
+  },
+  {
+    "file": "dist/server/assistance-postgres.js",
+    "publicSha256": "596840b8451eb0113709ac1fead9236af77b2ed43978f83fa3ed69429286a556",
+    "localSha256": "596840b8451eb0113709ac1fead9236af77b2ed43978f83fa3ed69429286a556",
+    "equal": true
+  },
+  {
+    "file": "dist/server/assistance-time.d.ts",
+    "publicSha256": "8bbd3392b9f79cd97cc79a2fd627c819aa445edf81fa1b41a9d58b863f109d7c",
+    "localSha256": "8bbd3392b9f79cd97cc79a2fd627c819aa445edf81fa1b41a9d58b863f109d7c",
+    "equal": true
+  },
+  {
+    "file": "dist/server/assistance-time.js",
+    "publicSha256": "a07989309e0ad968ce44e3941ea0671ab9d7850016a64cc52b701c27c7f68eaa",
+    "localSha256": "a07989309e0ad968ce44e3941ea0671ab9d7850016a64cc52b701c27c7f68eaa",
+    "equal": true
+  },
+  {
+    "file": "dist/server/assistance.d.ts",
+    "publicSha256": "c78fcea522e438bf88812af0f16ba18968242e5b507e07b29230934d9e50299d",
+    "localSha256": "c78fcea522e438bf88812af0f16ba18968242e5b507e07b29230934d9e50299d",
+    "equal": true
+  },
+  {
+    "file": "dist/server/assistance.js",
+    "publicSha256": "3e2a19f0232f8e84818827bd0c1245c6aee5b56ae1e5ba469d38fcac4150b88a",
+    "localSha256": "3e2a19f0232f8e84818827bd0c1245c6aee5b56ae1e5ba469d38fcac4150b88a",
+    "equal": true
+  },
+  {
+    "file": "dist/server/browser-policy.d.ts",
+    "publicSha256": "1345b1540924a5c8a6b572efb353eb4a2b20d3c42ab13f8273497a9e1b62ceed",
+    "localSha256": "1345b1540924a5c8a6b572efb353eb4a2b20d3c42ab13f8273497a9e1b62ceed",
+    "equal": true
+  },
+  {
+    "file": "dist/server/browser-policy.js",
+    "publicSha256": "8e609bb71c20b858c77f0e9f90bb1319db8477b13f9f965f1a1e18524bf50881",
+    "localSha256": "8e609bb71c20b858c77f0e9f90bb1319db8477b13f9f965f1a1e18524bf50881",
+    "equal": true
+  },
+  {
+    "file": "dist/server/cancel.d.ts",
+    "publicSha256": "1a201ceb99e218101c4f9de29fa6294ea102d9b6ffe1cf9c6017a2004b93ed3b",
+    "localSha256": "1a201ceb99e218101c4f9de29fa6294ea102d9b6ffe1cf9c6017a2004b93ed3b",
+    "equal": true
+  },
+  {
+    "file": "dist/server/cancel.js",
+    "publicSha256": "4fa291303bf646c9627e997240b8904946fd878bffcb687be28e57d84191718c",
+    "localSha256": "4fa291303bf646c9627e997240b8904946fd878bffcb687be28e57d84191718c",
+    "equal": true
+  },
+  {
+    "file": "dist/server/connection-store.d.ts",
+    "publicSha256": "9efeb9ffa951762a8f40931584a710e20a20ef2f1aa23089c35d132ae9ad066c",
+    "localSha256": "9efeb9ffa951762a8f40931584a710e20a20ef2f1aa23089c35d132ae9ad066c",
+    "equal": true
+  },
+  {
+    "file": "dist/server/connection-store.js",
+    "publicSha256": "8e609bb71c20b858c77f0e9f90bb1319db8477b13f9f965f1a1e18524bf50881",
+    "localSha256": "8e609bb71c20b858c77f0e9f90bb1319db8477b13f9f965f1a1e18524bf50881",
+    "equal": true
+  },
+  {
+    "file": "dist/server/conversation.d.ts",
+    "publicSha256": "c4eceb11b43d4aa2ddff72b9a1b0146537267a2f421dcb4e152cc8182ce143b6",
+    "localSha256": "c4eceb11b43d4aa2ddff72b9a1b0146537267a2f421dcb4e152cc8182ce143b6",
+    "equal": true
+  },
+  {
+    "file": "dist/server/conversation.js",
+    "publicSha256": "cb09cf42b7b74addb2f4fa3fa1e6579133fb49355323db80f5f179b72d7efc02",
+    "localSha256": "cb09cf42b7b74addb2f4fa3fa1e6579133fb49355323db80f5f179b72d7efc02",
+    "equal": true
+  },
+  {
+    "file": "dist/server/effects.d.ts",
+    "publicSha256": "2879c3affe5633d7f46060feba6615931652d1b16f3e5d95e7722d9a9289c5e7",
+    "localSha256": "2879c3affe5633d7f46060feba6615931652d1b16f3e5d95e7722d9a9289c5e7",
+    "equal": true
+  },
+  {
+    "file": "dist/server/effects.js",
+    "publicSha256": "c5ea0a56d14d2dd097b664d4478dffb5b3c18bcfb7bf4bb43e290ef19046e854",
+    "localSha256": "c5ea0a56d14d2dd097b664d4478dffb5b3c18bcfb7bf4bb43e290ef19046e854",
+    "equal": true
+  },
+  {
+    "file": "dist/server/handrail-feedback.d.ts",
+    "publicSha256": "e3936b484bd2a06c7c9bf10756a38c5cc7f5f6eb517e221db7bbbe2fc04902bf",
+    "localSha256": "e3936b484bd2a06c7c9bf10756a38c5cc7f5f6eb517e221db7bbbe2fc04902bf",
+    "equal": true
+  },
+  {
+    "file": "dist/server/handrail-feedback.js",
+    "publicSha256": "d1d0a47e352721c38f5b214fd16a2c5b52dc5f28e326f2a0222ee347142be3fb",
+    "localSha256": "d1d0a47e352721c38f5b214fd16a2c5b52dc5f28e326f2a0222ee347142be3fb",
+    "equal": true
+  },
+  {
+    "file": "dist/server/index.d.ts",
+    "publicSha256": "a13251298834eb0cae14d0a2c3bd56f8dceea5ab84391b6e4f8b865e299e7103",
+    "localSha256": "a13251298834eb0cae14d0a2c3bd56f8dceea5ab84391b6e4f8b865e299e7103",
+    "equal": true
+  },
+  {
+    "file": "dist/server/index.js",
+    "publicSha256": "1661e95bb8331b4a6d9db20fe5de16aa79b273a6d8bce4bfe8b9521d570451d0",
+    "localSha256": "1661e95bb8331b4a6d9db20fe5de16aa79b273a6d8bce4bfe8b9521d570451d0",
+    "equal": true
+  },
+  {
+    "file": "dist/server/job-lease.d.ts",
+    "publicSha256": "5dcb547afd242c56aa79f0cb5b4cd284a790249c5e7233a3b3938dd1201fd166",
+    "localSha256": "5dcb547afd242c56aa79f0cb5b4cd284a790249c5e7233a3b3938dd1201fd166",
+    "equal": true
+  },
+  {
+    "file": "dist/server/job-lease.js",
+    "publicSha256": "b56830d8e17560e7bea4b0c87b89dd7587a81cbf952d68fc2b5e919ad9c86805",
+    "localSha256": "b56830d8e17560e7bea4b0c87b89dd7587a81cbf952d68fc2b5e919ad9c86805",
+    "equal": true
+  },
+  {
+    "file": "dist/server/job-store.d.ts",
+    "publicSha256": "e9d79b45576c27339b467faeb0ecc43970a71a94ebdfbb87224a0304905fadab",
+    "localSha256": "e9d79b45576c27339b467faeb0ecc43970a71a94ebdfbb87224a0304905fadab",
+    "equal": true
+  },
+  {
+    "file": "dist/server/job-store.js",
+    "publicSha256": "8e609bb71c20b858c77f0e9f90bb1319db8477b13f9f965f1a1e18524bf50881",
+    "localSha256": "8e609bb71c20b858c77f0e9f90bb1319db8477b13f9f965f1a1e18524bf50881",
+    "equal": true
+  },
+  {
+    "file": "dist/server/payment-vault.d.ts",
+    "publicSha256": "c307aeaed703ebcbe6f0e869b1d50880413503a3cc8aacd95af3bb98251f5a83",
+    "localSha256": "c307aeaed703ebcbe6f0e869b1d50880413503a3cc8aacd95af3bb98251f5a83",
+    "equal": true
+  },
+  {
+    "file": "dist/server/payment-vault.js",
+    "publicSha256": "ad761c9b847a6aa8779cbe165000b22e492623e7dabcea6163a3e5567de09fc4",
+    "localSha256": "ad761c9b847a6aa8779cbe165000b22e492623e7dabcea6163a3e5567de09fc4",
+    "equal": true
+  },
+  {
+    "file": "dist/server/postgres/agent-state-store.d.ts",
+    "publicSha256": "f9d27b2626dcf495cfcdcb049c1324c1450099e167c21e416f2a2e4d7a7ee1ee",
+    "localSha256": "f9d27b2626dcf495cfcdcb049c1324c1450099e167c21e416f2a2e4d7a7ee1ee",
+    "equal": true
+  },
+  {
+    "file": "dist/server/postgres/agent-state-store.js",
+    "publicSha256": "561dad44f519f766ab5965d0baf21b795b27393cde1524089baed0f9cb026426",
+    "localSha256": "561dad44f519f766ab5965d0baf21b795b27393cde1524089baed0f9cb026426",
+    "equal": true
+  },
+  {
+    "file": "dist/server/postgres/conversation-store.d.ts",
+    "publicSha256": "fcce84896f64beaf3d9e42fb3b592959abd00dea7f03e09729b61d401acd1fd6",
+    "localSha256": "fcce84896f64beaf3d9e42fb3b592959abd00dea7f03e09729b61d401acd1fd6",
+    "equal": true
+  },
+  {
+    "file": "dist/server/postgres/conversation-store.js",
+    "publicSha256": "51b63defe5ff1612007412e1cde64d18bf0af9bb04b59fb451eb544bd6119ca8",
+    "localSha256": "51b63defe5ff1612007412e1cde64d18bf0af9bb04b59fb451eb544bd6119ca8",
+    "equal": true
+  },
+  {
+    "file": "dist/server/postgres/db/database.d.ts",
+    "publicSha256": "68c45ced4326e53ac5e3a313abd08b5171ecd98e5b10880cd242013fc962cc77",
+    "localSha256": "68c45ced4326e53ac5e3a313abd08b5171ecd98e5b10880cd242013fc962cc77",
+    "equal": true
+  },
+  {
+    "file": "dist/server/postgres/db/database.js",
+    "publicSha256": "9d4b3fdc654ba5fecacb0a1b79d97a9c8f5a5a9466f68b1f815b0bdad3d450b0",
+    "localSha256": "9d4b3fdc654ba5fecacb0a1b79d97a9c8f5a5a9466f68b1f815b0bdad3d450b0",
+    "equal": true
+  },
+  {
+    "file": "dist/server/postgres/db/schema.d.ts",
+    "publicSha256": "7ebb2e44132c68698b73589f6d5607006e8bec0ef74ec71862e91eba958b6fed",
+    "localSha256": "7ebb2e44132c68698b73589f6d5607006e8bec0ef74ec71862e91eba958b6fed",
+    "equal": true
+  },
+  {
+    "file": "dist/server/postgres/db/schema.js",
+    "publicSha256": "fcbe8194f67c682c0236d14429520a69fceba4fa5d18dfb8e05899fa7e87027d",
+    "localSha256": "fcbe8194f67c682c0236d14429520a69fceba4fa5d18dfb8e05899fa7e87027d",
+    "equal": true
+  },
+  {
+    "file": "dist/server/postgres/effect-resolution.d.ts",
+    "publicSha256": "7eefabed89b436f35f198a894d733a1e945aa554beadfdf1bd6be8f49cd460da",
+    "localSha256": "7eefabed89b436f35f198a894d733a1e945aa554beadfdf1bd6be8f49cd460da",
+    "equal": true
+  },
+  {
+    "file": "dist/server/postgres/effect-resolution.js",
+    "publicSha256": "477540d74373ffc15a2aa3217502cf5b03324c860b08f19d50caef4f9c7240d9",
+    "localSha256": "477540d74373ffc15a2aa3217502cf5b03324c860b08f19d50caef4f9c7240d9",
+    "equal": true
+  },
+  {
+    "file": "dist/server/postgres/effects.d.ts",
+    "publicSha256": "95da4f289617c50e67ab3cc648523bf71231b15288594af05db9b99a3f0fc806",
+    "localSha256": "95da4f289617c50e67ab3cc648523bf71231b15288594af05db9b99a3f0fc806",
+    "equal": true
+  },
+  {
+    "file": "dist/server/postgres/effects.js",
+    "publicSha256": "ee7f358fe52948c1271025adaf0ab3cdc9b76e5bab3e297753a63bff8935813a",
+    "localSha256": "ee7f358fe52948c1271025adaf0ab3cdc9b76e5bab3e297753a63bff8935813a",
+    "equal": true
+  },
+  {
+    "file": "dist/server/postgres/index.d.ts",
+    "publicSha256": "f9fa09687465d0c1bb9c37b2fbb1c041149b04f99e06032cf50644520ef2ce94",
+    "localSha256": "f9fa09687465d0c1bb9c37b2fbb1c041149b04f99e06032cf50644520ef2ce94",
+    "equal": true
+  },
+  {
+    "file": "dist/server/postgres/index.js",
+    "publicSha256": "cba27272156fa15013cc2a0fde2ba50547a2ec66d906d0e5a6eae0a5f446aef5",
+    "localSha256": "cba27272156fa15013cc2a0fde2ba50547a2ec66d906d0e5a6eae0a5f446aef5",
+    "equal": true
+  },
+  {
+    "file": "dist/server/postgres/job-admission.d.ts",
+    "publicSha256": "811117ecaaa4f876e7f6075c42e34678d39c939cfd63e2f9c790c599d9643089",
+    "localSha256": "811117ecaaa4f876e7f6075c42e34678d39c939cfd63e2f9c790c599d9643089",
+    "equal": true
+  },
+  {
+    "file": "dist/server/postgres/job-admission.js",
+    "publicSha256": "c3852db0254999754e5aa4ea7f83006c454b92d7fd1f7334e5950edf3c045bba",
+    "localSha256": "c3852db0254999754e5aa4ea7f83006c454b92d7fd1f7334e5950edf3c045bba",
+    "equal": true
+  },
+  {
+    "file": "dist/server/postgres/job-answer.d.ts",
+    "publicSha256": "79e2b8855d06fc5a79ecb20cb4a890bcfa216562effb4d25c5d00086c1a82a96",
+    "localSha256": "79e2b8855d06fc5a79ecb20cb4a890bcfa216562effb4d25c5d00086c1a82a96",
+    "equal": true
+  },
+  {
+    "file": "dist/server/postgres/job-answer.js",
+    "publicSha256": "295f2d952275f3fb1078a93808f4377b851f8d1d2b4ac761fc01aa9ecaf96191",
+    "localSha256": "295f2d952275f3fb1078a93808f4377b851f8d1d2b4ac761fc01aa9ecaf96191",
+    "equal": true
+  },
+  {
+    "file": "dist/server/postgres/job-cancellation.d.ts",
+    "publicSha256": "ec1296c7e402b343270fd23c842a18e44d2f93deaf91238d4c7f54ca6c705c5b",
+    "localSha256": "ec1296c7e402b343270fd23c842a18e44d2f93deaf91238d4c7f54ca6c705c5b",
+    "equal": true
+  },
+  {
+    "file": "dist/server/postgres/job-cancellation.js",
+    "publicSha256": "77dbaa8b91bb20cd906a679de8fa01184e11e6ae808213ff0373fa34ef59ea94",
+    "localSha256": "77dbaa8b91bb20cd906a679de8fa01184e11e6ae808213ff0373fa34ef59ea94",
+    "equal": true
+  },
+  {
+    "file": "dist/server/postgres/job-journal.d.ts",
+    "publicSha256": "6e442427a5bbc5708c0aeff8e0dcab3c4a7121105874cae5f8a2c533868b8d76",
+    "localSha256": "6e442427a5bbc5708c0aeff8e0dcab3c4a7121105874cae5f8a2c533868b8d76",
+    "equal": true
+  },
+  {
+    "file": "dist/server/postgres/job-journal.js",
+    "publicSha256": "b22461594dbfa51efe5fcc5fac4f0a31c665780d963863eff3863a092ff3acd4",
+    "localSha256": "b22461594dbfa51efe5fcc5fac4f0a31c665780d963863eff3863a092ff3acd4",
+    "equal": true
+  },
+  {
+    "file": "dist/server/postgres/job-lease-fence.d.ts",
+    "publicSha256": "741ef01e29f53d2b938075ce064605f0123f2b6db54b466eeeb9849e50c91311",
+    "localSha256": "741ef01e29f53d2b938075ce064605f0123f2b6db54b466eeeb9849e50c91311",
+    "equal": true
+  },
+  {
+    "file": "dist/server/postgres/job-lease-fence.js",
+    "publicSha256": "07bb32a35e27edf5f19c4c39da752264c4ab197ec29670219bb7aee418aa05e6",
+    "localSha256": "07bb32a35e27edf5f19c4c39da752264c4ab197ec29670219bb7aee418aa05e6",
+    "equal": true
+  },
+  {
+    "file": "dist/server/postgres/job-lease.d.ts",
+    "publicSha256": "c7b95e4b00057af65b87e02f6657d4c38f5ec164c0a26bf97cf4700cb50401c6",
+    "localSha256": "c7b95e4b00057af65b87e02f6657d4c38f5ec164c0a26bf97cf4700cb50401c6",
+    "equal": true
+  },
+  {
+    "file": "dist/server/postgres/job-lease.js",
+    "publicSha256": "705542127c3d899c0a074e0ac0233371ec3a3e0c120263e4d63ca7e2ab6ada90",
+    "localSha256": "705542127c3d899c0a074e0ac0233371ec3a3e0c120263e4d63ca7e2ab6ada90",
+    "equal": true
+  },
+  {
+    "file": "dist/server/postgres/keys.d.ts",
+    "publicSha256": "94a5facb101db9809ead70527a609fa25e8a8771bc23b348970a505b3f79fbb7",
+    "localSha256": "94a5facb101db9809ead70527a609fa25e8a8771bc23b348970a505b3f79fbb7",
+    "equal": true
+  },
+  {
+    "file": "dist/server/postgres/keys.js",
+    "publicSha256": "8e609bb71c20b858c77f0e9f90bb1319db8477b13f9f965f1a1e18524bf50881",
+    "localSha256": "8e609bb71c20b858c77f0e9f90bb1319db8477b13f9f965f1a1e18524bf50881",
+    "equal": true
+  },
+  {
+    "file": "dist/server/postgres/migrate.d.ts",
+    "publicSha256": "df8dd674df4dabaa4e86590529ff73ec21325d6208092e5b98d2d14e1f92dbcd",
+    "localSha256": "df8dd674df4dabaa4e86590529ff73ec21325d6208092e5b98d2d14e1f92dbcd",
+    "equal": true
+  },
+  {
+    "file": "dist/server/postgres/migrate.js",
+    "publicSha256": "55f8a4ea6e8933eefab127bbedce82e2c3a5d1e0626176d6d04d985afc5881eb",
+    "localSha256": "55f8a4ea6e8933eefab127bbedce82e2c3a5d1e0626176d6d04d985afc5881eb",
+    "equal": true
+  },
+  {
+    "file": "dist/server/postgres/migrations/0000_brainy_wraith.sql",
+    "publicSha256": "a139d522f8a2b32fa937414f917c3a30a5a11db134553cbe0f5556f66bdb5d64",
+    "localSha256": "a139d522f8a2b32fa937414f917c3a30a5a11db134553cbe0f5556f66bdb5d64",
+    "equal": true
+  },
+  {
+    "file": "dist/server/postgres/migrations/0001_round_garia.sql",
+    "publicSha256": "109d200d5b77287350bb9d90fecf749a3553e1a606cac4f0c5036d3d7b8f4211",
+    "localSha256": "109d200d5b77287350bb9d90fecf749a3553e1a606cac4f0c5036d3d7b8f4211",
+    "equal": true
+  },
+  {
+    "file": "dist/server/postgres/migrations/0002_outgoing_night_thrasher.sql",
+    "publicSha256": "8f67560970841da2d258cc8d1052e37edc08bb74aee9d4bbd4e773b2a2174de4",
+    "localSha256": "8f67560970841da2d258cc8d1052e37edc08bb74aee9d4bbd4e773b2a2174de4",
+    "equal": true
+  },
+  {
+    "file": "dist/server/postgres/migrations/0003_vault_items.sql",
+    "publicSha256": "52fbb59a9dac81a9664cf2b584e8d15b549f4fa85eb4cf48d700c5d035e2753f",
+    "localSha256": "52fbb59a9dac81a9664cf2b584e8d15b549f4fa85eb4cf48d700c5d035e2753f",
+    "equal": true
+  },
+  {
+    "file": "dist/server/postgres/migrations/0004_vault_lifecycle.sql",
+    "publicSha256": "acd25ae34cacaedca2317ed09169c2a78b6316941def8cbb9ac02ce3a93950ae",
+    "localSha256": "acd25ae34cacaedca2317ed09169c2a78b6316941def8cbb9ac02ce3a93950ae",
+    "equal": true
+  },
+  {
+    "file": "dist/server/postgres/migrations/0005_vault_lifecycle_backfill.sql",
+    "publicSha256": "a61d7c6a6013c02159bf3a0e000f129dd52a1f7bb20b208a370e65d4e6f2c406",
+    "localSha256": "a61d7c6a6013c02159bf3a0e000f129dd52a1f7bb20b208a370e65d4e6f2c406",
+    "equal": true
+  },
+  {
+    "file": "dist/server/postgres/migrations/0006_job_cancellation.sql",
+    "publicSha256": "a9658974ca38dc2290e10ee312885027ac8612724e0133334000a50926103048",
+    "localSha256": "a9658974ca38dc2290e10ee312885027ac8612724e0133334000a50926103048",
+    "equal": true
+  },
+  {
+    "file": "dist/server/postgres/migrations/0007_job_answers.sql",
+    "publicSha256": "2be6a4dffee75c8fbb72511bd83b3f5709c1536b40c5dcf36327274ba78aaa24",
+    "localSha256": "2be6a4dffee75c8fbb72511bd83b3f5709c1536b40c5dcf36327274ba78aaa24",
+    "equal": true
+  },
+  {
+    "file": "dist/server/postgres/migrations/0008_job_effects.sql",
+    "publicSha256": "b0a98bd65793b437a329c6ee3c7c298b485642537df38d8282eb1ec96387f222",
+    "localSha256": "b0a98bd65793b437a329c6ee3c7c298b485642537df38d8282eb1ec96387f222",
+    "equal": true
+  },
+  {
+    "file": "dist/server/postgres/migrations/0009_vault_item_grants.sql",
+    "publicSha256": "feaee98eae0a82250979726ed23521d3099bb643dc1e229900d0c593ee2fcf2e",
+    "localSha256": "feaee98eae0a82250979726ed23521d3099bb643dc1e229900d0c593ee2fcf2e",
+    "equal": true
+  },
+  {
+    "file": "dist/server/postgres/migrations/0010_vault_entry.sql",
+    "publicSha256": "ccb607b2e46924cd3498f3afa59cf1a7ba91a6a1c8e22d28935d1a10020b5f6d",
+    "localSha256": "ccb607b2e46924cd3498f3afa59cf1a7ba91a6a1c8e22d28935d1a10020b5f6d",
+    "equal": true
+  },
+  {
+    "file": "dist/server/postgres/migrations/0011_browser_profiles.sql",
+    "publicSha256": "6b39f03b21560dadbbc6c3411323d62c65b8dfda22b6df1c1a7dcf836ea2a8c5",
+    "localSha256": "6b39f03b21560dadbbc6c3411323d62c65b8dfda22b6df1c1a7dcf836ea2a8c5",
+    "equal": true
+  },
+  {
+    "file": "dist/server/postgres/migrations/0012_connection_store.sql",
+    "publicSha256": "e39a7d3b94324d54cbd5dc59f722d02e6fefda8c1b61b2546876acccf0f7cf75",
+    "localSha256": "e39a7d3b94324d54cbd5dc59f722d02e6fefda8c1b61b2546876acccf0f7cf75",
+    "equal": true
+  },
+  {
+    "file": "dist/server/postgres/migrations/0013_agent_run_states.sql",
+    "publicSha256": "59b83959be6d1bf377e19daa1058d0819d5993a8d740d0ef96b116c0e6c23b3b",
+    "localSha256": "59b83959be6d1bf377e19daa1058d0819d5993a8d740d0ef96b116c0e6c23b3b",
+    "equal": true
+  },
+  {
+    "file": "dist/server/postgres/migrations/0014_conversation_records.sql",
+    "publicSha256": "1244cc9e4f1498a67f11280fc3fd91f68afbabcb3f3eed117b8c3b618646cefb",
+    "localSha256": "1244cc9e4f1498a67f11280fc3fd91f68afbabcb3f3eed117b8c3b618646cefb",
+    "equal": true
+  },
+  {
+    "file": "dist/server/postgres/migrations/meta/_journal.json",
+    "publicSha256": "aa7eee3ab5f1c401fef62efa1987d905ca0b53cccbf366e48fc7ecc571104956",
+    "localSha256": "aa7eee3ab5f1c401fef62efa1987d905ca0b53cccbf366e48fc7ecc571104956",
+    "equal": true
+  },
+  {
+    "file": "dist/server/postgres/paged-envelope.d.ts",
+    "publicSha256": "b6b41e318a9b18cb2624017217484fdce327c9444d45531076daca5bd1b9a0f0",
+    "localSha256": "b6b41e318a9b18cb2624017217484fdce327c9444d45531076daca5bd1b9a0f0",
+    "equal": true
+  },
+  {
+    "file": "dist/server/postgres/paged-envelope.js",
+    "publicSha256": "78f20809967c3fe93536fab8e74f535b2480f04d8084d3c415c2e7485dfdd2a6",
+    "localSha256": "78f20809967c3fe93536fab8e74f535b2480f04d8084d3c415c2e7485dfdd2a6",
+    "equal": true
+  },
+  {
+    "file": "dist/server/postgres/private-envelope.d.ts",
+    "publicSha256": "9cb96d9e842c8f98e6601c7ebf1cbebf9f160f0fd0b7a2a5efd2f80c80098aeb",
+    "localSha256": "9cb96d9e842c8f98e6601c7ebf1cbebf9f160f0fd0b7a2a5efd2f80c80098aeb",
+    "equal": true
+  },
+  {
+    "file": "dist/server/postgres/private-envelope.js",
+    "publicSha256": "ebed22d654f2d3a86af59f5352ff267d29d6e962659bd82d51a11288d3440299",
+    "localSha256": "ebed22d654f2d3a86af59f5352ff267d29d6e962659bd82d51a11288d3440299",
+    "equal": true
+  },
+  {
+    "file": "dist/server/submit.d.ts",
+    "publicSha256": "213b0dd78ee0a065a3a4b2493809c3446857efdd1f6aaec5cb02efb4defd8d40",
+    "localSha256": "213b0dd78ee0a065a3a4b2493809c3446857efdd1f6aaec5cb02efb4defd8d40",
+    "equal": true
+  },
+  {
+    "file": "dist/server/submit.js",
+    "publicSha256": "b5768a0ca8cb8b842bf35972f02a532bd4f678684c63ddc6adb0070265273279",
+    "localSha256": "b5768a0ca8cb8b842bf35972f02a532bd4f678684c63ddc6adb0070265273279",
+    "equal": true
+  },
+  {
+    "file": "dist/server/vault-entry.d.ts",
+    "publicSha256": "a9232a49f199bbfbd323f98a61732245d5d44bfcc8268cd9d3cbd078ec1a6dc6",
+    "localSha256": "a9232a49f199bbfbd323f98a61732245d5d44bfcc8268cd9d3cbd078ec1a6dc6",
+    "equal": true
+  },
+  {
+    "file": "dist/server/vault-entry.js",
+    "publicSha256": "2dcc8ac6b7956cc12de0fb87408ef75424b102b0579295124262d2b5b1c702c2",
+    "localSha256": "2dcc8ac6b7956cc12de0fb87408ef75424b102b0579295124262d2b5b1c702c2",
+    "equal": true
+  },
+  {
+    "file": "dist/server/vault-policy.d.ts",
+    "publicSha256": "9bb0a2bbdc0bf263e00d70eb891000d973e4d9f36d8fd9bb7f7de31ec5318c46",
+    "localSha256": "9bb0a2bbdc0bf263e00d70eb891000d973e4d9f36d8fd9bb7f7de31ec5318c46",
+    "equal": true
+  },
+  {
+    "file": "dist/server/vault-policy.js",
+    "publicSha256": "8e609bb71c20b858c77f0e9f90bb1319db8477b13f9f965f1a1e18524bf50881",
+    "localSha256": "8e609bb71c20b858c77f0e9f90bb1319db8477b13f9f965f1a1e18524bf50881",
+    "equal": true
+  },
+  {
+    "file": "dist/server/vault-request.d.ts",
+    "publicSha256": "f73728ba2be41abeb263f146f831469f7f9c7be834fdc2fabfbfba343dca9b3b",
+    "localSha256": "f73728ba2be41abeb263f146f831469f7f9c7be834fdc2fabfbfba343dca9b3b",
+    "equal": true
+  },
+  {
+    "file": "dist/server/vault-request.js",
+    "publicSha256": "1c5b0f5859df10fb845759800de4373fca9acb77b6fe6e085aef411d14131129",
+    "localSha256": "1c5b0f5859df10fb845759800de4373fca9acb77b6fe6e085aef411d14131129",
+    "equal": true
+  },
+  {
+    "file": "dist/server/vault-use.d.ts",
+    "publicSha256": "333b3836a2df615e15d82be6802f7a1f1aa50b9b6cf43141636564bd0811d6ab",
+    "localSha256": "333b3836a2df615e15d82be6802f7a1f1aa50b9b6cf43141636564bd0811d6ab",
+    "equal": true
+  },
+  {
+    "file": "dist/server/vault-use.js",
+    "publicSha256": "fc7223d4fb051cf68e622175bfb3d2ff2e5c5ac6f3694752b487f8ebe8be5d51",
+    "localSha256": "fc7223d4fb051cf68e622175bfb3d2ff2e5c5ac6f3694752b487f8ebe8be5d51",
+    "equal": true
+  }
+]

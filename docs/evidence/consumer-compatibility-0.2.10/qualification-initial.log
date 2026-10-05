@@ -1,0 +1,467 @@
+Running npm install --include=dev --no-audit --no-fund --foreground-scripts --loglevel=http (<external-consumers>/node-next-bqI0Lw)
+Running npm ci --include=dev --no-audit --no-fund --foreground-scripts --loglevel=http (<external-consumers>/node-next-bqI0Lw)
+Running /usr/bin/node node_modules/typescript/bin/tsc -p tsconfig.json (<external-consumers>/node-next-bqI0Lw)
+Running /usr/bin/node --input-type=module --eval 
+      import assert from 'node:assert/strict';
+      import { pathToFileURL } from 'node:url';
+      import { readFileSync } from 'node:fs';
+      const pkg = JSON.parse(readFileSync('node_modules/handrail-agent-sdk/package.json', 'utf8'));
+      const exported = {};
+      for (const path of Object.keys(pkg.exports)) {
+        const name = 'handrail-agent-sdk' + path.slice(1);
+        assert.ok(import.meta.resolve(name).startsWith(pathToFileURL(process.cwd() + '/node_modules/handrail-agent-sdk/').href));
+        exported[name] = Object.keys(await import(name));
+        assert.ok(exported[name].length > 0, name);
+      }
+      assert.ok(exported['handrail-agent-sdk/server'].includes('createJobAdmission'));
+      assert.ok(exported['handrail-agent-sdk/server/agents'].includes('createAgentRuntime'));
+      console.log(JSON.stringify(exported, null, 2));
+     (<external-consumers>/node-next-bqI0Lw)
+Running npm --version (<external-consumers>/node-next-bqI0Lw)
+Running npm install --include=dev --no-audit --no-fund --foreground-scripts --loglevel=http (<external-consumers>/bundler-explicit-provider-rs6QMn)
+Running npm ci --include=dev --no-audit --no-fund --foreground-scripts --loglevel=http (<external-consumers>/bundler-explicit-provider-rs6QMn)
+Running /usr/bin/node node_modules/typescript/bin/tsc -p tsconfig.json (<external-consumers>/bundler-explicit-provider-rs6QMn)
+Running /usr/bin/node --input-type=module --eval 
+      import assert from 'node:assert/strict';
+      import { pathToFileURL } from 'node:url';
+      import { readFileSync } from 'node:fs';
+      const pkg = JSON.parse(readFileSync('node_modules/handrail-agent-sdk/package.json', 'utf8'));
+      const exported = {};
+      for (const path of Object.keys(pkg.exports)) {
+        const name = 'handrail-agent-sdk' + path.slice(1);
+        assert.ok(import.meta.resolve(name).startsWith(pathToFileURL(process.cwd() + '/node_modules/handrail-agent-sdk/').href));
+        exported[name] = Object.keys(await import(name));
+        assert.ok(exported[name].length > 0, name);
+      }
+      assert.ok(exported['handrail-agent-sdk/server'].includes('createJobAdmission'));
+      assert.ok(exported['handrail-agent-sdk/server/agents'].includes('createAgentRuntime'));
+      console.log(JSON.stringify(exported, null, 2));
+     (<external-consumers>/bundler-explicit-provider-rs6QMn)
+Running npm --version (<external-consumers>/bundler-explicit-provider-rs6QMn)
+Running /usr/bin/node tests/run-local-postgres.mjs --installed-consumer <external-consumers>/node-next-bqI0Lw (<repository>)
+file://<repository>/tests/verify-git-install.mjs:34
+  if (!expectedFailure && result.status !== 0) throw Error(`${command} failed (${result.status})\n${result.stdout}\n${result.stderr}`);
+                                                     ^
+
+Error: /usr/bin/node failed (1)
+Fresh isolated PostgreSQL 15 cluster initialized; dedicated disposable database and non-superuser fixture role; connection values withheld.
+TAP version 13
+# (node:1812) SecurityWarning: The flag --allow-child-process must be used with extreme caution. It could invalidate the permission model.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: unchanged original 85, requested 92 and current 100 catalogs reach the actual Runner model boundary
+    # Subtest: 85 unchanged tools
+    ok 1 - 85 unchanged tools
+      ---
+      duration_ms: 1513.928867
+      type: 'test'
+      ...
+    # Subtest: 92 unchanged tools
+    ok 2 - 92 unchanged tools
+      ---
+      duration_ms: 1304.978198
+      type: 'test'
+      ...
+    # Subtest: 100 unchanged tools
+    ok 3 - 100 unchanged tools
+      ---
+      duration_ms: 1296.066839
+      type: 'test'
+      ...
+    1..3
+ok 1 - unchanged original 85, requested 92 and current 100 catalogs reach the actual Runner model boundary
+  ---
+  duration_ms: 4116.715474
+  type: 'test'
+  ...
+# Subtest: all retained historical 22/26 failure schemas reach Runner unchanged
+    # Subtest: mills-catalog
+    ok 1 - mills-catalog
+      ---
+      duration_ms: 483.406791
+      type: 'test'
+      ...
+    # Subtest: current-main-catalog
+    ok 2 - current-main-catalog
+      ---
+      duration_ms: 598.736719
+      type: 'test'
+      ...
+    1..2
+ok 2 - all retained historical 22/26 failure schemas reach Runner unchanged
+  ---
+  duration_ms: 1083.32428
+  type: 'test'
+  ...
+# Subtest: full catalog read/effects preserve omissions, explicit null and nested defaults; duplicate delivery has one effect per call
+ok 3 - full catalog read/effects preserve omissions, explicit null and nested defaults; duplicate delivery has one effect per call
+  ---
+  duration_ms: 1952.75687
+  type: 'test'
+  ...
+# Subtest: invalid catalog arguments never reach approval, authorized IO or effects
+    # Subtest: calendar_update_event {"eventId":"12345678-1234-4234-8234-123456789abc","expectedVersion":1,"patch":{}}
+    ok 1 - calendar_update_event {"eventId":"12345678-1234-4234-8234-123456789abc","expectedVersion":1,"patch":{}}
+      ---
+      duration_ms: 205.683966
+      type: 'test'
+      ...
+    # Subtest: calendar_update_event {"eventId":"bad-uuid","expectedVersion":1,"patch":{"title":"Changed"}}
+    ok 2 - calendar_update_event {"eventId":"bad-uuid","expectedVersion":1,"patch":{"title":"Changed"}}
+      ---
+      duration_ms: 220.053465
+      type: 'test'
+      ...
+    # Subtest: calendar_update_event {"eventId":"12345678-1234-4234-8234-123456789abc","expectedVersion":"1","patch":{"title":"Changed"}}
+    ok 3 - calendar_update_event {"eventId":"12345678-1234-4234-8234-123456789abc","expectedVersion":"1","patch":{"title":"Changed"}}
+      ---
+      duration_ms: 211.826372
+      type: 'test'
+      ...
+    # Subtest: calendar_update_event {"eventId":"12345678-1234-4234-8234-123456789abc","expectedVersion":1,"patch":{"title":null}}
+    ok 4 - calendar_update_event {"eventId":"12345678-1234-4234-8234-123456789abc","expectedVersion":1,"patch":{"title":null}}
+      ---
+      duration_ms: 224.68111
+      type: 'test'
+      ...
+    # Subtest: calendar_update_event {"eventId":"12345678-1234-4234-8234-123456789abc","expectedVersion":1,"patch":{"title":""}}
+    ok 5 - calendar_update_event {"eventId":"12345678-1234-4234-8234-123456789abc","expectedVersion":1,"patch":{"title":""}}
+      ---
+      duration_ms: 173.098535
+      type: 'test'
+      ...
+    # Subtest: calendar_update_event {"eventId":"12345678-1234-4234-8234-123456789abc","expectedVersion":1,"patch":{"title":"xxxxxxxxxxxx
+    ok 6 - calendar_update_event {"eventId":"12345678-1234-4234-8234-123456789abc","expectedVersion":1,"patch":{"title":"xxxxxxxxxxxx
+      ---
+      duration_ms: 199.44442
+      type: 'test'
+      ...
+    # Subtest: calendar_update_event {"eventId":"12345678-1234-4234-8234-123456789abc","expectedVersion":1,"patch":{"accentHex":"red"}}
+    ok 7 - calendar_update_event {"eventId":"12345678-1234-4234-8234-123456789abc","expectedVersion":1,"patch":{"accentHex":"red"}}
+      ---
+      duration_ms: 182.054798
+      type: 'test'
+      ...
+    # Subtest: calendar_update_event {"eventId":"12345678-1234-4234-8234-123456789abc","expectedVersion":1,"patch":{"startsAt":"tomorrow"
+    ok 8 - calendar_update_event {"eventId":"12345678-1234-4234-8234-123456789abc","expectedVersion":1,"patch":{"startsAt":"tomorrow"
+      ---
+      duration_ms: 183.403211
+      type: 'test'
+      ...
+    # Subtest: calendar_update_event {"eventId":"12345678-1234-4234-8234-123456789abc","expectedVersion":1,"patch":{"recurrence":{"freque
+    ok 9 - calendar_update_event {"eventId":"12345678-1234-4234-8234-123456789abc","expectedVersion":1,"patch":{"recurrence":{"freque
+      ---
+      duration_ms: 168.834957
+      type: 'test'
+      ...
+    # Subtest: calendar_update_event {"eventId":"12345678-1234-4234-8234-123456789abc","expectedVersion":1,"patch":{"recurrence":{"freque
+    ok 10 - calendar_update_event {"eventId":"12345678-1234-4234-8234-123456789abc","expectedVersion":1,"patch":{"recurrence":{"freque
+      ---
+      duration_ms: 189.036327
+      type: 'test'
+      ...
+    # Subtest: calendar_update_event {"eventId":"12345678-1234-4234-8234-123456789abc","expectedVersion":1,"patch":{"unknown":true}}
+    ok 11 - calendar_update_event {"eventId":"12345678-1234-4234-8234-123456789abc","expectedVersion":1,"patch":{"unknown":true}}
+      ---
+      duration_ms: 218.786905
+      type: 'test'
+      ...
+    # Subtest: assistance_create_reminder {"title":"Synthetic fixture only","localDate":"2027-02-29","localTime":"17:00","timeZone":"America/C
+    ok 12 - assistance_create_reminder {"title":"Synthetic fixture only","localDate":"2027-02-29","localTime":"17:00","timeZone":"America/C
+      ---
+      duration_ms: 180.306985
+      type: 'test'
+      ...
+    # Subtest: assistance_create_reminder {"title":"Synthetic fixture only","localDate":"2028-02-29","localTime":"25:00","timeZone":"America/C
+    ok 13 - assistance_create_reminder {"title":"Synthetic fixture only","localDate":"2028-02-29","localTime":"25:00","timeZone":"America/C
+      ---
+      duration_ms: 176.232189
+      type: 'test'
+      ...
+    # Subtest: travel_update_trip {"id":"12345678-1234-4234-8234-123456789abc","expectedVersion":1,"patch":{"travelers":["synthetic","
+    ok 14 - travel_update_trip {"id":"12345678-1234-4234-8234-123456789abc","expectedVersion":1,"patch":{"travelers":["synthetic","
+      ---
+      duration_ms: 210.923384
+      type: 'test'
+      ...
+    # Subtest: travel_update_trip {"id":"12345678-1234-4234-8234-123456789abc","expectedVersion":1,"patch":{"travelers":[null]}}
+    ok 15 - travel_update_trip {"id":"12345678-1234-4234-8234-123456789abc","expectedVersion":1,"patch":{"travelers":[null]}}
+      ---
+      duration_ms: 189.34817
+      type: 'test'
+      ...
+    # Subtest: travel_update_trip {"id":"12345678-1234-4234-8234-123456789abc","expectedVersion":0,"patch":{"destination":null}}
+    ok 16 - travel_update_trip {"id":"12345678-1234-4234-8234-123456789abc","expectedVersion":0,"patch":{"destination":null}}
+      ---
+      duration_ms: 209.429537
+      type: 'test'
+      ...
+    # Subtest: travel_update_trip {"id":"12345678-1234-9234-8234-123456789abc","expectedVersion":1,"patch":{"destination":null}}
+    ok 17 - travel_update_trip {"id":"12345678-1234-9234-8234-123456789abc","expectedVersion":1,"patch":{"destination":null}}
+      ---
+      duration_ms: 178.942744
+      type: 'test'
+      ...
+    # Subtest: assistance_list null
+    ok 18 - assistance_list null
+      ---
+      duration_ms: 174.144542
+      type: 'test'
+      ...
+    # Subtest: assistance_list []
+    ok 19 - assistance_list []
+      ---
+      duration_ms: 175.846273
+      type: 'test'
+      ...
+    # Subtest: assistance_list {"unexpected":1}
+    ok 20 - assistance_list {"unexpected":1}
+      ---
+      duration_ms: 168.099587
+      type: 'test'
+      ...
+    # Subtest: malformed JSON
+    ok 21 - malformed JSON
+      ---
+      duration_ms: 223.019847
+      type: 'test'
+      ...
+    1..21
+ok 4 - invalid catalog arguments never reach approval, authorized IO or effects
+  ---
+  duration_ms: 4067.648108
+  type: 'test'
+  ...
+# Subtest: original business refinement remains authoritative before effects
+ok 5 - original business refinement remains authoritative before effects
+  ---
+  duration_ms: 1482.383239
+  type: 'test'
+  ...
+# Subtest: catalog approval recovery revalidates and retains null/omission and effect identity
+ok 6 - catalog approval recovery revalidates and retains null/omission and effect identity
+  ---
+  duration_ms: 1452.949113
+  type: 'test'
+  ...
+# Subtest: catalog rejection, durable cancellation and scope revocation prevent effects
+    # Subtest: reject
+    ok 1 - reject
+      ---
+      duration_ms: 1266.037074
+      type: 'test'
+      ...
+    # Subtest: cancel
+    ok 2 - cancel
+      ---
+      duration_ms: 1337.839876
+      type: 'test'
+      ...
+    # Subtest: scope
+    ok 3 - scope
+      ---
+      duration_ms: 1344.80415
+      type: 'test'
+      ...
+    1..3
+ok 7 - catalog rejection, durable cancellation and scope revocation prevent effects
+  ---
+  duration_ms: 3949.443443
+  type: 'test'
+  ...
+# Subtest: catalog effect result recovery and repeated model call ID do not duplicate dispatch
+ok 8 - catalog effect result recovery and repeated model call ID do not duplicate dispatch
+  ---
+  duration_ms: 1633.139781
+  type: 'test'
+  ...
+# Subtest: reused catalog call ID with different arguments cannot dispatch another effect
+ok 9 - reused catalog call ID with different arguments cannot dispatch another effect
+  ---
+  duration_ms: 1330.460818
+  type: 'test'
+  ...
+# Subtest: non-Mills laboratory schema executes refs, allOf, oneOf, arrays and open patterned metadata without rewriting
+ok 10 - non-Mills laboratory schema executes refs, allOf, oneOf, arrays and open patterned metadata without rewriting
+  ---
+  duration_ms: 251.598798
+  type: 'test'
+  ...
+# Subtest: invalid non-Mills allOf/oneOf input never reaches the effect boundary
+ok 11 - invalid non-Mills allOf/oneOf input never reaches the effect boundary
+  ---
+  duration_ms: 163.550243
+  type: 'test'
+  ...
+# Subtest: unsupported schema semantics fail construction; schema and input cannot be silently mutated
+ok 12 - unsupported schema semantics fail construction; schema and input cannot be silently mutated
+  ---
+  duration_ms: 81.673796
+  type: 'test'
+  ...
+# Subtest: gateway transport uses actual Runner, durable output and reconnect cursor; disconnect does not Stop
+ok 13 - gateway transport uses actual Runner, durable output and reconnect cursor; disconnect does not Stop
+  ---
+  duration_ms: 422.66696
+  type: 'test'
+  ...
+# Subtest: transport explicit Stop is durable; changed identity cannot reconnect or cancel
+ok 14 - transport explicit Stop is durable; changed identity cannot reconnect or cancel
+  ---
+  duration_ms: 194.213285
+  type: 'test'
+  ...
+# Subtest: approval wait remains durable on reconnect; only verified answer can resume execution
+ok 15 - approval wait remains durable on reconnect; only verified answer can resume execution
+  ---
+  duration_ms: 250.540351
+  type: 'test'
+  ...
+# Subtest: standard reader emits validated native protocol frames and stable replay identities
+ok 16 - standard reader emits validated native protocol frames and stable replay identities
+  ---
+  duration_ms: 431.887759
+  type: 'test'
+  ...
+# Subtest: application catalog adapter preserves validation, read/mutation classification and stable native tool identity
+ok 17 - application catalog adapter preserves validation, read/mutation classification and stable native tool identity
+  ---
+  duration_ms: 35.737813
+  type: 'test'
+  ...
+# Subtest: existing assistant durable wrapper consumes the Agent transport with native protocol checkpoints
+ok 18 - existing assistant durable wrapper consumes the Agent transport with native protocol checkpoints
+  ---
+  duration_ms: 424.182996
+  type: 'test'
+  ...
+# Subtest: application JSON-schema catalog executes read/effect/read through Runner and checkpoint reader
+ok 19 - application JSON-schema catalog executes read/effect/read through Runner and checkpoint reader
+  ---
+  duration_ms: 406.941207
+  type: 'test'
+  ...
+# Subtest: installed assistance and notification delivery share public durable effects with no duplicate send
+ok 20 - installed assistance and notification delivery share public durable effects with no duplicate send
+  ---
+  duration_ms: 207.669149
+  type: 'test'
+  ...
+# Subtest: explicit Stop projects its durable reason (approval wait=false)
+ok 21 - explicit Stop projects its durable reason (approval wait=false)
+  ---
+  duration_ms: 200.237434
+  type: 'test'
+  ...
+# Subtest: explicit Stop projects its durable reason (approval wait=true)
+ok 22 - explicit Stop projects its durable reason (approval wait=true)
+  ---
+  duration_ms: 283.949787
+  type: 'test'
+  ...
+# (node:1930) SecurityWarning: The flag --allow-child-process must be used with extreme caution. It could invalidate the permission model.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: canonical long conversation survives bounded context, upstream Runner session and compaction with exact pinned roles
+ok 23 - canonical long conversation survives bounded context, upstream Runner session and compaction with exact pinned roles
+  ---
+  duration_ms: 635.912796
+  type: 'test'
+  ...
+# Subtest: memory revise/forget, stale reads, scope isolation and authorization are durable
+ok 24 - memory revise/forget, stale reads, scope isolation and authorization are durable
+  ---
+  duration_ms: 138.723183
+  type: 'test'
+  ...
+# Subtest: personal-assistant: same durable composition replies while delegated native work survives fresh-process callback/replay
+ok 25 - personal-assistant: same durable composition replies while delegated native work survives fresh-process callback/replay
+  ---
+  duration_ms: 2212.153574
+  type: 'test'
+  ...
+# Subtest: industrial-inspection: same durable composition replies while delegated native work survives fresh-process callback/replay
+ok 26 - industrial-inspection: same durable composition replies while delegated native work survives fresh-process callback/replay
+  ---
+  duration_ms: 2081.530805
+  type: 'test'
+  ...
+# Subtest: delegated executor preserves native receipt and uncertainty; correction and revoked callback cannot deliver
+ok 27 - delegated executor preserves native receipt and uncertainty; correction and revoked callback cannot deliver
+  ---
+  duration_ms: 106.957817
+  type: 'test'
+  ...
+# Subtest: large RunState is paged under explicit quota; actual Runner and encrypted reload exceed 64KiB without raising envelope bound
+ok 28 - large RunState is paged under explicit quota; actual Runner and encrypted reload exceed 64KiB without raising envelope bound
+  ---
+  duration_ms: 1128.454287
+  type: 'test'
+  ...
+# Subtest: real Runner delegates through existing durable effect ledger and returns without awaiting native work
+ok 29 - real Runner delegates through existing durable effect ledger and returns without awaiting native work
+  ---
+  duration_ms: 1147.939094
+  type: 'test'
+  ...
+# Subtest: compaction racing a correction cannot replace newer context; overfull pins fail explicitly
+ok 30 - compaction racing a correction cannot replace newer context; overfull pins fail explicitly
+  ---
+  duration_ms: 125.200892
+  type: 'test'
+  ...
+# Subtest: reply committed before job checkpoint failure recovers its original receipt without a second canonical reply
+ok 31 - reply committed before job checkpoint failure recovers its original receipt without a second canonical reply
+  ---
+  duration_ms: 191.989673
+  type: 'test'
+  ...
+# Subtest: pause/wait observations keep work; concurrent terminal callbacks deliver at most once and cancelled work cannot reopen
+ok 32 - pause/wait observations keep work; concurrent terminal callbacks deliver at most once and cancelled work cannot reopen
+  ---
+  duration_ms: 111.210088
+  type: 'test'
+  ...
+# (node:2030) SecurityWarning: The flag --allow-child-process must be used with extreme caution. It could invalidate the permission model.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# file://<external-consumers>/node-next-bqI0Lw/guard.mjs:16
+#     if (!relative.startsWith(`node_modules${sep}`) && !inputs.has(relative)) throw Error('INSTALLED_BOUNDARY_VIOLATION');
+#                                                                                    ^
+# Error: INSTALLED_BOUNDARY_VIOLATION
+#     at resolve (file://<external-consumers>/node-next-bqI0Lw/guard.mjs:16:84)
+#     at nextStep (node:internal/modules/customization_hooks:189:26)
+#     at resolveWithHooks (node:internal/modules/customization_hooks:417:10)
+#     at ModuleLoader.resolveSync (node:internal/modules/esm/loader:803:14)
+#     at ModuleLoader.resolve (node:internal/modules/esm/loader:719:19)
+#     at ModuleLoader.getModuleJobForImport (node:internal/modules/esm/loader:320:38)
+#     at ModuleJob._link (node:internal/modules/esm/module_job:182:49)
+#     at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+# Node.js v22.23.1
+# Subtest: runtime.test.mjs
+not ok 3 - runtime.test.mjs
+  ---
+  duration_ms: 215.294746
+  type: 'test'
+  location: '<external-consumers>/node-next-bqI0Lw/runtime.test.mjs:1:1'
+  failureType: 'testCodeFailure'
+  exitCode: 1
+  signal: ~
+  error: 'test failed'
+  code: 'ERR_TEST_FAILURE'
+  ...
+1..33
+# tests 62
+# suites 0
+# pass 61
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 34351.562443
+Owned temporary PostgreSQL cluster stopped.
+
+(node:1806) SecurityWarning: The flag --allow-child-process must be used with extreme caution. It could invalidate the permission model.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+    at run (file://<repository>/tests/verify-git-install.mjs:34:54)
+    at file://<repository>/tests/verify-git-install.mjs:154:19
+
+Node.js v22.23.1

@@ -1,0 +1,248 @@
+{
+  "handrail-agent-sdk": {
+    "name": "handrail-agent-sdk",
+    "version": "0.2.10",
+    "dependencies": {
+      "@handrail/ai-assistant": "git+https://github.com/c0x65o/handrail-sdk-ai-assistant-js.git#5c59f2f71830eb1f23cec28d56db51ca23d7cc3e",
+      "@openai/agents": "0.18.0",
+      "ajv": "8.20.0",
+      "ajv-formats": "3.0.1",
+      "drizzle-orm": "0.45.3",
+      "pg": "8.23.0",
+      "zod": "4.3.6"
+    },
+    "scripts": {
+      "build:test-browser": "tsc -p tests/tsconfig.browser.json",
+      "test:browser": "npm run build:test-browser && node --test --test-concurrency=1 --test-reporter=tap tests/browser.test.mjs",
+      "test:browser-boundary": "npm run build:test-browser && node --test --test-concurrency=1 --test-reporter=tap tests/browser-boundary.test.mjs",
+      "build": "tsc -p tsconfig.json && node scripts/build-postgres-assets.mjs",
+      "prepare": "npm run build",
+      "pretest": "npm run build && npm run typecheck:acceptance && npm run build:test-postgres && npm run build:reference",
+      "test": "node --test --test-concurrency=1 --test-reporter=tap tests/contracts/job.test.mjs tests/contracts/connection.test.mjs tests/contracts/vault.test.mjs tests/contracts/browser.test.mjs tests/packaging.test.mjs tests/git-lock.test.mjs tests/acceptance.test.mjs",
+      "build:test-postgres": "tsc -p tests/tsconfig.postgres.json",
+      "test:postgres": "npm run build:test-postgres && node --test --test-concurrency=1 --test-reporter=tap tests/postgres.test.mjs",
+      "typecheck:acceptance": "tsc -p tests/fixtures/tsconfig.acceptance.json",
+      "check:acceptance": "npm run build && npm run typecheck:acceptance && node scripts/validate-convergence-v1.mjs && node --test --test-concurrency=1 tests/acceptance.test.mjs",
+      "build:reference": "tsc -p reference/tsconfig.json",
+      "db:generate": "drizzle-kit generate",
+      "db:migrate": "npm run build:reference && node .reference-build/reference/node/db/migrate.js",
+      "test:journal": "npm run build && npm run build:reference && npm run build:test-postgres && node --test --test-concurrency=1 --test-reporter=tap tests/job-journal.test.mjs",
+      "test:submit": "npm run build:reference && npm run build:test-postgres && node --test --test-concurrency=1 --test-reporter=tap tests/submit.test.mjs",
+      "test:lease": "npm run build:reference && npm run build:test-postgres && node --test --test-concurrency=1 --test-reporter=tap tests/job-lease.test.mjs",
+      "test:cancel": "npm run build:reference && npm run build:test-postgres && node --test --test-concurrency=1 --test-reporter=tap tests/job-cancel.test.mjs",
+      "test:answer": "npm run build:reference && npm run build:test-postgres && node --test --test-concurrency=1 --test-reporter=tap tests/job-answer.test.mjs",
+      "build:test-reference": "tsc -p tests/tsconfig.reference.json",
+      "test:vault-lifecycle": "npm run build:test-reference && node --test --test-concurrency=1 --test-reporter=tap .reference-build/tests/reference/vault-lifecycle.test.js",
+      "test:vault": "npm run build:test-reference && node --test --test-concurrency=1 --test-reporter=tap .reference-build/tests/reference/vault-store.test.js",
+      "test:effects": "npm run build:reference && npm run build:test-postgres && node --test --test-concurrency=1 --test-reporter=tap tests/effects.test.mjs",
+      "test:vault-use": "npm run build:reference && npm run build:test-postgres && node --test --test-concurrency=1 --test-reporter=tap tests/vault-use.test.mjs",
+      "test:payment-vault": "npm run build:reference && npm run build:test-postgres && node --test --test-concurrency=1 --test-reporter=tap tests/payment-vault.test.mjs",
+      "test:vault-entry": "npm run build:reference && npm run build:test-postgres && node --test --test-concurrency=1 --test-reporter=tap tests/vault-entry.test.mjs",
+      "test:vault-request": "tsc -p tests/tsconfig.vault-request.json && node --test --test-concurrency=1 --test-reporter=tap .reference-build/tests/server/vault-request.test.js",
+      "test:browser-profile": "npm run build:test-reference && node --test --test-concurrency=1 --test-reporter=tap .reference-build/tests/reference/browser-profile-store.test.js",
+      "test:connection-store": "npm run build:test-reference && node --test --test-concurrency=1 --test-reporter=tap .reference-build/tests/reference/connection-store.test.js",
+      "test:agents": "npm run build && npm run build:reference && npm run build:test-postgres && node --test --test-concurrency=1 --test-reporter=tap tests/agent-runtime.test.mjs",
+      "test:assistance": "npm run build && npm run build:reference && npm run build:test-postgres && node --test --test-concurrency=1 --test-reporter=tap tests/assistance.test.mjs tests/agent-transport.test.mjs",
+      "test:conversation": "npm run build && node --test --test-concurrency=1 tests/fixtures/installed/conversation.test.mjs",
+      "test:observer-recovery": "npm run build && node --test --test-concurrency=1 tests/observer-recovery.test.mjs tests/observer-recovery-postgres.test.mjs"
+    },
+    "exports": {
+      ".": {
+        "types": "./dist/index.d.ts",
+        "import": "./dist/index.js"
+      },
+      "./server": {
+        "types": "./dist/server/index.d.ts",
+        "import": "./dist/server/index.js"
+      },
+      "./server/agents": {
+        "types": "./dist/server/agent-runtime.d.ts",
+        "import": "./dist/server/agent-runtime.js"
+      },
+      "./server/assistance": {
+        "types": "./dist/server/assistance.d.ts",
+        "import": "./dist/server/assistance.js"
+      },
+      "./server/assistance/postgres": {
+        "types": "./dist/server/assistance-postgres.d.ts",
+        "import": "./dist/server/assistance-postgres.js"
+      },
+      "./server/assistance/notifications": {
+        "types": "./dist/server/assistance-notifications.d.ts",
+        "import": "./dist/server/assistance-notifications.js"
+      },
+      "./server/handrail-feedback": {
+        "types": "./dist/server/handrail-feedback.d.ts",
+        "import": "./dist/server/handrail-feedback.js"
+      },
+      "./server/application": {
+        "types": "./dist/server/agent-transport.d.ts",
+        "import": "./dist/server/agent-transport.js"
+      },
+      "./server/application-tools": {
+        "types": "./dist/server/application-tools.d.ts",
+        "import": "./dist/server/application-tools.js"
+      },
+      "./server/postgres": {
+        "types": "./dist/server/postgres/index.d.ts",
+        "import": "./dist/server/postgres/index.js"
+      },
+      "./server/conversation": {
+        "types": "./dist/server/conversation.d.ts",
+        "import": "./dist/server/conversation.js"
+      }
+    }
+  },
+  "@handrail/ai-assistant": {
+    "name": "@handrail/ai-assistant",
+    "version": "0.2.75",
+    "dependencies": {
+      "ajv": "^8.17.1",
+      "fflate": "0.8.3"
+    },
+    "scripts": {
+      "build": "node -e \"require('node:fs').rmSync('dist', { recursive: true, force: true })\" && tsc -p tsconfig.build.json",
+      "prepare": "npm run build",
+      "check:examples": "npm run build && node scripts/check-readme-examples.mjs",
+      "check:adoption-tool": "node --test test/adopt-cli.test.mjs",
+      "check:protected-web-search-example": "npm run build && node scripts/check-protected-web-search-example.mjs",
+      "check:package-contract": "npm run build && node --test test/package-contract.test.mjs",
+      "check:public-surface": "node scripts/check-provider-public-surface.mjs",
+      "check:vite-consumer": "npm run build && node scripts/check-vite-consumer.mjs && node scripts/check-browser-attachments-vite.mjs",
+      "typecheck": "tsc -p tsconfig.json",
+      "test": "vitest run",
+      "lint": "eslint .",
+      "prepack": "npm run build",
+      "pack:dry-run": "npm pack --dry-run --json",
+      "check:markdown-layout": "npm run build && node scripts/check-markdown-layout.mjs",
+      "check:jump-polling": "npm run build && node scripts/check-jump-polling-browser.mjs"
+    },
+    "exports": {
+      ".": {
+        "types": "./dist/index.d.ts",
+        "import": "./dist/index.js",
+        "default": "./dist/index.js"
+      },
+      "./browser": {
+        "types": "./dist/browser/index.d.ts",
+        "import": "./dist/browser/index.js",
+        "default": "./dist/browser/index.js"
+      },
+      "./client": {
+        "types": "./dist/client/index.d.ts",
+        "import": "./dist/client/index.js",
+        "default": "./dist/client/index.js"
+      },
+      "./conformance": {
+        "types": "./dist/conformance/index.d.ts",
+        "import": "./dist/conformance/index.js",
+        "default": "./dist/conformance/index.js"
+      },
+      "./react": {
+        "types": "./dist/react/index.d.ts",
+        "import": "./dist/react/index.js",
+        "default": "./dist/react/index.js"
+      },
+      "./react/headless": {
+        "types": "./dist/react-headless/index.d.ts",
+        "import": "./dist/react-headless/index.js",
+        "default": "./dist/react-headless/index.js"
+      },
+      "./react/styled": {
+        "types": "./dist/react-styled/index.d.ts",
+        "import": "./dist/react-styled/index.js",
+        "default": "./dist/react-styled/index.js"
+      },
+      "./server/managed": {
+        "types": "./dist/server/managed.d.ts",
+        "import": "./dist/server/managed.js",
+        "default": "./dist/server/managed.js"
+      },
+      "./server/application-gateway": {
+        "types": "./dist/server/application-gateway.d.ts",
+        "import": "./dist/server/application-gateway.js",
+        "default": "./dist/server/application-gateway.js"
+      },
+      "./server/application": {
+        "types": "./dist/server/application.d.ts",
+        "import": "./dist/server/application.js",
+        "default": "./dist/server/application.js"
+      },
+      "./server/assistant": {
+        "types": "./dist/server/assistant.d.ts",
+        "import": "./dist/server/assistant.js",
+        "default": "./dist/server/assistant.js"
+      },
+      "./server/trusted-server": {
+        "types": "./dist/server/trusted-server.d.ts",
+        "import": "./dist/server/trusted-server.js",
+        "default": "./dist/server/trusted-server.js"
+      },
+      "./server/assistant-context": {
+        "types": "./dist/server/assistant-context.d.ts",
+        "import": "./dist/server/assistant-context.js",
+        "default": "./dist/server/assistant-context.js"
+      },
+      "./server/usage-control": {
+        "types": "./dist/server/usage-control.d.ts",
+        "import": "./dist/server/usage-control.js",
+        "default": "./dist/server/usage-control.js"
+      },
+      "./connectors/mcp": {
+        "types": "./dist/mcp/index.d.ts",
+        "import": "./dist/mcp/index.js",
+        "default": "./dist/mcp/index.js"
+      },
+      "./adapters/spartan-aegis": {
+        "types": "./dist/adapters/spartan-aegis.d.ts",
+        "import": "./dist/adapters/spartan-aegis.js",
+        "default": "./dist/adapters/spartan-aegis.js"
+      },
+      "./adapters/mills-family": {
+        "types": "./dist/adapters/mills-family.d.ts",
+        "import": "./dist/adapters/mills-family.js",
+        "default": "./dist/adapters/mills-family.js"
+      },
+      "./persistence/postgres": {
+        "types": "./dist/postgres/index.d.ts",
+        "import": "./dist/postgres/index.js",
+        "default": "./dist/postgres/index.js"
+      },
+      "./providers/openai": {
+        "types": "./dist/providers/openai.d.ts",
+        "import": "./dist/providers/openai.js",
+        "default": "./dist/providers/openai.js"
+      },
+      "./providers/openai/transcription": {
+        "types": "./dist/providers/openai-transcription.d.ts",
+        "import": "./dist/providers/openai-transcription.js",
+        "default": "./dist/providers/openai-transcription.js"
+      },
+      "./providers/openai/realtime": {
+        "types": "./dist/providers/openai-realtime.d.ts",
+        "import": "./dist/providers/openai-realtime.js",
+        "default": "./dist/providers/openai-realtime.js"
+      },
+      "./providers/anthropic": {
+        "types": "./dist/providers/anthropic.d.ts",
+        "import": "./dist/providers/anthropic.js",
+        "default": "./dist/providers/anthropic.js"
+      },
+      "./providers/gemini": {
+        "types": "./dist/providers/gemini.d.ts",
+        "import": "./dist/providers/gemini.js",
+        "default": "./dist/providers/gemini.js"
+      },
+      "./providers/xai": {
+        "types": "./dist/providers/xai.d.ts",
+        "import": "./dist/providers/xai.js",
+        "default": "./dist/providers/xai.js"
+      },
+      "./react/markdown": {
+        "types": "./dist/react-markdown/index.d.ts",
+        "import": "./dist/react-markdown/index.js",
+        "default": "./dist/react-markdown/index.js"
+      }
+    }
+  }
+}

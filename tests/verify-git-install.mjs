@@ -5,7 +5,7 @@ import { resolve, join, dirname } from 'node:path';
 import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
 import { spawnSync } from 'node:child_process';
-import { publicSdkGitSpec, assertSdkGitLock } from './helpers/git-consumer-contract.mjs';
+import { publicSdkGitSpec, assertSdkGitLock, publicAssistantGitSpec, assertAssistantGitLock } from './helpers/git-consumer-contract.mjs';
 
 const sha = process.argv[2];
 assert.match(sha ?? '', /^[a-f0-9]{40}$/, 'FULL_GIT_SHA_REQUIRED');
@@ -17,8 +17,7 @@ const baseline = flags.includes('--baseline'); // Distribution-only check for pr
 assert.ok(!(reproduce && baseline) && !(candidate && (baseline || reproduce)), 'INCOMPATIBLE_OPTIONS');
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const candidateManifest = JSON.parse(await readFile(join(root, 'package.json'), 'utf8'));
-const assistantSpec = candidateManifest.dependencies['@handrail/ai-assistant'];
-assert.match(assistantSpec, /^git\+https:\/\/git@github\.com\/c0x65o\/handrail-sdk-ai-assistant-js\.git#[a-f0-9]{40}$/);
+const assistantSpec = publicAssistantGitSpec(candidateManifest.dependencies['@handrail/ai-assistant']);
 // Outside the repository: no accidental fallback to its node_modules or types.
 const work = await mkdtemp(join(tmpdir(), 'handrail-git-consumer-'));
 const spec = reproduce ? `git+https://github.com/c0x65o/handrail-agent-sdk.git#${sha}` : publicSdkGitSpec(sha);
@@ -60,9 +59,7 @@ for (const profile of profiles) {
   const originalResolved = lock.packages['node_modules/handrail-agent-sdk'].resolved;
   if (!reproduce) {
     assertSdkGitLock(manifest, lock, sha);
-    for (const [path, entry] of Object.entries(lock.packages)) {
-      if (path.endsWith('node_modules/@handrail/ai-assistant')) assert.equal(entry.resolved, assistantSpec, 'ASSISTANT_RESOLVED_LOCK_NOT_PINNED_HTTPS');
-    }
+    if (!baseline) assertAssistantGitLock(lock, assistantSpec);
     const before = await readFile(lockPath, 'utf8');
     // npm ci removes node_modules itself. An empty cache forces a new download
     // and normal Git prepare/build. No SSH protocol or credential helper exists.
@@ -74,6 +71,7 @@ for (const profile of profiles) {
     assertSdkGitLock(manifest, lock, sha);
     const installedLock = await json(join(dir, 'node_modules/.package-lock.json'));
     assert.equal(installedLock.packages['node_modules/handrail-agent-sdk'].resolved, spec, 'INSTALLED_LOCK_NOT_HTTPS');
+    if (!baseline) assertAssistantGitLock(installedLock, assistantSpec);
   }
   if (candidate) {
     // SOURCE QUALIFICATION ONLY, never a release/install substitute. Start with
@@ -111,7 +109,7 @@ for (const profile of profiles) {
   const compile = run(process.execPath, ['node_modules/typescript/bin/tsc', '-p', 'tsconfig.json'], dir, {}, reproduce);
   await writeFile(join(dir, 'typecheck.log'), compile.stdout + compile.stderr);
   const versions = Object.fromEntries(Object.entries(lock.packages).filter(([path]) =>
-    /node_modules\/(handrail-agent-sdk|@types\/node|@types\/ws|typescript|@openai\/agents(?:-core|-openai|-realtime)?|openai|zod)$/.test(path))
+    /node_modules\/(handrail-agent-sdk|@handrail\/ai-assistant|@types\/node|@types\/ws|typescript|@openai\/agents(?:-core|-openai|-realtime)?|openai|zod)$/.test(path))
     .map(([path, pkg]) => [path, pkg.version]));
   if (profile.types) assert.equal(versions['node_modules/@types/node'], profile.types);
   if (reproduce) {
@@ -121,14 +119,23 @@ for (const profile of profiles) {
     for (const diagnostic of diagnostics) assert.match(diagnostic, /error TS2416:/);
     assert.equal(originalResolved, spec.replace('git+https://', 'git+ssh://git@'));
   } else {
-    run(process.execPath, ['--input-type=module', '--eval', `
+    const imports = run(process.execPath, ['--input-type=module', '--eval', `
       import assert from 'node:assert/strict';
       import { pathToFileURL } from 'node:url';
-      const name = ${JSON.stringify(baseline ? 'handrail-agent-sdk/server' : 'handrail-agent-sdk/server/agents')};
-      assert.ok(import.meta.resolve(name).startsWith(pathToFileURL(process.cwd() + '/node_modules/handrail-agent-sdk/').href));
-      const entry = await import(name);
-      assert.equal(typeof entry[${JSON.stringify(baseline ? 'createJobAdmission' : 'createAgentRuntime')}], 'function');
+      import { readFileSync } from 'node:fs';
+      const pkg = JSON.parse(readFileSync('node_modules/handrail-agent-sdk/package.json', 'utf8'));
+      const exported = {};
+      for (const path of Object.keys(pkg.exports)) {
+        const name = 'handrail-agent-sdk' + path.slice(1);
+        assert.ok(import.meta.resolve(name).startsWith(pathToFileURL(process.cwd() + '/node_modules/handrail-agent-sdk/').href));
+        exported[name] = Object.keys(await import(name));
+        assert.ok(exported[name].length > 0, name);
+      }
+      assert.ok(exported['handrail-agent-sdk/server'].includes('createJobAdmission'));
+      ${baseline ? '' : "assert.ok(exported['handrail-agent-sdk/server/agents'].includes('createAgentRuntime'));"}
+      console.log(JSON.stringify(exported, null, 2));
     `], dir);
+    await writeFile(join(dir, 'imports.log'), imports.stdout + imports.stderr);
     if (!baseline) {
       await cp(join(root, 'tests/fixtures/installed'), dir, {recursive:true});
       await mkdir(join(dir,'.reference-build'));
@@ -136,7 +143,8 @@ for (const profile of profiles) {
     }
   }
   const report = { profile: profile.name, sha, candidateSourceOverlay: candidate, node: process.version, npm: run('npm', ['--version'], dir).stdout.trim(),
-    manifest, originalResolved, sdkLock: lock.packages['node_modules/handrail-agent-sdk'], versions,
+    manifest, originalResolved, sdkLock: lock.packages['node_modules/handrail-agent-sdk'],
+    assistantLocks: Object.fromEntries(Object.entries(lock.packages).filter(([path]) => path.endsWith('node_modules/@handrail/ai-assistant'))), versions,
     typecheckExit: compile.status, status: reproduce ? 'failures-reproduced' : 'passed', fixture: dir };
   await save(join(dir, 'result.json'), report); results.push(report);
 }

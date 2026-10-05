@@ -1,0 +1,18 @@
+{
+  "name": "agent-install-verification",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "handrail-agent-sdk": "git+https://git@github.com/c0x65o/handrail-agent-sdk.git#0faf5214f0413886884e2f59e74a9b5ca0ba385e",
+    "@handrail/ai-assistant": "git+https://git@github.com/c0x65o/handrail-sdk-ai-assistant-js.git#5c59f2f71830eb1f23cec28d56db51ca23d7cc3e",
+    "pg": "8.23.0",
+    "openai": "7.25.0",
+    "@openai/agents": "0.18.0",
+    "zod": "4.3.6"
+  },
+  "devDependencies": {
+    "typescript": "5.9.3",
+    "@types/node": "22.20.4",
+    "@types/pg": "8.23.1"
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "sdkSha": "0faf5214f0413886884e2f59e74a9b5ca0ba385e",
+  "sourceTree": "b205fa639e1ddf6f2d77a0464dfd683ed764e90c",
+  "files": {
+    "package.json": "4d7222b55e022a0b5e2e011d7955a8e71999662314a68469ed5de17783e70492",
+    "package-lock.json": "140314967d6bb3b3bd6054caf2b936ba5ab80754feac09a2b01a41f4d0b51222",
+    "tests/verify-git-install.mjs": "2625ef8ab2a69f57c3f955a54ca8e10a09381177eb096fee52d370500925d754",
+    "tests/helpers/git-consumer-contract.mjs": "7f48efd95cf89414bfa3a88c668ee7f07d3f7d620cea1ed975ff067e0ff482f1",
+    "tests/git-lock.test.mjs": "a6b1058546ffcd0d7751b3dc2e5eac36c3391a3dd6bd9b6f3aa45bd157be441e",
+    "tests/fixtures/installed/guard.mjs": "278cf3c9d7c4ef0f44cc1c74d0d4b07a4f6497149907f70d35b3e79a29e4f988",
+    "tests/fixtures/git-consumer.mts": "e2e44858773a0ddbcf3604de881c52c9b7b15c6f449796e4b52e37a1107c0810",
+    "tests/fixtures/tsconfig.json": "9063703139a3fa372a28e9fb2f137dc503b8d6d0555f43bd17d0aeb75c87535e",
+    "tests/run-local-postgres.mjs": "c071caae8049b948775d42dd3bbeffb60daad33acd4ed31f3de8678167d95ee3",
+    "examples/headless.mts": "d105241f06e7d7e748eac35a0ae27a3193be46ada0b9d139d0eabefb30247b07",
+    "examples/postgres-application.mts": "7325cf05ac650683f525e6989eb3781d51dc91ce35d009c13722c62fd468bdaf",
+    "examples/continuous-conversation.mts": "3040f4e5c0da837d592bae5c6cb7f804f18c191467bcbfc1d2941ae4e4615911"
+  }
+}

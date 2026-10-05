@@ -72,6 +72,10 @@ Agents Runner and mocked model/provider boundaries. No repository helper, SQL or
 reference build is available to that suite. It requires the local PostgreSQL 15 test binaries. The
 [consumer correction evidence](docs/evidence/consumer-compatibility/README.md)
 separates published-SHA verification from the pending delivery revision.
+The [0.2.10 compatibility qualification](docs/evidence/consumer-compatibility-0.2.10/README.md)
+records the current verified Agent/Assistant SHA pair, fresh consumer locks and
+the stale mixed-version failure. Archived evidence manifests are historical
+snapshots; generate current consumers with the verifier above.
 
 Mills is the first intended consumer; its application cutover is separate work.
 No live model, generic browser controller, or native Handrail deployment is

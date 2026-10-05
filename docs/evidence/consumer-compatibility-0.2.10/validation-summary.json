@@ -1,0 +1,260 @@
+{
+  "workRequest": "65956981-7208-4aed-9c08-67f0db56acf9",
+  "verifiedAt": "2026-10-05T05:13:53.012Z",
+  "verdict": "compatible for the recorded paired pins and Node/type profiles; not Mills production acceptance",
+  "sdk": {
+    "version": "0.2.10",
+    "sha": "0faf5214f0413886884e2f59e74a9b5ca0ba385e",
+    "spec": "git+https://git@github.com/c0x65o/handrail-agent-sdk.git#0faf5214f0413886884e2f59e74a9b5ca0ba385e"
+  },
+  "assistant": {
+    "version": "0.2.75",
+    "sha": "5c59f2f71830eb1f23cec28d56db51ca23d7cc3e",
+    "spec": "git+https://git@github.com/c0x65o/handrail-sdk-ai-assistant-js.git#5c59f2f71830eb1f23cec28d56db51ca23d7cc3e"
+  },
+  "functionalSdkChanges": false,
+  "historicalEvidenceChanged": false,
+  "sourceOverlay": false,
+  "profiles": [
+    {
+      "profile": "node-next",
+      "sha": "0faf5214f0413886884e2f59e74a9b5ca0ba385e",
+      "candidateSourceOverlay": false,
+      "node": "v22.23.1",
+      "npm": "10.9.8",
+      "manifest": {
+        "name": "agent-install-verification",
+        "private": true,
+        "type": "module",
+        "dependencies": {
+          "handrail-agent-sdk": "git+https://git@github.com/c0x65o/handrail-agent-sdk.git#0faf5214f0413886884e2f59e74a9b5ca0ba385e",
+          "@handrail/ai-assistant": "git+https://git@github.com/c0x65o/handrail-sdk-ai-assistant-js.git#5c59f2f71830eb1f23cec28d56db51ca23d7cc3e",
+          "pg": "8.23.0",
+          "openai": "7.25.0",
+          "@openai/agents": "0.18.0",
+          "zod": "4.3.6"
+        },
+        "devDependencies": {
+          "typescript": "5.9.3",
+          "@types/node": "22.20.4",
+          "@types/pg": "8.23.1"
+        }
+      },
+      "originalResolved": "git+https://git@github.com/c0x65o/handrail-agent-sdk.git#0faf5214f0413886884e2f59e74a9b5ca0ba385e",
+      "sdkLock": {
+        "version": "0.2.10",
+        "resolved": "git+https://git@github.com/c0x65o/handrail-agent-sdk.git#0faf5214f0413886884e2f59e74a9b5ca0ba385e",
+        "integrity": "sha512-Rx8ck3qaXPbuNRF9o8SyNYJP3Nl0fNj6numhew0P6V+sC1BtWOYMWXYaa1wEMN5DplEIkV5t3tY6vRS20MQeaw==",
+        "dependencies": {
+          "@handrail/ai-assistant": "git+https://github.com/c0x65o/handrail-sdk-ai-assistant-js.git#5c59f2f71830eb1f23cec28d56db51ca23d7cc3e",
+          "@openai/agents": "0.18.0",
+          "ajv": "8.20.0",
+          "ajv-formats": "3.0.1",
+          "drizzle-orm": "0.45.3",
+          "pg": "8.23.0",
+          "zod": "4.3.6"
+        },
+        "engines": {
+          "node": ">=22.0.0"
+        }
+      },
+      "assistantLocks": {
+        "node_modules/@handrail/ai-assistant": {
+          "version": "0.2.75",
+          "resolved": "git+https://git@github.com/c0x65o/handrail-sdk-ai-assistant-js.git#5c59f2f71830eb1f23cec28d56db51ca23d7cc3e",
+          "integrity": "sha512-P11+96aPmYSyGtTqFY6l/L9MBa+SJw/70gzaa8bXVYNTD5VoKpN7rHPITC5bATFvSQXlqscPkcuPF//Fv8lKEA==",
+          "license": "UNLICENSED",
+          "dependencies": {
+            "ajv": "^8.17.1",
+            "fflate": "0.8.3"
+          },
+          "bin": {
+            "handrail-ai-assistant": "scripts/adopt.mjs"
+          },
+          "engines": {
+            "node": ">=20"
+          },
+          "peerDependencies": {
+            "react": ">=18",
+            "react-dom": ">=18",
+            "react-markdown": "^10.1.0",
+            "remark-gfm": "^4.0.1"
+          },
+          "peerDependenciesMeta": {
+            "react": {
+              "optional": true
+            },
+            "react-dom": {
+              "optional": true
+            },
+            "react-markdown": {
+              "optional": true
+            },
+            "remark-gfm": {
+              "optional": true
+            }
+          }
+        }
+      },
+      "versions": {
+        "node_modules/@handrail/ai-assistant": "0.2.75",
+        "node_modules/@openai/agents": "0.18.0",
+        "node_modules/@openai/agents-core": "0.18.0",
+        "node_modules/@openai/agents-openai": "0.18.0",
+        "node_modules/@openai/agents-realtime": "0.18.0",
+        "node_modules/@types/node": "22.20.4",
+        "node_modules/@types/ws": "8.18.2",
+        "node_modules/handrail-agent-sdk": "0.2.10",
+        "node_modules/openai": "7.25.0",
+        "node_modules/typescript": "5.9.3",
+        "node_modules/zod": "4.3.6"
+      },
+      "typecheckExit": 0,
+      "status": "passed",
+      "fixture": "<external-consumers>/node-next-bqI0Lw"
+    },
+    {
+      "profile": "bundler-explicit-provider",
+      "sha": "0faf5214f0413886884e2f59e74a9b5ca0ba385e",
+      "candidateSourceOverlay": false,
+      "node": "v22.23.1",
+      "npm": "10.9.8",
+      "manifest": {
+        "name": "agent-install-verification",
+        "private": true,
+        "type": "module",
+        "dependencies": {
+          "handrail-agent-sdk": "git+https://git@github.com/c0x65o/handrail-agent-sdk.git#0faf5214f0413886884e2f59e74a9b5ca0ba385e",
+          "@handrail/ai-assistant": "git+https://git@github.com/c0x65o/handrail-sdk-ai-assistant-js.git#5c59f2f71830eb1f23cec28d56db51ca23d7cc3e",
+          "pg": "8.23.0",
+          "openai": "7.25.0",
+          "@openai/agents": "0.18.0",
+          "zod": "4.3.6"
+        },
+        "devDependencies": {
+          "typescript": "5.9.3",
+          "@types/node": "22.18.0",
+          "@types/pg": "8.23.1"
+        }
+      },
+      "originalResolved": "git+https://git@github.com/c0x65o/handrail-agent-sdk.git#0faf5214f0413886884e2f59e74a9b5ca0ba385e",
+      "sdkLock": {
+        "version": "0.2.10",
+        "resolved": "git+https://git@github.com/c0x65o/handrail-agent-sdk.git#0faf5214f0413886884e2f59e74a9b5ca0ba385e",
+        "integrity": "sha512-Rx8ck3qaXPbuNRF9o8SyNYJP3Nl0fNj6numhew0P6V+sC1BtWOYMWXYaa1wEMN5DplEIkV5t3tY6vRS20MQeaw==",
+        "dependencies": {
+          "@handrail/ai-assistant": "git+https://github.com/c0x65o/handrail-sdk-ai-assistant-js.git#5c59f2f71830eb1f23cec28d56db51ca23d7cc3e",
+          "@openai/agents": "0.18.0",
+          "ajv": "8.20.0",
+          "ajv-formats": "3.0.1",
+          "drizzle-orm": "0.45.3",
+          "pg": "8.23.0",
+          "zod": "4.3.6"
+        },
+        "engines": {
+          "node": ">=22.0.0"
+        }
+      },
+      "assistantLocks": {
+        "node_modules/@handrail/ai-assistant": {
+          "version": "0.2.75",
+          "resolved": "git+https://git@github.com/c0x65o/handrail-sdk-ai-assistant-js.git#5c59f2f71830eb1f23cec28d56db51ca23d7cc3e",
+          "integrity": "sha512-P11+96aPmYSyGtTqFY6l/L9MBa+SJw/70gzaa8bXVYNTD5VoKpN7rHPITC5bATFvSQXlqscPkcuPF//Fv8lKEA==",
+          "license": "UNLICENSED",
+          "dependencies": {
+            "ajv": "^8.17.1",
+            "fflate": "0.8.3"
+          },
+          "bin": {
+            "handrail-ai-assistant": "scripts/adopt.mjs"
+          },
+          "engines": {
+            "node": ">=20"
+          },
+          "peerDependencies": {
+            "react": ">=18",
+            "react-dom": ">=18",
+            "react-markdown": "^10.1.0",
+            "remark-gfm": "^4.0.1"
+          },
+          "peerDependenciesMeta": {
+            "react": {
+              "optional": true
+            },
+            "react-dom": {
+              "optional": true
+            },
+            "react-markdown": {
+              "optional": true
+            },
+            "remark-gfm": {
+              "optional": true
+            }
+          }
+        }
+      },
+      "versions": {
+        "node_modules/@handrail/ai-assistant": "0.2.75",
+        "node_modules/@openai/agents": "0.18.0",
+        "node_modules/@openai/agents-core": "0.18.0",
+        "node_modules/@openai/agents-openai": "0.18.0",
+        "node_modules/@openai/agents-realtime": "0.18.0",
+        "node_modules/@types/node": "22.18.0",
+        "node_modules/@types/ws": "8.18.2",
+        "node_modules/handrail-agent-sdk": "0.2.10",
+        "node_modules/openai": "7.25.0",
+        "node_modules/typescript": "5.9.3",
+        "node_modules/zod": "4.3.6"
+      },
+      "typecheckExit": 0,
+      "status": "passed",
+      "fixture": "<external-consumers>/bundler-explicit-provider-rs6QMn"
+    }
+  ],
+  "initialVerifier": {
+    "exit": 1,
+    "installAndLockedReinstall": "passed both profiles",
+    "strictTypecheck": "passed both profiles",
+    "publicImports": "passed all 11 exports per profile",
+    "runtime": "61 passed / 1 failed: missing preparation.test.mjs in fixture allowlist"
+  },
+  "correctedInstalledRuntime": {
+    "exit": 0,
+    "tests": 97,
+    "pass": 97,
+    "fail": 0,
+    "skipped": 0,
+    "sdkReinstalled": false,
+    "sdkModified": false,
+    "change": "refreshed only test fixture guard, reran installed-runtime stage"
+  },
+  "root": {
+    "exit": 0,
+    "tests": 778,
+    "pass": 778,
+    "fail": 0,
+    "skipped": 0
+  },
+  "rootConsumerTypecheck": {
+    "exit": 0
+  },
+  "postgres": {
+    "exit": 0,
+    "suites": 19,
+    "tests": 428,
+    "pass": 428,
+    "fail": 0,
+    "skipped": 0,
+    "harness": "existing temporary PostgreSQL 15 cluster with owned schemas, removed after tests"
+  },
+  "publicBuildComparison": {
+    "files": 110,
+    "allIdentical": true
+  },
+  "limits": [
+    "Entire verifier not rerun after fixture allowlist correction; only failed runtime stage rerun.",
+    "Model/provider/native-executor boundaries simulated.",
+    "Mills integration, production validation and owner review remain downstream.",
+    "Native harness owns version bump, commit and push; changes left uncommitted."
+  ]
+}

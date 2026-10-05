@@ -1,0 +1,94 @@
+{
+  "handrail-agent-sdk": [
+    "validateBrowserLease",
+    "validateBrowserLeaseSuccessor",
+    "validateBrowserObservation",
+    "validateBrowserOperation",
+    "validateBrowserOperationSchema",
+    "validateBrowserProfile",
+    "validateBrowserRevocationResult",
+    "validateBrowserTakeover",
+    "validateBrowserTakeoverTransition",
+    "validateConnectionEnsureInput",
+    "validateConnectionEnsureResult",
+    "validateConnectionReconnect",
+    "validateJobCommand",
+    "validateJobEvent",
+    "validateJobResult",
+    "validateJobSnapshot",
+    "validateJobTransition",
+    "validateVaultBrokerResult",
+    "validateVaultEntryCompletion",
+    "validateVaultEntryRequest",
+    "validateVaultItem",
+    "validateVaultOperation",
+    "validateVaultOperationSchema"
+  ],
+  "handrail-agent-sdk/server": [
+    "createEffects",
+    "createJobAdmission",
+    "createJobAnswer",
+    "createJobCancellation",
+    "createJobLease",
+    "createPaymentFillExecutor",
+    "createPaymentVault",
+    "createVaultEntry",
+    "createVaultRequestExecutor",
+    "createVaultUse",
+    "validateVaultCardValue"
+  ],
+  "handrail-agent-sdk/server/agents": [
+    "createAgentRuntime"
+  ],
+  "handrail-agent-sdk/server/assistance": [
+    "assistanceClock",
+    "assistanceDigest",
+    "createAssistance",
+    "createAssistanceWorker",
+    "resolveScheduleTime"
+  ],
+  "handrail-agent-sdk/server/assistance/postgres": [
+    "assistancePostgresSchema",
+    "createPostgresAssistanceStore"
+  ],
+  "handrail-agent-sdk/server/assistance/notifications": [
+    "createNotificationDelivery"
+  ],
+  "handrail-agent-sdk/server/handrail-feedback": [
+    "canonicalFeedbackReady",
+    "createHandrailDelegatedFeedbackObserver",
+    "createHandrailFeedbackEffectAdapter",
+    "createHandrailFeedbackObserver",
+    "feedbackSubject",
+    "handrailFeedbackOperations"
+  ],
+  "handrail-agent-sdk/server/application": [
+    "createAgentCheckpointReader",
+    "createAgentConversationTransport"
+  ],
+  "handrail-agent-sdk/server/application-tools": [
+    "createApplicationAgentTools",
+    "observeApplicationAgentTool"
+  ],
+  "handrail-agent-sdk/server/postgres": [
+    "agentPostgresMigrations",
+    "createAgentStateStore",
+    "createEffectStore",
+    "createJobAdmissionStore",
+    "createJobAnswerStore",
+    "createJobCancellationStore",
+    "createJobJournal",
+    "createJobLeaseStore",
+    "createPostgresAgentStores",
+    "createPostgresAssistanceDatabase",
+    "createPostgresConversationStorage",
+    "migrateAgentPostgres"
+  ],
+  "handrail-agent-sdk/server/conversation": [
+    "compactConversation",
+    "createConversation",
+    "createConversationAgentRuntime",
+    "createConversationSession",
+    "createDelegatedWorkAdapter"
+  ]
+}
