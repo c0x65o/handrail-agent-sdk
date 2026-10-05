@@ -163,10 +163,14 @@ hooks reject reference/source modules and path escapes, including child recovery
 processes. The repository test launcher supplies only disposable connection
 settings; no repository functions or SQL are injected into the fixture.
 
-For an uncommitted candidate, `--candidate-source` first performs the same public
-base install/reinstall, compiles the changed source via normal `prepare` inside
-the isolated installed package, then removes source/scripts before testing. This
+For an uncommitted candidate, `--candidate-source` first installs/reinstalls its
+declared dependencies through normal package resolution, compiles Agent source
+via normal `prepare` inside the isolated consumer's package directory, then
+removes source/scripts before testing. Assistant remains an unmodified public
+Git installation. Installing the old Agent base here would retain its old nested
+Assistant pin when qualifying a dependency update. This
 is explicitly **candidate source qualification**, not a public Git revision or
-consumer dependency upgrade. The lock still identifies the base; the evidence
-records the overlay. Only the pipeline may produce the deliverable SHA, and the
+consumer dependency upgrade. The lock makes no Agent installation claim; the
+supplied SHA identifies the source baseline and the evidence records the overlay.
+Only the pipeline may produce the deliverable SHA, and the
 unmodified fresh public-install check remains mandatory afterward.

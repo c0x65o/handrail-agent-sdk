@@ -10,6 +10,13 @@ import { createHandrailFeedbackObserver, createHandrailFeedbackEffectAdapter } f
 import { createAgentConversationTransport, createAgentCheckpointReader } from 'handrail-agent-sdk/server/application';
 import { createApplicationAgentTools } from 'handrail-agent-sdk/server/application-tools';
 import type { ConversationTransport, StreamEvent, ChatRequest } from '@handrail/ai-assistant';
+import type { AttachmentDownloadClientOptions } from '@handrail/ai-assistant/client';
+
+// Exercise the installed declaration flagged by Assistant's repository surface
+// check without weakening strict consumer compilation or invoking fetch.
+declare const attachmentFetch: NonNullable<AttachmentDownloadClientOptions['fetch']>;
+const compatibleFetch: typeof globalThis.fetch = attachmentFetch;
+const compatibleAttachmentFetch: NonNullable<AttachmentDownloadClientOptions['fetch']> = globalThis.fetch;
 
 type Options = Parameters<typeof createAgentRuntime>[0];
 declare const options: Options;

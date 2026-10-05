@@ -1,0 +1,32 @@
+
+> @handrail/ai-assistant@0.2.76 prepare
+> npm run build
+
+
+> @handrail/ai-assistant@0.2.76 build
+> node -e "require('node:fs').rmSync('dist', { recursive: true, force: true })" && tsc -p tsconfig.build.json
+
+npm warn skipping integrity check for git dependency https://git@github.com/c0x65o/handrail-sdk-ai-assistant-js.git
+
+> @handrail/ai-assistant@0.2.76 prepare
+> npm run build
+
+
+> @handrail/ai-assistant@0.2.76 build
+> node -e "require('node:fs').rmSync('dist', { recursive: true, force: true })" && tsc -p tsconfig.build.json
+
+
+> handrail-agent-sdk@0.2.11 prepare
+> npm run build
+
+
+> handrail-agent-sdk@0.2.11 build
+> tsc -p tsconfig.json && node scripts/build-postgres-assets.mjs
+
+
+changed 1 package in 57s
+npm notice
+npm notice New major version of npm available! 10.9.8 -> 12.2.0
+npm notice Changelog: https://github.com/npm/cli/releases/tag/v12.2.0
+npm notice To update run: npm install -g npm@12.2.0
+npm notice

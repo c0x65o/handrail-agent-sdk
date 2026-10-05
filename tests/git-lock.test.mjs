@@ -33,6 +33,8 @@ test('assistant consumer URL preserves the frozen public SHA with npm HTTPS reso
     assistantLock.packages['node_modules/handrail-agent-sdk/node_modules/@handrail/ai-assistant'] = { resolved };
     assert.throws(() => assertAssistantGitLock(assistantLock, https), /ASSISTANT_RESOLVED_LOCK_MISMATCH/);
   }
+  assistantLock.packages['node_modules/handrail-agent-sdk/node_modules/@handrail/ai-assistant'] = { resolved: https };
+  assert.throws(() => assertAssistantGitLock(assistantLock, https), /ASSISTANT_MUST_HAVE_SINGLE_IDENTITY/);
 });
 
 test('rejects SSH even with matching SHA, repository drift and alternate sources', () => {

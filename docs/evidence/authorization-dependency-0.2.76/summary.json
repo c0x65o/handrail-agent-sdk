@@ -1,0 +1,44 @@
+{
+  "status": "candidate-qualified",
+  "publication": "pending-native-delivery",
+  "root": {
+    "tests": 778,
+    "pass": 778,
+    "fail": 0,
+    "skipped": 0
+  },
+  "postgres": {
+    "tests": 428,
+    "pass": 428,
+    "fail": 0,
+    "skipped": 0
+  },
+  "installedCandidate": {
+    "tests": 97,
+    "pass": 97,
+    "fail": 0,
+    "skipped": 0
+  },
+  "rootConsumerTypecheckExit": 0,
+  "qualificationExit": 0,
+  "profiles": [
+    {
+      "profile": "node-next",
+      "typecheckExit": 0,
+      "status": "passed",
+      "assistantCopies": 1,
+      "publicEntrypoints": 11
+    },
+    {
+      "profile": "bundler-explicit-provider",
+      "typecheckExit": 0,
+      "status": "passed",
+      "assistantCopies": 1,
+      "publicEntrypoints": 11
+    }
+  ],
+  "unverified": [
+    "Delivered Agent version/SHA and fresh public Agent installation: native release and parent verification follow this worker.",
+    "Upstream Assistant repository lint/public-surface and JS/PGlite/Dart suites were not rerun."
+  ]
+}

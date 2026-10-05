@@ -22,6 +22,7 @@ export function assertAssistantGitLock(lock, spec) {
     assert.equal(entry.resolved, spec, 'ASSISTANT_RESOLVED_LOCK_MISMATCH');
     assert.ok(!entry.link, 'ASSISTANT_MUST_NOT_BE_LINKED');
   }
+  assert.equal(entries.length, 1, 'ASSISTANT_MUST_HAVE_SINGLE_IDENTITY');
 }
 
 export function assertSdkGitLock(manifest, lock, sha) {

@@ -1,4 +1,4 @@
-// Public Git qualification. Never substitute local source/dist for the SDK.
+// Public Git qualification; --candidate-source is explicitly unpublished source qualification.
 import assert from 'node:assert/strict';
 import { mkdtemp, writeFile, readFile, copyFile, cp, rm, mkdir } from 'node:fs/promises';
 import { resolve, join, dirname } from 'node:path';
@@ -43,9 +43,10 @@ const profiles = reproduce ? [{ name: 'default-unpinned', types: null }] : [
 for (const profile of profiles) {
   const dir = await mkdtemp(join(work, `${profile.name}-`));
   const manifest = { name: 'agent-install-verification', private: true, type: 'module',
-    dependencies: { 'handrail-agent-sdk': spec,
-      // Candidate-only dependencies use ordinary package resolution. The SDK
-      // itself remains a public SHA install followed by the labelled overlay.
+    dependencies: { ...candidate ? {} : { 'handrail-agent-sdk': spec },
+      // An unpublished dependency edit cannot be installed from the base SHA:
+      // that would retain its old nested Assistant identity. Install the exact
+      // candidate dependencies normally, then build the labelled Agent source.
       ...candidate ? candidateManifest.dependencies : {},
       ...baseline ? {} : { '@handrail/ai-assistant': assistantSpec, pg: '8.23.0', openai: '7.25.0', '@openai/agents': '0.18.0', zod: '4.3.6' },
       ...profile.provider ? { '@openai/agents': '0.18.0', zod: '4.3.6' } : {} },
@@ -56,9 +57,9 @@ for (const profile of profiles) {
   await writeFile(join(dir, 'install.log'), install.stdout + install.stderr);
   const lockPath = join(dir, 'package-lock.json');
   let lock = await json(lockPath);
-  const originalResolved = lock.packages['node_modules/handrail-agent-sdk'].resolved;
+  const originalResolved = lock.packages['node_modules/handrail-agent-sdk']?.resolved ?? null;
   if (!reproduce) {
-    assertSdkGitLock(manifest, lock, sha);
+    if (!candidate) assertSdkGitLock(manifest, lock, sha);
     if (!baseline) assertAssistantGitLock(lock, assistantSpec);
     const before = await readFile(lockPath, 'utf8');
     // npm ci removes node_modules itself. An empty cache forces a new download
@@ -68,17 +69,18 @@ for (const profile of profiles) {
     await writeFile(join(dir, 'reinstall.log'), ci.stdout + ci.stderr);
     assert.equal(await readFile(lockPath, 'utf8'), before, 'CI_CHANGED_LOCK');
     lock = await json(lockPath);
-    assertSdkGitLock(manifest, lock, sha);
+    if (!candidate) assertSdkGitLock(manifest, lock, sha);
     const installedLock = await json(join(dir, 'node_modules/.package-lock.json'));
-    assert.equal(installedLock.packages['node_modules/handrail-agent-sdk'].resolved, spec, 'INSTALLED_LOCK_NOT_HTTPS');
+    if (!candidate) assert.equal(installedLock.packages['node_modules/handrail-agent-sdk'].resolved, spec, 'INSTALLED_LOCK_NOT_HTTPS');
     if (!baseline) assertAssistantGitLock(installedLock, assistantSpec);
   }
   if (candidate) {
-    // SOURCE QUALIFICATION ONLY, never a release/install substitute. Start with
-    // an ordinary pinned HTTPS install, then compile the uncommitted candidate
-    // inside that isolated package. No repo modules/symlinks or tarball installs.
-    // Its lock still identifies the base; results explicitly record this overlay.
+    // SOURCE QUALIFICATION ONLY, never a release/install substitute. Dependencies
+    // came from ordinary pinned HTTPS installs above; Assistant is never patched.
+    // Compile Agent source in an isolated package, without copying local dist,
+    // modules or symlinks. The consumer lock deliberately makes no Agent claim.
     const installed = join(dir, 'node_modules/handrail-agent-sdk');
+    await mkdir(installed, { recursive: true });
     await rm(join(installed, 'dist'), {recursive:true,force:true});
     for (const path of ['src', 'scripts', 'examples', 'docs', 'tsconfig.json', 'package.json'])
       await cp(join(root,path), join(installed,path), {recursive:true});
@@ -121,6 +123,7 @@ for (const profile of profiles) {
   } else {
     const imports = run(process.execPath, ['--input-type=module', '--eval', `
       import assert from 'node:assert/strict';
+      import { createRequire } from 'node:module';
       import { pathToFileURL } from 'node:url';
       import { readFileSync } from 'node:fs';
       const pkg = JSON.parse(readFileSync('node_modules/handrail-agent-sdk/package.json', 'utf8'));
@@ -133,6 +136,10 @@ for (const profile of profiles) {
       }
       assert.ok(exported['handrail-agent-sdk/server'].includes('createJobAdmission'));
       ${baseline ? '' : "assert.ok(exported['handrail-agent-sdk/server/agents'].includes('createAgentRuntime'));"}
+      ${baseline ? '' : `assert.equal(
+        createRequire(import.meta.resolve('handrail-agent-sdk/server/agents')).resolve('@handrail/ai-assistant'),
+        createRequire(process.cwd() + '/package.json').resolve('@handrail/ai-assistant'),
+        'ASSISTANT_RUNTIME_IDENTITY_MISMATCH');`}
       console.log(JSON.stringify(exported, null, 2));
     `], dir);
     await writeFile(join(dir, 'imports.log'), imports.stdout + imports.stderr);
@@ -142,8 +149,10 @@ for (const profile of profiles) {
       await writeFile(join(dir,'.reference-build/probe.mjs'),"throw Error('REFERENCE_FALLBACK_LOADED');\n");
     }
   }
-  const report = { profile: profile.name, sha, candidateSourceOverlay: candidate, node: process.version, npm: run('npm', ['--version'], dir).stdout.trim(),
-    manifest, originalResolved, sdkLock: lock.packages['node_modules/handrail-agent-sdk'],
+  const report = { profile: profile.name, sha, shaRole: candidate ? 'source-baseline' : 'public-install',
+    candidateSourceOverlay: candidate, candidateVersion: candidate ? candidateManifest.version : null,
+    node: process.version, npm: run('npm', ['--version'], dir).stdout.trim(),
+    manifest, originalResolved, sdkLock: lock.packages['node_modules/handrail-agent-sdk'] ?? null,
     assistantLocks: Object.fromEntries(Object.entries(lock.packages).filter(([path]) => path.endsWith('node_modules/@handrail/ai-assistant'))), versions,
     typecheckExit: compile.status, status: reproduce ? 'failures-reproduced' : 'passed', fixture: dir };
   await save(join(dir, 'result.json'), report); results.push(report);

@@ -1,0 +1,17 @@
+{
+  "baseSha": "fea9fe776b42d97f2a61d08f21cbe4422d077915",
+  "agentVersion": "0.2.11",
+  "assistantVersion": "0.2.76",
+  "assistantSpec": "git+https://git@github.com/c0x65o/handrail-sdk-ai-assistant-js.git#704b6599f37dce7255e345c8132bf81856bdb6bf",
+  "changedLockEntries": [
+    "",
+    "node_modules/@handrail/ai-assistant"
+  ],
+  "node": "v22.23.1",
+  "npm": "10.9.8",
+  "hashes": {
+    "package.json": "a6855d0e87d3122ff5e4b3d769d8a996717e01350165b4676922e6ab24455c1a",
+    "package-lock.json": "dab048522a599839e6f62ab7ba072de5d861e5ce9c9e4054b37b857e0b7a861b"
+  },
+  "publication": "Pending native version bump/commit/push; no delivered Agent SHA yet."
+}

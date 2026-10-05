@@ -1,0 +1,17 @@
+{
+  "compilerOptions": {
+    "strict": true,
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "target": "ES2022",
+    "noEmit": true,
+    "skipLibCheck": false
+  },
+  "files": [
+    "consumer.mts",
+    "postgres-application.mts",
+    "continuous-conversation.mts",
+    "headless.mts",
+    "provider.mts"
+  ]
+}
