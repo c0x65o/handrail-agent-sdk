@@ -1,0 +1,46 @@
+[
+  {
+    "profile": "node-next",
+    "agent": {
+      "name": "handrail-agent-sdk",
+      "installedVersion": "0.2.12",
+      "resolved": "git+https://git@github.com/c0x65o/handrail-agent-sdk.git#ab00214d89bf2390784c05d5e0cea8fe57bd4d72",
+      "integrity": "sha512-GtLcc76PT8eOWjTOYdSs1oCILnUJcLSr4FlJbT8LzdE7RSu45lv9teBG2rYXp2Lx0HL0EsiTv8ROPF1xS5oAlw=="
+    },
+    "assistant": {
+      "name": "@handrail/ai-assistant",
+      "installedVersion": "0.2.76",
+      "resolved": "git+https://git@github.com/c0x65o/handrail-sdk-ai-assistant-js.git#704b6599f37dce7255e345c8132bf81856bdb6bf",
+      "integrity": "sha512-cklUirQIZBi3t94A3yTuDGT3ETJB6f0hDg6RhFk0m6RmcBhfpB+naJyS9njubCFfwP/Ep7tD68fn7wOnr2pucg=="
+    },
+    "matchingConsumerAndInstalledLocks": true,
+    "assistantIdentityCount": 1,
+    "consumerLockSha256": "b5afa77229bcdd353bdac153c325cb512d56c33774cf8957c2a91a4a71feab04",
+    "installedLockSha256": "8b1ce07d5464a1c13b1c67ddfd0cc1b269a6e340e59644dff4c3485931f61e94",
+    "strictTypecheckExit": 0,
+    "attachmentFetchCompatibility": "passed in both directions",
+    "publicEntrypoints": 11
+  },
+  {
+    "profile": "bundler-explicit-provider",
+    "agent": {
+      "name": "handrail-agent-sdk",
+      "installedVersion": "0.2.12",
+      "resolved": "git+https://git@github.com/c0x65o/handrail-agent-sdk.git#ab00214d89bf2390784c05d5e0cea8fe57bd4d72",
+      "integrity": "sha512-GtLcc76PT8eOWjTOYdSs1oCILnUJcLSr4FlJbT8LzdE7RSu45lv9teBG2rYXp2Lx0HL0EsiTv8ROPF1xS5oAlw=="
+    },
+    "assistant": {
+      "name": "@handrail/ai-assistant",
+      "installedVersion": "0.2.76",
+      "resolved": "git+https://git@github.com/c0x65o/handrail-sdk-ai-assistant-js.git#704b6599f37dce7255e345c8132bf81856bdb6bf",
+      "integrity": "sha512-cklUirQIZBi3t94A3yTuDGT3ETJB6f0hDg6RhFk0m6RmcBhfpB+naJyS9njubCFfwP/Ep7tD68fn7wOnr2pucg=="
+    },
+    "matchingConsumerAndInstalledLocks": true,
+    "assistantIdentityCount": 1,
+    "consumerLockSha256": "c50a056c05774b8b3af485609fa64ee8e2c64ecf8792a7b25f337296a361771e",
+    "installedLockSha256": "de35d7100d2fefefe6ffecd66c7fd952f6c0b302194f3ae06c16c8f69c191b68",
+    "strictTypecheckExit": 0,
+    "attachmentFetchCompatibility": "passed in both directions",
+    "publicEntrypoints": 11
+  }
+]

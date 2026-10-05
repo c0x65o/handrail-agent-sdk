@@ -1,0 +1,8 @@
+{
+  "sha": "ab00214d89bf2390784c05d5e0cea8fe57bd4d72",
+  "publicRefs": "ab00214d89bf2390784c05d5e0cea8fe57bd4d72\tHEAD\nab00214d89bf2390784c05d5e0cea8fe57bd4d72\trefs/heads/main\n",
+  "packageUrl": "https://raw.githubusercontent.com/c0x65o/handrail-agent-sdk/ab00214d89bf2390784c05d5e0cea8fe57bd4d72/package.json",
+  "version": "0.2.12",
+  "assistantSpec": "git+https://git@github.com/c0x65o/handrail-sdk-ai-assistant-js.git#704b6599f37dce7255e345c8132bf81856bdb6bf",
+  "publicManifestMatchesCommit": true
+}

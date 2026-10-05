@@ -1,0 +1,16 @@
+{
+  "status": "passed",
+  "sha": "ab00214d89bf2390784c05d5e0cea8fe57bd4d72",
+  "evidence": "/opt/handrail/.handrail/codex-runs/a3a707de-992a-4328-976f-c532504e7f36/tmp/final-public-gate/handrail-git-consumer-Ms5tS1",
+  "runtime": "public-git-installed-only-composition",
+  "profiles": [
+    {
+      "profile": "node-next",
+      "status": "passed"
+    },
+    {
+      "profile": "bundler-explicit-provider",
+      "status": "passed"
+    }
+  ]
+}

@@ -1,0 +1,22 @@
+{
+  "profiles": [
+    {
+      "profile": "node-next",
+      "typecheckExit": 0,
+      "publicExports": 11,
+      "exportsMatchCandidate": true,
+      "consumerAndInstalledSdkLocksIdentical": true,
+      "assistantCopies": 1
+    },
+    {
+      "profile": "bundler-explicit-provider",
+      "typecheckExit": 0,
+      "publicExports": 11,
+      "exportsMatchCandidate": true,
+      "consumerAndInstalledSdkLocksIdentical": true,
+      "assistantCopies": 1
+    }
+  ],
+  "bothPublicDistTreesIdentical": true,
+  "distFiles": 110
+}

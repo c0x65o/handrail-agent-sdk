@@ -1,0 +1,92 @@
+{
+  "workRequest": "089dd4c7-a9ad-4e79-bdeb-44508e0c9532",
+  "status": "passed",
+  "command": "node tests/verify-git-install.mjs ab00214d89bf2390784c05d5e0cea8fe57bd4d72",
+  "exitCode": 0,
+  "fullGateResult": {
+    "status": "passed",
+    "sha": "ab00214d89bf2390784c05d5e0cea8fe57bd4d72",
+    "evidence": "/opt/handrail/.handrail/codex-runs/a3a707de-992a-4328-976f-c532504e7f36/tmp/final-public-gate/handrail-git-consumer-Ms5tS1",
+    "runtime": "public-git-installed-only-composition",
+    "profiles": [
+      {
+        "profile": "node-next",
+        "status": "passed"
+      },
+      {
+        "profile": "bundler-explicit-provider",
+        "status": "passed"
+      }
+    ]
+  },
+  "installedRuntime": {
+    "tests": 97,
+    "pass": 97,
+    "fail": 0,
+    "cancelled": 0,
+    "skipped": 0,
+    "todo": 0
+  },
+  "postgresHarness": "Fresh isolated PostgreSQL 15 cluster; non-superuser role; real migrations/persistence/transactions/recovery; cluster stopped and removed. Model/provider boundaries simulated.",
+  "identities": [
+    {
+      "profile": "node-next",
+      "agent": {
+        "name": "handrail-agent-sdk",
+        "installedVersion": "0.2.12",
+        "resolved": "git+https://git@github.com/c0x65o/handrail-agent-sdk.git#ab00214d89bf2390784c05d5e0cea8fe57bd4d72",
+        "integrity": "sha512-GtLcc76PT8eOWjTOYdSs1oCILnUJcLSr4FlJbT8LzdE7RSu45lv9teBG2rYXp2Lx0HL0EsiTv8ROPF1xS5oAlw=="
+      },
+      "assistant": {
+        "name": "@handrail/ai-assistant",
+        "installedVersion": "0.2.76",
+        "resolved": "git+https://git@github.com/c0x65o/handrail-sdk-ai-assistant-js.git#704b6599f37dce7255e345c8132bf81856bdb6bf",
+        "integrity": "sha512-cklUirQIZBi3t94A3yTuDGT3ETJB6f0hDg6RhFk0m6RmcBhfpB+naJyS9njubCFfwP/Ep7tD68fn7wOnr2pucg=="
+      },
+      "matchingConsumerAndInstalledLocks": true,
+      "assistantIdentityCount": 1,
+      "consumerLockSha256": "b5afa77229bcdd353bdac153c325cb512d56c33774cf8957c2a91a4a71feab04",
+      "installedLockSha256": "8b1ce07d5464a1c13b1c67ddfd0cc1b269a6e340e59644dff4c3485931f61e94",
+      "strictTypecheckExit": 0,
+      "attachmentFetchCompatibility": "passed in both directions",
+      "publicEntrypoints": 11
+    },
+    {
+      "profile": "bundler-explicit-provider",
+      "agent": {
+        "name": "handrail-agent-sdk",
+        "installedVersion": "0.2.12",
+        "resolved": "git+https://git@github.com/c0x65o/handrail-agent-sdk.git#ab00214d89bf2390784c05d5e0cea8fe57bd4d72",
+        "integrity": "sha512-GtLcc76PT8eOWjTOYdSs1oCILnUJcLSr4FlJbT8LzdE7RSu45lv9teBG2rYXp2Lx0HL0EsiTv8ROPF1xS5oAlw=="
+      },
+      "assistant": {
+        "name": "@handrail/ai-assistant",
+        "installedVersion": "0.2.76",
+        "resolved": "git+https://git@github.com/c0x65o/handrail-sdk-ai-assistant-js.git#704b6599f37dce7255e345c8132bf81856bdb6bf",
+        "integrity": "sha512-cklUirQIZBi3t94A3yTuDGT3ETJB6f0hDg6RhFk0m6RmcBhfpB+naJyS9njubCFfwP/Ep7tD68fn7wOnr2pucg=="
+      },
+      "matchingConsumerAndInstalledLocks": true,
+      "assistantIdentityCount": 1,
+      "consumerLockSha256": "c50a056c05774b8b3af485609fa64ee8e2c64ecf8792a7b25f337296a361771e",
+      "installedLockSha256": "de35d7100d2fefefe6ffecd66c7fd952f6c0b302194f3ae06c16c8f69c191b68",
+      "strictTypecheckExit": 0,
+      "attachmentFetchCompatibility": "passed in both directions",
+      "publicEntrypoints": 11
+    }
+  ],
+  "comparison": {
+    "candidateManifestAndLock": "Byte-identical after reverting version metadata 0.2.12 to 0.2.11 in memory, verified against candidate recorded hashes.",
+    "source": "Implementation, build scripts, reference, examples, tsconfig, installed runtime fixtures and PostgreSQL runner unchanged from candidate base.",
+    "dist": "All 110 dist files identical across both public installations and retained local dist.",
+    "publicExports": "All 11 export lists identical to qualified candidate.",
+    "limitation": "Prior task did not preserve candidate dist hashes or an accessible external candidate installation; retained local dist is not independently authenticated candidate output."
+  },
+  "priorChecksNotRepeated": {
+    "root": 778,
+    "fullPostgres": 428,
+    "reason": "No publication changes to relevant implementation/build bytes or frozen dependencies; only Agent version metadata changed from qualified candidate."
+  },
+  "historicalEvidenceFilesVerifiedUnchanged": 30,
+  "changes": "Only task-local verification evidence added; no source changes, commits, pushes, version changes or deployment.",
+  "remaining": "None for the requested exact-public-install gate."
+}

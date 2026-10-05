@@ -1,0 +1,29 @@
+{
+  "candidateWorkRequest": "9b90d4bd-c2a2-4543-8463-4411eeeadb82",
+  "candidateBaseSha": "fea9fe776b42d97f2a61d08f21cbe4422d077915",
+  "manifestAndLock": {
+    "package.json": {
+      "finalSha256": "c034be0fe57525a87272befe6fe9c5b40d5988dbda46b3e94618945eef96cc8b",
+      "candidateSha256": "a6855d0e87d3122ff5e4b3d769d8a996717e01350165b4676922e6ab24455c1a",
+      "onlyVersionBumpFromCandidate": true
+    },
+    "package-lock.json": {
+      "finalSha256": "6099b1c9c472b99cd63e35c0d58f1315b9b6c8233deb2e06c43bb6ec18322f0c",
+      "candidateSha256": "dab048522a599839e6f62ab7ba072de5d861e5ce9c9e4054b37b857e0b7a861b",
+      "onlyVersionBumpFromCandidate": true
+    }
+  },
+  "unchangedFromCandidateBasePaths": [
+    "src",
+    "scripts",
+    "reference",
+    "examples",
+    "tsconfig.json",
+    "tests/fixtures/installed",
+    "tests/run-local-postgres.mjs"
+  ],
+  "candidateEvidenceIndexVerified": 30,
+  "retainedLocalDistFiles": 110,
+  "distProvenanceLimit": "Prior task preserved logs and locks but no candidate dist hash inventory or accessible external candidate fixture. Local dist is compared as a retained workspace artifact, not independently authenticated candidate output.",
+  "rootAndFullPostgresSuites": "Not repeated: implementation, build inputs, runtime fixtures and dependency lock match qualified candidate, apart from Agent version metadata."
+}
