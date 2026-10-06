@@ -8,6 +8,32 @@ registration nor evidence of an authorized, ready Meta connection. The pin occur
 in the inspected official examples; it is not a claim about the newest release
 or an installed host's version. Re-review before operational admission.
 
+## Historical and current source consistency
+
+Manifest schema 2 preserves the 2026-09-28 `provenance.localSources`, base commit,
+branch and public-source review exactly as historical evidence. The separate
+`provenance.currentReview` records the 2026-10-06 review against SDK base
+`4535c367c77272d673b6a9748ef3c9ebca972a6e`. The original evidence file
+[`meta-v1-recipe.json`](../evidence/meta-v1-recipe.json) remains unchanged.
+
+The old security/acceptance digests match Git objects at
+`34a21d6673d940bd59fb9800d4ddeef6b3d7e051`. Commit
+`8201802e306490053ee491a54c824bce793b7890` replaced provider-managed payment
+references with scoped encrypted credit-card Vault entry/private fill, updated
+payment threat cases, and revised `ASDK-V1-M3-PAYMENT` acceptance evidence.
+Those two current files match that commit. The Meta token/OAuth, scope, current
+fences, unknown-effect and read-only requirements did not change; connection
+contract sources also remain byte-identical. This is a semantic review of the
+actual diff, not a replacement of historical pins with whatever files exist.
+
+`node scripts/validate-meta-v1.mjs` now checks both frozen historical provenance
+and actual current source bytes against this explicit review. Missing or changed
+current sources fail with `local_source_mismatch`; historical pin replacement
+fails with `missing_provenance`. The 53-test recipe suite covers both. A passing
+result is only `recipe_consistency_only`: all eight operations and browser
+fallback remain disabled. It does not refresh external documentation, authenticate
+provider facts or qualify the optional synthetic onboarding adapter.
+
 ## Scope and prerequisite decisions
 
 Use a **User access token**, acquired by a human's Facebook Login consent with

@@ -1,6 +1,6 @@
 {
   "name": "handrail-agent-sdk",
-  "version": "0.2.13",
+  "version": "0.2.14",
   "private": true,
   "description": "Headless durable agent execution powered by OpenAI Agents SDK",
   "type": "module",
@@ -19,9 +19,22 @@
     "examples/postgres-application.mts",
     "docs/postgres-runtime.md",
     "docs/continuous-conversation.md",
-    "examples/continuous-conversation.mts"
+    "examples/continuous-conversation.mts",
+    "examples/marketing-onboarding.mts",
+    "docs/marketing-onboarding.md"
   ],
   "exports": {
+    "./marketing": {
+      "types": "./dist/contracts/marketing.d.ts",
+      "import": "./dist/contracts/marketing.js"
+    },
+    "./server/marketing": {
+      "types": "./dist/server/marketing.d.ts",
+      "browser": null,
+      "node": {
+        "import": "./dist/server/marketing.js"
+      }
+    },
     ".": {
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
@@ -68,13 +81,15 @@
     }
   },
   "scripts": {
+    "test:marketing": "npm run build && node --test --test-concurrency=1 tests/marketing.test.mjs",
+    "test:marketing-postgres": "npm run build && npm run build:reference && npm run build:test-postgres && node --test --test-concurrency=1 tests/marketing-postgres.test.mjs",
     "build:test-browser": "tsc -p tests/tsconfig.browser.json",
     "test:browser": "npm run build:test-browser && node --test --test-concurrency=1 --test-reporter=tap tests/browser.test.mjs",
     "test:browser-boundary": "npm run build:test-browser && node --test --test-concurrency=1 --test-reporter=tap tests/browser-boundary.test.mjs",
     "build": "tsc -p tsconfig.json && node scripts/build-postgres-assets.mjs",
     "prepare": "npm run build",
     "pretest": "npm run build && npm run typecheck:acceptance && npm run build:test-postgres && npm run build:reference",
-    "test": "node --test --test-concurrency=1 --test-reporter=tap tests/contracts/job.test.mjs tests/contracts/connection.test.mjs tests/contracts/vault.test.mjs tests/contracts/browser.test.mjs tests/packaging.test.mjs tests/git-lock.test.mjs tests/acceptance.test.mjs",
+    "test": "node --test --test-concurrency=1 --test-reporter=tap tests/contracts/job.test.mjs tests/contracts/connection.test.mjs tests/contracts/vault.test.mjs tests/contracts/browser.test.mjs tests/packaging.test.mjs tests/git-lock.test.mjs tests/acceptance.test.mjs tests/marketing.test.mjs",
     "build:test-postgres": "tsc -p tests/tsconfig.postgres.json",
     "test:postgres": "npm run build:test-postgres && node --test --test-concurrency=1 --test-reporter=tap tests/postgres.test.mjs",
     "typecheck:acceptance": "tsc -p tests/fixtures/tsconfig.acceptance.json",

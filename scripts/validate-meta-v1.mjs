@@ -1,4 +1,5 @@
 import { readFileSync } from 'node:fs';
+import { createHash } from 'node:crypto';
 import { isDeepStrictEqual as same } from 'node:util';
 import { pathToFileURL } from 'node:url';
 
@@ -59,6 +60,58 @@ const sources = {
   "account-insights": ["https://developers.facebook.com/documentation/ads-commerce/marketing-api/reference/ad-account/insights", "https://developers.facebook.com/documentation/ads-commerce/marketing-api/reference/ad-account/insights"]
 };
 
+// Historical evidence remains pinned to the original review, not current bytes.
+const historicalLocalSources = [
+  {
+    "path": "docs/connection-contract.md",
+    "sha256": "9f9762353d6327d449feff27d49fd7832de114c0083ec54b6d3b03550bda8e09"
+  },
+  {
+    "path": "src/contracts/connection.ts",
+    "sha256": "7df5d28ff2969d11ad4e926c7522e69ab174012225199f8fc1e58c3cc50d020c"
+  },
+  {
+    "path": "docs/agent-security-boundary.md",
+    "sha256": "87321e141bc4712d3fedae6342acdaee88f49643ac35536f8cadfde9a6058825"
+  },
+  {
+    "path": "fixtures/convergence-v1.json",
+    "sha256": "6d4a95b7d3c57568f763bc665c4f8f855330a307bf529eb8851c8a615899d95e"
+  }
+];
+// Explicit semantic re-review; changing these pins requires another source review.
+const currentReview = {
+  "reviewedAt": "2026-10-06",
+  "sdkBaseCommit": "4535c367c77272d673b6a9748ef3c9ebca972a6e",
+  "proof": "local_recipe_consistency_only",
+  "localSources": [
+    {
+      "path": "docs/connection-contract.md",
+      "sha256": "9f9762353d6327d449feff27d49fd7832de114c0083ec54b6d3b03550bda8e09"
+    },
+    {
+      "path": "src/contracts/connection.ts",
+      "sha256": "7df5d28ff2969d11ad4e926c7522e69ab174012225199f8fc1e58c3cc50d020c"
+    },
+    {
+      "path": "docs/agent-security-boundary.md",
+      "sha256": "eef113b40635e82bd5e8f57dfe097ae033b605896a67b940309afc6661f620e0"
+    },
+    {
+      "path": "fixtures/convergence-v1.json",
+      "sha256": "c7702f958490f4739724d3ce5d2024b371c345d4f184f212ef79d916fb9a3aee"
+    }
+  ],
+  "semanticChange": {
+    "commit": "8201802e306490053ee491a54c824bce793b7890",
+    "paths": [
+      "docs/agent-security-boundary.md",
+      "fixtures/convergence-v1.json"
+    ],
+    "summary": "Replaced provider-managed payment references with scoped encrypted credit-card Vault entry and private fill; updated payment threats and ASDK-V1-M3-PAYMENT acceptance evidence. Meta token/OAuth, scope, cancellation, unknown-effect and read-only requirements are unchanged. No live qualification is granted."
+  }
+};
+
 // This validator consumes decoded JSON only. Reject accessors and hidden payloads
 // before reading fields; error results never echo input or raw exception text.
 function data(value, seen = new Set()) {
@@ -94,21 +147,22 @@ export function recipeTable(m) {
 }
 
 /** Source consistency only; cannot authenticate facts or enable a provider path. */
-export function validateMetaRecipe(m, document) {
+export function validateMetaRecipe(m, document, readSource = path => readFileSync(new URL(`../${path}`, import.meta.url))) {
   let code = 'invalid_manifest';
   try {
     require(data(m), code);
     require(keys(m, 'schemaVersion recipeVersion provider status graphApiVersion reviewedAt authority provenance publicSources tokenPolicy account adapters prerequisites operations boundaries liveProofRequired minimumCapabilities'), code);
-    require(m.schemaVersion === 1 && m.recipeVersion === 'meta-v1.2026-09-28' && m.provider === 'meta'
+    require(m.schemaVersion === 2 && m.recipeVersion === 'meta-v1.2026-09-28' && m.provider === 'meta'
       && m.status === 'documentation_only' && m.graphApiVersion === 'v25.0' && m.reviewedAt === '2026-09-28', code);
     code = 'invalid_authority'; require(same(m.authority, frozen.authority), code);
     code = 'missing_provenance';
     const p = m.provenance;
-    require(keys(p, 'kind sdkBaseCommit branch localSources hostSource') && p.kind === 'source_review'
+    require(keys(p, 'kind sdkBaseCommit branch localSources hostSource currentReview') && p.kind === 'source_review'
       && p.sdkBaseCommit === '34a21d6673d940bd59fb9800d4ddeef6b3d7e051' && p.branch === 'lane/agent-sdk-v1', code);
     const paths = ['docs/connection-contract.md', 'src/contracts/connection.ts', 'docs/agent-security-boundary.md', 'fixtures/convergence-v1.json'];
     require(Array.isArray(p.localSources) && same(p.localSources.map(s => s.path), paths)
-      && p.localSources.every(s => keys(s, 'path sha256') && digest(s.sha256)), code);
+      && p.localSources.every(s => keys(s, 'path sha256') && digest(s.sha256))
+      && same(p.localSources, historicalLocalSources) && same(p.currentReview, currentReview), code);
     const h = p.hostSource;
     require(keys(h, 'status projectId repoId currentRevision dirtySourceDigests inventoryWorkRequestId reportedInventoryBaseline reportedInventorySha256 unresolvedPaths reason')
       && h.status === 'unavailable' && h.currentRevision === null && h.dirtySourceDigests === null
@@ -150,6 +204,10 @@ export function validateMetaRecipe(m, document) {
       require(typeof document === 'string' && document.includes(recipeTable(m))
         && document.includes(`Recipe version: \`${m.recipeVersion}\``)
         && document.includes(`Graph API pin: \`${m.graphApiVersion}\``), code);
+    }
+    code = 'local_source_mismatch';
+    for (const source of currentReview.localSources) {
+      require(createHash('sha256').update(readSource(source.path)).digest('hex') === source.sha256, code);
     }
     return { ok: true, operationCount: operations.length, proof: 'recipe_consistency_only' };
   } catch { return { ok: false, code }; }

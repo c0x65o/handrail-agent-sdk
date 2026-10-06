@@ -1,0 +1,355 @@
+{
+  "schemaVersion": 1,
+  "reviewedAt": "2026-10-06",
+  "workRequest": "37f68f48-86ca-483b-9aa7-d3eca91d325b",
+  "handoffIdentity": "marketing-onboarding-review:37f68f48-86ca-483b-9aa7-d3eca91d325b:8a8d1c245319807f",
+  "parentHandoffIdentity": "marketing-onboarding:6eb7d98d-42a8-42d7-9db6-7d768dee3f96:1a07ae57725067f2",
+  "baseCommit": "4535c367c77272d673b6a9748ef3c9ebca972a6e",
+  "currentHead": "4535c367c77272d673b6a9748ef3c9ebca972a6e",
+  "delivery": "workspace_only_uncommitted",
+  "verdict": "synthetic_adapter_contract_qualified_with_remaining_host_gates; live_provider_disabled_unqualified",
+  "sourceHash": "8a8d1c245319807fbf23f24152dbe3d4a471bf2bbac8c5fd3ffd5ff61082104d",
+  "sourceHashAlgorithm": "SHA-256 of UTF-8 JSON.stringify(sourceFiles), with paths sorted lexicographically; includes the original 12 source paths plus four current recipe/validation paths; excludes evidence files and generated build outputs",
+  "sourceFiles": {
+    "README.md": "f938858adbf6fa21ab0baddbebb1e19ac1e97ef95ca18e6ff31806331a1f378e",
+    "docs/marketing-onboarding.md": "ffa8ddd2d71365d0469c77a6c1a4442b316af1e5d52de60651ba7e0fc1da70ad",
+    "docs/providers/meta-v1.md": "b2c772873521653ffb86e439344059f456c4cc4d78663105a5ba71b4d71d8ea9",
+    "docs/providers/meta-v1.recipe.json": "84196cb8018c0f93aa53007b61312a4ccea6bdb16d89388881253e73814eabca",
+    "examples/marketing-onboarding.mts": "89c1b0c5f707ec0f400e8fecda2ab076c7fafcf5ec7839d91f6126346f7e5874",
+    "package.json": "0cf8dcbd357a6f197a5deb2656ca474d766ead4e958f2a524a771a040005c259",
+    "scripts/validate-meta-v1.mjs": "ea458e560c47c7ede39bdd8fafead8587c4d64a12a1e4e1bb08019a66fee26c4",
+    "src/contracts/marketing.ts": "c1e9b6db06f7ffdca70a4d288230573b9c42dbb435e70bbcce7e8fa46d991991",
+    "src/server/marketing-meta.ts": "f892068f4eea5a673f875a945cc1a88e181c4e4c2e9a07bdc9b39225f7be1620",
+    "src/server/marketing.ts": "5a6621fe8f106d045927dc415f31ff9bec22b3e51ac836ee55d701f07856cdb1",
+    "tests/fixtures/tsconfig.json": "be733ff4464876b24699ede92d52c48dad1c2a83d8e4063a4eaa3f4e6f99e40d",
+    "tests/helpers/marketing-fixture.mjs": "a9f114de67256cf0deaea51d3214a33858141810c251d80b23a01f6560dbabdf",
+    "tests/marketing-postgres.test.mjs": "aa8e3946075533a4c636163c67220307a9e5e1c0cc3ac55d5556ccc900752102",
+    "tests/marketing.test.mjs": "b5d832e46889a362cf55096ac02275253b8177fce75843ec41ae09208422c298",
+    "tests/meta-recipe.test.mjs": "549a06a5bde26e44220d228d1fb0bfff0894cedc07eebc8ced8df1a14c48e4e5",
+    "tests/run-local-postgres.mjs": "9723a01cd884711b8265dd4407428bf9bc08aa743eb0b45bd4627a0aa0149836"
+  },
+  "preflight": {
+    "scopeVerifiedBy": "handrail_current_context",
+    "project": "c0x65o/handrail-agent-sdk",
+    "workRequest": "37f68f48-86ca-483b-9aa7-d3eca91d325b",
+    "requirementSnapshot": "08346f8bc72499c8cb24e07e01683e3a96bf02df5bc5242e8f97ba654e1284ea",
+    "initialWorkspaceFiles": 13,
+    "originalSourceHashVerified": "1a07ae57725067f2006a63b8bfe9f140cc7f2c5077976ba0b6e1cb4f231f31c7",
+    "originalSourceMismatches": [],
+    "authenticationRequirements": "No conflict found or authentication-policy changes needed for this adapter review."
+  },
+  "preservedEvidence": {
+    "docs/evidence/marketing-onboarding.json": "4376df0d2186d46a285ebd57353c408a77a517708b6ce62b99a5bd3f58f11707",
+    "docs/evidence/meta-v1-recipe.json": "8cfa5678c951367c2d64583a282db18cfa0fb8e5781943ce9946088d01ad0847"
+  },
+  "reviewChanges": [
+    "docs/evidence/marketing-onboarding-review.json",
+    "docs/marketing-onboarding.md",
+    "docs/providers/meta-v1.md",
+    "docs/providers/meta-v1.recipe.json",
+    "package.json",
+    "scripts/validate-meta-v1.mjs",
+    "src/server/marketing-meta.ts",
+    "src/server/marketing.ts",
+    "tests/marketing-postgres.test.mjs",
+    "tests/marketing.test.mjs",
+    "tests/meta-recipe.test.mjs"
+  ],
+  "workspaceChangedFiles": [
+    "README.md",
+    "docs/evidence/marketing-onboarding-review.json",
+    "docs/evidence/marketing-onboarding.json",
+    "docs/marketing-onboarding.md",
+    "docs/providers/meta-v1.md",
+    "docs/providers/meta-v1.recipe.json",
+    "examples/marketing-onboarding.mts",
+    "package.json",
+    "scripts/validate-meta-v1.mjs",
+    "src/contracts/marketing.ts",
+    "src/server/marketing-meta.ts",
+    "src/server/marketing.ts",
+    "tests/fixtures/tsconfig.json",
+    "tests/helpers/marketing-fixture.mjs",
+    "tests/marketing-postgres.test.mjs",
+    "tests/marketing.test.mjs",
+    "tests/meta-recipe.test.mjs",
+    "tests/run-local-postgres.mjs"
+  ],
+  "findings": [
+    {
+      "id": "MR-01",
+      "status": "repaired",
+      "finding": "Optional server entrypoint was reachable under browser export conditions.",
+      "repair": "Node-only runtime condition with explicit browser denial. Public /marketing remains type-only and inert. Direct file copying is not a security sandbox.",
+      "proof": "Browser-condition rejection; inert imports; strict distribution-only consumer compile/import of the real host example without skipLibCheck."
+    },
+    {
+      "id": "MR-02",
+      "status": "repaired",
+      "finding": "Onboarding relied solely on withAuthority holding authority; no explicit post-await current/entry-expiry checks. Ready could accept missing/nonfinite credential facts from an injected store.",
+      "repair": "Required literal-true isCurrent(recipe, operation), pre/post I/O checks, entry lifetime checks, copied entry request/handle, finite positive credential/grant revisions and deadlines, token/grant references and explicit unrevoked state. Local cancel/revoke remain possible after access expiry.",
+      "proof": "Authority loss across load/approval/entryRequest/issue/handoff, stale ready projection, malformed credential facts and expiry during issue regressions."
+    },
+    {
+      "id": "MR-03",
+      "status": "repaired",
+      "finding": "OAuth callback reused mutable session/entry objects and lacked current-session/expiry checks after capture and delivery.",
+      "repair": "Snapshot query/session/entry facts; required literal-true session guard before capture and after capture/delivery; use original handles and compare original request.",
+      "proof": "Session/handle/query mutation, revocation/expiry during capture/delivery; real PostgreSQL duplicate encrypted capture and original answer reuse."
+    },
+    {
+      "id": "MR-04",
+      "status": "repaired",
+      "finding": "Private reconciliation checked only request equality and abort, allowing a late verified/not_applied result without current factual-read authority.",
+      "repair": "Required isCurrent(binding, phase) before and after reconciliation; dispatch phase retains current worker lease/grant/cancel checks. Reconcile phase permits authorized factual accounting after Stop/expiry without replay/readiness.",
+      "proof": "Authority loss before/after reconciliation and authorized post-Stop factual read with denied dispatch."
+    },
+    {
+      "id": "MR-05",
+      "status": "repaired",
+      "finding": "Mutable private input/exchange result could be substituted across awaits; refresh-token registrations and extra recipe fields were not excluded.",
+      "repair": "Snapshot token and exchange primitives; reject non-API tokens and unexpected recipe fields. Preserve malformed expiry values for rejection rather than JSON-normalizing NaN/Infinity to null.",
+      "proof": "Private token substitution, malformed exchange deadlines, refresh token/extra payload, failed/ambiguous claim and concurrent synthetic claim regressions."
+    },
+    {
+      "id": "MR-06",
+      "status": "repaired",
+      "finding": "Recipe CLI did not check current source bytes, while the test compared historical pins against current files and failed.",
+      "repair": "Schema 2 preserves original provenance exactly, adds explicit semantic currentReview, pins both reviews in the validator, and validates actual current source bytes during ordinary CLI validation. Historical evidence files remain unchanged.",
+      "proof": "Reproduced 46 pass/1 fail; corrected 53 pass/0 fail, including historical replacement, missing review, all four source drifts and unavailable-source regressions."
+    },
+    {
+      "id": "MR-07",
+      "status": "documented_unverified",
+      "finding": "Generic AgentPort seam was described too confidently; actual external Marketing type compatibility and injected native services are not qualified by this repository.",
+      "repair": "Document exact local exports and example types, minimum external wrapper, and a nine-row host requirement/validation/proof matrix. No new framework, external host adapter or live transport is claimed."
+    }
+  ],
+  "recipeConsistency": {
+    "result": {
+      "ok": true,
+      "operationCount": 8,
+      "proof": "recipe_consistency_only"
+    },
+    "schemaVersion": 2,
+    "recipeVersion": "meta-v1.2026-09-28",
+    "historicalReviewedAt": "2026-09-28",
+    "currentReview": {
+      "reviewedAt": "2026-10-06",
+      "sdkBaseCommit": "4535c367c77272d673b6a9748ef3c9ebca972a6e",
+      "proof": "local_recipe_consistency_only",
+      "localSources": [
+        {
+          "path": "docs/connection-contract.md",
+          "sha256": "9f9762353d6327d449feff27d49fd7832de114c0083ec54b6d3b03550bda8e09"
+        },
+        {
+          "path": "src/contracts/connection.ts",
+          "sha256": "7df5d28ff2969d11ad4e926c7522e69ab174012225199f8fc1e58c3cc50d020c"
+        },
+        {
+          "path": "docs/agent-security-boundary.md",
+          "sha256": "eef113b40635e82bd5e8f57dfe097ae033b605896a67b940309afc6661f620e0"
+        },
+        {
+          "path": "fixtures/convergence-v1.json",
+          "sha256": "c7702f958490f4739724d3ce5d2024b371c345d4f184f212ef79d916fb9a3aee"
+        }
+      ],
+      "semanticChange": {
+        "commit": "8201802e306490053ee491a54c824bce793b7890",
+        "paths": [
+          "docs/agent-security-boundary.md",
+          "fixtures/convergence-v1.json"
+        ],
+        "summary": "Replaced provider-managed payment references with scoped encrypted credit-card Vault entry and private fill; updated payment threats and ASDK-V1-M3-PAYMENT acceptance evidence. Meta token/OAuth, scope, cancellation, unknown-effect and read-only requirements are unchanged. No live qualification is granted."
+      }
+    },
+    "historicalSourceVerification": "git show 34a21d6673d940bd59fb9800d4ddeef6b3d7e051:<path> SHA-256 matches both original historical pins. git diff 8201802e306490053ee491a54c824bce793b7890 HEAD -- docs/agent-security-boundary.md fixtures/convergence-v1.json is empty. Connection source/document digests are unchanged.",
+    "historicalLocalSources": [
+      {
+        "path": "docs/connection-contract.md",
+        "sha256": "9f9762353d6327d449feff27d49fd7832de114c0083ec54b6d3b03550bda8e09"
+      },
+      {
+        "path": "src/contracts/connection.ts",
+        "sha256": "7df5d28ff2969d11ad4e926c7522e69ab174012225199f8fc1e58c3cc50d020c"
+      },
+      {
+        "path": "docs/agent-security-boundary.md",
+        "sha256": "87321e141bc4712d3fedae6342acdaee88f49643ac35536f8cadfde9a6058825"
+      },
+      {
+        "path": "fixtures/convergence-v1.json",
+        "sha256": "6d4a95b7d3c57568f763bc665c4f8f855330a307bf529eb8851c8a615899d95e"
+      }
+    ],
+    "enabledOperations": 0,
+    "browserFallback": "disabled_no_permitted_gap",
+    "externalDocumentationRefreshed": false
+  },
+  "exports": {
+    "handrail-agent-sdk/marketing": {
+      "runtime": [],
+      "types": [
+        "MarketingConnectionBinding",
+        "MarketingOnboardingPort<Setup, Grant>",
+        "MarketingOnboardingResult"
+      ]
+    },
+    "handrail-agent-sdk/server/marketing": {
+      "runtime": [
+        "createMarketingOnboarding",
+        "createMetaOAuthCallback",
+        "createMetaVaultExecutor"
+      ],
+      "types": [
+        "MarketingConnectionBinding",
+        "MarketingOnboardingPort<Setup, Grant>",
+        "MarketingOnboardingResult",
+        "MarketingOnboardingHost<Setup, Grant>",
+        "MetaOAuthSession",
+        "MetaOAuthCallbackHost",
+        "MetaRecipe",
+        "MetaExecutorBinding",
+        "MetaPrivateValue",
+        "MetaPrivateInspection",
+        "MetaReadVerification",
+        "MetaPrivateGuard",
+        "MetaPrivateClient",
+        "MetaPrivateCustody",
+        "MetaExecutorHost"
+      ]
+    },
+    "examples/marketing-onboarding.mts": [
+      "NativeMarketingPorts<Setup, Grant>",
+      "marketingExtension<Setup, Grant>"
+    ],
+    "adapterSignature": "MarketingOnboardingPort<Setup, Grant>.inspect(setup, grant): Promise<MarketingOnboardingResult>",
+    "onboardingMethods": [
+      "inspect",
+      "reconnect",
+      "requestAccess",
+      "cancel",
+      "revoke"
+    ],
+    "externalMarketingConcreteTypes": "Not independently verified within the owned repository. Do not claim drop-in AgentPort compatibility or cast to it.",
+    "minimumBinding": "Compile a wrapper against actual Marketing AgentPort/setup/grant/result exports, resolve setup/grant hints under native authority, and map ready/waiting_human/blocked, the authenticated opaque handoff URL and meta.account.read/meta.report.read to Marketing vocabulary. Implement the required NativeMarketingPorts over existing host services."
+  },
+  "boundaryAudit": {
+    "approval": "Only server host approvePersistentAccess literal true permits requestAccess issuance; caller setup/grant are hints, not authority. Host must persist human approval of full recipe; requestAccess belongs only on authenticated human routes. The example agent tool can only use an existing native grant.",
+    "identity": "Recipe/request/destination/original effect snapshots are immutable across adapter work. Current host checks must bind tenant/user/project/account/environment/purpose, original task/job/native/route/instruction revisions, Meta app/user/account and grant/lease. New-job alias prevention is native authority, not a claim derived from request shape.",
+    "secrecy": "Only enums, fixed blocked reasons and opaque nonbearer host handoff routes leave the adapter; callback codes and tokens stay in entry/client/custody ports. Thrown private errors are suppressed. No reference-only imports occur in the distributed optional adapter/example.",
+    "durableClaims": "Claim CAS, private retain/invalidate and exact-effect reconcile remain required injected native services. Narrow synthetic fixtures prove boundary behavior, not independent persistence of the host claim across rollback/crash.",
+    "unknownEffects": "Recorded unknown connection effects stay unknown across reconnect/local revoke. Current native connection contract has no domain-owned unknown-to-ready resolution. No repair to that generic contract, replacement job, new grant or retry bypass was introduced.",
+    "transport": "No fetch/client implementation or live registration added. Generic vault-request is unchanged and still rejects query strings and unsafe destinations. A future Meta transport needs explicit policy resolution for private exchange/query requirements versus token-URL prohibition; suppressing logs is not a waiver.",
+    "trustLimit": "SDK cannot authenticate a lying host boolean or enforce a client falsely labelled synthetic. Installed host evidence is mandatory; runtime flags are not a network sandbox.",
+    "hostRequirementMatrix": "docs/marketing-onboarding.md#host-requirement-audit-and-limits-of-proof"
+  },
+  "checks": [
+    {
+      "command": "npm test",
+      "status": "passed",
+      "tests": 851,
+      "passed": 851,
+      "failed": 0,
+      "skipped": 0,
+      "includes": "Normal TypeScript build, acceptance typecheck, reference/test harness compilation, existing contracts/packaging and 73 Marketing/distribution consumer tests."
+    },
+    {
+      "command": "npm run test:marketing",
+      "status": "passed",
+      "tests": 73,
+      "failed": 0,
+      "skipped": 0,
+      "includes": "Strict distribution-only consumer compile/import including the actual example, without skipLibCheck; browser condition and adversarial adapter checks."
+    },
+    {
+      "command": "node node_modules/typescript/bin/tsc -p tests/fixtures/tsconfig.json",
+      "status": "passed"
+    },
+    {
+      "command": "node tests/run-local-postgres.mjs test:marketing-postgres test:connection-store test:lease test:journal test:vault-request",
+      "status": "passed",
+      "tests": 75,
+      "failed": 0,
+      "skipped": 0,
+      "suites": {
+        "marketing": 13,
+        "connection": 23,
+        "lease": 9,
+        "journal": 15,
+        "vault-request": 15
+      },
+      "harness": "Existing disposable PostgreSQL 15; private temporary cluster, dedicated non-superuser role, isolated schemas, normal migrations/encryption/query paths. Owned cluster stopped. No shared/production DB used."
+    },
+    {
+      "command": "node scripts/validate-meta-v1.mjs",
+      "status": "passed",
+      "result": {
+        "ok": true,
+        "operationCount": 8,
+        "proof": "recipe_consistency_only"
+      }
+    },
+    {
+      "command": "node --test --test-concurrency=1 tests/meta-recipe.test.mjs",
+      "status": "passed",
+      "tests": 53,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "command": "node --check scripts/validate-meta-v1.mjs",
+      "status": "passed"
+    },
+    {
+      "command": "git diff --check",
+      "status": "passed"
+    }
+  ],
+  "failedChecks": [
+    {
+      "phase": "pre-repair reproduction",
+      "command": "node --test --test-concurrency=1 tests/meta-recipe.test.mjs",
+      "passed": 46,
+      "failed": 1,
+      "reason": "Historical prerequisite hashes compared to current files; repaired by explicit current semantic review while retaining truthful history."
+    }
+  ],
+  "skippedChecks": [
+    {
+      "check": "Unscoped all-suite PostgreSQL and long global/installed-runtime suites",
+      "reason": "Existing five-minute full-check skip policy; exact relevant PostgreSQL suites ran sequentially with configured worker limits unchanged."
+    },
+    {
+      "check": "Fresh public Git-pinned installation of final changed source",
+      "reason": "Workspace-only uncommitted source has no final committed/pushed SHA to install; no tarball/file/registry/workspace dependency substituted. Distribution-only package-export qualification passed."
+    },
+    {
+      "check": "Live Meta login, consent, token transmission/exchange/revocation, access changes, browser fallback and production migrations",
+      "reason": "Outside authorization; all remain disabled."
+    }
+  ],
+  "remainingIndependentQualifications": [
+    "Compile the concrete Marketing AgentPort wrapper in its owning repository; actual external setup/grant/result export names and capability translation remain unverified here.",
+    "Installed native authenticated approval/session/CSRF/state/entry-handle binding, original admission and alias protection, current actor/account/environment/lease fences through commit, encrypted custody/key lifecycle and secret-free ingress/logging.",
+    "Native durable independent exchange claim CAS under races, outer rollback and process death; atomic guarded retention/invalidation and authenticated exact-effect factual reconciliation.",
+    "Domain-owned resolution of unknown connection effects; until separately implemented and tested keep unknown fail-closed with no replay/new-job workaround.",
+    "Separately reviewed live transport and token-URL policy, fixed endpoints/fields, no retry/redirect/pagination, byte limits and send-time guards. This source supplies a synthetic-only interface, not that transport.",
+    "Separately authorized account/app/redirect/permission/tier review, installed live scoped read receipts, revocation/expiry/denial/restart/cancel/lease-race proof. Browser fallback requires its own qualification and remains disabled.",
+    "After owner-controlled commit/release, independently verify a full-SHA public HTTPS Git installation with matching lockfile and ordinary install/build pipeline."
+  ],
+  "actionsNotTaken": [
+    "commit",
+    "push",
+    "PR",
+    "deploy",
+    "Handrail database or queue changes",
+    "other repository edits",
+    "real credential transmission",
+    "live provider flow",
+    "production migration"
+  ],
+  "questions": []
+}

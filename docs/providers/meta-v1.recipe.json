@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "recipeVersion": "meta-v1.2026-09-28",
   "provider": "meta",
   "status": "documentation_only",
@@ -50,6 +50,37 @@
         "actual Marketing SDK callers"
       ],
       "reason": "source_reader_inherits_sdk_lane"
+    },
+    "currentReview": {
+      "reviewedAt": "2026-10-06",
+      "sdkBaseCommit": "4535c367c77272d673b6a9748ef3c9ebca972a6e",
+      "proof": "local_recipe_consistency_only",
+      "localSources": [
+        {
+          "path": "docs/connection-contract.md",
+          "sha256": "9f9762353d6327d449feff27d49fd7832de114c0083ec54b6d3b03550bda8e09"
+        },
+        {
+          "path": "src/contracts/connection.ts",
+          "sha256": "7df5d28ff2969d11ad4e926c7522e69ab174012225199f8fc1e58c3cc50d020c"
+        },
+        {
+          "path": "docs/agent-security-boundary.md",
+          "sha256": "eef113b40635e82bd5e8f57dfe097ae033b605896a67b940309afc6661f620e0"
+        },
+        {
+          "path": "fixtures/convergence-v1.json",
+          "sha256": "c7702f958490f4739724d3ce5d2024b371c345d4f184f212ef79d916fb9a3aee"
+        }
+      ],
+      "semanticChange": {
+        "commit": "8201802e306490053ee491a54c824bce793b7890",
+        "paths": [
+          "docs/agent-security-boundary.md",
+          "fixtures/convergence-v1.json"
+        ],
+        "summary": "Replaced provider-managed payment references with scoped encrypted credit-card Vault entry and private fill; updated payment threats and ASDK-V1-M3-PAYMENT acceptance evidence. Meta token/OAuth, scope, cancellation, unknown-effect and read-only requirements are unchanged. No live qualification is granted."
+      }
     }
   },
   "publicSources": [

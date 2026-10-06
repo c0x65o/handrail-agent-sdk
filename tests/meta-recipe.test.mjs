@@ -19,8 +19,8 @@ test('frozen recipe and document agree; validation grants no readiness', () => {
   assert.equal(baseline.account.ready, false);
   assert.ok(baseline.operations.every(o => !o.enabled));
 });
-test('local prerequisite digests bind the inspected source bytes', () => {
-  for (const source of baseline.provenance.localSources) {
+test('current review prerequisite digests bind the inspected source bytes', () => {
+  for (const source of baseline.provenance.currentReview.localSources) {
     const bytes = readFileSync(new URL(`../${source.path}`, import.meta.url));
     assert.equal(createHash('sha256').update(bytes).digest('hex'), source.sha256);
   }
@@ -120,4 +120,22 @@ test('null, malformed, sparse, cyclic and executable inputs fail without invokin
     assert.deepEqual(validateMetaRecipe(input), { ok: false, code: 'invalid_manifest' });
   }
   assert.equal(invoked, false);
+});
+
+test('historical digests cannot be silently replaced by current bytes', () => {
+  reject(m => { m.provenance.localSources = m.provenance.currentReview.localSources; }, 'missing_provenance');
+  reject(m => { delete m.provenance.currentReview; }, 'missing_provenance');
+  reject(m => { m.provenance.currentReview.semanticChange.summary = 'Provider qualified'; }, 'missing_provenance');
+  reject(m => { m.provenance.currentReview.localSources[0].sha256 = '0'.repeat(64); }, 'missing_provenance');
+});
+for (const source of baseline.provenance.currentReview.localSources) {
+  test(`normal validation detects current prerequisite drift: ${source.path}`, () => {
+    assert.deepEqual(validateMetaRecipe(baseline, document, path => path === source.path
+      ? Buffer.from('changed bytes') : readFileSync(new URL(`../${path}`, import.meta.url))),
+    { ok: false, code: 'local_source_mismatch' });
+  });
+}
+test('unavailable current prerequisite fails safely without leaking reader errors', () => {
+  assert.deepEqual(validateMetaRecipe(baseline, document, () => { throw Error('PRIVATE_PATH_ERROR'); }),
+    { ok: false, code: 'local_source_mismatch' });
 });

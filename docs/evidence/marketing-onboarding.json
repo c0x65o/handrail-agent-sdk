@@ -1,0 +1,126 @@
+{
+  "workRequest": "6eb7d98d-42a8-42d7-9db6-7d768dee3f96",
+  "handoffIdentity": "marketing-onboarding:6eb7d98d-42a8-42d7-9db6-7d768dee3f96:1a07ae57725067f2",
+  "baseCommit": "4535c367c77272d673b6a9748ef3c9ebca972a6e",
+  "currentHead": "4535c367c77272d673b6a9748ef3c9ebca972a6e",
+  "version": "0.2.13",
+  "delivery": "workspace_only_uncommitted",
+  "sourceHash": "1a07ae57725067f2006a63b8bfe9f140cc7f2c5077976ba0b6e1cb4f231f31c7",
+  "sourceHashAlgorithm": "SHA-256 of UTF-8 JSON.stringify(sourceFiles), with paths sorted lexicographically; excludes this evidence file and generated build outputs",
+  "sourceFiles": {
+    "README.md": "f938858adbf6fa21ab0baddbebb1e19ac1e97ef95ca18e6ff31806331a1f378e",
+    "docs/marketing-onboarding.md": "de0c3bf1939db5df594ed3bc55997d42fd2335eff24d91416fb460d1ce7dc8b7",
+    "examples/marketing-onboarding.mts": "89c1b0c5f707ec0f400e8fecda2ab076c7fafcf5ec7839d91f6126346f7e5874",
+    "package.json": "cd1e7cde94730c40f7587536db0191546ab4895aa87cfc196fc1bc71da47d1d8",
+    "src/contracts/marketing.ts": "c1e9b6db06f7ffdca70a4d288230573b9c42dbb435e70bbcce7e8fa46d991991",
+    "src/server/marketing-meta.ts": "b0a6b152f3a48b038d74482844da9f227f64f1e7ed3bf1b137dc06f0b3bd7242",
+    "src/server/marketing.ts": "406446809809f752e36619d4481d34eb02de4885bedfcc2b192ac58095a608c4",
+    "tests/fixtures/tsconfig.json": "be733ff4464876b24699ede92d52c48dad1c2a83d8e4063a4eaa3f4e6f99e40d",
+    "tests/helpers/marketing-fixture.mjs": "a9f114de67256cf0deaea51d3214a33858141810c251d80b23a01f6560dbabdf",
+    "tests/marketing-postgres.test.mjs": "0c719d9029e03b010a1692d59a0ed81c31518729b9475eb14f439a1bed5302f9",
+    "tests/marketing.test.mjs": "bca0cda54a04ac7f2f280b461fc7ecc8a00f9cef9ebca76d97eb4a90dc460a93",
+    "tests/run-local-postgres.mjs": "9723a01cd884711b8265dd4407428bf9bc08aa743eb0b45bd4627a0aa0149836"
+  },
+  "checks": [
+    {
+      "command": "npm test",
+      "status": "passed",
+      "tests": 828,
+      "failed": 0,
+      "skipped": 0,
+      "includes": "build, acceptance typecheck, reference/PostgreSQL harness compilation, existing 778 tests and 50 Marketing/isolated distribution-consumer tests"
+    },
+    {
+      "command": "node node_modules/typescript/bin/tsc -p tests/fixtures/tsconfig.json",
+      "status": "passed"
+    },
+    {
+      "command": "node tests/run-local-postgres.mjs test:marketing-postgres test:connection-store test:lease test:journal",
+      "status": "passed",
+      "tests": 60,
+      "suites": {
+        "marketing": 13,
+        "connection": 23,
+        "lease": 9,
+        "journal": 15
+      },
+      "harness": "existing disposable PostgreSQL 15, dedicated non-superuser role and temporary schemas; owned cluster stopped"
+    },
+    {
+      "command": "node tests/run-local-postgres.mjs test:marketing-postgres",
+      "status": "passed",
+      "tests": 13,
+      "note": "Rerun after final private invalidation changes; owned cluster stopped"
+    },
+    {
+      "command": "npm pack --dry-run --ignore-scripts --json",
+      "status": "passed",
+      "note": "File-list check confirms optional JS/declarations/example/guide included and reference factories excluded. npm also ran ordinary prepare/build; no tarball or dependency installation."
+    },
+    {
+      "command": "node scripts/validate-meta-v1.mjs",
+      "status": "passed",
+      "operations": 8,
+      "proof": "recipe_consistency_only"
+    },
+    {
+      "command": "node --test --test-concurrency=1 tests/meta-recipe.test.mjs",
+      "status": "failed",
+      "tests": 47,
+      "passed": 46,
+      "failed": 1,
+      "reason": "Pre-existing local prerequisite digest mismatch; both affected files equal baseline HEAD and were not edited. Historical recipe evidence left unchanged.",
+      "drift": [
+        {
+          "path": "docs/agent-security-boundary.md",
+          "recorded": "87321e141bc4712d3fedae6342acdaee88f49643ac35536f8cadfde9a6058825",
+          "current": "eef113b40635e82bd5e8f57dfe097ae033b605896a67b940309afc6661f620e0",
+          "baseline": "eef113b40635e82bd5e8f57dfe097ae033b605896a67b940309afc6661f620e0"
+        },
+        {
+          "path": "fixtures/convergence-v1.json",
+          "recorded": "6d4a95b7d3c57568f763bc665c4f8f855330a307bf529eb8851c8a615899d95e",
+          "current": "c7702f958490f4739724d3ce5d2024b371c345d4f184f212ef79d916fb9a3aee",
+          "baseline": "c7702f958490f4739724d3ce5d2024b371c345d4f184f212ef79d916fb9a3aee"
+        }
+      ]
+    },
+    {
+      "command": "git diff --check",
+      "status": "passed"
+    }
+  ],
+  "earlierRuns": [
+    {
+      "status": "failed_then_corrected",
+      "finding": "New PostgreSQL fixture supplied Vault actor metadata to a strict lease authority shape; separated the lease authority fixture."
+    },
+    {
+      "status": "failed_then_corrected",
+      "finding": "Lease expiry during private I/O exposed need for explicit native execution lease guard; added required MetaExecutorHost.isCurrent and verified late output suppression."
+    },
+    {
+      "status": "failed_then_corrected",
+      "finding": "Isolated distribution-consumer fixture inherited root package self-reference; added its own package scope and explicit rootDir. Final isolated compile/import and npm test pass."
+    }
+  ],
+  "qualification": {
+    "adapter": "synthetic_contract_tests_passed",
+    "metaProvider": "disabled_unqualified",
+    "recipeOperationsEnabled": 0,
+    "browserFallback": "disabled",
+    "network": "Only unauthenticated public documentation reads; no live provider flow or credentials",
+    "nativePersistence": "SDK Vault/entry/effect/connection/lease persistence tested in PostgreSQL. Native Meta claimDispatch, private custody publication, provider client and authenticated OAuth-session implementation remain injected host qualification requirements."
+  },
+  "skipped": [
+    "Long all-suite PostgreSQL/full installed-runtime checks, per five-minute full-check rule; selected relevant suites ran sequentially with configured concurrency unchanged.",
+    "Fresh Git-pinned installation of the changed source: no committed/pushed revision exists for this workspace-only task.",
+    "All live Meta login, credential transmission, exchange, consent, revocation, access expansion, account/app/billing/ad configuration and browser qualification."
+  ],
+  "remaining": [
+    "Owning workflow review of workspace changes and independent installed native-host qualification before any live Meta operation.",
+    "Native durable attempt CAS and authenticated exact-effect reconciliation, private approved transport/custody, secure human consent/session, and capability mapping to concrete Marketing AgentPort types.",
+    "Domain-owned resolution for recorded unknown connection effects remains unavailable in current connection contract; no retry or replacement-job workaround.",
+    "Review stale historical recipe source-digest evidence separately; do not infer live readiness from fixtures."
+  ]
+}
