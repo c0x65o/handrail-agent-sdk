@@ -33,10 +33,15 @@ The exact SDK adapter contract is
 `MarketingOnboardingPort<Setup, Grant>.inspect(setup, grant): Promise<MarketingOnboardingResult>`.
 `createMarketingOnboarding<Setup, Grant>` returns `inspect`, `reconnect`,
 `requestAccess`, `cancel`, and `revoke` with that same argument/result signature.
-The example's `marketingExtension<Setup, Grant>(NativeMarketingPorts<Setup, Grant>)`
-returns `agentPort` (only `inspect`), `onboarding`, `tool: AgentRuntimeTool`, and
-`privateOAuthCallback`. `NativeMarketingPorts` and `marketingExtension` are
-example exports, not additional package entrypoints.
+The example's `marketingAgentPort(host: MarketingOnboardingHost<Setup, Grant>,
+connections: ConnectionStore, entry: Pick<ReturnType<typeof createVaultEntry<MetaPrivateValue>>, 'issue'>)`
+returns an actual Marketing `AgentPort` and the existing `onboarding` methods.
+`marketingExtension(native: NativeMarketingPorts)` composes that wrapper with
+`tool: AgentRuntimeTool` and `privateOAuthCallback`. These are example exports,
+not additional package entrypoints. `Setup` and `Grant` are imported from
+`@handrail/marketing/core`; `AgentPort` is from `@handrail/marketing/server`.
+Its result is `Awaited<ReturnType<AgentPort['inspect']>>`, because Marketing does
+not export a named inspect-result type. No compatibility cast is used.
 
 The server entrypoint's exact exported port types are `MarketingOnboardingHost`,
 `MetaOAuthSession`, `MetaOAuthCallbackHost`, `MetaRecipe`, `MetaExecutorBinding`,
@@ -45,16 +50,39 @@ The server entrypoint's exact exported port types are `MarketingOnboardingHost`,
 It also re-exports the three `/marketing` contract types. Its only runtime exports
 are `createMarketingOnboarding`, `createMetaOAuthCallback`, and `createMetaVaultExecutor`.
 
-The separately owned Marketing SDK's concrete `AgentPort`, setup, grant and result
-export declarations are **not independently verified in this repository**.
-The generic port models the reported `inspect` seam; it is not proof of a drop-in
-implementation of that external interface. Minimum remaining Marketing binding:
-compile a host wrapper against those actual exported types, resolve setup/grant
-hints to native authority, and translate the SDK's result union, opaque handoff URL
-and two capability IDs into Marketing's read/report vocabulary. Do not cast to
-claim compatibility. This belongs with Marketing work request
-`63803c8f-f715-48a1-9368-270b808b4bed`; no other repository was changed.
-Neither capability permits campaign writes, spending or billing.
+The published Agent 0.2.14 (`c17257f0b9ed10f84f32dc7f2107d40e3c51aa13`)
+and Marketing 0.1.5 (`b5e725a1d2cff4864c98acb98f9e6e8e8e370f51`) pair passed
+independent exact-Git installed-consumer qualification in work request
+`7937a264-35f9-400e-8871-ee2937df1235`, including a temporary concrete wrapper
+inside `MarketingServer`. This example persists that public type seam; the
+[new source handoff](evidence/marketing-typed-bridge.json) distinguishes its
+packed-candidate checks from that immutable published-pair proof. Neither proves
+an installed native host or live provider readiness.
+
+The wrapper preserves fixed blocked reasons and supplies a null handoff; waiting
+maps to `provider_consent_required` with only the authenticated opaque host route.
+Ready maps to null reason/handoff after checking the two read capabilities:
+`meta.account.read` corresponds to Marketing's `setup` verification and
+`meta.report.read` to `report`. Marketing's `AgentPort` carries **no capability
+field**. The wrapper does not mutate Setup/Grant or install permissions.
+`MarketingServer` independently verifies provider/account capabilities after
+ready. Neither read capability grants campaign-write, spend or billing authority.
+
+Marketing remains an optional consumer dependency, pinned to the full HTTPS Git
+SHA above with the consumer's lockfile. The SDK's own dependency graph does not
+include it. Copy the example into server-owned code only; its Marketing imports
+are type-only, but its Agent imports are server runtime code. The regular SDK
+consumer typecheck covers dependency-free exports; the optional check below
+compiles the concrete example against both installed packages.
+
+The full composition, including `AgentRuntimeTool`, is qualified with TypeScript
+**5.9.3** and `@types/node` **22.20.4**, using Node **22.23.1** (the pinned
+Marketing package requires `>=22.23.1 <23`). TypeScript **7.0.2** with
+`@types/node` **25.9.0** failed with three upstream `@openai/agents` **TS2416**
+declaration errors. That combination is not qualified for this example. The
+earlier temporary pair proof had narrower TS7 coverage and did not compile the
+full `AgentRuntimeTool` composition. Neither `skipLibCheck`, declaration casts,
+library edits nor dependency upgrades are used to suppress this limit.
 
 `inspect` and `reconnect` only read native state; they never create credentials,
 renew consent or dispatch provider work. Ready requires authenticated, current
@@ -253,7 +281,44 @@ disposable PostgreSQL 15 harness and real Vault encryption/grants, entry,
 connection, journal and lease repositories. Native Meta transport/dispatch-custody
 are narrow synthetic boundary fixtures, not a new fake database. Those tests
 prove SDK persistence and composition, not a host's durable attempt store or live
-transport. Consumer compilation includes the example via package exports.
+transport. The optional installed-consumer check compiles the packaged example
+using public exports with strict NodeNext and Bundler and `skipLibCheck:false`:
+
+```sh
+# Uncommitted source qualification: baseline SHA is not a candidate Git identity.
+node tests/verify-marketing-install.mjs c17257f0b9ed10f84f32dc7f2107d40e3c51aa13 --candidate-source
+# After separate review/publication, qualify the actual delivered Git revision:
+node tests/verify-marketing-install.mjs FULL_40_CHARACTER_DELIVERED_SHA
+```
+
+The runner creates a temporary consumer outside the checkout, installs Marketing
+from its frozen full-SHA public HTTPS Git dependency with normal prepare scripts,
+then copies the manifest and unchanged lockfile into a second consumer and runs
+`npm ci` with a fresh cache. Candidate mode follows the existing source-consumer
+workflow: install the candidate's dependencies normally, build/pack Agent source
+with normal prepare, and unpack only its package allowlist for the tests. No
+Agent tarball dependency or Git-install claim is put in the consumer lock. The
+committed mode installs Agent from its actual Git SHA instead. Neither mode
+rewrites dependency locks, substitutes sibling workspaces, or imports reference
+factories. Logs, lockfile, source/pack hashes and command timings stay in the
+reported temporary evidence directory. The example hash is taken from the
+installed package actually compiled; fixture/harness hashes identify the review
+checkout separately, including in future committed-SHA mode.
+
+The focused regression covers all blocked reasons, waiting/ready projection,
+synthetic denied/accepted human approval, cancellation and original unknown
+preservation, inert runtime imports, browser graph/server rejection, and private
+value suppression, complete frozen Setup/Grant preservation, immutable handoff
+inputs and current-authority checks. It also executes the actual `MarketingServer`
+with its public `Store` on a disposable SQLite file and synthetic provider ports:
+blocked/waiting projections persist, and ready still requires independent provider
+capability verification. This is the package's existing SQL implementation, not a
+fake repository; it makes no PostgreSQL dialect or live-host claim. Ready
+projection is a vocabulary-only probe; fixture evidence remains blocked.
+Stateless native-port responses test the wrapper boundary, not native storage.
+The separate existing PostgreSQL/Vault suite proves encrypted custody,
+entry/answer replay, durable effects, revocation and SQL reconnect behavior. No
+live provider is called by either check; the consumer runtime fences network IO.
 
 On 2026-10-06 the web reader returned 429, then direct unauthenticated public
 documentation reads returned HTTP 200 at these canonical URLs:

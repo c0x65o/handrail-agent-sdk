@@ -1,0 +1,804 @@
+{
+  "workRequest": "387ad91a-afd3-4252-aecc-25b38cc7637d",
+  "implementationWorkRequest": "7a1484cc-2772-4613-a9ca-eb52247bd795",
+  "handoffIdentity": "marketing-typed-bridge-independent-review:387ad91a-afd3-4252-aecc-25b38cc7637d",
+  "date": "2026-10-06",
+  "delivery": "workspace_only_uncommitted",
+  "verdict": "PASS after bounded test/harness/documentation fixes: ready for owner review toward publication under the supported compiler profile. This is not production readiness, a committed-Git qualification, or live-host qualification.",
+  "fixedDefects": [
+    {
+      "finding": "Harness attributed the checkout example hash to tests of an installed revision; committed mode could report the wrong source.",
+      "fix": "Hash exact copied consumer inputs, assert the installed example matches those bytes, record installed versions and distinguish installed-example versus review-fixture provenance."
+    },
+    {
+      "finding": "Negative browser tests accepted any bundling failure, including unrelated resolution problems.",
+      "fix": "Require the Agent browser export denial and Marketing Node-only dependency diagnostics; exercise both example exports in the browser graph."
+    },
+    {
+      "finding": "Complete MarketingServer compatibility was only a compile-time constructor witness, while earlier temporary proof exercised it at runtime.",
+      "fix": "Add a real in-process MarketingServer using its existing public SQL Store on a disposable SQLite file. Exercise persisted blocked/waiting/ready states, independent provider read-capability denial/acceptance, current-authority denial, unknown projection, unchanged Grant and stale revision rejection; only external provider/native responses are synthetic."
+    },
+    {
+      "finding": "Projection coverage did not assert full caller immutability or capability omissions and did not make blocked-reason coverage compile-time exhaustive.",
+      "fix": "Freeze full Setup/Grant including arrays, compare complete inputs after every case, exhaust the reason union, test each absent read capability and unsupported authority, snapshot handoff recipe/entry boundaries, authority loss after awaits, and unchanged original unknown identity."
+    },
+    {
+      "finding": "Public onboarding instructions omitted the exact compiler limitation and distinction from narrower historical TS7 proof.",
+      "fix": "Document TypeScript 5.9.3/@types/node 22.20.4 and Node 22.23.1 supported profile; retain the independently reproduced TS7.0.2/@types/node25.9.0 failures without casts, skipLibCheck, library edits or dependency upgrades."
+    }
+  ],
+  "initialVerification": {
+    "branch": "main",
+    "head": "c17257f0b9ed10f84f32dc7f2107d40e3c51aa13",
+    "dirtyPathCount": 10,
+    "sourceHash": "f9ce45bdb75aa6683e71755581a996d79f573ee179f5d309236cc10184c0ba44",
+    "sourceHashVerified": true,
+    "handoffSha256": "37ce8da6a8938bc04002bc41bc2a15529027383e1160199225230e07dec35c06",
+    "handoffUnchanged": true,
+    "initialTreeHash": "f821d7a936628b8d74e6b3f168171ac44de1873a601ca1011f5b32c713634c34",
+    "nativeContext": "handrail_current_context succeeded for the active Agent SDK project and this work request; authentication snapshot 08346f8bc72499c8cb24e07e01683e3a96bf02df5bc5242e8f97ba654e1284ea. No state mutations.",
+    "instructions": "No AGENTS.md or local SKILL.md in the repository or ancestor paths; .agents/.codex empty. No applicable listed skill. Complete tracked diff, all untracked candidate files and onboarding evidence read."
+  },
+  "reviewChanges": [
+    "docs/marketing-onboarding.md",
+    "tests/fixtures/marketing-browser.mjs",
+    "tests/fixtures/marketing-consumer.mts",
+    "tests/verify-marketing-install.mjs"
+  ],
+  "contractAudit": {
+    "projection": "Actual packaged example imports Setup/Grant/Permission from @handrail/marketing/core and AgentPort from /server. Full marketingExtension including AgentRuntimeTool and actual MarketingServer constructor strictly compile without compatibility casts in both modes.",
+    "states": "All seven fixed blocked reasons retain null handoff; waiting_human maps to provider_consent_required and the canonical opaque host route; ready emits only state/reason/handoff after both read capabilities. Incomplete or unrelated capabilities block. No capability or private-reference field is emitted.",
+    "authority": "Setup/Grant are caller hints, not authority. Exact object equality/freeze regressions plus before/after-await denial checks pass. Native authenticated admission remains a required host implementation.",
+    "immutability": "Private handoff receives copied recipe/effect and entry handle. Mutation of those arguments cannot change original objects; canonical URL rejects provider/redirect/query payloads. Full original unknown snapshot survives inspect/reconnect/requestAccess/cancel/revoke and wrapper reconstruction; SQL suite independently checks fresh-connection retention.",
+    "optionality": "No Marketing dependency, lockfile, package exports, SDK runtime source or Meta recipe changed. Generic fixture removal is explicitly replaced by full packaged concrete composition in the separate optional qualifier, including noUncheckedSideEffectImports:true. Base consumer types still compile without Marketing installed.",
+    "browser": "Four safe public bundle graphs exclude server/reference/provider dependencies. Agent server export and full example fail on explicit browser exclusion; Marketing server fails on Node builtins. Explicit Node browser condition also rejects Agent server/marketing.",
+    "boundaries": "Runtime module guard enforces installed-consumer paths and blocks fetch/HTTP/HTTPS/net/TLS attempts. Zero network attempts; no host or provider IO qualification."
+  },
+  "harnessAudit": {
+    "normalInstall": "Marketing and Assistant installed from public HTTPS full-SHA Git specs with normal prepare. Separate second consumer uses copied manifest/lock and npm ci with a fresh cache; lock unchanged after ci and all checks. Same consumer lock hash as original implementation.",
+    "candidate": "Agent source built by ordinary npm pack prepare; only package allowlist unpacked. It is explicitly labelled packed-candidate-source-only, with HEAD only a baseline. No Agent tarball/file dependency or Git-install claim in the consumer lock. No sibling checkout substitution or dependency-lock rewriting.",
+    "futureGit": "Without --candidate-source, supplied full SHA is installed through publicSdkGitSpec and verified against root and installed locks; no candidate override executes. Future committed candidate is not available or authorized for publication here, so that path remains unverified for this change.",
+    "evidenceCorrection": "Exact installed example bytes and root-owned fixture/harness bytes now have distinct provenance; supported versions are asserted.",
+    "compilerOptions": {
+      "strict": true,
+      "skipLibCheck": false,
+      "noUncheckedSideEffectImports": true,
+      "modes": [
+        "NodeNext",
+        "Bundler"
+      ]
+    }
+  },
+  "sourceFiles": {
+    "README.md": "eb84be36f7e4a3f8667f273ffb2d01459d7df1834115891501705ada71bebda1",
+    "docs/marketing-onboarding.md": "49baca789aaf92ff5a7f0d03c5292578fa7ad35b5f59a5221617fbd3cdda1034",
+    "examples/marketing-onboarding.mts": "dd09e884ae7b8d478fd2e0af0016ad8d85e63fd7de7eae87cb97c7cf1ef6c97a",
+    "tests/fixtures/marketing-browser.mjs": "758a1bf2d604ccc2b45bed7dc9711e1a64314573ce0458d30aa855a7236d9c1d",
+    "tests/fixtures/marketing-consumer.mts": "b8b5748ece00d78e29bda6646432ec50367345abb4f544ff8dfb4817cecf3a2d",
+    "tests/fixtures/marketing-guard.mjs": "b4011808a5d39cdca278f5ccdcb425d86eb96c83d8579e5bea1d59d7f4b2bbaf",
+    "tests/fixtures/tsconfig.json": "9063703139a3fa372a28e9fb2f137dc503b8d6d0555f43bd17d0aeb75c87535e",
+    "tests/marketing.test.mjs": "9a0538021d3ec00b9f9b955efc32a782e86bcdaa1ec4e67e1ead32127389972d",
+    "tests/verify-marketing-install.mjs": "b44a6361dc0f92fd7c6547ad4742d3dc91cbb914e47e69cf45d112341c19752b"
+  },
+  "sourceHash": "47d89961739a3c6d2aae1971e0bfee058a269b9e73ab6a41111e3c4653ef449f",
+  "sourceHashAlgorithm": "SHA256 of UTF-8 JSON.stringify(sourceFiles), lexicographically sorted original nine source paths; evidence records excluded. dirtyFiles and detachedSeal cover every dirty path including evidence.",
+  "dirtyFiles": {
+    "README.md": "eb84be36f7e4a3f8667f273ffb2d01459d7df1834115891501705ada71bebda1",
+    "docs/evidence/marketing-typed-bridge.json": "37ce8da6a8938bc04002bc41bc2a15529027383e1160199225230e07dec35c06",
+    "docs/marketing-onboarding.md": "49baca789aaf92ff5a7f0d03c5292578fa7ad35b5f59a5221617fbd3cdda1034",
+    "examples/marketing-onboarding.mts": "dd09e884ae7b8d478fd2e0af0016ad8d85e63fd7de7eae87cb97c7cf1ef6c97a",
+    "tests/fixtures/marketing-browser.mjs": "758a1bf2d604ccc2b45bed7dc9711e1a64314573ce0458d30aa855a7236d9c1d",
+    "tests/fixtures/marketing-consumer.mts": "b8b5748ece00d78e29bda6646432ec50367345abb4f544ff8dfb4817cecf3a2d",
+    "tests/fixtures/marketing-guard.mjs": "b4011808a5d39cdca278f5ccdcb425d86eb96c83d8579e5bea1d59d7f4b2bbaf",
+    "tests/fixtures/tsconfig.json": "9063703139a3fa372a28e9fb2f137dc503b8d6d0555f43bd17d0aeb75c87535e",
+    "tests/marketing.test.mjs": "9a0538021d3ec00b9f9b955efc32a782e86bcdaa1ec4e67e1ead32127389972d",
+    "tests/verify-marketing-install.mjs": "b44a6361dc0f92fd7c6547ad4742d3dc91cbb914e47e69cf45d112341c19752b"
+  },
+  "dirtyTreeHashExcludingThisReview": "f3b581b7cac52a0bb28090f1c9ff3f22747ac3cad031086013e2fa088b89d8a9",
+  "fullSourceTree": {
+    "fileCount": 569,
+    "sha256": "5dd9fb7cbba05f6bf71c85aa7f2a5485419d7378f421a4707481765ccab5081c",
+    "scope": "All git tracked and nonignored untracked files, lexicographically sorted path -> SHA256 JSON. Excludes this new handoff only; ignored build/cache files are not source."
+  },
+  "detachedSeal": {
+    "path": "/opt/handrail/.handrail/codex-runs/3752cb3b-3a52-4245-8890-c3d305d45a5b/tmp/marketing-typed-bridge-independent-review.final-tree.json",
+    "scope": "Created once after this record. Contains final full source-tree and every dirty path including this handoff with exact per-file SHA256 and aggregate digests; avoids recursive self hashing. Its own SHA256 is reported separately. Both records are chmod 0444 after writing."
+  },
+  "preservedFiles": {
+    "package.json": "130324953cc4004ccf403e54b2c0ec183b58e516331d49db0fda6ec7eac02c14",
+    "package-lock.json": "7c8204cd8d7599a3afe1b03f1b98ce138b78e8b7cd8402862facc0da7c299464",
+    "src/contracts/marketing.ts": "c1e9b6db06f7ffdca70a4d288230573b9c42dbb435e70bbcce7e8fa46d991991",
+    "src/server/marketing.ts": "5a6621fe8f106d045927dc415f31ff9bec22b3e51ac836ee55d701f07856cdb1",
+    "src/server/marketing-meta.ts": "f892068f4eea5a673f875a945cc1a88e181c4e4c2e9a07bdc9b39225f7be1620",
+    "tests/marketing-postgres.test.mjs": "aa8e3946075533a4c636163c67220307a9e5e1c0cc3ac55d5556ccc900752102",
+    "tests/run-local-postgres.mjs": "9723a01cd884711b8265dd4407428bf9bc08aa743eb0b45bd4627a0aa0149836",
+    "docs/providers/meta-v1.md": "b2c772873521653ffb86e439344059f456c4cc4d78663105a5ba71b4d71d8ea9",
+    "docs/evidence/marketing-onboarding.json": "4376df0d2186d46a285ebd57353c408a77a517708b6ce62b99a5bd3f58f11707",
+    "docs/evidence/marketing-onboarding-review.json": "4777231a27f91676353db44f65339677e28d1c2138fa4301c2d8ba35196a6dde",
+    "docs/evidence/marketing-typed-bridge.json": "37ce8da6a8938bc04002bc41bc2a15529027383e1160199225230e07dec35c06",
+    "docs/providers/meta-v1.recipe.json": "84196cb8018c0f93aa53007b61312a4ccea6bdb16d89388881253e73814eabca"
+  },
+  "consumerQualification": {
+    "status": "passed",
+    "qualification": "packed-candidate-source-only",
+    "agentSha": "c17257f0b9ed10f84f32dc7f2107d40e3c51aa13",
+    "agentShaRole": "source-baseline-only",
+    "marketingSha": "b5e725a1d2cff4864c98acb98f9e6e8e8e370f51",
+    "node": "v22.23.1",
+    "lockSha256": "2890b72c172a87923e0f49f58af5c1f88664976128f1351b6a5ee716c565b832",
+    "packed": {
+      "file": "/opt/handrail/.handrail/codex-runs/3752cb3b-3a52-4245-8890-c3d305d45a5b/tmp/handrail-marketing-consumer-Gbums7/handrail-agent-sdk-0.2.14.tgz",
+      "sha256": "d7aa14ed585d45abe28081f6b80712aa4dbf93b6da733ca3e95823e2b081010c"
+    },
+    "files": {
+      "examples/marketing-onboarding.mts": "dd09e884ae7b8d478fd2e0af0016ad8d85e63fd7de7eae87cb97c7cf1ef6c97a",
+      "tests/fixtures/marketing-consumer.mts": "b8b5748ece00d78e29bda6646432ec50367345abb4f544ff8dfb4817cecf3a2d",
+      "tests/fixtures/marketing-browser.mjs": "758a1bf2d604ccc2b45bed7dc9711e1a64314573ce0458d30aa855a7236d9c1d",
+      "tests/fixtures/marketing-guard.mjs": "b4011808a5d39cdca278f5ccdcb425d86eb96c83d8579e5bea1d59d7f4b2bbaf",
+      "tests/verify-marketing-install.mjs": "b44a6361dc0f92fd7c6547ad4742d3dc91cbb914e47e69cf45d112341c19752b"
+    },
+    "versions": {
+      "handrail-agent-sdk": "0.2.14",
+      "@handrail/marketing": "0.1.5",
+      "@handrail/ai-assistant": "0.2.76",
+      "@openai/agents": "0.18.0",
+      "typescript": "5.9.3",
+      "@types/node": "22.20.4",
+      "@types/react": "19.2.14",
+      "@types/pg": "8.23.1",
+      "esbuild": "0.25.12"
+    },
+    "commands": [
+      {
+        "command": [
+          "npm",
+          "install",
+          "--engine-strict",
+          "--foreground-scripts",
+          "--no-audit",
+          "--no-fund",
+          "--cache",
+          "/opt/handrail/.handrail/codex-runs/3752cb3b-3a52-4245-8890-c3d305d45a5b/tmp/handrail-marketing-consumer-Gbums7/install-cache"
+        ],
+        "cwd": "/opt/handrail/.handrail/codex-runs/3752cb3b-3a52-4245-8890-c3d305d45a5b/tmp/handrail-marketing-consumer-Gbums7/lock-consumer",
+        "label": "install",
+        "exit": 0,
+        "signal": null,
+        "milliseconds": 78952
+      },
+      {
+        "command": [
+          "npm",
+          "ci",
+          "--engine-strict",
+          "--foreground-scripts",
+          "--no-audit",
+          "--no-fund",
+          "--cache",
+          "/opt/handrail/.handrail/codex-runs/3752cb3b-3a52-4245-8890-c3d305d45a5b/tmp/handrail-marketing-consumer-Gbums7/reinstall-cache"
+        ],
+        "cwd": "/opt/handrail/.handrail/codex-runs/3752cb3b-3a52-4245-8890-c3d305d45a5b/tmp/handrail-marketing-consumer-Gbums7/installed-consumer",
+        "label": "ci",
+        "exit": 0,
+        "signal": null,
+        "milliseconds": 29250
+      },
+      {
+        "command": [
+          "git",
+          "rev-parse",
+          "HEAD"
+        ],
+        "cwd": "/opt/handrail/repos/handrail/handrail-agent-sdk/handrail-agent-sdk",
+        "label": "baseline",
+        "exit": 0,
+        "signal": null,
+        "milliseconds": 3
+      },
+      {
+        "command": [
+          "npm",
+          "pack",
+          "--json",
+          "--pack-destination",
+          "/opt/handrail/.handrail/codex-runs/3752cb3b-3a52-4245-8890-c3d305d45a5b/tmp/handrail-marketing-consumer-Gbums7"
+        ],
+        "cwd": "/opt/handrail/.handrail/codex-runs/3752cb3b-3a52-4245-8890-c3d305d45a5b/tmp/handrail-marketing-consumer-Gbums7/installed-consumer/node_modules/handrail-agent-sdk",
+        "label": "candidate-pack",
+        "exit": 0,
+        "signal": null,
+        "milliseconds": 4951
+      },
+      {
+        "command": [
+          "tar",
+          "-xzf",
+          "/opt/handrail/.handrail/codex-runs/3752cb3b-3a52-4245-8890-c3d305d45a5b/tmp/handrail-marketing-consumer-Gbums7/handrail-agent-sdk-0.2.14.tgz",
+          "--strip-components=1",
+          "-C",
+          "/opt/handrail/.handrail/codex-runs/3752cb3b-3a52-4245-8890-c3d305d45a5b/tmp/handrail-marketing-consumer-Gbums7/installed-consumer/node_modules/handrail-agent-sdk"
+        ],
+        "cwd": "/opt/handrail/.handrail/codex-runs/3752cb3b-3a52-4245-8890-c3d305d45a5b/tmp/handrail-marketing-consumer-Gbums7/installed-consumer",
+        "label": "candidate-unpack",
+        "exit": 0,
+        "signal": null,
+        "milliseconds": 10
+      },
+      {
+        "command": [
+          "/usr/bin/node",
+          "node_modules/typescript/bin/tsc",
+          "-p",
+          "tsconfig.NodeNext.json"
+        ],
+        "cwd": "/opt/handrail/.handrail/codex-runs/3752cb3b-3a52-4245-8890-c3d305d45a5b/tmp/handrail-marketing-consumer-Gbums7/installed-consumer",
+        "label": "NodeNext",
+        "exit": 0,
+        "signal": null,
+        "milliseconds": 10704
+      },
+      {
+        "command": [
+          "/usr/bin/node",
+          "node_modules/typescript/bin/tsc",
+          "-p",
+          "tsconfig.Bundler.json"
+        ],
+        "cwd": "/opt/handrail/.handrail/codex-runs/3752cb3b-3a52-4245-8890-c3d305d45a5b/tmp/handrail-marketing-consumer-Gbums7/installed-consumer",
+        "label": "Bundler",
+        "exit": 0,
+        "signal": null,
+        "milliseconds": 11537
+      },
+      {
+        "command": [
+          "/usr/bin/node",
+          "--import",
+          "./marketing-guard.mjs",
+          "--test",
+          "--test-concurrency=1",
+          "out/marketing-consumer.mjs"
+        ],
+        "cwd": "/opt/handrail/.handrail/codex-runs/3752cb3b-3a52-4245-8890-c3d305d45a5b/tmp/handrail-marketing-consumer-Gbums7/installed-consumer",
+        "label": "runtime",
+        "exit": 0,
+        "signal": null,
+        "milliseconds": 417
+      },
+      {
+        "command": [
+          "/usr/bin/node",
+          "marketing-browser.mjs"
+        ],
+        "cwd": "/opt/handrail/.handrail/codex-runs/3752cb3b-3a52-4245-8890-c3d305d45a5b/tmp/handrail-marketing-consumer-Gbums7/installed-consumer",
+        "label": "browser",
+        "exit": 0,
+        "signal": null,
+        "milliseconds": 166
+      },
+      {
+        "command": [
+          "/usr/bin/node",
+          "--conditions=browser",
+          "--input-type=module",
+          "--eval",
+          "import assert from 'node:assert/strict'; await assert.rejects(import('handrail-agent-sdk/server/marketing'), {code:'ERR_PACKAGE_PATH_NOT_EXPORTED'});"
+        ],
+        "cwd": "/opt/handrail/.handrail/codex-runs/3752cb3b-3a52-4245-8890-c3d305d45a5b/tmp/handrail-marketing-consumer-Gbums7/installed-consumer",
+        "label": "browser-condition",
+        "exit": 0,
+        "signal": null,
+        "milliseconds": 34
+      }
+    ],
+    "fileOrigins": {
+      "example": "installed package, copied byte-for-byte to consumer",
+      "fixturesAndHarness": "review checkout"
+    },
+    "hostAndLiveQualification": false,
+    "consumer": "/opt/handrail/.handrail/codex-runs/3752cb3b-3a52-4245-8890-c3d305d45a5b/tmp/handrail-marketing-consumer-Gbums7/installed-consumer",
+    "invocation": "node tests/verify-marketing-install.mjs c17257f0b9ed10f84f32dc7f2107d40e3c51aa13 --candidate-source",
+    "tests": 8,
+    "passed": 8,
+    "failed": 0,
+    "skipped": 0,
+    "totalCommandMilliseconds": 136024,
+    "browserGraphs": 4,
+    "rejectedBrowserBundles": 3,
+    "explicitBrowserConditionRejections": 1,
+    "networkAttempts": 0,
+    "normalPrepare": true,
+    "lockUnchanged": true,
+    "scope": "Synthetic installed-consumer qualification including real MarketingServer/SQLite composition; no native host/live provider qualification."
+  },
+  "packagePins": {
+    "node_modules/@handrail/ai-assistant": {
+      "version": "0.2.76",
+      "resolved": "git+https://git@github.com/c0x65o/handrail-sdk-ai-assistant-js.git#704b6599f37dce7255e345c8132bf81856bdb6bf"
+    },
+    "node_modules/@handrail/marketing": {
+      "version": "0.1.5",
+      "resolved": "git+https://git@github.com/c0x65o/handrail-sdk-marketing-js.git#b5e725a1d2cff4864c98acb98f9e6e8e8e370f51"
+    },
+    "node_modules/@openai/agents": {
+      "version": "0.18.0",
+      "resolved": "https://registry.npmjs.org/@openai/agents/-/agents-0.18.0.tgz"
+    },
+    "node_modules/@openai/agents-core": {
+      "version": "0.18.0",
+      "resolved": "https://registry.npmjs.org/@openai/agents-core/-/agents-core-0.18.0.tgz"
+    },
+    "node_modules/@openai/agents-core/node_modules/openai": {
+      "version": "7.28.0",
+      "resolved": "https://registry.npmjs.org/openai/-/openai-7.28.0.tgz"
+    },
+    "node_modules/@openai/agents-openai": {
+      "version": "0.18.0",
+      "resolved": "https://registry.npmjs.org/@openai/agents-openai/-/agents-openai-0.18.0.tgz"
+    },
+    "node_modules/@openai/agents-openai/node_modules/openai": {
+      "version": "7.28.0",
+      "resolved": "https://registry.npmjs.org/openai/-/openai-7.28.0.tgz"
+    },
+    "node_modules/@openai/agents-realtime": {
+      "version": "0.18.0",
+      "resolved": "https://registry.npmjs.org/@openai/agents-realtime/-/agents-realtime-0.18.0.tgz"
+    },
+    "node_modules/@openai/agents/node_modules/openai": {
+      "version": "7.28.0",
+      "resolved": "https://registry.npmjs.org/openai/-/openai-7.28.0.tgz"
+    },
+    "node_modules/@types/node": {
+      "version": "22.20.4",
+      "resolved": "https://registry.npmjs.org/@types/node/-/node-22.20.4.tgz"
+    },
+    "node_modules/@types/ws": {
+      "version": "8.18.2",
+      "resolved": "https://registry.npmjs.org/@types/ws/-/ws-8.18.2.tgz"
+    },
+    "node_modules/openai": {
+      "version": "6.34.0",
+      "resolved": "https://registry.npmjs.org/openai/-/openai-6.34.0.tgz"
+    },
+    "node_modules/typescript": {
+      "version": "5.9.3",
+      "resolved": "https://registry.npmjs.org/typescript/-/typescript-5.9.3.tgz"
+    },
+    "node_modules/zod": {
+      "version": "4.3.6",
+      "resolved": "https://registry.npmjs.org/zod/-/zod-4.3.6.tgz"
+    }
+  },
+  "earlierReviewChecks": {
+    "baselineConsumer": {
+      "status": "passed",
+      "qualification": "packed-candidate-source-only",
+      "agentSha": "c17257f0b9ed10f84f32dc7f2107d40e3c51aa13",
+      "agentShaRole": "source-baseline-only",
+      "marketingSha": "b5e725a1d2cff4864c98acb98f9e6e8e8e370f51",
+      "node": "v22.23.1",
+      "lockSha256": "2890b72c172a87923e0f49f58af5c1f88664976128f1351b6a5ee716c565b832",
+      "packed": {
+        "file": "/opt/handrail/.handrail/codex-runs/3752cb3b-3a52-4245-8890-c3d305d45a5b/tmp/handrail-marketing-consumer-DmE7f0/handrail-agent-sdk-0.2.14.tgz",
+        "sha256": "406d9bab6b6f43602341c7acda645201020e676718442d8d9bdfe74c5aaf3a5b"
+      },
+      "files": {
+        "examples/marketing-onboarding.mts": "dd09e884ae7b8d478fd2e0af0016ad8d85e63fd7de7eae87cb97c7cf1ef6c97a",
+        "tests/fixtures/marketing-consumer.mts": "6014652c724d5be8d6cf5c8b09ab988e71804b391af7b3fb0faa03cd045649d8",
+        "tests/fixtures/marketing-browser.mjs": "ea44aad9f839b65560c7d3cb528e47ed3f2ad55e7d9281e80c493db5583a6794",
+        "tests/fixtures/marketing-guard.mjs": "b4011808a5d39cdca278f5ccdcb425d86eb96c83d8579e5bea1d59d7f4b2bbaf",
+        "tests/verify-marketing-install.mjs": "7c5f5918ae5ca59cd0862730fc3bb6edd46276a0b957b8e9ad8dee2b03bfa8ca"
+      },
+      "commands": [
+        {
+          "command": [
+            "npm",
+            "install",
+            "--engine-strict",
+            "--foreground-scripts",
+            "--no-audit",
+            "--no-fund",
+            "--cache",
+            "/opt/handrail/.handrail/codex-runs/3752cb3b-3a52-4245-8890-c3d305d45a5b/tmp/handrail-marketing-consumer-DmE7f0/install-cache"
+          ],
+          "cwd": "/opt/handrail/.handrail/codex-runs/3752cb3b-3a52-4245-8890-c3d305d45a5b/tmp/handrail-marketing-consumer-DmE7f0/lock-consumer",
+          "label": "install",
+          "exit": 0,
+          "signal": null,
+          "milliseconds": 81357
+        },
+        {
+          "command": [
+            "npm",
+            "ci",
+            "--engine-strict",
+            "--foreground-scripts",
+            "--no-audit",
+            "--no-fund",
+            "--cache",
+            "/opt/handrail/.handrail/codex-runs/3752cb3b-3a52-4245-8890-c3d305d45a5b/tmp/handrail-marketing-consumer-DmE7f0/reinstall-cache"
+          ],
+          "cwd": "/opt/handrail/.handrail/codex-runs/3752cb3b-3a52-4245-8890-c3d305d45a5b/tmp/handrail-marketing-consumer-DmE7f0/installed-consumer",
+          "label": "ci",
+          "exit": 0,
+          "signal": null,
+          "milliseconds": 31437
+        },
+        {
+          "command": [
+            "git",
+            "rev-parse",
+            "HEAD"
+          ],
+          "cwd": "/opt/handrail/repos/handrail/handrail-agent-sdk/handrail-agent-sdk",
+          "label": "baseline",
+          "exit": 0,
+          "signal": null,
+          "milliseconds": 3
+        },
+        {
+          "command": [
+            "npm",
+            "pack",
+            "--json",
+            "--pack-destination",
+            "/opt/handrail/.handrail/codex-runs/3752cb3b-3a52-4245-8890-c3d305d45a5b/tmp/handrail-marketing-consumer-DmE7f0"
+          ],
+          "cwd": "/opt/handrail/.handrail/codex-runs/3752cb3b-3a52-4245-8890-c3d305d45a5b/tmp/handrail-marketing-consumer-DmE7f0/installed-consumer/node_modules/handrail-agent-sdk",
+          "label": "candidate-pack",
+          "exit": 0,
+          "signal": null,
+          "milliseconds": 5482
+        },
+        {
+          "command": [
+            "tar",
+            "-xzf",
+            "/opt/handrail/.handrail/codex-runs/3752cb3b-3a52-4245-8890-c3d305d45a5b/tmp/handrail-marketing-consumer-DmE7f0/handrail-agent-sdk-0.2.14.tgz",
+            "--strip-components=1",
+            "-C",
+            "/opt/handrail/.handrail/codex-runs/3752cb3b-3a52-4245-8890-c3d305d45a5b/tmp/handrail-marketing-consumer-DmE7f0/installed-consumer/node_modules/handrail-agent-sdk"
+          ],
+          "cwd": "/opt/handrail/.handrail/codex-runs/3752cb3b-3a52-4245-8890-c3d305d45a5b/tmp/handrail-marketing-consumer-DmE7f0/installed-consumer",
+          "label": "candidate-unpack",
+          "exit": 0,
+          "signal": null,
+          "milliseconds": 11
+        },
+        {
+          "command": [
+            "/usr/bin/node",
+            "node_modules/typescript/bin/tsc",
+            "-p",
+            "tsconfig.NodeNext.json"
+          ],
+          "cwd": "/opt/handrail/.handrail/codex-runs/3752cb3b-3a52-4245-8890-c3d305d45a5b/tmp/handrail-marketing-consumer-DmE7f0/installed-consumer",
+          "label": "NodeNext",
+          "exit": 0,
+          "signal": null,
+          "milliseconds": 11667
+        },
+        {
+          "command": [
+            "/usr/bin/node",
+            "node_modules/typescript/bin/tsc",
+            "-p",
+            "tsconfig.Bundler.json"
+          ],
+          "cwd": "/opt/handrail/.handrail/codex-runs/3752cb3b-3a52-4245-8890-c3d305d45a5b/tmp/handrail-marketing-consumer-DmE7f0/installed-consumer",
+          "label": "Bundler",
+          "exit": 0,
+          "signal": null,
+          "milliseconds": 10960
+        },
+        {
+          "command": [
+            "/usr/bin/node",
+            "--import",
+            "./marketing-guard.mjs",
+            "--test",
+            "--test-concurrency=1",
+            "out/marketing-consumer.mjs"
+          ],
+          "cwd": "/opt/handrail/.handrail/codex-runs/3752cb3b-3a52-4245-8890-c3d305d45a5b/tmp/handrail-marketing-consumer-DmE7f0/installed-consumer",
+          "label": "runtime",
+          "exit": 0,
+          "signal": null,
+          "milliseconds": 391
+        },
+        {
+          "command": [
+            "/usr/bin/node",
+            "marketing-browser.mjs"
+          ],
+          "cwd": "/opt/handrail/.handrail/codex-runs/3752cb3b-3a52-4245-8890-c3d305d45a5b/tmp/handrail-marketing-consumer-DmE7f0/installed-consumer",
+          "label": "browser",
+          "exit": 0,
+          "signal": null,
+          "milliseconds": 158
+        },
+        {
+          "command": [
+            "/usr/bin/node",
+            "--conditions=browser",
+            "--input-type=module",
+            "--eval",
+            "import assert from 'node:assert/strict'; await assert.rejects(import('handrail-agent-sdk/server/marketing'), {code:'ERR_PACKAGE_PATH_NOT_EXPORTED'});"
+          ],
+          "cwd": "/opt/handrail/.handrail/codex-runs/3752cb3b-3a52-4245-8890-c3d305d45a5b/tmp/handrail-marketing-consumer-DmE7f0/installed-consumer",
+          "label": "browser-condition",
+          "exit": 0,
+          "signal": null,
+          "milliseconds": 35
+        }
+      ],
+      "hostAndLiveQualification": false,
+      "consumer": "/opt/handrail/.handrail/codex-runs/3752cb3b-3a52-4245-8890-c3d305d45a5b/tmp/handrail-marketing-consumer-DmE7f0/installed-consumer",
+      "tests": 5,
+      "passed": 5,
+      "failed": 0,
+      "skipped": 0,
+      "note": "Initial candidate rerun passed. Consumer fixture copies were later used for a development recheck; final fresh consumer above is the authoritative artifact set."
+    },
+    "developmentRecheck": {
+      "commands": [
+        "node node_modules/typescript/bin/tsc -p tsconfig.NodeNext.json",
+        "node --import ./marketing-guard.mjs --test --test-concurrency=1 out/marketing-consumer.mjs",
+        "node marketing-browser.mjs"
+      ],
+      "result": "passed: 8 tests, four safe graphs, three expected browser rejections",
+      "runtimeMilliseconds": 349.917321,
+      "compileWallMilliseconds": null,
+      "note": "Intermediate feedback run only; exact final commands/timings are recorded in consumerQualification."
+    }
+  },
+  "checks": [
+    {
+      "label": "marketing",
+      "command": [
+        "npm",
+        "run",
+        "test:marketing"
+      ],
+      "exit": 0,
+      "signal": null,
+      "milliseconds": 7967,
+      "tests": 73,
+      "pass": 73,
+      "fail": 0,
+      "skipped": 0,
+      "cancelled": 0,
+      "log": "/opt/handrail/.handrail/codex-runs/3752cb3b-3a52-4245-8890-c3d305d45a5b/tmp/review-marketing.log",
+      "sha256": "82ff3b1f8f3fb47b103098e0801acbe1ea65fcc06c6e5b507a31700382076bf5"
+    },
+    {
+      "label": "consumer-types",
+      "command": [
+        "/usr/bin/node",
+        "node_modules/typescript/bin/tsc",
+        "-p",
+        "tests/fixtures/tsconfig.json"
+      ],
+      "exit": 0,
+      "signal": null,
+      "milliseconds": 11642,
+      "log": "/opt/handrail/.handrail/codex-runs/3752cb3b-3a52-4245-8890-c3d305d45a5b/tmp/review-consumer-types.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "label": "marketing-postgres",
+      "command": [
+        "/usr/bin/node",
+        "tests/run-local-postgres.mjs",
+        "test:marketing-postgres"
+      ],
+      "exit": 0,
+      "signal": null,
+      "milliseconds": 16213,
+      "tests": 13,
+      "pass": 13,
+      "fail": 0,
+      "skipped": 0,
+      "cancelled": 0,
+      "log": "/opt/handrail/.handrail/codex-runs/3752cb3b-3a52-4245-8890-c3d305d45a5b/tmp/review-marketing-postgres.log",
+      "sha256": "7e29588fe15224913d7d8c1a6693fdbde5682608e49f7a33323b904cfe86d8da"
+    },
+    {
+      "label": "diff-check",
+      "command": [
+        "git",
+        "diff",
+        "--check"
+      ],
+      "exit": 0,
+      "signal": null,
+      "milliseconds": 7,
+      "log": "/opt/handrail/.handrail/codex-runs/3752cb3b-3a52-4245-8890-c3d305d45a5b/tmp/review-diff-check.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  ],
+  "totals": {
+    "tests": 94,
+    "passed": 94,
+    "failed": 0,
+    "skipped": 0,
+    "scope": "Final supported-profile consumer 8 + Marketing 73 + disposable PostgreSQL/Vault 13; excludes repeated baseline/development tests and the separately failing TS7 compatibility checks."
+  },
+  "compatibilityLimit": {
+    "status": "compatibility-failure-reproduced",
+    "scope": "Separate public dependency install plus the labelled candidate pack from the final supported-profile run. No lock rewriting, library edits or declaration casts; not an additional clean-ci qualification.",
+    "versions": {
+      "typescript": "7.0.2",
+      "@types/node": "25.9.0",
+      "@openai/agents": "0.18.0",
+      "@openai/agents-core": "0.18.0",
+      "@openai/agents-realtime": "0.18.0"
+    },
+    "diagnostics": {
+      "NodeNext": [
+        "node_modules/@openai/agents-core/dist/lifecycle.d.ts(73,15): error TS2416: Property 'eventEmitter' in type 'AgentHooks<TContext, TOutput>' is not assignable to the same property in base type 'EventEmitterDelegate<AgentHookEvents<TContext, TOutput>>'.",
+        "node_modules/@openai/agents-core/dist/lifecycle.d.ts(139,15): error TS2416: Property 'eventEmitter' in type 'RunHooks<TContext, TOutput>' is not assignable to the same property in base type 'EventEmitterDelegate<RunHookEvents<TContext, TOutput>>'.",
+        "node_modules/@openai/agents-realtime/dist/openaiRealtimeBase.d.ts(57,15): error TS2416: Property 'eventEmitter' in type 'OpenAIRealtimeBase' is not assignable to the same property in base type 'EventEmitterDelegate<OpenAIRealtimeEventTypes>'."
+      ],
+      "Bundler": [
+        "node_modules/@openai/agents-core/dist/lifecycle.d.ts(73,15): error TS2416: Property 'eventEmitter' in type 'AgentHooks<TContext, TOutput>' is not assignable to the same property in base type 'EventEmitterDelegate<AgentHookEvents<TContext, TOutput>>'.",
+        "node_modules/@openai/agents-core/dist/lifecycle.d.ts(139,15): error TS2416: Property 'eventEmitter' in type 'RunHooks<TContext, TOutput>' is not assignable to the same property in base type 'EventEmitterDelegate<RunHookEvents<TContext, TOutput>>'.",
+        "node_modules/@openai/agents-realtime/dist/openaiRealtimeBase.d.ts(57,15): error TS2416: Property 'eventEmitter' in type 'OpenAIRealtimeBase' is not assignable to the same property in base type 'EventEmitterDelegate<OpenAIRealtimeEventTypes>'."
+      ]
+    },
+    "commands": [
+      {
+        "command": [
+          "npm",
+          "install",
+          "--engine-strict",
+          "--foreground-scripts",
+          "--no-audit",
+          "--no-fund",
+          "--cache",
+          "/opt/handrail/.handrail/codex-runs/3752cb3b-3a52-4245-8890-c3d305d45a5b/tmp/marketing-ts7-review-SEP5Rq/install-cache"
+        ],
+        "label": "install",
+        "exit": 0,
+        "signal": null,
+        "milliseconds": 82534
+      },
+      {
+        "command": [
+          "tar",
+          "-xzf",
+          "/opt/handrail/.handrail/codex-runs/3752cb3b-3a52-4245-8890-c3d305d45a5b/tmp/handrail-marketing-consumer-Gbums7/handrail-agent-sdk-0.2.14.tgz",
+          "--strip-components=1",
+          "-C",
+          "/opt/handrail/.handrail/codex-runs/3752cb3b-3a52-4245-8890-c3d305d45a5b/tmp/marketing-ts7-review-SEP5Rq/node_modules/handrail-agent-sdk"
+        ],
+        "label": "candidate-unpack",
+        "exit": 0,
+        "signal": null,
+        "milliseconds": 8
+      },
+      {
+        "command": [
+          "/usr/bin/node",
+          "node_modules/typescript/bin/tsc",
+          "-p",
+          "tsconfig.NodeNext.json"
+        ],
+        "label": "NodeNext",
+        "exit": 1,
+        "signal": null,
+        "milliseconds": 3526
+      },
+      {
+        "command": [
+          "/usr/bin/node",
+          "node_modules/typescript/bin/tsc",
+          "-p",
+          "tsconfig.Bundler.json"
+        ],
+        "label": "Bundler",
+        "exit": 1,
+        "signal": null,
+        "milliseconds": 3331
+      }
+    ],
+    "lockSha256": "128a394e40a7aad2c372c0a40669bf2d9681c10be3315277e6448ccfe7d61941",
+    "candidate": {
+      "file": "/opt/handrail/.handrail/codex-runs/3752cb3b-3a52-4245-8890-c3d305d45a5b/tmp/handrail-marketing-consumer-Gbums7/handrail-agent-sdk-0.2.14.tgz",
+      "sha256": "d7aa14ed585d45abe28081f6b80712aa4dbf93b6da733ca3e95823e2b081010c"
+    },
+    "skipLibCheck": false,
+    "probeCorrection": {
+      "initialVerifierExit": 1,
+      "reason": "Auxiliary diagnostic matcher initially included agents-core/openai but omitted agents-realtime. NodeNext compilation correctly failed with the expected three TS2416 errors. Retained original log and probe source, checked exact AgentHooks/RunHooks/OpenAIRealtimeBase diagnostics, and ran remaining Bundler compile without reinstalling or modifying dependencies.",
+      "log": "/opt/handrail/.handrail/codex-runs/3752cb3b-3a52-4245-8890-c3d305d45a5b/tmp/review-ts7-probe.log",
+      "source": "/opt/handrail/.handrail/codex-runs/3752cb3b-3a52-4245-8890-c3d305d45a5b/tmp/review-ts7-probe.mjs",
+      "continuation": "/opt/handrail/.handrail/codex-runs/3752cb3b-3a52-4245-8890-c3d305d45a5b/tmp/review-ts7-finish.mjs"
+    },
+    "compilerVerdict": "FAILED/UNQUALIFIED for the full composition in both NodeNext and Bundler; reproduction check succeeded. Exactly three TS2416 errors per mode.",
+    "historicalLimit": "Earlier temporary exact-Git pair proof had narrower TS7 coverage and did not prove full AgentRuntimeTool example compilation. Prior temporary logs are absent in this worker; this review recreated the compatibility evidence in a separate public dependency install with an unchanged labelled Agent candidate pack."
+  },
+  "persistence": {
+    "agent": "Existing tests/run-local-postgres.mjs test:marketing-postgres: dedicated disposable PostgreSQL 15 cluster, existing real encrypted Vault/grant/entry/connection/journal/lease implementations; 13 passed. Owned cluster stopped and removed.",
+    "marketing": "Existing installed public Marketing Store on a disposable SQLite file, real schema/transactions/revision CAS and persistent projection. No new fake persistence, no new host abstraction. File and sidecars removed on test cleanup.",
+    "limits": "SQLite consumer composition does not prove Marketing PostgreSQL dialect or native durable dispatch/custody. Agent SQL tests do not qualify injected host dispatch CAS."
+  },
+  "skippedChecks": [
+    {
+      "command": "npm test",
+      "reason": "Honored existing >5-minute whole-check skip; prior recorded estimate 316206 ms. Ran bounded Marketing, strict consumer and relevant SQL checks."
+    },
+    {
+      "command": "node tests/run-local-postgres.mjs (all default suites)",
+      "reason": "Same existing whole-check skip. Existing 13-case Marketing PostgreSQL/Vault suite ran sequentially with concurrency=1."
+    },
+    {
+      "command": "node tests/verify-marketing-install.mjs FUTURE_DELIVERED_FULL_SHA",
+      "reason": "Candidate is uncommitted. No branch/worktree/commit/push authorized; committed-mode qualification must follow separately authorized publication."
+    }
+  ],
+  "evidenceHashes": {
+    "/opt/handrail/.handrail/codex-runs/3752cb3b-3a52-4245-8890-c3d305d45a5b/tmp/handrail-marketing-consumer-Gbums7/Bundler.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "/opt/handrail/.handrail/codex-runs/3752cb3b-3a52-4245-8890-c3d305d45a5b/tmp/handrail-marketing-consumer-Gbums7/NodeNext.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "/opt/handrail/.handrail/codex-runs/3752cb3b-3a52-4245-8890-c3d305d45a5b/tmp/handrail-marketing-consumer-Gbums7/baseline.log": "35a11183c8d68e87807b2147c9a36eee25a15c99ec9bb90a285f373e9d51794c",
+    "/opt/handrail/.handrail/codex-runs/3752cb3b-3a52-4245-8890-c3d305d45a5b/tmp/handrail-marketing-consumer-Gbums7/browser-condition.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "/opt/handrail/.handrail/codex-runs/3752cb3b-3a52-4245-8890-c3d305d45a5b/tmp/handrail-marketing-consumer-Gbums7/browser.log": "e71de6dea45ebc2dccf0e8ee64230d20207c74b44ef5b2d8e458b646b9a2c5cf",
+    "/opt/handrail/.handrail/codex-runs/3752cb3b-3a52-4245-8890-c3d305d45a5b/tmp/handrail-marketing-consumer-Gbums7/candidate-pack.log": "f0237c7633546a57a72577fc9feed572f9b2be0076d96311957401406880002d",
+    "/opt/handrail/.handrail/codex-runs/3752cb3b-3a52-4245-8890-c3d305d45a5b/tmp/handrail-marketing-consumer-Gbums7/candidate-unpack.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "/opt/handrail/.handrail/codex-runs/3752cb3b-3a52-4245-8890-c3d305d45a5b/tmp/handrail-marketing-consumer-Gbums7/ci.log": "e6cf2e51ba127d953cf1bdf81d11a95742a5da6ad6d7e03ad7098d687965f189",
+    "/opt/handrail/.handrail/codex-runs/3752cb3b-3a52-4245-8890-c3d305d45a5b/tmp/handrail-marketing-consumer-Gbums7/commands.json": "1d4b4f46fd0990ddc46a579368bc07a0173c4af4034bf267ec0a1bbf1b810594",
+    "/opt/handrail/.handrail/codex-runs/3752cb3b-3a52-4245-8890-c3d305d45a5b/tmp/handrail-marketing-consumer-Gbums7/handrail-agent-sdk-0.2.14.tgz": "d7aa14ed585d45abe28081f6b80712aa4dbf93b6da733ca3e95823e2b081010c",
+    "/opt/handrail/.handrail/codex-runs/3752cb3b-3a52-4245-8890-c3d305d45a5b/tmp/handrail-marketing-consumer-Gbums7/install.log": "d622690d82556f5479329fe16423e7d88c58336b8af4de2cd2e695c0af13c1ba",
+    "/opt/handrail/.handrail/codex-runs/3752cb3b-3a52-4245-8890-c3d305d45a5b/tmp/handrail-marketing-consumer-Gbums7/installed-consumer/node_modules/.package-lock.json": "d3b8b55cf90aac4c757af41ed4418732d726101e3d2a1833779042d2283cc255",
+    "/opt/handrail/.handrail/codex-runs/3752cb3b-3a52-4245-8890-c3d305d45a5b/tmp/handrail-marketing-consumer-Gbums7/installed-consumer/node_modules/@handrail/marketing/.marketing-build/core/index.d.ts": "c4552df57ab0e05123005365c580f82b4b7cdf19dfe26783d8d0a6fa33a20918",
+    "/opt/handrail/.handrail/codex-runs/3752cb3b-3a52-4245-8890-c3d305d45a5b/tmp/handrail-marketing-consumer-Gbums7/installed-consumer/node_modules/@handrail/marketing/.marketing-build/server/ports.d.ts": "98e2ec75c46e37b5111d13291a6d0ab561bd57d5d22da0ae63b53ed4870c09dc",
+    "/opt/handrail/.handrail/codex-runs/3752cb3b-3a52-4245-8890-c3d305d45a5b/tmp/handrail-marketing-consumer-Gbums7/installed-consumer/node_modules/@handrail/marketing/.marketing-build/server/service.js": "4fb5cafeccf57dc4d2e6876e96518e5e11648d54578338a5af5c0af49ae72808",
+    "/opt/handrail/.handrail/codex-runs/3752cb3b-3a52-4245-8890-c3d305d45a5b/tmp/handrail-marketing-consumer-Gbums7/installed-consumer/node_modules/@handrail/marketing/package.json": "09992381780f7a0cdf33d80b379db577a1dddc87be8c959a2560af1076c464a3",
+    "/opt/handrail/.handrail/codex-runs/3752cb3b-3a52-4245-8890-c3d305d45a5b/tmp/handrail-marketing-consumer-Gbums7/installed-consumer/node_modules/handrail-agent-sdk/examples/marketing-onboarding.mts": "dd09e884ae7b8d478fd2e0af0016ad8d85e63fd7de7eae87cb97c7cf1ef6c97a",
+    "/opt/handrail/.handrail/codex-runs/3752cb3b-3a52-4245-8890-c3d305d45a5b/tmp/handrail-marketing-consumer-Gbums7/installed-consumer/node_modules/handrail-agent-sdk/package.json": "130324953cc4004ccf403e54b2c0ec183b58e516331d49db0fda6ec7eac02c14",
+    "/opt/handrail/.handrail/codex-runs/3752cb3b-3a52-4245-8890-c3d305d45a5b/tmp/handrail-marketing-consumer-Gbums7/installed-consumer/package-lock.json": "2890b72c172a87923e0f49f58af5c1f88664976128f1351b6a5ee716c565b832",
+    "/opt/handrail/.handrail/codex-runs/3752cb3b-3a52-4245-8890-c3d305d45a5b/tmp/handrail-marketing-consumer-Gbums7/installed-consumer/package.json": "223e92f0e94a757fb08c236b4d9fa05e85019be473f62eadb5ee34b731fe429f",
+    "/opt/handrail/.handrail/codex-runs/3752cb3b-3a52-4245-8890-c3d305d45a5b/tmp/handrail-marketing-consumer-Gbums7/installed-consumer/tsconfig.Bundler.json": "4be991d511187bdcf544f0dd03e3180b6fb610ccce715f41168603b38d75f390",
+    "/opt/handrail/.handrail/codex-runs/3752cb3b-3a52-4245-8890-c3d305d45a5b/tmp/handrail-marketing-consumer-Gbums7/installed-consumer/tsconfig.NodeNext.json": "3fb808569e4315dcb6f97c074f3eb1d39c1decc831412d21562cfa21ffe41d32",
+    "/opt/handrail/.handrail/codex-runs/3752cb3b-3a52-4245-8890-c3d305d45a5b/tmp/handrail-marketing-consumer-Gbums7/result.json": "c2052a955b65f62ff95554c984d7ca1ce58eaeebb0c5e8db4b2ac231aca78035",
+    "/opt/handrail/.handrail/codex-runs/3752cb3b-3a52-4245-8890-c3d305d45a5b/tmp/handrail-marketing-consumer-Gbums7/runtime.log": "f9cabcba94d9d74c7b26e056f9621234db46b56343d8e1eadf8e00b8c7a58e18",
+    "/opt/handrail/.handrail/codex-runs/3752cb3b-3a52-4245-8890-c3d305d45a5b/tmp/marketing-ts7-review-SEP5Rq/Bundler.log": "965ab20dfe1ccfadbbb5fea5aa1b88b6c575f0de2a841fcd4906d5cd2c2e14fb",
+    "/opt/handrail/.handrail/codex-runs/3752cb3b-3a52-4245-8890-c3d305d45a5b/tmp/marketing-ts7-review-SEP5Rq/NodeNext.log": "965ab20dfe1ccfadbbb5fea5aa1b88b6c575f0de2a841fcd4906d5cd2c2e14fb",
+    "/opt/handrail/.handrail/codex-runs/3752cb3b-3a52-4245-8890-c3d305d45a5b/tmp/marketing-ts7-review-SEP5Rq/commands.json": "ed2a2958134862fa9fd20a47900b5510ac3d6bf0151a67534818391a24679579",
+    "/opt/handrail/.handrail/codex-runs/3752cb3b-3a52-4245-8890-c3d305d45a5b/tmp/marketing-ts7-review-SEP5Rq/install.log": "d17a3230011b88fa9153bea16fd8eb64d512e97fbff4dc0c3f68471906f88535",
+    "/opt/handrail/.handrail/codex-runs/3752cb3b-3a52-4245-8890-c3d305d45a5b/tmp/marketing-ts7-review-SEP5Rq/package-lock.json": "128a394e40a7aad2c372c0a40669bf2d9681c10be3315277e6448ccfe7d61941",
+    "/opt/handrail/.handrail/codex-runs/3752cb3b-3a52-4245-8890-c3d305d45a5b/tmp/marketing-ts7-review-SEP5Rq/package.json": "7b9b2e59fe46f6eb3fd06bd92f853fe57f8b1e8de8e0dfa6e5062ab410391085",
+    "/opt/handrail/.handrail/codex-runs/3752cb3b-3a52-4245-8890-c3d305d45a5b/tmp/marketing-ts7-review-SEP5Rq/result.json": "6437ef6365620095e6ba30d7f93aeafa48607643b1fbdbe64657d2fe334653e3",
+    "/opt/handrail/.handrail/codex-runs/3752cb3b-3a52-4245-8890-c3d305d45a5b/tmp/review-checks.json": "91e433365597c337d9fa238e87be66c11a354a5ef4c8a42584c881efe3423365",
+    "/opt/handrail/.handrail/codex-runs/3752cb3b-3a52-4245-8890-c3d305d45a5b/tmp/review-consumer-types.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "/opt/handrail/.handrail/codex-runs/3752cb3b-3a52-4245-8890-c3d305d45a5b/tmp/review-diff-check.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "/opt/handrail/.handrail/codex-runs/3752cb3b-3a52-4245-8890-c3d305d45a5b/tmp/review-initial-tree.json": "e9ab38363f94f7e24428377155ab14ba77d4eb0e878cc5db06333a59f8d0b690",
+    "/opt/handrail/.handrail/codex-runs/3752cb3b-3a52-4245-8890-c3d305d45a5b/tmp/review-marketing-postgres.log": "7e29588fe15224913d7d8c1a6693fdbde5682608e49f7a33323b904cfe86d8da",
+    "/opt/handrail/.handrail/codex-runs/3752cb3b-3a52-4245-8890-c3d305d45a5b/tmp/review-marketing.log": "82ff3b1f8f3fb47b103098e0801acbe1ea65fcc06c6e5b507a31700382076bf5",
+    "/opt/handrail/.handrail/codex-runs/3752cb3b-3a52-4245-8890-c3d305d45a5b/tmp/review-ts7-finish.log": "6437ef6365620095e6ba30d7f93aeafa48607643b1fbdbe64657d2fe334653e3",
+    "/opt/handrail/.handrail/codex-runs/3752cb3b-3a52-4245-8890-c3d305d45a5b/tmp/review-ts7-finish.mjs": "e85ae7ba15c57b5fa7bb2c8524e2839899c867091f001ee961061dfd5f731adf",
+    "/opt/handrail/.handrail/codex-runs/3752cb3b-3a52-4245-8890-c3d305d45a5b/tmp/review-ts7-probe.log": "98475a8c19b418c184e5860ce84690d997bd923f1921167d09a1084cd38dfb99",
+    "/opt/handrail/.handrail/codex-runs/3752cb3b-3a52-4245-8890-c3d305d45a5b/tmp/review-ts7-probe.mjs": "d138f0c9fd3c468907a6916f87b0daecefdec9f1cb5a9503fdb37822401e1320"
+  },
+  "remainingGates": [
+    "Owner publication decision and later exact committed full-SHA Agent/Marketing consumer qualification; review-only publication readiness is not production readiness.",
+    "Authenticated native host admission and current grants: bind actor, tenant/project/account/environment/purpose, app/user/account, original job/effect and revisions under authority held through commit.",
+    "Encrypted native Vault/connection custody and independent key lifecycle qualification; explicit authenticated human consent for creating or expanding persistent access.",
+    "Private authenticated nonbearer handoffs, independent random one-time OAuth state, CSRF/session/callback binding, replay handling and cancellation/revocation fences.",
+    "Durable original-effect dispatch claim CAS that survives outer rollback and process death; private authenticated reconciliation cannot infer not_applied from missing results or replay unknown effects.",
+    "Live Meta recipe, credentials, read-capability receipts, transport/logging policy, restart/lease/expiry/revoke races and browser fallback remain separately gated and disabled/unqualified. No live-host claim.",
+    "TS7.0.2/@types/node25.9.0 is not supported for the full example; use the documented repository-supported TypeScript5.9.3/@types/node22.20.4 profile until separately resolved."
+  ],
+  "authorization": {
+    "otherCheckoutEdits": false,
+    "handrailDatabaseOrQueueMutations": false,
+    "branchesOrWorktrees": false,
+    "commitsOrPushes": false,
+    "deployments": false,
+    "sharedDataOrSchemaMutations": false,
+    "liveProviderCalls": false,
+    "credentialAccess": false,
+    "realTokenGrantsOrPermissionAdBudgetChanges": false,
+    "deniedActions": []
+  }
+}

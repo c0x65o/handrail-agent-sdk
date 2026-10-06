@@ -47,6 +47,9 @@ The optional [Marketing onboarding foundation](docs/marketing-onboarding.md) and
 [host injection example](examples/marketing-onboarding.mts) compose native Vault,
 connection and user-consent ports. Meta execution is synthetic-only; live provider
 operations and browser fallback remain disabled pending independent qualification.
+The example implements Marketing's concrete optional `AgentPort`; its
+[isolated consumer check](docs/marketing-onboarding.md#verification-and-documentation-provenance)
+installs the pinned Marketing dependency separately from the base SDK checks.
 
 Consumers install from the public HTTPS Git repository
 `https://github.com/c0x65o/handrail-agent-sdk.git`, pinned to the **full 40-character

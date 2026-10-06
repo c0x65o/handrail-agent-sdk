@@ -14,7 +14,6 @@
     "convergence-v1.ts",
     "../../examples/headless.mts",
     "../../examples/postgres-application.mts",
-    "../../examples/continuous-conversation.mts",
-    "../../examples/marketing-onboarding.mts"
+    "../../examples/continuous-conversation.mts"
   ]
 }

@@ -22,16 +22,13 @@ test('distribution-only consumer resolves optional runtime and declarations thro
   await writeFile(`${dir}/package.json`, JSON.stringify({ name: 'marketing-consumer-fixture', private: true, type: 'module' }));
   await cp('dist', `${pkg}/dist`, { recursive: true });
   await writeFile(`${pkg}/package.json`, await readFile('package.json'));
-  await cp('examples/marketing-onboarding.mts', `${dir}/marketing-onboarding.mts`);
+  // The concrete optional example is compiled by verify-marketing-install.mjs
+  // against installed Marketing types; the base SDK needs no Marketing dependency.
   await writeFile(`${dir}/consumer.mts`, `
     import { createMarketingOnboarding, createMetaOAuthCallback, createMetaVaultExecutor } from 'handrail-agent-sdk/server/marketing';
     import type { MarketingOnboardingPort } from 'handrail-agent-sdk/marketing';
     import type { ConnectionStore, VaultEntryStore } from 'handrail-agent-sdk/server';
     import type { MetaPrivateValue } from 'handrail-agent-sdk/server/marketing';
-    import type { NativeMarketingPorts } from './marketing-onboarding.mjs';
-    import { marketingExtension } from './marketing-onboarding.mjs';
-    const compose = (native: NativeMarketingPorts<unknown, unknown>) => marketingExtension(native);
-    void compose;
     const functions: readonly Function[] = [createMarketingOnboarding, createMetaOAuthCallback, createMetaVaultExecutor];
     const port: MarketingOnboardingPort<unknown, unknown> = { inspect: async () => ({state: 'blocked', reason: 'requires_consent'}) };
     function nativeStores(connection: ConnectionStore, entry: VaultEntryStore<MetaPrivateValue>) { return {connection, entry}; }
