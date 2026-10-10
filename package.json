@@ -1,6 +1,6 @@
 {
   "name": "handrail-agent-sdk",
-  "version": "0.2.18",
+  "version": "0.2.19",
   "private": true,
   "description": "Headless durable agent execution powered by OpenAI Agents SDK",
   "type": "module",
@@ -19,6 +19,7 @@
     "examples/postgres-application.mts",
     "docs/postgres-runtime.md",
     "docs/continuous-conversation.md",
+    "docs/browser-vault-integration.md",
     "examples/continuous-conversation.mts",
     "examples/marketing-onboarding.mts",
     "docs/marketing-onboarding.md"
@@ -81,6 +82,8 @@
     }
   },
   "scripts": {
+    "test:browser-integration": "npm run build && node --test --test-concurrency=1 tests/browser-use.test.mjs",
+    "test:browser-agent": "npm run build && node --test --test-concurrency=1 tests/browser-agent-runtime.test.mjs",
     "test:marketing": "npm run build && node --test --test-concurrency=1 tests/marketing.test.mjs",
     "test:marketing-postgres": "npm run build && npm run build:reference && npm run build:test-postgres && node --test --test-concurrency=1 tests/marketing-postgres.test.mjs",
     "build:test-browser": "tsc -p tests/tsconfig.browser.json",
@@ -89,7 +92,7 @@
     "build": "tsc -p tsconfig.json && node scripts/build-postgres-assets.mjs",
     "prepare": "npm run build",
     "pretest": "npm run build && npm run typecheck:acceptance && npm run build:test-postgres && npm run build:reference",
-    "test": "node --test --test-concurrency=1 --test-reporter=tap tests/contracts/job.test.mjs tests/contracts/connection.test.mjs tests/contracts/vault.test.mjs tests/contracts/browser.test.mjs tests/packaging.test.mjs tests/git-lock.test.mjs tests/acceptance.test.mjs tests/marketing.test.mjs",
+    "test": "node --test --test-concurrency=1 --test-reporter=tap tests/contracts/job.test.mjs tests/contracts/connection.test.mjs tests/contracts/vault.test.mjs tests/contracts/browser.test.mjs tests/browser-use.test.mjs tests/packaging.test.mjs tests/git-lock.test.mjs tests/acceptance.test.mjs tests/marketing.test.mjs",
     "build:test-postgres": "tsc -p tests/tsconfig.postgres.json",
     "test:postgres": "npm run build:test-postgres && node --test --test-concurrency=1 --test-reporter=tap tests/postgres.test.mjs",
     "typecheck:acceptance": "tsc -p tests/fixtures/tsconfig.acceptance.json",
@@ -112,7 +115,7 @@
     "test:vault-request": "tsc -p tests/tsconfig.vault-request.json && node --test --test-concurrency=1 --test-reporter=tap .reference-build/tests/server/vault-request.test.js",
     "test:browser-profile": "npm run build:test-reference && node --test --test-concurrency=1 --test-reporter=tap .reference-build/tests/reference/browser-profile-store.test.js",
     "test:connection-store": "npm run build:test-reference && node --test --test-concurrency=1 --test-reporter=tap .reference-build/tests/reference/connection-store.test.js",
-    "test:agents": "npm run build && npm run build:reference && npm run build:test-postgres && node --test --test-concurrency=1 --test-reporter=tap tests/agent-runtime.test.mjs",
+    "test:agents": "npm run build && npm run build:reference && npm run build:test-postgres && node --test --test-concurrency=1 --test-reporter=tap tests/agent-runtime.test.mjs tests/browser-agent-runtime.test.mjs",
     "test:assistance": "npm run build && npm run build:reference && npm run build:test-postgres && node --test --test-concurrency=1 --test-reporter=tap tests/assistance.test.mjs tests/agent-transport.test.mjs",
     "test:conversation": "npm run build && node --test --test-concurrency=1 tests/fixtures/installed/conversation.test.mjs",
     "test:observer-recovery": "npm run build && node --test --test-concurrency=1 tests/observer-recovery.test.mjs tests/observer-recovery-postgres.test.mjs"
@@ -125,7 +128,7 @@
     "typescript": "5.9.3"
   },
   "dependencies": {
-    "@handrail/ai-assistant": "git+https://github.com/c0x65o/handrail-sdk-ai-assistant-js.git#7ff3b9f23467ce01e578d7039c3ffa35e2f557b6",
+    "@handrail/ai-assistant": "git+https://github.com/c0x65o/handrail-sdk-ai-assistant-js.git#27436ebd452ba36aaf3f5bb4e0e2fc99f02b76e8",
     "@openai/agents": "0.18.0",
     "ajv": "8.20.0",
     "ajv-formats": "3.0.1",

@@ -10,6 +10,7 @@ import { identity, requirement, entryState, entryServices } from './helpers/vaul
 import { createVaultStore } from '../.reference-build/reference/node/vault-store.js';
 import { createVaultGrants } from '../.reference-build/reference/node/vault-grants.js';
 import { createVaultLifecycle } from '../.reference-build/reference/node/vault-lifecycle.js';
+import { createLoginVault } from '../.reference-build/src/server/login-vault.js';
 import { createJobCancellationStore } from '../.reference-build/reference/node/job-cancellation.js';
 import { vaultTables } from '../.reference-build/reference/node/db/schema.js';
 const denied = r => assert.equal(r.ok, false);
@@ -26,6 +27,10 @@ async function setup(t, kind = 'token', source = 'new_input', keepLease = false)
   if (!keepLease) ok(await s.lease.release(fence));
   const state = entryState(kind, source), api = entryServices(client.database(), harness.schema, state);
   const second = entryServices(other.database(), harness.schema, state, api.keys);
+  if (kind === 'login') {
+    api.entry = createLoginVault(api.host, api.store);
+    second.entry = createLoginVault(second.host, second.store);
+  }
   const privateCanary = randomBytes(32).toString('hex');
   const value = kind === 'token' ? { token: privateCanary } : kind === 'login' ? { password: privateCanary } : { value: privateCanary };
   const rows = async table => (await observer.query(`SELECT * FROM ${harness.table(table)}`)).rows;

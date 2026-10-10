@@ -7,6 +7,8 @@ assistance module owns schedule/watch lifecycle and notification orchestration.
 
 - `handrail-agent-sdk`: pure job, connection, Vault and browser contracts.
 - `handrail-agent-sdk/server`: admission, leases, Stop, answers, effects and Vault boundaries.
+- Browser runtime tools and private login entry/fill adapters are described in
+  [browser and Vault integration](docs/browser-vault-integration.md).
 - `handrail-agent-sdk/server/postgres`: supported durable stores, additive migrations and host key handles.
 - `handrail-agent-sdk/server/conversation`: continuous transcript/context, scoped memory and durable native work return.
 - `handrail-agent-sdk/server/agents`: `createAgentRuntime` and its typed host/store/tool ports.

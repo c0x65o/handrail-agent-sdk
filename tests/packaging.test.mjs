@@ -27,7 +27,7 @@ for (const specifier of ['handrail-agent-sdk', 'handrail-agent-sdk/server']) {
       const entry = await import(${JSON.stringify(specifier)});
       console.log(JSON.stringify(Object.keys(entry)));
     `]);
-    assert.deepEqual(JSON.parse(output), specifier.endsWith('/server') ? ['createEffects', 'createJobAdmission', 'createJobAnswer', 'createJobCancellation', 'createJobLease', 'createPaymentFillExecutor', 'createPaymentVault', 'createVaultEntry', 'createVaultRequestExecutor', 'createVaultUse', 'validateVaultCardValue'] : [
+    assert.deepEqual(JSON.parse(output), specifier.endsWith('/server') ? ['createBrowserUse', 'createEffects', 'createJobAdmission', 'createJobAnswer', 'createJobCancellation', 'createJobLease', 'createLoginFillExecutor', 'createLoginVault', 'createPaymentFillExecutor', 'createPaymentVault', 'createVaultEntry', 'createVaultRequestExecutor', 'createVaultUse', 'validateVaultCardValue', 'validateVaultLoginValue'] : [
       'validateBrowserLease', 'validateBrowserLeaseSuccessor', 'validateBrowserObservation',
       'validateBrowserOperation', 'validateBrowserOperationSchema', 'validateBrowserProfile',
       'validateBrowserRevocationResult', 'validateBrowserTakeover', 'validateBrowserTakeoverTransition',
@@ -44,7 +44,7 @@ test('entrypoints and contract import graph have no startup calls or external ru
     if (path.includes('/server/')) {
       assert.ok(source.statements.every(ts.isExportDeclaration), path);
       const runtime = source.statements.filter(s => !s.isTypeOnly);
-      assert.equal(runtime.length, 9, path);
+      assert.equal(runtime.length, 11, path);
       assert.equal(runtime[0].moduleSpecifier.text, './submit.js', path);
       assert.equal(runtime[1].moduleSpecifier.text, './job-lease.js', path);
       assert.equal(runtime[2].moduleSpecifier.text, './cancel.js', path);
@@ -54,6 +54,8 @@ test('entrypoints and contract import graph have no startup calls or external ru
       assert.equal(runtime[6].moduleSpecifier.text, './vault-entry.js', path);
       assert.equal(runtime[7].moduleSpecifier.text, './payment-vault.js', path);
       assert.equal(runtime[8].moduleSpecifier.text, './vault-request.js', path);
+      assert.equal(runtime[9].moduleSpecifier.text, './browser-use.js', path);
+      assert.equal(runtime[10].moduleSpecifier.text, './login-vault.js', path);
       assert.deepEqual(runtime[1].exportClause.elements.map(e => e.name.text), ['createJobLease']);
       assert.deepEqual(runtime[0].exportClause.elements.map(e => e.name.text), ['createJobAdmission']);
       assert.deepEqual(runtime[2].exportClause.elements.map(e => e.name.text), ['createJobCancellation']);

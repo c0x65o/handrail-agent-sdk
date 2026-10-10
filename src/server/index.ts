@@ -22,3 +22,7 @@ export type { VaultCardValue, PrivateCardDestination } from './payment-vault.js'
 export { createVaultRequestExecutor } from './vault-request.js';
 export type { VaultTokenRequest, VaultRequestBinding, VaultRequestRecipe, VaultHttpResponse, VaultHttpConnection, VaultHttpClient } from './vault-request.js';
 export type { ConnectionStore, ConnectionStoreHost, ConnectionStoreAuthority, ConnectionStoreOperation, ConnectionStoreResult, ConnectionStoreCode, ConnectionSnapshot, ConnectionCredentials, ConnectionVerificationBinding } from './connection-store.js';
+export { createBrowserUse } from './browser-use.js';
+export type { BrowserUseHost, BrowserUseSession, TrustedBrowserExecutor } from './browser-use.js';
+export { createLoginVault, createLoginFillExecutor, validateVaultLoginValue } from './login-vault.js';
+export type { VaultLoginValue, PrivateLoginDestination } from './login-vault.js';

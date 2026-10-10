@@ -4,7 +4,21 @@ import * as server from 'handrail-agent-sdk/server';
 import { validateConnectionEnsureInput, validateConnectionEnsureResult, validateConnectionReconnect } from 'handrail-agent-sdk';
 import type { ConnectionEnsureInput, ConnectionEnsureResult, ConnectionState } from 'handrail-agent-sdk';
 type AssertEmpty<T extends never> = T;
-type ServerExports = AssertEmpty<Exclude<keyof typeof server, 'createJobAdmission' | 'createJobLease' | 'createJobCancellation' | 'createJobAnswer' | 'createEffects' | 'createVaultUse' | 'createVaultEntry' | 'createPaymentVault' | 'createPaymentFillExecutor' | 'validateVaultCardValue' | 'createVaultRequestExecutor'>>;
+type ServerExports = AssertEmpty<Exclude<keyof typeof server, 'createJobAdmission' | 'createJobLease' | 'createJobCancellation' | 'createJobAnswer' | 'createEffects' | 'createVaultUse' | 'createVaultEntry' | 'createPaymentVault' | 'createPaymentFillExecutor' | 'validateVaultCardValue' | 'createVaultRequestExecutor' | 'createBrowserUse' | 'createLoginVault' | 'createLoginFillExecutor' | 'validateVaultLoginValue'>>;
+import type { BrowserUseHost, TrustedBrowserExecutor, VaultLoginValue, PrivateLoginDestination } from 'handrail-agent-sdk/server';
+import type { AgentRuntimeTool } from 'handrail-agent-sdk/server/agents';
+declare const browserHost: BrowserUseHost, browserEffects: EffectStore, browserExecutors: readonly TrustedBrowserExecutor[];
+declare const browserRequest: BrowserOperation, browserParameters: AgentRuntimeTool['parameters'];
+const browserUse = server.createBrowserUse(browserHost, browserEffects, browserExecutors);
+const browserTool: AgentRuntimeTool = { name: 'browser', description: 'Authorized browser operation', kind: 'browser',
+  parameters: browserParameters, bind: async () => browserRequest, browser: browserUse,
+  readResult: async (_call, observation) => { const kind: 'sanitized' = observation.kind; return JSON.stringify({ kind }); } };
+declare const loginHost: VaultEntryHost, loginStore: VaultEntryStore<VaultLoginValue>, loginTarget: PrivateLoginDestination;
+declare const loginRegistration: Pick<TrustedVaultExecutor<VaultLoginValue>, 'operationRef' | 'bind' | 'reconcile'>;
+const loginEntry = server.createLoginVault(loginHost, loginStore);
+const loginFill = server.createLoginFillExecutor(loginRegistration, loginTarget);
+// @ts-expect-error Secure login custody does not accept verification codes.
+const invalidLogin: VaultLoginValue = { password: 'synthetic', otp: '123456' };
 const states: Record<JobState, boolean> = { queued: true, running: true, waiting: true, succeeded: true, failed: true, cancelled: true };
 declare const identity: JobIdentity;
 const command: JobCommand = { command: 'cancel', identity, expectedRevision: 2, reason: 'explicit_stop' };

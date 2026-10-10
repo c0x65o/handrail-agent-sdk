@@ -13,6 +13,8 @@ import type { JobAdmissionStore, JobStore, JobStoreResult, JobStoreErrorCode } f
 import type { JobAuthority } from './submit.js';
 import type { EffectRequest, EffectObservation, createEffects } from './effects.js';
 import type { VaultOperation } from '../contracts/vault.js';
+import type { BrowserOperation, BrowserObservation } from '../contracts/browser.js';
+import type { createBrowserUse } from './browser-use.js';
 import type { createVaultUse } from './vault-use.js';
 
 export interface AgentCall {
@@ -119,6 +121,15 @@ export type AgentRuntimeTool = AgentToolBase & (
       /** Resolve a persisted, currently authorized grant. No private value. */
       readonly bind: (call: AgentCall) => Promise<VaultOperation>;
       readonly vault: Pick<ReturnType<typeof createVaultUse>, 'execute'> }
+  | { readonly kind: 'browser';
+      /** Resolve immutable native admission; never accept model policy claims. */
+      readonly bind: (call: AgentCall) => Promise<BrowserOperation>;
+      readonly browser: Pick<ReturnType<typeof createBrowserUse>, 'execute' | 'observe'>;
+      /** Optional read-only domain projection (e.g. an authorized points balance).
+       * Only invoked after a verified effect and authorized sanitized observation.
+       * Never return raw page text, credentials or arbitrary browser artifacts. */
+      readonly readResult?: (call: AgentCall, observation: Extract<BrowserObservation, { kind: 'sanitized' }>,
+        signal: AbortSignal) => Promise<string> }
 );
 export interface AgentRuntimeLimits {
   readonly maxTurns: number;
@@ -137,6 +148,7 @@ export type AgentRuntimeEvent = { readonly kind: 'model_progress' | 'tool_comple
 export type AgentOutcome = 'succeeded' | 'failed' | 'waiting' | 'cancelled' | 'busy' | 'stopped' | 'retryable';
 class Halt extends Error { constructor(readonly code: 'limit_exceeded' | 'stopped') { super(code); } }
 class Reconcile extends Error { constructor(readonly call: AgentCall) { super('reconciliation_required'); } }
+class BrowserHandoff extends Error { constructor(readonly requirement: JobRequirement) { super('browser_handoff_required'); } }
 class StoreFailure extends Error { constructor(readonly code: JobStoreErrorCode) { super(code); } }
 const unwrap = <T>(r: JobStoreResult<T>): T => { if (!r.ok) throw new StoreFailure(r.code); return r.value; };
 function abortable<T>(work: Promise<T>, signal: AbortSignal): Promise<T> {
@@ -316,7 +328,28 @@ export function createAgentRuntime(deps: {
                 }
                 if (Object.keys(record!.results).length >= limits.maxToolCalls) throw new Halt('limit_exceeded');
                 let output: string;
-                if (def.kind === 'vault') {
+                if (def.kind === 'browser') {
+                  const request = await def.bind(call);
+                  if (!sameLeaseValue(request.identity, identity) || request.effect.effectRef !== call.effectRef)
+                    throw new StoreFailure('effect_conflict');
+                  await check();
+                  const receipt = unwrap(await def.browser.execute(request, fence!));
+                  if (receipt.outcome !== 'verified') throw new Reconcile(call);
+                  const observation = unwrap(await def.browser.observe(request));
+                  if (observation.effect.outcome !== 'verified') throw new Reconcile(call);
+                  if (observation.kind === 'takeover') {
+                    // Retain the verified action's reference-only result before
+                    // waiting. Handback changes the browser lease; replay must
+                    // not redispatch the old action under a successor lease.
+                    output = JSON.stringify(observation);
+                    if (size(output) > limits.maxOutputBytes) throw new Halt('limit_exceeded');
+                    record = { ...record!, results: { ...record!.results, [call.effectRef]: { binding, output } } };
+                    throw new BrowserHandoff(observation.requirement);
+                  }
+                  output = def.readResult && observation.kind === 'sanitized'
+                    ? await abortable(def.readResult(call, observation, controller.signal), controller.signal)
+                    : JSON.stringify(observation);
+                } else if (def.kind === 'vault') {
                   const request = await def.bind(call);
                   if (!sameLeaseValue(request.identity, identity) || request.effect.effectRef !== call.effectRef)
                     throw new StoreFailure('effect_conflict');
@@ -446,9 +479,10 @@ export function createAgentRuntime(deps: {
           }
         } catch { /* Current durable authority owns any competing transition. */ }
       }
-      if (error instanceof Reconcile && save) {
+      if ((error instanceof Reconcile || error instanceof BrowserHandoff) && save) {
         try {
-          await save({ kind: 'waiting', requirement: deps.host.requirement(error.call, 'reconciliation') });
+          await save({ kind: 'waiting', requirement: error instanceof BrowserHandoff
+            ? error.requirement : deps.host.requirement(error.call, 'reconciliation') });
           emit({ kind: 'waiting' }); return { ok: true, value: 'waiting' };
         } catch { /* leave the durable pending call for recovery */ }
       }
