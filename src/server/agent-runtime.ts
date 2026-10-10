@@ -1,4 +1,5 @@
 import { createHash } from 'node:crypto';
+import { createToolExecutionQueue } from './tool-execution-queue.js';
 import { canonicalAgentJson } from './agent-state-binding.js';
 import { Agent, Runner, RunState, setSensitiveDataLoggingEnabled, tool } from '@openai/agents';
 import type { AgentInputItem, Model, ToolInputParameters, ToolOptions } from '@openai/agents';
@@ -89,7 +90,7 @@ export interface AgentRuntimeHost extends JobLeaseHost {
   prepareModelInput?(identity: JobIdentity, input: AgentInputItem[], signal: AbortSignal): Promise<AgentInputItem[]>;
   /** Current policy for the exact call; approval receipts are never model supplied.
    * Verify resolution against this call, original wait and current grant. */
-  decide(call: AgentCall, resolution?: AgentResolution): Promise<'approve' | 'reject' | JobRequirement>;
+  decide?(call: AgentCall, resolution?: AgentResolution): Promise<'approve' | 'reject' | JobRequirement>;
   /** Hold current tool authority stable through run and its effect/result commit.
    * Protect read tools too. Catalog visibility and approval are not permission. */
   withToolAuthority<T>(call: AgentCall, run: () => Promise<T>): Promise<T>;
@@ -132,13 +133,14 @@ export type AgentRuntimeTool = AgentToolBase & (
         signal: AbortSignal) => Promise<string> }
 );
 export interface AgentRuntimeLimits {
-  readonly maxTurns: number;
-  readonly maxDispatches: number;
-  readonly maxToolCalls: number;
+  /** null disables the corresponding execution cutoff. Storage/IO bounds remain. */
+  readonly maxTurns: number | null;
+  readonly maxDispatches: number | null;
+  readonly maxToolCalls: number | null;
   readonly maxContextBytes: number;
   readonly maxStateBytes: number;
   readonly maxOutputBytes: number;
-  readonly maxElapsedMs: number;
+  readonly maxElapsedMs: number | null;
   readonly leaseTtlMs: number;
   readonly pollMs: number;
 }
@@ -174,6 +176,12 @@ export function createAgentRuntime(deps: {
   /** Explicit host-approved sampling only. Omitted for models that reject it.
    * Never copy legacy request.generation wholesale into this boundary. */
   readonly sampling?: { readonly temperature?: number; readonly topP?: number };
+  /** Human/application approval is optional. Account and tool authority checks
+   * still run for every call in either mode. Defaults to host decisions. */
+  readonly approvals?: 'host' | 'none';
+  /** Independent reads may overlap. Effects remain exclusive and ordered.
+   * Defaults to one; values above one enable upstream parallel tool requests. */
+  readonly readConcurrency?: number;
   readonly tools: readonly AgentRuntimeTool[];
   readonly host: AgentRuntimeHost;
   readonly admission: JobAdmissionStore;
@@ -186,9 +194,15 @@ export function createAgentRuntime(deps: {
   readonly observe?: (event: AgentRuntimeEvent) => void;
 }) {
   const limits = deps.limits;
+  const approvals = deps.approvals ?? 'host';
+  if (!['host', 'none'].includes(approvals) || (approvals === 'host' && typeof deps.host.decide !== 'function'))
+    throw Error('AGENT_APPROVAL_CONFIG_INVALID');
   if (deps.sampling && Object.values(deps.sampling).some(v => v !== undefined && (typeof v !== 'number' || !Number.isFinite(v)))) throw Error('AGENT_SAMPLING_INVALID');
-  if (Object.values(limits).some(v => !Number.isSafeInteger(v) || v <= 0)
-    || limits.maxToolCalls > 256 || limits.maxStateBytes > 65_536 || limits.pollMs * 3 >= limits.leaseTtlMs
+  const readConcurrency = deps.readConcurrency ?? 1;
+  const optionalCutoffs = new Set(['maxTurns', 'maxDispatches', 'maxToolCalls', 'maxElapsedMs']);
+  if (Object.entries(limits).some(([key, v]) => !(v === null && optionalCutoffs.has(key)) && (!Number.isSafeInteger(v) || v! <= 0))
+    || !Number.isSafeInteger(readConcurrency) || readConcurrency < 1
+    || limits.maxStateBytes > 65_536 || limits.pollMs * 3 >= limits.leaseTtlMs
     || !/^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/.test(deps.definitionRef)
     || new Set(deps.tools.map(t => t.name)).size !== deps.tools.length) throw Error('AGENT_CONFIG_INVALID');
   // Upstream has a process-wide logging switch; enforce its stricter setting.
@@ -215,6 +229,8 @@ export function createAgentRuntime(deps: {
     if (stopped) return { ok: true, value: 'stopped' };
     let fence: JobLeaseFence | null = null;
     const controller = new AbortController();
+    const toolController = new AbortController();
+    const toolSignal = AbortSignal.any([controller.signal, toolController.signal]);
     let timer: ReturnType<typeof setTimeout> | undefined;
     let heartbeat: ReturnType<typeof setTimeout> | undefined;
     let renewal: Promise<void> = Promise.resolve();
@@ -223,6 +239,14 @@ export function createAgentRuntime(deps: {
     let save: ((change?: AgentCommit) => Promise<void>) | undefined;
     let fatal: unknown;
     let preparationFailed = false;
+    const executions = createToolExecutionQueue(readConcurrency);
+    let checkpointTail = Promise.resolve();
+    const serializeCheckpoint = <T>(run: () => Promise<T>): Promise<T> => {
+      const next = checkpointTail.then(run);
+      checkpointTail = next.then(() => undefined, () => undefined);
+      return next;
+    };
+    const executingRefs = new Set<string>();
     let preparing = false;
     let preparationExpired = false;
     try {
@@ -232,7 +256,7 @@ export function createAgentRuntime(deps: {
       fence = unwrap(await deps.lease.claim(identity, limits.leaseTtlMs));
       if (!fence) return { ok: true, value: 'busy' };
       active.add(controller);
-      timer = setTimeout(() => {
+      if (limits.maxElapsedMs !== null) timer = setTimeout(() => {
         preparationExpired = preparing;
         controller.abort();
       }, limits.maxElapsedMs);
@@ -289,7 +313,7 @@ export function createAgentRuntime(deps: {
       // commit. Reauthorize and commit its saved answer without another model
       // dispatch, tool replay, or provider charge.
       if (typeof record.output === 'string') return await commitOutput();
-      if (record.dispatches >= limits.maxDispatches || size(record.input) > limits.maxContextBytes) throw new Halt('limit_exceeded');
+      if ((limits.maxDispatches !== null && record.dispatches >= limits.maxDispatches) || size(record.input) > limits.maxContextBytes) throw new Halt('limit_exceeded');
       record = { ...record, dispatches: record.dispatches + 1 };
       await save();
       const callFor = (name: string, callId: string, input: Record<string, unknown>): AgentCall => ({
@@ -300,7 +324,7 @@ export function createAgentRuntime(deps: {
       const tools = deps.tools.filter(t => visible.includes(t.name));
       const agent = new Agent({ name: deps.definitionRef, instructions: deps.instructions, model: deps.model,
         modelSettings: { ...(deps.sampling?.temperature === undefined ? {} : { temperature: deps.sampling.temperature }),
-          ...(deps.sampling?.topP === undefined ? {} : { topP: deps.sampling.topP }), parallelToolCalls: false, maxTokens: 2048, store: false, retry: { maxRetries: 0 } },
+          ...(deps.sampling?.topP === undefined ? {} : { topP: deps.sampling.topP }), parallelToolCalls: readConcurrency > 1, store: false, retry: { maxRetries: 0 } },
         tools: tools.map(def => tool<ToolInputParameters>({ name: def.name, description: def.description,
           ...('jsonSchema' in def.parameters
             // Upstream 0.18 types require additionalProperties:true for a
@@ -311,7 +335,7 @@ export function createAgentRuntime(deps: {
                 NonNullable<Extract<ToolOptions<ToolInputParameters>, { strict: false }>['parameters']> }
             : { parameters: def.parameters }),
           needsApproval: true, errorFunction: null,
-          execute: async (input: unknown, _context, details) => {
+          execute: async (input: unknown, _context, details) => executions.run(def.kind === 'read', async () => {
             try {
               if (fatal) throw fatal;
               await check();
@@ -326,7 +350,8 @@ export function createAgentRuntime(deps: {
                   if (prior.binding !== binding) throw Error('call_conflict');
                   return prior.output;
                 }
-                if (Object.keys(record!.results).length >= limits.maxToolCalls) throw new Halt('limit_exceeded');
+                if (limits.maxToolCalls !== null && new Set([...Object.keys(record!.results), ...executingRefs]).size >= limits.maxToolCalls) throw new Halt('limit_exceeded');
+                executingRefs.add(call.effectRef);
                 let output: string;
                 if (def.kind === 'browser') {
                   const request = await def.bind(call);
@@ -347,7 +372,7 @@ export function createAgentRuntime(deps: {
                     throw new BrowserHandoff(observation.requirement);
                   }
                   output = def.readResult && observation.kind === 'sanitized'
-                    ? await abortable(def.readResult(call, observation, controller.signal), controller.signal)
+                    ? await abortable(def.readResult(call, observation, toolSignal), toolSignal)
                     : JSON.stringify(observation);
                 } else if (def.kind === 'vault') {
                   const request = await def.bind(call);
@@ -365,25 +390,30 @@ export function createAgentRuntime(deps: {
                   const observation = unwrap(await deps.effects.execute(request, fence!));
                   if (observation.outcome !== 'verified') throw new Reconcile(call);
                   output = def.readResult
-                    ? await abortable(def.readResult(call, observation, controller.signal), controller.signal)
+                    ? await abortable(def.readResult(call, observation, toolSignal), toolSignal)
                     : JSON.stringify(observation);
                 } else {
-                  try { output = await abortable(def.execute(call, controller.signal), controller.signal); }
+                  try { output = await abortable(def.execute(call, toolSignal), toolSignal); }
                   catch { output = '{"error":"tool_failed"}'; }
                 }
                 await check();
                 if (typeof output !== 'string' || size(output) > limits.maxOutputBytes) throw new Halt('limit_exceeded');
-                record = { ...record!, results: { ...record!.results, [call.effectRef]: { binding, output } } };
-                await save!();
+                await serializeCheckpoint(async () => {
+                  await check();
+                  if (fatal) throw fatal;
+                  record = { ...record!, results: { ...record!.results, [call.effectRef]: { binding, output } } };
+                  await save!();
+                });
+                executingRefs.delete(call.effectRef);
                 emit({ kind: 'tool_completed' });
                 return output;
               });
-            } catch (error) { fatal = error; throw Error('AGENT_TOOL_HALTED'); }
-          },
+            } catch (error) { fatal ??= error; toolController.abort(); throw Error('AGENT_TOOL_HALTED'); }
+          }),
         })),
       });
       const runner = new Runner({ tracingDisabled: true, traceIncludeSensitiveData: false,
-        toolExecution: { maxFunctionToolConcurrency: 1 }, toolNameCollisionPolicy: 'error',
+        toolExecution: { maxFunctionToolConcurrency: readConcurrency }, toolNameCollisionPolicy: 'error',
         toolErrorFormatter: () => 'Tool request rejected.',
         callModelInputFilter: async ({ modelData }) => {
           await check();
@@ -417,7 +447,9 @@ export function createAgentRuntime(deps: {
             if (raw.type !== 'function_call') throw Error('unsupported_tool');
             const input = def.parameters.parse(JSON.parse(raw.arguments));
             const call = callFor(def.name, raw.callId, input);
-            const decision = await deps.host.decide(call, record!.resolution);
+            // The upstream interruption persists call identity before IO. It
+            // is not a human approval request when the host opts out of them.
+            const decision = approvals === 'none' ? 'approve' : await deps.host.decide!(call, record!.resolution);
             if (decision === 'approve') state.approve(interruption);
             else if (decision === 'reject') state.reject(interruption, { message: 'Host declined this action.' });
             else {
@@ -462,6 +494,11 @@ export function createAgentRuntime(deps: {
         return await commitOutput();
       }
     } catch (caught) {
+      // Runner may reject before sibling tools settle. Drain queued calls before
+      // changing job state or releasing the execution lease. Fatal checks stop
+      // queued calls; active reads retain cancellation through their signal.
+      toolController.abort();
+      await executions.drain();
       const error = fatal ?? caught;
       if (fence && !fatal && !stopped && (preparationExpired || (preparationFailed && !controller.signal.aborted))) {
         try {

@@ -157,7 +157,7 @@ test('reject malformed objects, getters, symbols, unsafe refs and raw errors saf
   const s = snapshot('running'); let reads = 0;
   Object.defineProperty(s, 'state', { get() { reads++; throw Error('SYNTHETIC'); } });
   invalid(validateJobSnapshot(s)); assert.equal(reads, 0);
-  for (const change of [s => s[Symbol('secret')] = 'SYNTHETIC', s => Object.defineProperty(s, 'hidden', { value: 'SYNTHETIC' }), s => s.identity.origin.routeRef = 'https://invalid/?token=SYNTHETIC', s => s.identity.jobId = 'x'.repeat(129), s => s.effects = Array(2), s => s.effects = Array(257).fill(effect)]) {
+  for (const change of [s => s[Symbol('secret')] = 'SYNTHETIC', s => Object.defineProperty(s, 'hidden', { value: 'SYNTHETIC' }), s => s.identity.origin.routeRef = 'https://invalid/?token=SYNTHETIC', s => s.identity.jobId = 'x'.repeat(129), s => s.effects = Array(2)]) {
     const bad = snapshot('running'); change(bad); invalid(validateJobSnapshot(bad));
   }
   for (const code of ['provider_raw_failure', 'x'.repeat(300)]) invalid(validateJobResult({ command: 'inspect', ok: false, error: { code, correlationRef: 'correlation-1' } }));
@@ -188,4 +188,10 @@ test('results reject mismatched state and discriminants', () => {
   for (const command of ['unknown', 'dispose']) invalid(validateJobCommand({ command, identity }));
   invalid(validateJobResult({ command: 'inspect', ok: 'true', snapshot: snapshot('running') }));
   invalid(validateJobCommand(command('submit'), snapshot('queued')), 'invalid_transition');
+});
+
+test('effect history has no cumulative call allowance', () => {
+  const s = snapshot('running');
+  s.effects = Array.from({length: 300}, (_, i) => ({...effect, effectRef: `effect-${i}`}));
+  valid(validateJobSnapshot(s));
 });

@@ -3,6 +3,7 @@ import type { ToolDefinition } from '@handrail/ai-assistant';
 import type { HandrailAssistantToolObserver } from '@handrail/ai-assistant/server/assistant';
 import type { AgentCall, AgentRuntimeTool } from './agent-runtime.js';
 import type { EffectRequest, EffectObservation } from './effects.js';
+import type { MCPServer } from '@openai/agents';
 
 export interface ApplicationAgentTools {
   /** Trusted server catalog, already filtered for the current principal. */
@@ -25,6 +26,39 @@ export function createApplicationAgentTools(adapter: ApplicationAgentTools): rea
     return adapter.isReadOnly(definition.name)
       ? { ...base, kind: 'read', execute: adapter.read }
       : { ...base, kind: 'effect', bind: adapter.bind, readResult: adapter.result };
+  });
+}
+
+export interface McpAgentTools {
+  /** Connected, authenticated server owned by the host. Standard OpenAI Agents
+   * HTTP/SSE/stdio MCP transports implement this interface. Close it on shutdown. */
+  readonly server: Pick<MCPServer, 'listTools' | 'callToolResult'>;
+  /** Trusted host selection and classification; remote annotations alone are
+   * not permission and must not silently classify unknown tools as reads. */
+  readonly allowTool: (name: string) => boolean;
+  readonly isReadOnly: (name: string) => boolean;
+  /** Mutations use the same durable effect path as application tools. The host
+   * effect adapter performs MCP IO with the original idempotency identity and
+   * reconciles uncertain results; this helper never retries a mutation. */
+  readonly bind: ApplicationAgentTools['bind'];
+  readonly result: ApplicationAgentTools['result'];
+}
+
+/** Import a scoped MCP catalog into the durable runtime, preserving schemas
+ * and the full serializable result (content, structuredContent and isError).
+ * Transport credentials, connection ownership and effect reconciliation remain
+ * with the host. The same tool authority check protects MCP and local tools. */
+export async function createMcpAgentTools(adapter: McpAgentTools): Promise<readonly AgentRuntimeTool[]> {
+  if (typeof adapter.server.callToolResult !== 'function') throw Error('MCP_FULL_RESULT_REQUIRED');
+  const definitions = (await adapter.server.listTools()).filter(tool => adapter.allowTool(tool.name));
+  return createApplicationAgentTools({
+    definitions: definitions.map(tool => ({ name: tool.name, description: tool.description ?? tool.name,
+      input_schema: tool.inputSchema })),
+    isReadOnly: adapter.isReadOnly,
+    read: async (call, signal) => JSON.stringify(await adapter.server.callToolResult!(call.toolName, call.input,
+      { 'handrail/callRef': call.effectRef }, { signal })),
+    bind: adapter.bind,
+    result: adapter.result,
   });
 }
 

@@ -17,6 +17,8 @@ export interface ContinuousHostPorts {
   pool: Pool; schema: string; keys: AgentStateKeys;
   model: RuntimeOptions['model']; definitionRef: string; instructions: string;
   tools: RuntimeOptions['tools']; limits: RuntimeOptions['limits'];
+  approvals?: RuntimeOptions['approvals'];
+  readConcurrency?: RuntimeOptions['readConcurrency'];
   // Explicit quotas for encrypted custody; model request and tool output limits
   // remain separate. Choose from the approved model and host storage budget.
   checkpointQuotaBytes: number; maxEntryBytes: number; maxContextBytes: number; pageSize: number;
@@ -35,7 +37,7 @@ export function composeContinuousHost(ports: ContinuousHostPorts) {
   const effects=createEffects(ports.effectHost,stores.effects,delegated);
   const lease=createJobLease(ports.host,stores.lease);
   const runtime=createConversationAgentRuntime({definitionRef:ports.definitionRef,instructions:ports.instructions,model:ports.model,
-    tools:ports.tools,host:ports.host,turn:ports.turn,conversation,admission:stores.admission,journal:stores.journal,
+    tools:ports.tools,approvals:ports.approvals,readConcurrency:ports.readConcurrency,host:ports.host,turn:ports.turn,conversation,admission:stores.admission,journal:stores.journal,
     lease,effects,states:stores.states,limits:ports.limits});
   return {conversation,runtime,admission:createJobAdmission(ports.host,stores.admission),
     answer:createJobAnswer(ports.host,stores.answer),cancel:createJobCancellation(ports.host,stores.cancellation)};

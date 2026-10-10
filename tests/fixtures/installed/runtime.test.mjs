@@ -8,6 +8,180 @@ import { services, identity, modelBoundary, requirement } from './host.mjs';
 import './preparation.test.mjs';
 const ok = r => { assert.equal(r.ok,true,r.code); return r.value; };
 
+function batchModel(calls) {
+  return {
+    async getResponse() { throw Error('STREAM_EXPECTED'); },
+    async *getStreamedResponse(request) {
+      const inputs = typeof request.input === 'string' ? [] : request.input;
+      const done = inputs.filter(item => item.type === 'function_call_result');
+      yield { type: 'response_started' };
+      yield { type: 'response_done', response: { id: `batch-${done.length}`,
+        output: done.length ? [{ type: 'message', role: 'assistant', status: 'completed', content: [{ type: 'output_text', text: 'All observations returned.' }] }]
+          : calls.map((call, i) => ({ type: 'function_call', callId: `batch-call-${i}`, ...call, arguments: JSON.stringify(call.arguments) })),
+        usage: { requests: 1, inputTokens: 10, outputTokens: 5, totalTokens: 15 } } };
+    },
+  };
+}
+
+test('parallel reads retain every result and effects execute exclusively between read batches', async t => {
+  let activeReads = 0, peakReads = 0, effectActive = false, effectRuns = 0;
+  const reads = [];
+  const s = await setup(t, {
+    approvals: 'none', readConcurrency: 3,
+    model: batchModel([
+      { name: 'lookup', arguments: { topic: 'first' } },
+      { name: 'lookup', arguments: { topic: 'second' } },
+      { name: 'reserve', arguments: { itemRef: 'synthetic-item' } },
+      { name: 'lookup', arguments: { topic: 'after-effect' } },
+    ]),
+    read: async c => {
+      assert.equal(effectActive, false);
+      activeReads++; peakReads = Math.max(peakReads, activeReads);
+      await new Promise(resolve => setTimeout(resolve, 40));
+      reads.push(c.input.topic);
+      activeReads--;
+      return JSON.stringify({ topic: c.input.topic });
+    },
+    afterEffect: async () => {
+      assert.equal(activeReads, 0);
+      assert.deepEqual(new Set(reads), new Set(['first', 'second']));
+      effectActive = true; effectRuns++;
+      await new Promise(resolve => setTimeout(resolve, 30));
+      effectActive = false;
+    },
+  });
+  assert.equal(ok(await s.runtime.wake(identity)), 'succeeded');
+  assert.equal(peakReads, 2);
+  assert.equal(effectRuns, 1);
+  assert.equal(Object.keys(ok(await s.states.load(identity, s.authority())).results).length, 4);
+  // A different process can read all durable outcomes; repeated delivery does
+  // not call the model, repeat a read, or dispatch another mutation.
+  const recovered = await services(s.harness.schema, s.key); t.after(() => recovered.close());
+  assert.equal(ok(await recovered.runtime.wake(identity)), 'succeeded');
+  assert.equal(recovered.model.requests, 0);
+  assert.equal(reads.length, 3);
+});
+
+test('a concurrent tool denial aborts sibling reads before releasing the job', async t => {
+  let began, aborted = false;
+  const entered = new Promise(resolve => { began = resolve; });
+  const s = await setup(t, { approvals: 'none', readConcurrency: 2,
+    limits: { maxElapsedMs: null },
+    model: batchModel([
+      { name: 'lookup', arguments: { topic: 'pending' } },
+      { name: 'calculate', arguments: { quantity: 2, price: 4 } },
+    ]),
+    read: async (_call, signal) => {
+      began();
+      await new Promise((_, reject) => signal.addEventListener('abort', () => {
+        aborted = true; reject(Error('read cancelled'));
+      }, { once: true }));
+    },
+    host: { withToolAuthority: async (call, run) => {
+      if (call.toolName === 'calculate') { await entered; throw Error('access revoked'); }
+      return run();
+    } },
+  });
+  assert.equal(ok(await s.runtime.wake(identity)), 'retryable');
+  assert.equal(aborted, true);
+  assert.equal(Object.keys(ok(await s.states.load(identity, s.authority())).results).length, 0);
+});
+
+test('MCP HTTP discovery and calls retain schemas and full results through the durable runtime', async t => {
+  const { createServer } = await import('node:http');
+  const { MCPServerStreamableHttp } = await import('@openai/agents');
+  const { createMcpAgentTools } = await import('handrail-agent-sdk/server/application-tools');
+  const calls = [];
+  const inputSchema = { type: 'object', properties: { topic: { type: 'string' } }, required: ['topic'], additionalProperties: false };
+  const server = createServer(async (req, res) => {
+    if (req.method !== 'POST') { res.writeHead(405); res.end(); return; }
+    const chunks = []; for await (const chunk of req) chunks.push(chunk);
+    const message = JSON.parse(Buffer.concat(chunks).toString());
+    if (message.id === undefined) { res.writeHead(202); res.end(); return; }
+    let result;
+    if (message.method === 'initialize') result = { protocolVersion: '2025-06-18', capabilities: { tools: {} }, serverInfo: { name: 'fixture', version: '1' } };
+    else if (message.method === 'tools/list') result = { tools: [
+      { name: 'lookup', description: 'Read scoped facts.', inputSchema },
+      { name: 'execute_environment', description: 'Unavailable capability.', inputSchema },
+    ] };
+    else if (message.method === 'tools/call') {
+      calls.push(message.params);
+      result = { content: [{ type: 'text', text: 'Native context found.' }], structuredContent: { sourceRef: 'fixture-context', current: true }, isError: false };
+    } else result = {};
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ jsonrpc: '2.0', id: message.id, result }));
+  });
+  await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
+  t.after(() => new Promise(resolve => { server.close(resolve); server.closeAllConnections(); }));
+  const client = new MCPServerStreamableHttp({ name: 'fixture', url: `http://127.0.0.1:${server.address().port}/mcp` });
+  await client.connect(); t.after(() => client.close());
+  const tools = await createMcpAgentTools({ server: client, allowTool: name => name === 'lookup',
+    isReadOnly: name => name === 'lookup', bind: async () => { throw Error('no mutation allowed'); },
+    result: async () => { throw Error('no mutation allowed'); } });
+  assert.deepEqual(tools.map(tool => tool.name), ['lookup']);
+  assert.deepEqual(tools[0].parameters.jsonSchema, inputSchema);
+  const s = await setup(t, { approvals: 'none', tools,
+    model: batchModel([{ name: 'lookup', arguments: { topic: 'staging' } }]) });
+  assert.equal(ok(await s.runtime.wake(identity)), 'succeeded');
+  assert.equal(calls.length, 1);
+  assert.equal(calls[0].name, 'lookup');
+  assert.equal(calls[0].arguments.topic, 'staging');
+  assert.match(calls[0]._meta['handrail/callRef'], /^agent:/);
+  const result = Object.values(ok(await s.states.load(identity, s.authority())).results)[0];
+  assert.deepEqual(JSON.parse(result.output).structuredContent, { sourceRef: 'fixture-context', current: true });
+  assert.equal(JSON.parse(result.output).isError, false);
+  assert.equal(ok(await s.runtime.wake(identity)), 'succeeded');
+  assert.equal(calls.length, 1);
+});
+
+test('optional execution cutoffs allow longer work while retaining storage bounds and usage', async t => {
+  let requests = 0;
+  const s = await setup(t, { approvals: 'none',
+    checkpointQuotaBytes: 2_000_000,
+    limits: { maxTurns: null, maxDispatches: null, maxToolCalls: null, maxElapsedMs: null, maxContextBytes: 1_000_000 },
+    model: {
+      async getResponse() { throw Error('STREAM_EXPECTED'); },
+      async *getStreamedResponse(request) {
+        requests++;
+        const count = (Array.isArray(request.input) ? request.input : []).filter(i => i.type === 'function_call_result').length;
+        yield { type: 'response_done', response: { id: `long-${count}`, output: count < 14
+          ? [{ type: 'function_call', callId: `long-call-${count}`, name: 'lookup', arguments: JSON.stringify({ topic: `source-${count}` }) }]
+          : [{ type: 'message', role: 'assistant', status: 'completed', content: [{ type: 'output_text', text: 'Read all sources.' }] }],
+          usage: { requests: 1, inputTokens: 10, outputTokens: 5, totalTokens: 15 } } };
+      },
+    },
+  });
+  assert.equal(ok(await s.runtime.wake(identity)), 'succeeded');
+  assert.equal(requests, 15);
+  const saved = ok(await s.states.load(identity, s.authority()));
+  assert.equal(Object.keys(saved.results).length, 14);
+  assert.equal(saved.usage.requests, 15);
+});
+
+test('approval-free runtime completes tools and effects without a decision callback or approval wait', async t => {
+  const s = await setup(t, { approvals: 'none', host: { decide: undefined } });
+  assert.equal(ok(await s.runtime.wake(identity)), 'succeeded');
+  assert.equal(s.events.some(event => event.kind === 'waiting'), false);
+  assert.equal((await s.client.query(`SELECT sum(attempts)::int AS attempts FROM ${s.harness.table('synthetic_provider')}`)).rows[0].attempts, 1);
+  assert.equal(ok(await s.runtime.wake(identity)), 'succeeded');
+  assert.equal((await s.client.query(`SELECT sum(attempts)::int AS attempts FROM ${s.harness.table('synthetic_provider')}`)).rows[0].attempts, 1);
+});
+
+test('approval-free runtime still checks current tool authority before executing effects', async t => {
+  let calls = 0;
+  const s = await setup(t, { approvals: 'none', host: {
+    decide: async () => { throw Error('Approval must not run'); },
+    withToolAuthority: async (call, run) => {
+      calls++;
+      if (call.toolName === 'reserve') throw Error('Access revoked');
+      return run();
+    },
+  } });
+  assert.notEqual(ok(await s.runtime.wake(identity)), 'succeeded');
+  assert.ok(calls > 0);
+  assert.equal((await s.client.query(`SELECT * FROM ${s.harness.table('synthetic_provider')}`)).rowCount, 0);
+});
+
 test('host structured history survives an approval checkpoint without flattening roles or image references', async t => {
   const input = [{ role: 'user', content: [{ type: 'input_text', text: 'Check this controlled fixture.' },
     { type: 'input_image', image: 'fixture-image-reference', detail: 'low' }] },
@@ -93,7 +267,7 @@ test('durable approval, answer and new input resume same job in a separate proce
   assert.equal((state.state.match(/Proceed with the approved synthetic item/g)??[]).length > 0,true);
   assert.equal((await s.client.query(`SELECT * FROM ${s.harness.table('synthetic_provider')}`)).rowCount,1);
 });
-function child(s,mode) {
+function child(s,mode,approvals) {
   return new Promise((resolve,reject) => {
     const p = fork(new URL('./process.mjs',import.meta.url),[],{stdio:['ignore','ignore','ignore','ipc']});
     const timeout = setTimeout(() => { p.kill('SIGKILL'); reject(Error('CHILD_TIMEOUT')); },15_000);
@@ -102,14 +276,14 @@ function child(s,mode) {
       if (mode === 'crash') { p.kill('SIGKILL'); p.once('exit',() => {clearTimeout(timeout);resolve(message);}); }
       else { p.once('exit',() => {clearTimeout(timeout);resolve(message);}); }
     });
-    p.send({schema:s.harness.schema,key:s.key,mode});
+    p.send({schema:s.harness.schema,key:s.key,mode,approvals});
   });
 }
-test('SIGKILL after provider mutation reconciles across processes without duplicate execution', async t => {
-  const s = await setup(t);
-  assert.equal((await child(s,'crash')).event,'provider_committed');
+for (const approvals of ['host', 'none']) test(`SIGKILL after provider mutation reconciles across processes without duplicate execution (${approvals} approvals)`, async t => {
+  const s = await setup(t,{approvals,...(approvals==='none'?{host:{decide:undefined}}:{})});
+  assert.equal((await child(s,'crash',approvals)).event,'provider_committed');
   await new Promise(r => setTimeout(r,1400));
-  const result = await child(s,'recover');
+  const result = await child(s,'recover',approvals);
   assert.equal(result.value,'succeeded');
   assert.equal((await s.client.query(`SELECT * FROM ${s.harness.table('synthetic_provider')}`)).rowCount,1);
   assert.equal(ok(await s.journal.load(identity)).effects[0].outcome,'verified');
@@ -284,6 +458,7 @@ test('official OpenAI Responses provider/client drive Runner through simulated H
     fetch:async (url,options)=>{
       assert.equal(String(url),'https://model.fixture.invalid/v1/responses');
       const body=JSON.parse(options.body);requests++;
+      assert.equal(Object.hasOwn(body,'max_output_tokens'),false,'runtime must not impose a response token allowance');
       assert.equal(body.stream,true);assert.equal(body.store,false);
       const n=body.input.filter(i=>i.type==='function_call_output').length;
       const toolName=n===1?'reserve':'lookup';

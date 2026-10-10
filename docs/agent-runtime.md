@@ -9,6 +9,22 @@ answers, effects, scheduling, encrypted state and Vault custody.
 For continuous context, scoped memory, native work return and opt-in paged
 checkpoints, see [continuous conversations](continuous-conversation.md).
 
+The host can set `readConcurrency` above one to overlap independent read tools.
+The upstream Runner receives parallel-tool support and the matching concurrency;
+the SDK keeps non-read tools exclusive and ordered between read groups. Private
+result checkpoints are serialized so concurrent reads cannot overwrite one
+another. A rejected tool cancels sibling reads and drains outstanding calls before
+the lease is released. Each call still checks current tool authority.
+
+`limits.maxTurns`, `maxDispatches`, `maxToolCalls` and `maxElapsedMs` accept `null`
+to disable that execution cutoff. Use this for continuous orchestration that ends
+on completion, explicit Stop or a real dependency, without imposing a cumulative
+execution allowance. Finite values remain available to other hosts. There is no
+hardcoded 256-effect history cap. Context, output and private-state byte bounds
+still protect IO and storage; use paged checkpoints for larger durable state.
+Those capacities must not be described as token budgets. Usage is observed in
+both modes, and the runtime never imposes a response-token ceiling.
+
 For the reusable schedule/watch, notification, canonical feedback and existing
 application-gateway adapters, see [assistance composition](assistance.md).
 For supported durable store composition, migrations and key custody, use the
@@ -132,6 +148,23 @@ Handrail's native task database.
 
 ### Application tool schemas
 
+For MCP catalogs, `createMcpAgentTools` from the same application-tools export
+accepts a connected upstream `MCPServerStreamableHttp`, `MCPServerSSE` or
+`MCPServerStdio` (or a native server adapter implementing `listTools` and
+`callToolResult`). The host owns authentication, connection and shutdown. It
+supplies `allowTool` and `isReadOnly` from its trusted catalog; remote annotation
+hints alone are not authorization. JSON Schemas and complete serializable results
+(including `content`, `structuredContent` and `isError`) survive the bridge.
+Read calls receive cancellation and the stable `handrail/callRef` metadata.
+
+MCP mutations use the host's `bind` / effect adapter / `result` path, just like
+application mutations. Bind the original effect identity to the receiver's native
+idempotency facility, and reconcile its durable receipt before any retry. The
+bridge does not silently invoke write tools as reads, invent idempotency support
+for a remote server, add human approvals, or retry uncertain effects. Avery's
+host selects only reads and orchestration tools; connecting MCP never grants
+shell, file-editing or deployment capabilities by itself.
+
 Pass the trusted application's complete `ToolDefinition[]` to
 `createApplicationAgentTools` from `handrail-agent-sdk/server/application-tools`,
 then pass its result directly to `createAgentRuntime`. Names, descriptions and
@@ -226,14 +259,27 @@ the Runner. It checks again before model calls, tools, persistence and output.
 `withToolAuthority` must hold current authorization through callback and commit;
 a catalog check or a stale approval is insufficient.
 
-All local tools use the SDK's approval interruption as a durable execution
-boundary, including automatically allowed read tools. The runtime persists the
-SDK's unapproved RunState before asking host policy for each decision. This
-small dispatch loop only saves interruptions and applies decisions; Runner owns
+All local tools use the upstream interruption as a durable execution boundary,
+including automatically allowed read tools. The runtime persists the pending
+RunState before execution, preserving call identity across crashes. Runner owns
 the model/tool loop. Hosted tools and handoffs are intentionally excluded because
 they would bypass the local authorization/effect boundary.
 
-A host decision is `approve`, `reject`, or a safe `JobRequirement`. A waiting
+Approval workflows are optional. Pass `approvals: 'none'` to execute admitted
+tools without calling `host.decide` or creating an approval wait. This is suitable
+for an orchestrator acting on the user's instructions. `host.decide` can be
+omitted in this mode. Account/project authority, tool visibility, cancellation,
+schema validation and effect reconciliation still apply. The internal checkpoint
+is not a user confirmation and must not be presented as one.
+
+The default `approvals: 'host'` requires `host.decide` for applications that need
+approval workflows. Invalid configuration is rejected before execution. Change
+`definitionRef` when changing approval mode; do not resume old checkpoints under
+a different execution policy without explicitly reconciling their native work.
+The runtime does not set a model response token allowance. Provider context
+capacity and host storage/result byte constraints remain distinct concerns.
+
+In host approval mode a decision is `approve`, `reject`, or a safe `JobRequirement`. A waiting
 commit atomically stores state, appends the journal wait and releases ownership.
 Use `createJobAnswer` for durable answer delivery. `resume(identity)` calls the
 host's `resolveWait` against the current wait/answer and queues the same job in

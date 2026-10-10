@@ -1,8 +1,8 @@
 import { services, identity } from './host.mjs';
-process.once('message',async ({schema,key,mode})=>{
+process.once('message',async ({schema,key,mode,approvals})=>{
   let s;
   try {
-    s=await services(schema,key,{afterEffect:mode==='crash'?async()=>{process.send({event:'provider_committed'});await new Promise(()=>{});}:undefined,
+    s=await services(schema,key,{approvals, ...(approvals==='none'?{host:{decide:undefined}}:{}), afterEffect:mode==='crash'?async()=>{process.send({event:'provider_committed'});await new Promise(()=>{});}:undefined,
       modelHooks:mode==='resume'?{before:async r=>{if(JSON.stringify(r.input).split('Proceed with the approved synthetic item.').length!==2)throw Error('INPUT_NOT_ONCE');}}:undefined,
       state:{approved:true,resolution:{receiptRef:'approved-one',input:'Proceed with the approved synthetic item.'}}});
     if(mode==='resume') {const r=await s.runtime.resume(identity);if(!r.ok)throw Error();}

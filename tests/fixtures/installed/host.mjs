@@ -111,7 +111,7 @@ export async function services(schema, keyHex, options = {}) {
   if (options.readEffectResult) tools[2] = { ...tools[2], readResult: options.readEffectResult };
   const model = options.model ?? modelBoundary(options.scenario,options.modelHooks);
   const runtime = (options.runtimeFactory ?? sdk.createAgentRuntime)({ definitionRef: 'fixture-agent-v1', instructions: 'Use only the synthetic tools. Recover from read errors.',
-    model, sampling: options.sampling, tools: options.transformTools?.(tools) ?? options.tools ?? tools, host, admission, journal, lease, states, effects, limits: {...limits,...options.limits}, observe: e => { events.push(e); options.observe?.(e); } });
+    model, sampling: options.sampling, approvals: options.approvals, readConcurrency: options.readConcurrency, tools: options.transformTools?.(tools) ?? options.tools ?? tools, host, admission, journal, lease, states, effects, limits: {...limits,...options.limits}, observe: e => { events.push(e); options.observe?.(e); } });
   return { identity, tools, runtime, pool, journal, admission, lease, states, effects, authority, host, state, events, calls, model,
     cancel: sdk.createJobCancellation(host,stores.cancellation),
     answer: sdk.createJobAnswer(host,stores.answer),

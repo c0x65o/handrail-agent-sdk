@@ -159,7 +159,7 @@ function shape(v: unknown, required: Record<string, Check>, optional: Record<str
   }) && Object.keys(required).every(key => Object.hasOwn(descriptors, key));
 }
 function list(v: unknown, check: Check): v is unknown[] {
-  if (!Array.isArray(v) || v.length > 256) return false;
+  if (!Array.isArray(v)) return false;
   // Dense JSON arrays only, with no hidden payload properties or accessors.
   const keys = Reflect.ownKeys(v);
   return keys.length === v.length + 1 && keys.every(key => {
