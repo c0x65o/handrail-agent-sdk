@@ -16,7 +16,7 @@ export interface ConversationAuthority {
   withAccess<T>(scope: ConversationScope, operation: ConversationOperation, run: () => Promise<T>): Promise<T>;
 }
 export interface ConversationRecord { id: string; revision: number; order: number; active?: boolean; value: unknown }
-export type ConversationCollection = 'transcript' | 'state' | 'pins' | 'memory' | 'work';
+export type ConversationCollection = 'transcript' | 'state' | 'pins' | 'memory' | 'memory_history' | 'work';
 export interface ConversationTransaction {
   get(collection: ConversationCollection, id: string): Promise<ConversationRecord | null>;
   page(collection: ConversationCollection, options: { after?: number; before?: number; limit: number; reverse?: boolean; activeOnly?: boolean }): Promise<ConversationRecord[]>;
@@ -38,8 +38,10 @@ export interface TranscriptEntry {
 export interface MemoryValue {
   text: string;
   provenance: { sourceRef: string; role: 'user' | 'assistant' | 'tool' | 'host'; observedAt: number }[];
-  /** Stale entries are returned explicitly, never silently injected as current. */
-  validUntil: number;
+  /** Null means lasting memory. Expired entries are returned explicitly as stale. */
+  validUntil: number | null;
+  /** Host-defined display/scope metadata. It never grants runtime authority. */
+  metadata?: Record<string, unknown>;
 }
 export interface MemoryRecord { id: string; revision: number; status: 'active' | 'forgotten'; value?: MemoryValue; stale: boolean }
 export interface WorkBinding {
@@ -100,6 +102,11 @@ export function createConversation(deps: { storage: ConversationStorage; authori
     await changed(tx);
     return order;
   }
+  const memoryVersionId=(id:string,revision:number)=>digest([id,revision]);
+  const memoryView=(row:ConversationRecord,id:string):MemoryRecord=>{
+    const saved=row.value as {status:'active'|'forgotten';value?:MemoryValue};
+    return {id,revision:row.revision,...saved,stale:Boolean(saved.value&&saved.value.validUntil!==null&&saved.value.validUntil<=deps.now())};
+  };
   return {
     append(scope: ConversationScope, input: TranscriptEntry) {
       conversation(scope); const entry = structuredClone(input);
@@ -191,32 +198,64 @@ export function createConversation(deps: { storage: ConversationStorage; authori
       list(scope: ConversationScope, after = 0) {
         return access(scope,'memory_read',async tx => {
           const rows = await tx.page('memory',{after,limit:deps.pageSize+1,activeOnly:true});
-          return { entries:rows.slice(0,deps.pageSize).map(r=>{const v=r.value as {status:'active';value:MemoryValue};return {id:r.id,revision:r.revision,...v,stale:v.value.validUntil<=deps.now()};}),
+          return { entries:rows.slice(0,deps.pageSize).map(row=>memoryView(row,row.id)),
             next:rows.length>deps.pageSize ? rows[deps.pageSize-1]!.order : null };
         });
       },
       read(scope: ConversationScope, id: string) {
         ref(id); return access(scope, 'memory_read', async tx => {
-          const row = await tx.get('memory', id); if (!row) return null;
-          const v = row.value as { status: 'active' | 'forgotten'; value?: MemoryValue };
-          return { id, revision: row.revision, ...v, stale: v.value ? v.value.validUntil <= deps.now() : false } satisfies MemoryRecord;
+          const row = await tx.get('memory', id); return row ? memoryView(row,id) : null;
+        });
+      },
+      readRevision(scope: ConversationScope, id: string, revision: number) {
+        ref(id); positive(revision);
+        return access(scope,'memory_read',async tx=>{
+          const saved=await tx.get('memory_history',memoryVersionId(id,revision));
+          if(saved)return memoryView(saved,id);
+          const current=await tx.get('memory',id);
+          return current?.revision===revision?memoryView(current,id):null;
+        });
+      },
+      history(scope: ConversationScope, id: string, before?: number, limit=deps.pageSize) {
+        ref(id); positive(limit); if(limit>deps.pageSize || before!==undefined && (!Number.isSafeInteger(before)||before<1))throw Error('CONVERSATION_PAGE_LIMIT');
+        return access(scope,'memory_read',async tx=>{
+          const current=await tx.get('memory',id);
+          const start=Math.min(before===undefined?Number.MAX_SAFE_INTEGER:before-1,current?.revision??0);
+          const end=Math.max(1,start-limit+1),entries:MemoryRecord[]=[],unavailableRevisions:number[]=[];
+          for(let revision=start;revision>=end;revision--){
+            const row=await tx.get('memory_history',memoryVersionId(id,revision)) || (current?.revision===revision?current:null);
+            if(row)entries.push(memoryView(row,id));else unavailableRevisions.push(revision);
+          }
+          return {entries,unavailableRevisions,next:start>0&&end>1?end:null};
         });
       },
       revise(scope: ConversationScope, id: string, expectedRevision: number, input: MemoryValue | null) {
         ref(id); const value = structuredClone(input);
-        if (value && (!value.text || !value.provenance.length || !Number.isSafeInteger(value.validUntil)
+        if(!Number.isSafeInteger(expectedRevision)||expectedRevision<0||expectedRevision>=Number.MAX_SAFE_INTEGER)throw Error('MEMORY_REVISION_CONFLICT');
+        if (value && (!value.text || !value.provenance.length || value.validUntil!==null&&!Number.isSafeInteger(value.validUntil)
+          || value.metadata!==undefined&&(!value.metadata||typeof value.metadata!=='object'||Array.isArray(value.metadata))
           || value.provenance.some(p => !p.sourceRef || !['user','assistant','tool','host'].includes(p.role) || !Number.isSafeInteger(p.observedAt))
           || bytes(value) > deps.maxEntryBytes)) throw Error('MEMORY_VALUE_INVALID');
         return access(scope, 'memory_write', async tx => {
           const old = await tx.get('memory', id);
           if ((old?.revision ?? 0) !== expectedRevision) throw Error('MEMORY_REVISION_CONFLICT');
-          // Forget replaces the payload, not just its visibility. Backups and
-          // source transcripts remain subject to host retention policy.
+          // Retain the existing current revision when upgrading from a store
+          // written before history support. Missing older history stays explicit.
+          if(old&&!await tx.get('memory_history',memoryVersionId(id,old.revision)))
+            await tx.put('memory_history',{...old,id:memoryVersionId(id,old.revision)});
+          // Forget erases all retained value payloads, including history. Archive
+          // is an application metadata state when historical values should remain.
+          if(value===null)for(let revision=expectedRevision;revision>0;revision--){
+            const saved=await tx.get('memory_history',memoryVersionId(id,revision));
+            if(saved)await tx.put('memory_history',{...saved,active:false,value:{status:'forgotten'}});
+          }
           const head = await tx.get('state','memory-head'), order = (head?.order ?? 0)+1;
+          const record={id,revision:expectedRevision+1,order,active:value!==null,
+            value:value?{status:'active',value}:{status:'forgotten'}};
           await tx.put('state',{id:'memory-head',revision:order,order,value:null});
-          await tx.put('memory', { id, revision: expectedRevision + 1, order,
-            active: value !== null, value: value ? { status: 'active', value } : { status: 'forgotten' } });
-          return expectedRevision + 1;
+          await tx.put('memory_history',{...record,id:memoryVersionId(id,record.revision)});
+          await tx.put('memory',record);
+          return record.revision;
         });
       },
     },

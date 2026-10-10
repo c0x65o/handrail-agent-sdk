@@ -14,7 +14,7 @@ export function createPostgresConversationStorage(options: { client: Pool; schem
   assertAgentPostgresSchema(options.schema);
   if (!Number.isSafeInteger(options.maxRecordBytes) || options.maxRecordBytes < 1) throw Error('CONVERSATION_STORAGE_LIMIT');
   const table = `"${options.schema}"."conversation_records"`;
-  const collections = new Set(['transcript','state','pins','memory','work']);
+  const collections = new Set(['transcript','state','pins','memory','memory_history','work']);
   return {
     async transaction(scope, run) {
       const scopeKey = canonicalAgentJson(scope), c = await options.client.connect();

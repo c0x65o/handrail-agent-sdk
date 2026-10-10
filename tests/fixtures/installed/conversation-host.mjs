@@ -5,7 +5,7 @@ export const scope = {tenantRef:'tenant',userRef:'actor',conversationRef:'contin
 export function conversationHost(pool,schema,key,options={}) {
   const secret = createSecretKey(Buffer.from(key,'hex'));
   const storage = createPostgresConversationStorage({client:pool,schema,keys:{current:async()=>({ref:'conversation-key',key:secret}),resolve:async()=>secret},maxRecordBytes:1024*1024});
-  return createConversation({storage,authority:{withAccess:async(s,op,run)=>{
+  return createConversation({storage:options.wrapStorage?options.wrapStorage(storage):storage,authority:{withAccess:async(s,op,run)=>{
     if (options.denied?.(s,op)) throw Error('DENIED'); return run();
   }},now:()=>options.now ?? 100,maxEntryBytes:128_000,maxContextBytes:options.maxContextBytes ?? 3500,pageSize:options.pageSize ?? 8});
 }

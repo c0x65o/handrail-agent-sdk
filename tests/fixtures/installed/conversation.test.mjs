@@ -50,6 +50,56 @@ test('canonical long conversation survives bounded context, upstream Runner sess
   await assert.rejects(c.append(scope,entry('obligation','changed')),/ID_CONFLICT/);
 });
 
+test('memory retains scoped revisions and lasting metadata, while forget erases historical payloads',async t=>{
+  const {h,key,c}=await setup(t);
+  const lasting={text:'Prefer concise updates',validUntil:null,metadata:{title:'Communication',project_id:'blue'},
+    provenance:[{sourceRef:'owner-source',role:'user',observedAt:90}]};
+  await c.memory.revise(scope,'preference',0,lasting);
+  await c.memory.revise(scope,'preference',1,{...lasting,text:'Use one short paragraph'});
+  await c.memory.revise(scope,'preference',2,{...lasting,text:'Include verification evidence'});
+  const reopened=conversationHost(h.pool,h.schema,key,{now:9000000000});
+  assert.equal((await reopened.memory.read(scope,'preference')).stale,false);
+  assert.equal((await reopened.memory.readRevision(scope,'preference',1)).value.text,lasting.text);
+  assert.deepEqual((await reopened.memory.readRevision(scope,'preference',1)).value.metadata,lasting.metadata);
+  const page=await reopened.memory.history(scope,'preference',undefined,2);
+  assert.deepEqual(page.entries.map(row=>row.revision),[3,2]);assert.equal(page.next,2);
+  assert.deepEqual(page.unavailableRevisions,[]);
+  assert.deepEqual((await reopened.memory.history(scope,'preference',page.next,2)).entries.map(row=>row.revision),[1]);
+  assert.equal(await reopened.memory.readRevision({...scope,userRef:'other'},'preference',1),null);
+  assert.deepEqual((await reopened.memory.history({...scope,tenantRef:'other'},'preference')).entries,[]);
+  await assert.rejects(reopened.memory.revise(scope,'preference',2,lasting),/REVISION_CONFLICT/);
+  assert.equal((await reopened.memory.history(scope,'preference')).entries.length,3,'conflicting edits do not append history');
+  await reopened.memory.revise(scope,'preference',3,null);
+  const forgotten=await reopened.memory.history(scope,'preference');
+  assert.deepEqual(forgotten.entries.map(row=>row.revision),[4,3,2,1]);
+  assert.ok(forgotten.entries.every(row=>row.status==='forgotten'&&row.value===undefined));
+  assert.equal((await reopened.memory.readRevision(scope,'preference',1)).value,undefined);
+  const denied=conversationHost(h.pool,h.schema,key,{denied:()=>true});
+  await assert.rejects(denied.memory.history(scope,'preference'),/DENIED/);
+  await assert.rejects(denied.memory.readRevision(scope,'preference',1),/DENIED/);
+});
+
+test('memory current value and revision history commit together and report older missing history explicitly',async t=>{
+  let fail=false;
+  const {h,key,c}=await setup(t,{wrapStorage:storage=>({transaction:(scope,run)=>storage.transaction(scope,tx=>run({...tx,
+    put:async(collection,record)=>{if(fail&&collection==='memory'){fail=false;throw Error('MEMORY_WRITE_FAILED');}return tx.put(collection,record);}
+  }))})});
+  const value={text:'Original guidance',validUntil:null,provenance:[{sourceRef:'original',role:'user',observedAt:90}]};
+  await c.memory.revise(scope,'preference',0,value);fail=true;
+  await assert.rejects(c.memory.revise(scope,'preference',1,{...value,text:'Uncommitted correction'}),/MEMORY_WRITE_FAILED/);
+  const reopened=conversationHost(h.pool,h.schema,key);
+  assert.equal((await reopened.memory.read(scope,'preference')).value.text,value.text);
+  assert.equal(await reopened.memory.readRevision(scope,'preference',2),null);
+  assert.deepEqual((await reopened.memory.history(scope,'preference')).entries.map(row=>row.revision),[1]);
+  await reopened.memory.revise(scope,'preference',1,{...value,text:'Existing SDK current value'});
+  // A pre-history SDK database has only the current row, not invented snapshots.
+  await h.pool.query(`DELETE FROM ${h.table('conversation_records')} WHERE collection='memory_history'`);
+  await reopened.memory.revise(scope,'preference',2,{...value,text:'Next correction'});
+  const history=await reopened.memory.history(scope,'preference');
+  assert.deepEqual(history.entries.map(row=>row.revision),[3,2]);assert.deepEqual(history.unavailableRevisions,[1]);
+  assert.equal((await reopened.memory.readRevision(scope,'preference',2)).value.text,'Existing SDK current value');
+});
+
 test('memory revise/forget, stale reads, scope isolation and authorization are durable',async t=>{
   let denied=false;const {h,key,c}=await setup(t,{denied:()=>denied});
   const value={text:'Prefer blue',validUntil:200,provenance:[{sourceRef:'owner-correction-1',role:'user',observedAt:90}]};

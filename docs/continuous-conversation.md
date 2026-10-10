@@ -98,6 +98,24 @@ remove required context fails explicitly.
 
 ## Memory
 
+`memory.revise` retains an encrypted revision ledger in the same scope transaction
+as the current value. Use `memory.readRevision(scope,id,revision)` and
+`memory.history(scope,id,beforeRevision?,limit?)` for exact historical reads.
+History pages run newest first and return `next` plus `unavailableRevisions` when
+older values were never retained by an earlier SDK. An existing current revision
+is preserved when first updated with this SDK; missing older versions are not
+fabricated. Historical reads use the same memory access authority as current reads.
+
+`validUntil:null` represents a lasting preference. Optional JSON `metadata` stores
+host-defined labels and domain scope; it never supplies authorization. Applications
+must validate that domain scope through their native access boundaries. CAS writes
+retain the original per-revision provenance. Passing null to `revise` means forget:
+it erases value payloads from both the current record and every retained revision
+in one transaction. Use a host metadata archive state if values should remain
+available in history. Backup retention and source transcript retention remain
+host responsibilities. The new ledger uses the existing conversation-record table;
+no host-owned duplicate memory journal is needed.
+
 ```ts
 await conversation.memory.revise(scope, 'preference', 0, {
   text: 'Use the owner-confirmed project.',
