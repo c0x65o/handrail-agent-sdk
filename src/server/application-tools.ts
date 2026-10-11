@@ -1,7 +1,7 @@
 import { applicationToolParameters } from './agent-tool-schema.js';
 import type { ToolDefinition } from '@handrail/ai-assistant';
 import type { HandrailAssistantToolObserver } from '@handrail/ai-assistant/server/assistant';
-import type { AgentCall, AgentRuntimeTool } from './agent-runtime.js';
+import type { AgentCall, AgentRuntimeTool, AgentToolOutput } from './agent-runtime.js';
 import type { EffectRequest, EffectObservation } from './effects.js';
 import type { MCPServer } from '@openai/agents';
 
@@ -10,10 +10,10 @@ export interface ApplicationAgentTools {
   readonly definitions: readonly ToolDefinition[];
   /** Domain classification; unknown/mutation tools must never become reads. */
   readonly isReadOnly: (name: string) => boolean;
-  readonly read: (call: AgentCall, signal: AbortSignal) => Promise<string>;
+  readonly read: (call: AgentCall, signal: AbortSignal) => Promise<AgentToolOutput>;
   /** Bind to the existing immutable domain intent and effect adapter. */
   readonly bind: (call: AgentCall) => Promise<EffectRequest>;
-  readonly result: (call: AgentCall, receipt: Extract<EffectObservation, { outcome: 'verified' }>, signal: AbortSignal) => Promise<string>;
+  readonly result: (call: AgentCall, receipt: Extract<EffectObservation, { outcome: 'verified' }>, signal: AbortSignal) => Promise<AgentToolOutput>;
 }
 /** Compile the unchanged application JSON-schema catalog once on the server.
  * The runtime sends non-strict JSON Schema and validates before approval and IO.
@@ -55,8 +55,19 @@ export async function createMcpAgentTools(adapter: McpAgentTools): Promise<reado
     definitions: definitions.map(tool => ({ name: tool.name, description: tool.description ?? tool.name,
       input_schema: tool.inputSchema })),
     isReadOnly: adapter.isReadOnly,
-    read: async (call, signal) => JSON.stringify(await adapter.server.callToolResult!(call.toolName, call.input,
-      { 'handrail/callRef': call.effectRef }, { signal })),
+    read: async (call, signal) => {
+      const result = await adapter.server.callToolResult!(call.toolName, call.input,
+        { 'handrail/callRef': call.effectRef }, { signal });
+      if (!result.content.some(block => block.type === 'image')) return JSON.stringify(result);
+      // Keep error/structured data, ordering and image metadata in the envelope;
+      // carry image bytes once as image content, not a base64 text transcript.
+      const envelope = { ...result, content: result.content.map(block => block.type === 'image'
+        ? { ...block, data: undefined } : block) };
+      return [{ type: 'text', text: JSON.stringify(envelope) },
+        ...result.content.filter(block => block.type === 'image').map(block => ({
+          type: 'image' as const, image: `data:${block.mimeType};base64,${block.data}`,
+        }))];
+    },
     bind: adapter.bind,
     result: adapter.result,
   });

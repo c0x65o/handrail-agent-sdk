@@ -599,3 +599,68 @@ if(process.env.HANDRAIL_INSTALLED_BOUNDARY==='1') test('installed fixture active
   await assert.rejects(import('./.reference-build/probe.mjs'),/INSTALLED_BOUNDARY_VIOLATION/);
   await assert.rejects(readFile(process.env.HANDRAIL_FORBIDDEN_REPO_FILE),{code:'ERR_ACCESS_DENIED'});
 });
+
+test('MCP image results reach the model as images and recover without another read', async t => {
+  const {createMcpAgentTools}=await import('handrail-agent-sdk/server/application-tools');
+  const image='iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jhWQAAAAASUVORK5CYII=';
+  let reads=0,interrupt=true,seen=0;
+  const tools=await createMcpAgentTools({server:{
+    listTools:async()=>[{name:'lookup',description:'Read a retained screenshot.',inputSchema:{type:'object',properties:{},additionalProperties:false}}],
+    callToolResult:async()=>{reads++;return {content:[{type:'text',text:'Retained fixture screenshot.'},
+      {type:'image',mimeType:'image/png',data:image}],structuredContent:{artifactRef:'native-image'},isError:false};},
+  },allowTool:()=>true,isReadOnly:()=>true,bind:async()=>{throw Error('No effects');},result:async()=>{throw Error('No effects');}});
+  const model={async getResponse(){throw Error('Stream required');},async *getStreamedResponse(request){
+    const result=request.input.find(item=>item.type==='function_call_result');
+    if(result){
+      assert.ok(Array.isArray(result.output));
+      const pixels=result.output.find(item=>item.type==='input_image');
+      assert.equal(pixels.image,`data:image/png;base64,${image}`);
+      const envelope=JSON.parse(result.output.find(item=>item.type==='input_text').text);
+      assert.equal(envelope.structuredContent.artifactRef,'native-image');assert.equal(envelope.isError,false);
+      assert.equal(envelope.content[1].data,undefined,'image bytes are not duplicated as model text');
+      seen++;if(interrupt)throw Error('Fixture provider interruption after tool completion');
+    }
+    yield {type:'response_done',response:{id:'image-response',output:result
+      ?[{type:'message',role:'assistant',status:'completed',content:[{type:'output_text',text:'I received the retained image.'}]}]
+      :[{type:'function_call',callId:'image-call',name:'lookup',arguments:'{}'}],
+      usage:{requests:1,inputTokens:10,outputTokens:5,totalTokens:15}}};
+  }};
+  const s=await setup(t,{approvals:'none',tools,model});
+  assert.equal(ok(await s.runtime.wake(identity)),'retryable');
+  assert.equal(reads,1);assert.equal(seen,1);
+  const saved=ok(await s.states.load(identity,s.authority()));
+  assert.ok(Array.isArray(Object.values(saved.results)[0].output));
+  interrupt=false;
+  const recovered=await services(s.harness.schema,s.key,{approvals:'none',tools,model});t.after(()=>recovered.close());
+  assert.equal(ok(await recovered.runtime.wake(identity)),'succeeded');
+  assert.equal(reads,1,'recovery retains the original authenticated tool result');assert.equal(seen,2);
+});
+
+test('binary image and file tool parts survive a checkpoint as encoded content', async t => {
+  const binary=new Uint8Array([1,2,3]),encoded='AQID';
+  let reads=0,interrupt=true,seen=0;
+  const model={async getResponse(){throw Error('Stream required');},async *getStreamedResponse(request){
+    const result=request.input.find(item=>item.type==='function_call_result');
+    if(result){
+      assert.equal(result.output[0].image,`data:image/png;base64,${encoded}`);
+      assert.equal(result.output[1].file,`data:application/pdf;base64,${encoded}`);
+      assert.equal(result.output[1].filename,'fixture.pdf');
+      seen++;if(interrupt)throw Error('Fixture provider interruption');
+    }
+    yield {type:'response_done',response:{id:'binary-response',output:result
+      ?[{type:'message',role:'assistant',status:'completed',content:[{type:'output_text',text:'Content received.'}]}]
+      :[{type:'function_call',callId:'binary-call',name:'lookup',arguments:'{"topic":"binary"}'}],
+      usage:{requests:1,inputTokens:1,outputTokens:1,totalTokens:2}}};
+  }};
+  const read=async()=>{reads++;return [{type:'image',image:{data:binary,mediaType:'image/png'}},
+    {type:'file',file:{data:binary,mediaType:'application/pdf',filename:'fixture.pdf'}}];};
+  const s=await setup(t,{approvals:'none',read,model});
+  assert.equal(ok(await s.runtime.wake(identity)),'retryable');assert.equal(seen,1);
+  const saved=ok(await s.states.load(identity,s.authority()));
+  const output=Object.values(saved.results)[0].output;
+  assert.equal(output[0].image.data,encoded);assert.equal(output[1].file.data,encoded);
+  interrupt=false;
+  const recovered=await services(s.harness.schema,s.key,{approvals:'none',read,model});t.after(()=>recovered.close());
+  assert.equal(ok(await recovered.runtime.wake(identity)),'succeeded');
+  assert.equal(reads,1);assert.equal(seen,2);
+});

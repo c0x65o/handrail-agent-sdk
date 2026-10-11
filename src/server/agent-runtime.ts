@@ -1,8 +1,9 @@
 import { createHash } from 'node:crypto';
+import { Buffer } from 'node:buffer';
 import { createToolExecutionQueue } from './tool-execution-queue.js';
 import { canonicalAgentJson } from './agent-state-binding.js';
-import { Agent, Runner, RunState, setSensitiveDataLoggingEnabled, tool } from '@openai/agents';
-import type { AgentInputItem, Model, ToolInputParameters, ToolOptions } from '@openai/agents';
+import { Agent, Runner, RunState, setSensitiveDataLoggingEnabled, tool, protocol } from '@openai/agents';
+import type { AgentInputItem, Model, ToolInputParameters, ToolOptions, ToolCallOutputContent } from '@openai/agents';
 import type { ZodObject } from 'zod';
 import type { AgentJsonSchemaParameters } from './agent-tool-schema.js';
 export type { AgentJsonSchemaParameters } from './agent-tool-schema.js';
@@ -42,6 +43,9 @@ export interface AgentUsage {
  * pairing and multimodal references instead of flattening a conversation into
  * a user string. Private state limits and host attachment authorization apply. */
 export type AgentInput = string | AgentInputItem[];
+/** Tool content; binary data is encoded before checkpointing. Structured image/
+ * file parts reach the model as modalities with the same private custody as text. */
+export type AgentToolOutput = string | ToolCallOutputContent[];
 /** Private custody only. Never return this record in job events or diagnostics. */
 export interface AgentCheckpoint {
   readonly version: number;
@@ -49,7 +53,7 @@ export interface AgentCheckpoint {
   readonly dispatches: number;
   readonly input: AgentInput;
   readonly state?: string;
-  readonly results: Readonly<Record<string, { readonly binding: string; readonly output: string }>>;
+  readonly results: Readonly<Record<string, { readonly binding: string; readonly output: AgentToolOutput }>>;
   readonly resolution?: AgentResolution;
   readonly usage?: AgentUsage;
   readonly output?: string;
@@ -108,7 +112,7 @@ interface AgentToolBase {
   readonly parameters: ZodObject | AgentJsonSchemaParameters;
 }
 export type AgentRuntimeTool = AgentToolBase & (
-  | { readonly kind: 'read'; readonly execute: (call: AgentCall, signal: AbortSignal) => Promise<string> }
+  | { readonly kind: 'read'; readonly execute: (call: AgentCall, signal: AbortSignal) => Promise<AgentToolOutput> }
   | { readonly kind: 'effect';
       /** Bind validated references to an existing effect/Vault adapter. No IO. */
       readonly bind: (call: AgentCall) => Promise<EffectRequest>;
@@ -117,7 +121,7 @@ export type AgentRuntimeTool = AgentToolBase & (
        * repeated after a crash. Never use it to dispatch another mutation. The
        * default remains the safe receipt-only observation. */
       readonly readResult?: (call: AgentCall, receipt: Extract<EffectObservation, { outcome: 'verified' }>,
-        signal: AbortSignal) => Promise<string> }
+        signal: AbortSignal) => Promise<AgentToolOutput> }
   | { readonly kind: 'vault';
       /** Resolve a persisted, currently authorized grant. No private value. */
       readonly bind: (call: AgentCall) => Promise<VaultOperation>;
@@ -130,7 +134,7 @@ export type AgentRuntimeTool = AgentToolBase & (
        * Only invoked after a verified effect and authorized sanitized observation.
        * Never return raw page text, credentials or arbitrary browser artifacts. */
       readonly readResult?: (call: AgentCall, observation: Extract<BrowserObservation, { kind: 'sanitized' }>,
-        signal: AbortSignal) => Promise<string> }
+        signal: AbortSignal) => Promise<AgentToolOutput> }
 );
 export interface AgentRuntimeLimits {
   /** null disables the corresponding execution cutoff. Storage/IO bounds remain. */
@@ -352,7 +356,7 @@ export function createAgentRuntime(deps: {
                 }
                 if (limits.maxToolCalls !== null && new Set([...Object.keys(record!.results), ...executingRefs]).size >= limits.maxToolCalls) throw new Halt('limit_exceeded');
                 executingRefs.add(call.effectRef);
-                let output: string;
+                let output: AgentToolOutput;
                 if (def.kind === 'browser') {
                   const request = await def.bind(call);
                   if (!sameLeaseValue(request.identity, identity) || request.effect.effectRef !== call.effectRef)
@@ -397,7 +401,16 @@ export function createAgentRuntime(deps: {
                   catch { output = '{"error":"tool_failed"}'; }
                 }
                 await check();
-                if (typeof output !== 'string' || size(output) > limits.maxOutputBytes) throw new Halt('limit_exceeded');
+                if (typeof output !== 'string') output = protocol.ToolCallOutputContent.array().parse(output).map(part => {
+                  if (part.type === 'image' && part.image && typeof part.image === 'object'
+                    && 'data' in part.image && part.image.data instanceof Uint8Array)
+                    return { ...part, image: { ...part.image, data: Buffer.from(part.image.data).toString('base64') } };
+                  if (part.type === 'file' && typeof part.file === 'object'
+                    && 'data' in part.file && part.file.data instanceof Uint8Array)
+                    return { ...part, file: { ...part.file, data: Buffer.from(part.file.data).toString('base64') } };
+                  return part;
+                });
+                if (size(output) > limits.maxOutputBytes) throw new Halt('limit_exceeded');
                 await serializeCheckpoint(async () => {
                   await check();
                   if (fatal) throw fatal;

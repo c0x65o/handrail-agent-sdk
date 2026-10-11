@@ -157,6 +157,22 @@ hints alone are not authorization. JSON Schemas and complete serializable result
 (including `content`, `structuredContent` and `isError`) survive the bridge.
 Read calls receive cancellation and the stable `handrail/callRef` metadata.
 
+Tool reads and verified-effect result readers may return `AgentToolOutput`: a
+string or an array of OpenAI Agents tool content parts (`text`, `image`, `file`).
+The runtime validates these parts, encodes binary data as base64 for durable
+storage, and checkpoints them under the same private custody as text results.
+Recovery reuses the saved result without repeating the read or effect. Use tool
+content parts here, not the model protocol's `input_image`/`input_file` shapes.
+Existing output-byte and checkpoint capacities also apply to encoded content;
+hosts must provision those capacities for the media they support.
+
+The MCP bridge carries image blocks as model image content. Its accompanying
+text envelope retains content order, image metadata, `structuredContent` and
+`isError`, with image bytes omitted from that envelope to avoid duplicating
+base64 as text. Text-only results retain their existing JSON string shape.
+Audio and resource blocks remain in the serialized MCP envelope; this bridge
+does not resolve arbitrary resources or claim audio modality support.
+
 MCP mutations use the host's `bind` / effect adapter / `result` path, just like
 application mutations. Bind the original effect identity to the receiver's native
 idempotency facility, and reconcile its durable receipt before any retry. The
