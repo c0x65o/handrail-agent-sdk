@@ -5,8 +5,8 @@ import { postgresFromClient } from "../../dist/assistant/postgres/index.js";
 import { createFeedbackTools, createAiApplication, FEEDBACK_SUBMIT_TOOLS } from "../../dist/assistant/server/application.js";
 import { parseConversationEvent } from "../../dist/assistant/conversation/events.js";
 import { openaiResponses } from "../../dist/assistant/server/assistant.js";
-import { createFeedbackGateway, openFeedbackSession } from "../examples/trusted-server-feedback.mjs";
-import { qualificationFixture } from "../examples/feedback-contract-qualification.mjs";
+import { createFeedbackGateway, openFeedbackSession } from "../../examples/assistant/trusted-server-feedback.mjs";
+import { qualificationFixture } from "../../examples/assistant/feedback-contract-qualification.mjs";
 
 const fact = id => ({ id, source: "server_derived", trust: "authoritative" });
 const context = { principalId: "alice", tenantId: "tenant", scopeId: "alice", attribution: {

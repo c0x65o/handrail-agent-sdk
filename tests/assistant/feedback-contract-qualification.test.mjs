@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { FEEDBACK_TOOL_NAMES, qualificationFixture, withQualificationAssistant } from "../examples/feedback-contract-qualification.mjs";
+import { FEEDBACK_TOOL_NAMES, qualificationFixture, withQualificationAssistant } from "../../examples/assistant/feedback-contract-qualification.mjs";
 
 for (const kind of ["bug", "enhancement"]) {
   test(`${kind}: actual ToolPlugin dispatch, exact replay, conflicting retry and redacted receipt`, async () => {

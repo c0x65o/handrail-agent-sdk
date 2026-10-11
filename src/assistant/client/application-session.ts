@@ -456,6 +456,10 @@ export class ApplicationConversationSession<TRequest = unknown> {
   }
   async prepare(input: ConversationRuntimeSendMessageInput<TRequest>, operationId = this.options.createId?.() ?? crypto.randomUUID()): Promise<ApplicationConversationSubmission<TRequest>> {
     const captured = captureApplicationConversationInput(input);
+    // A poll may have captured controls before the previous turn settled (or
+    // before another device started one). Admission needs a read begun after
+    // this intent, not the result of that earlier in-flight display refresh.
+    await this.pending; this.assertOpen();
     await this.refresh(); this.assertOpen();
     if (this.readBackoff.remaining) throw this.state.error ?? new ApplicationConversationSessionError(
       "read_unavailable", "Fresh conversation controls are temporarily unavailable.", true, this.readBackoff.remaining);

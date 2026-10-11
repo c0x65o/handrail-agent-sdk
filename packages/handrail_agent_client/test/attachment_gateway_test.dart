@@ -6,15 +6,11 @@ import 'package:http/http.dart' as http;
 import 'package:test/test.dart';
 
 void main() {
-  final candidate = Platform.environment['HANDRAIL_TEST_JS_SDK_DIST'];
   test(
       'JS gateway: UI binding uploads to the original conversation, admits the file, downloads and preserves ownership/expiry',
       () async {
-    final server = await Process.start('node', [
-      '../../tool/gateway/attachments.mjs'
-    ], environment: {
-      if (candidate != null) 'HANDRAIL_TEST_JS_SDK_DIST': candidate,
-    });
+    final server =
+        await Process.start('node', ['../../tool/gateway/attachments.mjs']);
     final errors = StringBuffer();
     server.stderr.transform(utf8.decoder).listen(errors.write);
     final origin = Uri.parse(await server.stdout
@@ -67,7 +63,13 @@ void main() {
     expect(assistant.selectedId, isNot(original));
     final cancellation = Completer<void>().future;
     final result = await upload(
-        bytes: [37, 80, 68, 70, 45], // Complete %PDF- signature for byte validation.
+        bytes: [
+          37,
+          80,
+          68,
+          70,
+          45
+        ], // Complete %PDF- signature for byte validation.
         filename: 'report.pdf',
         mediaType: 'application/pdf',
         idempotencyKey: 'file-one',

@@ -71,7 +71,7 @@ own that adapter's local state or replace the account controller.
 The default PostgreSQL SDK does not yet support reusable Clear/reset. Permanent
 deletion is irreversible and does not recycle the conversation identity.
 The full JS/Flutter qualification and publication limits are recorded in
-[`docs/conversation-deletion.md`](../../docs/conversation-deletion.md).
+[`docs/conversation-deletion.md`](../../docs/flutter-contracts.md#conversation-deletion).
 
 The optional `HandrailConversationHistory(binding: assistant.historyBinding)`
 consumes its standard history presentation directly. Hosts do not need a catalog
@@ -377,97 +377,9 @@ default `uiBinding.uploaderFor(id)`, which captures that identity before a user
 switches conversations. Host-managed file endpoints must define their own trusted
 binding contract; the standard SDK upload route requires the conversation ID.
 
-The cross-repository attachment test requires an explicit local candidate build:
-`HANDRAIL_TEST_JS_SDK_DIST=/absolute/path/to/handrail-sdk-ai-assistant-js/dist make check`.
-It exercises real multipart upload, admission, protected download, account and
-conversation isolation, and expiry against a synthetic standard JS gateway.
-Without the variable this one candidate test is skipped; the existing locked
-gateway fixture is unchanged. This is test-only resolution, not a dependency
-installation or a substitute for a reviewed public SDK SHA and matching locks.
-
-## Shared pending approval decisions
-
-`assistant.approvals` and `assistant.uiBinding.approvals` own review, exact-version
-Approve/Reject, durable saved-decision retries and restart recovery. The standard
-encrypted account pending store also journals decisions. Supply
-`loadApprovalReview` for validated opaque financial/business reviews and
-`canDecideApproval` for additional domain permission checks. See
-[the contract and publication boundary](../../docs/approval-decisions.md).
-
-`session.waitForTurn(turnId, cancellation: cancelled)` can stop local completion
-observation without disposing the account or cancelling server work. Explicit
-Stop remains `assistant.requestCancellation()`. The observer removes its stream
-subscription when the wait ends; the same session can observe completion later.
-
-## Bounded voice-history observation (local source)
-
-The shared controller owns its optional `readVoiceWorkspace` monitor. Catalog
-growth beyond 10,000 known conversation IDs is a visible stale-history state,
-not an unhandled async failure or a silently truncated observation. The monitor
-retains active, uncertain and unread evidence and fences any outstanding reply.
-`HandrailRealtimeWorkspaceState.failure` classifies refresh, invalid-scope and
-scope-limit failures; the history binding exposes the safe `voiceErrorCode`.
-
-Direct monitor callers catch the existing `ArgumentError` from an invalid scope.
-Reads remain suspended until `setConversations` receives a valid list, which also
-recovers when it matches the previous valid list. These changes are local source
-beyond the public c22 baseline. See
-[shared voice-history guidance](../../docs/mobile-assistant-adoption.md#shared-voice-history-and-navigation-policy-local-source).
-
-
-## Native attachment draft storage (local source)
-
-Supply an account/API/tenant-scoped `HandrailAttachmentDraftStore` to
-`HandrailAssistantController(attachmentDraftStore: ...)`. The standard composer
-uses it automatically; headless recovery also removes exact accepted file IDs
-before starting a confirmed submission. Ordinary history reads never access it.
-Configure it together with the durable `pendingStore` for restart recovery.
-
-`HandrailKeyValueAttachmentDraftStore` adapts host-owned encrypted storage:
-
-```dart
-final files = HandrailKeyValueAttachmentDraftStore(
-  namespace: '$apiIdentity:$tenantId:$userId',
-  read: encryptedMetadata.read,
-  write: encryptedMetadata.write,
-  delete: encryptedMetadata.delete,
-  readBytes: encryptedFiles.read,
-  writeBytes: encryptedFiles.write,
-  deleteBytes: encryptedFiles.delete,
-);
-```
-
-The host supplies encryption and account storage lifecycle; the SDK does not
-select a plaintext filesystem location. Metadata replacement must be atomic;
-byte writes/deletes must be idempotent. All three binary callbacks are supplied
-together. Without them, the adapter stores each file as a separate base64 value
-in the encrypted key-value store; use binary callbacks for efficient larger files.
-The adapter serializes a namespace within one isolate. Multi-isolate/process
-storage requires a custom transactional implementation of the interface.
-
-`readAttachmentDraft(id)` hydrates only that chat. `writeAttachmentDraft(id,
-files, expectedVersion)` atomically compares versions and returns metadata only.
-Each file has a stable `id`, safe `filename`, `mediaType`, `byteSize`, `sha256`,
-and optional protected `reference`. New files also supply `bytes`; their hash is
-computed/verified before asynchronous work. Later writes omit bytes and retain
-the hash. Sources are immutable; changing content requires a new selection ID.
-The store caps an account at 64 files, 64 MiB, 32 nonempty conversations and a
-256 KiB metadata manifest. Staged writes and pending cleanup count against quotas;
-no saved work is evicted to admit another file. Remove a selection before replacing
-it if the account is at capacity.
-
-A write-ahead cleanup journal makes interrupted source writes and uncertain
-metadata commits recoverable from the last authoritative manifest. Cleanup scans
-metadata only. `discardAcceptedFiles(id, exactIds)` is idempotent and preserves
-newer selections. `eraseConversation(id)` is only for confirmed permanent deletion:
-it records a durable tombstone before erasing sources, so an old writer cannot
-resurrect a deleted conversation. The assistant retains its deletion journal if
-local cleanup fails, and compatible restart retries the same deletion identity.
-Server checkpoints, model context and attachment bodies never enter this device
-journal's pending-admission wire payload.
-
-Crash recovery covers acknowledged durable writes; it cannot guarantee an edit
-whose host storage operation has not committed. An uncertain write is surfaced
-as a conflict until the user explicitly reloads the saved revision. These APIs
-need a later published Flutter full-SHA/lock upgrade and host encrypted adapter
-configuration; no consumer dependency has been changed in this work.
+The cross-language attachment test runs against this repository's compiled Agent
+SDK gateway with disposable SQL persistence. Run `make check-flutter` from the
+repository root. It exercises real multipart upload, admission, protected
+download, account/conversation isolation and expiry with a synthetic provider.
+This source test does not establish consumer adoption; consumers still require
+a reviewed public Agent SDK SHA and matching locks.

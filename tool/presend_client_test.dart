@@ -24,6 +24,7 @@ void main() {
       await f.close(evidence);
       await server.command('finish');
     });
+    f.trace.separateReads = true;
     f.trace.snapshotFallback = snapshot;
     await f.open();
     return f;

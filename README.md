@@ -7,6 +7,7 @@ assistance module owns schedule/watch lifecycle and notification orchestration.
 
 - `handrail-agent-sdk`: pure job, connection, Vault and browser contracts.
 - `handrail-agent-sdk/server`: admission, leases, Stop, answers, effects and Vault boundaries.
+- `handrail-agent-sdk/server/setup`: [repeatable application setup and declared resource integration](docs/setup.md).
 - `handrail-agent-sdk/server/usage`: [per-invocation model usage and durable Handrail telemetry delivery](docs/usage.md).
 - `handrail-agent-sdk/assistant` and its subpaths: conversation client, React UI, authenticated gateway, persistence and provider integrations owned by this package.
 - `packages/handrail_agent_client` and `packages/handrail_agent_widgets`: native Dart client and Flutter UI from this repository.

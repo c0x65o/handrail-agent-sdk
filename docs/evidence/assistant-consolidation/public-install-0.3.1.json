@@ -1,0 +1,35 @@
+{
+  "qualification": "published-public-git-installed-package",
+  "sha": "2d0d1ff54a65b1d8ce52c7a017c09b16300955d2",
+  "runtimeTests": {
+    "passed": 108,
+    "failed": 0,
+    "skipped": 0,
+    "database": "owned disposable PostgreSQL 15",
+    "providers": "simulated"
+  },
+  "profiles": [
+    {
+      "profile": "node-next",
+      "node": "v22.23.1",
+      "npm": "10.9.8",
+      "originalResolved": "git+https://git@github.com/c0x65o/handrail-agent-sdk.git#2d0d1ff54a65b1d8ce52c7a017c09b16300955d2",
+      "legacyAssistantDependency": false,
+      "typecheckExit": 0,
+      "status": "passed"
+    },
+    {
+      "profile": "bundler-explicit-provider",
+      "node": "v22.23.1",
+      "npm": "10.9.8",
+      "originalResolved": "git+https://git@github.com/c0x65o/handrail-agent-sdk.git#2d0d1ff54a65b1d8ce52c7a017c09b16300955d2",
+      "legacyAssistantDependency": false,
+      "typecheckExit": 0,
+      "status": "passed"
+    }
+  ],
+  "limits": [
+    "No consumer application acceptance or deployed acceptance is implied.",
+    "The optional server/setup helper and repeatable assistance DDL changes are newer local source, outside this published revision."
+  ]
+}

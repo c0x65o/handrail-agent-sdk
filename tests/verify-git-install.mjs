@@ -131,7 +131,9 @@ for (const profile of profiles) {
         const name = 'handrail-agent-sdk' + path.slice(1);
         assert.ok(import.meta.resolve(name).startsWith(pathToFileURL(process.cwd() + '/node_modules/handrail-agent-sdk/').href));
         exported[name] = Object.keys(await import(name));
-        assert.ok(exported[name].length > 0, name);
+        // Marketing intentionally publishes contracts only; every executable entrypoint must expose values.
+        if (name === 'handrail-agent-sdk/marketing') assert.deepEqual(exported[name], []);
+        else assert.ok(exported[name].length > 0, name);
       }
       assert.ok(exported['handrail-agent-sdk/server'].includes('createJobAdmission'));
       ${baseline ? '' : "assert.ok(exported['handrail-agent-sdk/server/agents'].includes('createAgentRuntime'));"}

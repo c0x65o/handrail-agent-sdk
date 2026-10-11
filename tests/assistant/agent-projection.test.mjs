@@ -208,7 +208,7 @@ for (const scenario of (process.env.HANDRAIL_STOP_BASELINE === '1' ? ['quota-sto
   if (interrupted) {
     assert.ok(blockedWrites > 0);
     assert.equal((await pool.query("SELECT count(*)::int AS count FROM handrail_ai_events WHERE conversation_id=$1 AND payload->'payload'->>'type'=$2", [conversationId, `turn.${expected}`])).rows[0].count, 0);
-    const child = spawn(process.execPath, ['test/agent-projection-client.mjs', 'https://fixture.test', conversationId, turnId, expected],
+    const child = spawn(process.execPath, ['tests/assistant/agent-projection-client.mjs', 'https://fixture.test', conversationId, turnId, expected],
       {timeout: 20000, env: {...process.env, HANDRAIL_PROJECTION_RECOVERY: JSON.stringify(context)}, stdio: ['ignore', 'pipe', 'pipe']});
     let output = ''; child.stdout.on('data', chunk => output += chunk); child.stderr.on('data', chunk => output += chunk);
     const [code] = await once(child, 'exit'); assert.equal(code, 0, output);
@@ -245,7 +245,7 @@ for (const scenario of (process.env.HANDRAIL_STOP_BASELINE === '1' ? ['quota-sto
     let output = ''; subprocess.stdout.on('data', chunk => output += chunk); subprocess.stderr.on('data', chunk => output += chunk);
     const [code] = await once(subprocess, 'exit'); assert.equal(code, 0, output); console.log(output.trim());
   };
-  await child(process.execPath, ['test/agent-projection-client.mjs', ...args]);
+  await child(process.execPath, ['tests/assistant/agent-projection-client.mjs', ...args]);
   if (process.env.HANDRAIL_PROJECTION_DART) await child(process.env.HANDRAIL_PROJECTION_DART,
     ['--packages=packages/handrail_agent_client/.dart_tool/package_config.json', 'tests/assistant/fixtures/agent-cancellation/dart/projection.dart', ...args]);
   assert.equal(externalEffects.length, 1); assert.equal(calls, 2);

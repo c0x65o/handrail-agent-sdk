@@ -17,11 +17,11 @@ function table(schema: string, name: string) {
  * private content stays in host custody. Never run on import/construction. */
 export function assistancePostgresSchema(schema: string): string {
   const records = table(schema, 'assistance_records'), receipts = table(schema, 'assistance_commands'), facts = table(schema, 'assistance_facts');
-  return `CREATE TABLE ${records} (key text PRIMARY KEY, scope text NOT NULL, state text NOT NULL, next_at bigint NOT NULL, record jsonb NOT NULL);
-CREATE INDEX ON ${records} (next_at, key) WHERE state = 'active';
-CREATE TABLE ${receipts} (key text NOT NULL, command_id text NOT NULL, digest text NOT NULL, record jsonb NOT NULL, PRIMARY KEY(key, command_id));
-CREATE TABLE ${facts} (ordinal bigserial UNIQUE NOT NULL, fact_id text PRIMARY KEY, scope text NOT NULL, fact jsonb NOT NULL);
-CREATE INDEX ON ${facts} (scope, ordinal);`;
+  return `CREATE TABLE IF NOT EXISTS ${records} (key text PRIMARY KEY, scope text NOT NULL, state text NOT NULL, next_at bigint NOT NULL, record jsonb NOT NULL);
+CREATE INDEX IF NOT EXISTS assistance_records_next_at_key_idx ON ${records} (next_at, key) WHERE state = 'active';
+CREATE TABLE IF NOT EXISTS ${receipts} (key text NOT NULL, command_id text NOT NULL, digest text NOT NULL, record jsonb NOT NULL, PRIMARY KEY(key, command_id));
+CREATE TABLE IF NOT EXISTS ${facts} (ordinal bigserial UNIQUE NOT NULL, fact_id text PRIMARY KEY, scope text NOT NULL, fact jsonb NOT NULL);
+CREATE INDEX IF NOT EXISTS assistance_facts_scope_ordinal_idx ON ${facts} (scope, ordinal);`;
 }
 export function createPostgresAssistanceStore(db: AssistanceDatabase, schema: string): AssistanceStore {
   const records = table(schema, 'assistance_records'), receipts = table(schema, 'assistance_commands'), facts = table(schema, 'assistance_facts');

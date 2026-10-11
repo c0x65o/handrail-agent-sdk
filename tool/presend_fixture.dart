@@ -27,11 +27,6 @@ class PresendServer {
   late Uri origin;
   final errors = StringBuffer();
   Future<void> start() async {
-    if (Platform.environment['HANDRAIL_TEST_JS_SDK_DIST'] == null) {
-      throw StateError(
-        'Set HANDRAIL_TEST_JS_SDK_DIST to the reviewed JS dist (PGlite required).',
-      );
-    }
     process = await Process.start(
       'node',
       ['../../tool/gateway/gateway.mjs'],
@@ -80,6 +75,9 @@ class PresendTrace extends http.BaseClient {
   Future<void> Function(Map<String, Object?>)? beforeRequest;
   Completer<void>? holdControl;
   bool snapshotFallback = false;
+  // Historical preparation-witness checks count separate control/changes reads.
+  // Other journey fixtures retain the gateway's normal bundled-read capability.
+  bool separateReads = false;
   final controlEntered = Completer<void>();
   int nextId = 0;
   void mark(String event, [Map<String, Object?> data = const {}]) => rows.add({
@@ -137,9 +135,15 @@ class PresendTrace extends http.BaseClient {
         return response;
       }
       var bytes = await response.stream.toBytes();
-      if (snapshotFallback && request.url.path.endsWith('/capabilities')) {
+      if ((snapshotFallback || separateReads) &&
+          request.url.path.endsWith('/capabilities')) {
         final envelope = jsonDecode(utf8.decode(bytes)) as Map;
-        (envelope['value'] as Map).remove('displayHistory');
+        final capabilities = envelope['value'] as Map;
+        if (snapshotFallback) {
+          capabilities.remove('displayHistory');
+        } else if (capabilities['displayHistory'] is Map) {
+          (capabilities['displayHistory'] as Map)['readBundle'] = false;
+        }
         bytes = utf8.encode(jsonEncode(envelope));
       }
       if (bytes.isNotEmpty) {

@@ -22,6 +22,7 @@ void main() {
     final server = PresendServer();
     await tester.runAsync(server.start);
     final f = PresendFixture(server, 'normal-composer');
+    f.trace.separateReads = true;
     final drafts = HandrailComposerController.forAssistant(
       f.controller.uiBinding,
     );
@@ -32,7 +33,10 @@ void main() {
       drafts.dispose();
       var done = false;
       final closing = f
-          .close(Platform.environment['HANDRAIL_PRESEND_EVIDENCE'] ?? '../../docs/qa/presend-witness-2026-10-07/after')
+          .close(
+            Platform.environment['HANDRAIL_PRESEND_EVIDENCE'] ??
+                '../../docs/qa/presend-witness-2026-10-07/after',
+          )
           .whenComplete(() => done = true);
       for (var i = 0; !done && i < 200; i++) {
         await tester.pump();

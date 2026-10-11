@@ -1,0 +1,88 @@
+{
+  "qualification": "local-installed-consumers-and-source-candidate",
+  "public_sdk_sha": "2d0d1ff54a65b1d8ce52c7a017c09b16300955d2",
+  "consumers": [
+    {
+      "consumer": "Mills web",
+      "source_base_commit": "d45da6b40b7f4cfc14b0777ae4ef0c400690d994",
+      "worktree_changes_not_published": true,
+      "lockfile": "package-lock.json",
+      "lockfile_sha256": "bb2a0cb99e53172311f1dfee433a80de722e0943d7525f8435f510ce2ad4d7ff",
+      "legacy_sdk_dependency_entries": 0
+    },
+    {
+      "consumer": "Mills mobile",
+      "source_base_commit": "eb9d456e9a1e649b5c50a12a575739866a854fca",
+      "worktree_changes_not_published": true,
+      "lockfile": "pubspec.lock",
+      "lockfile_sha256": "3cef69933f995dec74e19a724eb1ee2e841fb0d4556e3b1f4225af109c90a7ac",
+      "legacy_sdk_dependency_entries": 0
+    },
+    {
+      "consumer": "Hitcents web",
+      "source_base_commit": "a49688b76b2eaeb66f12e219dd38179117d5b78b",
+      "worktree_changes_not_published": true,
+      "lockfile": "package-lock.json",
+      "lockfile_sha256": "df70a0e0bb3ab92e31056429e12f4168acf191e398f81f780ee767857b79993f",
+      "legacy_sdk_dependency_entries": 0
+    },
+    {
+      "consumer": "Hitcents mobile",
+      "source_base_commit": "bba3a6d76c3b0677ad35eddf72fd7907d322665f",
+      "worktree_changes_not_published": true,
+      "lockfile": "pubspec.lock",
+      "lockfile_sha256": "19b07d6e91746ed6d3278443c4efbfe1b61c83ca48474a131e005b720c37d04c",
+      "legacy_sdk_dependency_entries": 0
+    },
+    {
+      "consumer": "Spartan web",
+      "source_base_commit": "3ea7a3d2082c36c5374932ddfb2c958e8a1015ed",
+      "worktree_changes_not_published": true,
+      "lockfile": "package-lock.json",
+      "lockfile_sha256": "720dcdc4af011964da2f9a1a610574a704ef26d8c23cea6872f3279878fa2c71",
+      "legacy_sdk_dependency_entries": 0
+    },
+    {
+      "consumer": "Spartan mobile",
+      "source_base_commit": "e01eaee12396e7b0307fd5a4e315b4ea43598472",
+      "worktree_changes_not_published": true,
+      "lockfile": "pubspec.lock",
+      "lockfile_sha256": "a2a609aa3155d9dcb2b70bef670f83d9408db982dde4c12a2f609724cee28d5a",
+      "legacy_sdk_dependency_entries": 0
+    }
+  ],
+  "validation": {
+    "web_full_typechecks_and_builds": [
+      "Mills",
+      "Hitcents",
+      "Spartan"
+    ],
+    "mobile_full_analysis": [
+      "Mills",
+      "Hitcents",
+      "Spartan"
+    ],
+    "selected_installed_tests": {
+      "Mills_mobile": 91,
+      "Mills_flutter_gateway_interop": 1,
+      "Hitcents_web": 55,
+      "Hitcents_mobile": 34,
+      "Spartan_web": 99,
+      "Spartan_mobile": 79
+    },
+    "Mills_unpublished_sdk_feedback_regression": {
+      "passed": true,
+      "mode": "source-candidate-aliases-only",
+      "manifest_and_lock_unchanged_verified": true,
+      "candidate_typecheck_and_compile": "passed"
+    }
+  },
+  "release_gate": {
+    "sdk_auto_commit": "authorization_required (403); no operation receipt returned",
+    "Mills_dev_start": "authorization_required (403); no operation receipt returned",
+    "mobile_preview": "configuration reconciled successfully; service remains stopped",
+    "production_database_writes_performed": false,
+    "deployed_acceptance": false
+  },
+  "completion": false
+}

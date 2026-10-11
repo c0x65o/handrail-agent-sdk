@@ -733,3 +733,24 @@ it("evicts display data when a shared exact-turn observer discovers revoked acce
   expect(f.session.getSnapshot().window.records).toHaveLength(0);
   expect(f.session.getSnapshot().related).toHaveLength(0);
 });
+
+it.each([true, false])("prepares against controls read after the send intent, not an earlier poll (previously running=%s)", async previouslyRunning => {
+  vi.useFakeTimers();
+  const f = fixture(); await f.session.initialize();
+  f.setTurn({turnId:"previous",revision:1,status:previouslyRunning ? "running" : "completed",
+    remoteMayStillBeRunning:previouslyRunning,error:null});
+  const stale = f.control();
+  const held = deferred<ConversationDisplayControl>();
+  vi.mocked(f.reader.control).mockReturnValueOnce(held.promise);
+  const poll = f.session.refresh(); await flush();
+  f.setTurn({turnId:"previous",revision:2,status:previouslyRunning ? "completed" : "running",
+    remoteMayStillBeRunning:!previouslyRunning,error:null});
+  const prepared = f.session.prepare({content:"next message",request:{text:"next message"}});
+  // Attach assertions before releasing the old response so rejection is observed.
+  const result = previouslyRunning
+    ? expect(prepared).resolves.toMatchObject({admission:{conversationId:"chat"}})
+    : expect(prepared).rejects.toMatchObject({code:"turn_active"});
+  held.resolve(stale); await poll; await result;
+  expect(f.session.getSnapshot().control?.canonicalRevision).toBe(2);
+  expect(f.resources.appendMutations).not.toHaveBeenCalled();
+});

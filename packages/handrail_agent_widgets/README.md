@@ -238,7 +238,7 @@ independent of the headless package. See
 The candidate history binding adds `delete(String id, int reviewedVersion)`;
 custom structural bindings must implement that member. Standard controller
 bindings supply it automatically. Install both packages from the same reviewed
-Flutter repository SHA. The SDK reads archive/restore/delete support from the
+Agent SDK repository SHA. The SDK reads archive/restore/delete support from the
 negotiated gateway capabilities; branding does not grant these permissions.
 
 
@@ -392,7 +392,7 @@ The workspace includes `HandrailApprovalDecisionsView` through
 `binding.approvals`; approval preference is a separate control. Use
 `approvalReviewBuilder` to format validated domain arguments while retaining
 standard review/decision/retry controls. It cannot enable an incomplete review or
-an unauthorized decision. See [the source contract](../../docs/approval-decisions.md)
+an unauthorized decision. See [the source contract](../../docs/flutter-contracts.md#approval-decisions)
 for the required matching client/server revisions and qualification limits.
 
 
@@ -406,7 +406,7 @@ The host owns/disposes `HandrailWebRtcVoiceSession<T>` and supplies its trusted
 `HandrailRealtimeVoiceGateway<T>` for authenticated SDP and exact end receipts.
 Capture, peer/data-channel setup, playback, identity and teardown belong to the
 SDK. See
-[the contract and qualification boundary](../../docs/realtime-voice-surface.md).
+[the contract and qualification boundary](../../docs/flutter-contracts.md#realtime-voice).
 This API is newer than the current public Flutter pin.
 
 

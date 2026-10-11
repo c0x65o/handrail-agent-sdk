@@ -116,6 +116,37 @@ function expectFile(path, content) {
   assert.match(readFileSync(path, "utf8"), new RegExp(content, "u"));
 }
 
+test('migration requires an Agent revision and dry-run preserves both source and manifest', () => {
+  const root = host();
+  const beforeManifest = readFileSync(join(root, 'package.json'), 'utf8');
+  const beforeSource = readFileSync(join(root, 'src/assistant.tsx'), 'utf8');
+  const missing = spawnSync(process.execPath, [cli, 'migrate-package', root, '--write']);
+  assert.notEqual(missing.status, 0);
+  const preview = JSON.parse(execFileSync(process.execPath, [cli, 'migrate-package', root,
+    '--sdk-revision', approved.split('#')[1]], {encoding:'utf8'}));
+  assert.equal(preview.manifestChanged, true); assert.equal(preview.write, false);
+  assert.equal(readFileSync(join(root, 'package.json'), 'utf8'), beforeManifest);
+  assert.equal(readFileSync(join(root, 'src/assistant.tsx'), 'utf8'), beforeSource);
+});
+
+test('migration removes the Assistant identity override and is repeatable', () => {
+  const root = host(), path = join(root, 'package.json');
+  const manifest = JSON.parse(readFileSync(path));
+  manifest.dependencies['@handrail/ai-assistant'] = manifest.dependencies['@handrail/ai'];
+  manifest.dependencies['handrail-agent-sdk'] = approved.replace(/#[^#]+$/, '#' + 'b'.repeat(40));
+  manifest.overrides = {'handrail-agent-sdk': {'@handrail/ai-assistant':'$@handrail/ai-assistant'}};
+  manifest.allowScripts = {[manifest.dependencies['@handrail/ai-assistant']]: true};
+  writeFileSync(path, JSON.stringify(manifest));
+  const args = [cli, 'migrate-package', root, '--sdk-revision', approved.split('#')[1], '--write'];
+  execFileSync(process.execPath, args);
+  const result = JSON.parse(readFileSync(path));
+  assert.deepEqual(result.dependencies, {'handrail-agent-sdk':approved});
+  assert.deepEqual(result.overrides, {});
+  assert.deepEqual(result.allowScripts, {[approved]:true});
+  const repeated = JSON.parse(execFileSync(process.execPath, args, {encoding:'utf8'}));
+  assert.equal(repeated.manifestChanged, false); assert.deepEqual(repeated.sourceFiles, []);
+});
+
 test("fails conformance for an unpinned or incomplete host", () => {
   const root = host();
   writeFileSync(join(root, "package.json"), '{"dependencies":{"handrail-agent-sdk":"latest"}}\n');

@@ -166,7 +166,7 @@ for (const restart of (process.env.HANDRAIL_STOP_BASELINE === '1' ? [false] : [f
     });
     assert.equal((await agent.runtime.inspect(jobIdentity)).value.snapshot.state, 'waiting');
     await assistant.stopBackgroundWorkers(); await agent.close();
-    const child = spawnSync(process.execPath, ['test/agent-stop-process.mjs'], { encoding: 'utf8', timeout: 20000,
+    const child = spawnSync(process.execPath, ['tests/assistant/agent-stop-process.mjs'], { encoding: 'utf8', timeout: 20000,
       env: { ...process.env, HANDRAIL_STOP_FIXTURE: JSON.stringify({ schema: harness.schema, key, identity: jobIdentity,
         context, conversationId, turnId, effectRef: nativeCall.tool_call_id }) } });
     assert.equal(child.status, 0, child.stdout + child.stderr);

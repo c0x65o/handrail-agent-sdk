@@ -5,6 +5,7 @@ FLUTTER ?= flutter
 .NOTPARALLEL:
 
 setup-flutter:
+	npm ci --include=dev
 	cd packages/handrail_agent_client && $(DART) pub get
 	cd packages/handrail_agent_widgets && $(FLUTTER) pub get
 

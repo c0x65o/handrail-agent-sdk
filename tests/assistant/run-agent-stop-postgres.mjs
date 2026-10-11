@@ -37,7 +37,7 @@ try {
   console.log('Fresh isolated PostgreSQL 15 cluster initialized; dedicated disposable database and non-superuser fixture role; connection values withheld.');
   result = spawnSync(process.execPath, process.env.HANDRAIL_REOPEN_SEND_TEST === '1'
     ? ['scripts/check-reopen-send-browser.mjs']
-    : ['--test', '--test-concurrency=1', '--test-reporter=tap', ...(process.env.HANDRAIL_PROJECTION_TEST === '1' ? ['test/agent-projection.test.mjs'] : ['test/agent-durable-stop.test.mjs'])], { env, stdio: 'inherit' });
+    : ['--test', '--test-concurrency=1', '--test-reporter=tap', ...(process.env.HANDRAIL_PROJECTION_TEST === '1' ? ['tests/assistant/agent-projection.test.mjs'] : ['tests/assistant/agent-durable-stop.test.mjs'])], { env, stdio: 'inherit' });
   if (result.status !== 0) process.exitCode = 1;
 
 } catch (error) {
