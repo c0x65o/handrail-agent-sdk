@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { publicSdkGitSpec, assertSdkGitLock, publicAssistantGitSpec, assertAssistantGitLock } from './helpers/git-consumer-contract.mjs';
+import { publicSdkGitSpec, assertSdkGitLock, assertNoAssistantDependency } from './helpers/git-consumer-contract.mjs';
 
 const sha = '4d1f995e2bf337fb4ad9552bb675dade0f633fdb';
 const spec = publicSdkGitSpec(sha);
@@ -17,24 +17,17 @@ test('requires public HTTPS and full SHA in both manifest and resolved lock', ()
   }
 });
 
-test('assistant consumer URL preserves the frozen public SHA with npm HTTPS resolution', () => {
-  const bare = `git+https://github.com/c0x65o/handrail-sdk-ai-assistant-js.git#${sha}`;
-  const https = bare.replace('https://', 'https://git@');
-  assert.equal(publicAssistantGitSpec(bare), https);
-  assert.equal(publicAssistantGitSpec(https), https);
-  for (const invalid of [bare.replace('https:', 'ssh:'), bare.replace(sha, 'main'),
-    bare.replace(sha, sha.slice(0, 7)), bare.replace('c0x65o', 'other'), 'file:../assistant', undefined]) {
-    assert.throws(() => publicAssistantGitSpec(invalid), /ASSISTANT_PUBLIC_FULL_SHA_REQUIRED/);
+test('consolidated consumers reject direct and nested legacy Assistant dependencies', () => {
+  assertNoAssistantDependency(lock(spec));
+  for (const [path, entry] of [
+    ['node_modules/@handrail/ai-assistant', {version:'0.2.86'}],
+    ['node_modules/other/node_modules/@handrail/ai-assistant', {version:'0.2.86'}],
+    ['node_modules/alias', {resolved:'git+https://github.com/c0x65o/handrail-sdk-ai-assistant-js.git#' + sha}],
+    ['node_modules/other', {dependencies:{'@handrail/ai-assistant':'*'}}],
+  ]) {
+    const value = lock(spec); value.packages[path] = entry;
+    assert.throws(() => assertNoAssistantDependency(value), /LEGACY_ASSISTANT_DEPENDENCY_PRESENT/);
   }
-  const assistantLock = { packages: { 'node_modules/@handrail/ai-assistant': { resolved: https } } };
-  assertAssistantGitLock(assistantLock, https);
-  assert.throws(() => assertAssistantGitLock({ packages: {} }, https), /ASSISTANT_LOCK_MISSING/);
-  for (const resolved of [bare, https.replace('https:', 'ssh:'), https.replace(sha, '0'.repeat(40))]) {
-    assistantLock.packages['node_modules/handrail-agent-sdk/node_modules/@handrail/ai-assistant'] = { resolved };
-    assert.throws(() => assertAssistantGitLock(assistantLock, https), /ASSISTANT_RESOLVED_LOCK_MISMATCH/);
-  }
-  assistantLock.packages['node_modules/handrail-agent-sdk/node_modules/@handrail/ai-assistant'] = { resolved: https };
-  assert.throws(() => assertAssistantGitLock(assistantLock, https), /ASSISTANT_MUST_HAVE_SINGLE_IDENTITY/);
 });
 
 test('rejects SSH even with matching SHA, repository drift and alternate sources', () => {

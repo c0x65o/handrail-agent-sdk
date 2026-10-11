@@ -1,6 +1,6 @@
 import { applicationToolParameters } from './agent-tool-schema.js';
-import type { ToolDefinition } from '@handrail/ai-assistant';
-import type { HandrailAssistantToolObserver } from '@handrail/ai-assistant/server/assistant';
+import type { ToolDefinition } from '../assistant/index.js';
+import type { HandrailAssistantToolObserver } from '../assistant/server/assistant.js';
 import type { AgentCall, AgentRuntimeTool, AgentToolOutput } from './agent-runtime.js';
 import type { EffectRequest, EffectObservation } from './effects.js';
 import type { MCPServer } from '@openai/agents';

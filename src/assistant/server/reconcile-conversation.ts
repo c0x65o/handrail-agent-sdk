@@ -1,0 +1,265 @@
+import { protocolCancellationReason } from "../cancellation.js";
+import { createHash } from "node:crypto";
+import { createConversationRuntime } from "../runtime.js";
+import { createRetryPolicy } from "../retry.js";
+import { findConversationEvent } from "../conversation/find-event.js";
+import { replayConversation } from "../conversation/replay.js";
+import { parseConversationEvent, type ConversationId, type ConversationEventPayload } from "../conversation/events.js";
+import { ConversationEventStoreConflictError, type ConversationEventStore } from "../conversation/event-store.js";
+import { AI_RUNTIME_PROTOCOL_VERSION, parseStreamEvent, type AuthoritativeAttribution, type ChatRequest, type StreamEvent } from "../protocol.js";
+import type { DurableApplicationTurnStore, DurableApplicationTurnRecord } from "../transports/durable.js";
+import type { ConversationTransport, TurnObservationResult } from "../transports/types.js";
+import { parseNormalizedUsageReceipt, type NormalizedUsageReceipt } from "../usage.js";
+import { emitAiDiagnostic, type AiDiagnosticSink } from "../diagnostics.js";
+
+const emptyCheckpoint = { lastAppliedEventId: null, lastAppliedCursor: null, lastAppliedRevision: null };
+const terminalFrame = (frame: StreamEvent) => ["response.completed", "response.cancelled", "response.error"].includes(frame.type);
+
+function storedObservation(record: DurableApplicationTurnRecord<ChatRequest, StreamEvent>, attribution: AuthoritativeAttribution) {
+  if (!record.terminal || record.terminal.status === "disconnected" || record.terminal.status !== record.status) throw new TypeError("The durable turn has no terminal outcome");
+  const frames = record.events.map(({ event }) => parseStreamEvent(event));
+  const last = frames.at(-1);
+  const expected = record.status === "completed" ? "response.completed" : record.status === "cancelled" ? "response.cancelled" : "response.error";
+  if (record.status !== "waiting_for_approval" && last?.type !== expected) {
+    if (record.status === "completed") throw new TypeError("A completed durable turn is missing its completion frame");
+    if (last && terminalFrame(last)) frames.pop();
+    // Worker failure or authoritative cancellation can finish before a provider terminal frame.
+    // These are runtime facts; no provider usage is synthesized.
+    if (frames.length === 0) frames.push(parseStreamEvent({ type: "response.started", protocol_version: AI_RUNTIME_PROTOCOL_VERSION,
+      request_id: `recovery-${createHash("sha256").update(`${record.conversationId}:${record.turnId}`).digest("hex")}`,
+      trace_id: `recovery-${createHash("sha256").update(record.turnId).digest("hex")}`, sequence: 0, attribution }));
+    // A recovery can replay only part of the already retained prefix before
+    // authorization or preparation fails. Its last physical frame may have an
+    // older sequence. Append after the complete saved prefix, never over it.
+    // The runtime still validates duplicates and rejects changed frame data.
+    if (record.status === "cancelled" && !record.cancellation) throw new TypeError("A cancelled durable turn is missing its cancellation reason");
+    const preceding = frames.reduce((latest, frame) => frame.sequence > latest.sequence ? frame : latest);
+    frames.push(parseStreamEvent({ protocol_version: AI_RUNTIME_PROTOCOL_VERSION,
+      request_id: preceding.request_id, trace_id: preceding.trace_id, sequence: preceding.sequence + 1,
+      ...(record.status === "cancelled" ? { type: "response.cancelled", reason: protocolCancellationReason(record.cancellation!.reason) } : { type: "response.error", error: { category: "internal", code: "internal_error",
+        message: "The assistant could not complete this request. Your message and attachments are saved.", retryable: record.terminal.status === "failed" && record.terminal.error.retryable } }) }));
+  }
+  const result: TurnObservationResult = { ...record.terminal, checkpoint: emptyCheckpoint };
+  return { events: (async function* () { yield* frames; })(), result: Promise.resolve(result), disconnect() {} };
+}
+
+/** Replays trusted stored output through the shared runtime; never starts a provider or domain tool. */
+export async function reconcileDurableConversationTurn(input: {
+  readonly conversationId: string;
+  readonly turnId: string;
+  readonly events: ConversationEventStore;
+  readonly turns: DurableApplicationTurnStore<ChatRequest, StreamEvent>;
+  readonly attribution: AuthoritativeAttribution;
+  readonly authorize?: () => Promise<void>;
+  readonly diagnostics?: AiDiagnosticSink;
+  readonly readCompletedOutput?: ConversationTransport<StreamEvent, ChatRequest>["readCompletedOutput"];
+  readonly usageReceiptSink?: { capture(receipt: NormalizedUsageReceipt): Promise<void> };
+}): Promise<boolean> {
+  await input.authorize?.();
+  const document = await input.turns.load(input.conversationId, input.turnId);
+  if (!document || document.record.status === "pending" || document.record.status === "running") return false;
+  const record = document.record;
+  let recovered: Awaited<ReturnType<NonNullable<typeof input.readCompletedOutput>>> = null;
+  let recoveryDigest: string | null = null;
+  const verifyRecoverySnapshot = async () => {
+    if (!recovered) return;
+    const current = await input.turns.load(input.conversationId, input.turnId);
+    if (!current || current.version !== document.version) throw new Error("The recovered output source was superseded");
+  };
+  let superseded = false;
+  const verifyPausedSnapshot = async () => {
+    if (record.status !== "waiting_for_approval") return;
+    const current = await input.turns.load(input.conversationId, input.turnId);
+    // Approval admission is canonical before the durable worker is woken. Even
+    // in that narrow window a replay of the old pause must not deactivate it.
+    const admission = await findConversationEvent(input.events, input.conversationId as ConversationId,
+      event => event.event_id === `approval-resume:${input.turnId}:${document.version}`);
+    if (!current || current.version !== document.version || admission) {
+      superseded = true;
+      throw new Error("The stored approval pause has been superseded");
+    }
+  };
+  const events: ConversationEventStore = {
+    ...(input.events.checkpoints ? { checkpoints: input.events.checkpoints } : {}),
+    read: value => input.events.read(value),
+    getLatestRevision: id => input.events.getLatestRevision(id),
+    append: async value => {
+      await input.authorize?.();
+      await verifyPausedSnapshot();
+      await verifyRecoverySnapshot();
+      // The canonical CAS closes the race after verification. Every rebased
+      // append is checked again, including the runtime's final pause event.
+      return input.events.append(recovered ? { ...value, events: value.events.map(event => parseConversationEvent({ ...event,
+        metadata: { ...event.metadata, handrail_output_recovery: { source_ref: recovered!.sourceRef,
+          source_sha256: recoveryDigest!, durable_version: document.version } },
+      })) } : value);
+    },
+  };
+  const settleAcknowledgedCancellation = async (): Promise<boolean> => {
+    // Output validation and execution settlement are separate facts. A corrupt
+    // replay must remain rejected, but cannot undo the durable writer's receipt
+    // that the admitted delegate accepted Stop. Never infer this from a request,
+    // an expired lease, or an observation failure.
+    if (record.status !== "cancelled" || record.terminal?.status !== "cancelled" ||
+      !record.cancellation?.acceptedAt || record.lease !== null) return false;
+    for (let attempt = 0; attempt < 4; attempt++) {
+      await input.authorize?.();
+      const current = await input.turns.load(input.conversationId, input.turnId);
+      if (!current || current.version !== document.version) return false;
+      const replay = await replayConversation({ conversationId: input.conversationId as ConversationId,
+        eventStore: events, checkpointPolicy: false });
+      const state = replay.state;
+      replay.store.destroy();
+      if (state.replay_error) throw new Error("Cancellation settlement requires valid canonical history");
+      const turn = state.turns.find(candidate => candidate.turn_id === input.turnId);
+      if (!turn || turn.started_at === null) return false;
+      if (turn.status === "cancelled") return true;
+      if (turn.status === "completed" || turn.status === "failed") throw new TypeError("Canonical and durable terminal outcomes disagree");
+      try {
+        await events.append({ conversationId: input.conversationId as ConversationId, expectedRevision: state.revision,
+          events: [parseConversationEvent({ version: 1,
+            event_id: `durable-cancelled:${createHash("sha256").update(JSON.stringify([input.conversationId, input.turnId])).digest("hex")}`,
+            conversation_id: input.conversationId, revision: (state.revision ?? 0) + 1,
+            occurred_at: record.updatedAt, actor: { type: "system" }, source: { type: "runtime" },
+            payload: { type: "turn.cancelled", turn_id: input.turnId, reason: record.cancellation.reason },
+          })] });
+        return true;
+      } catch (cause) {
+        if (!(cause instanceof ConversationEventStoreConflictError)) throw cause;
+      }
+    }
+    return false;
+  };
+  try { await verifyPausedSnapshot(); } catch (cause) { if (superseded) return false; throw cause; }
+  const receipt = record.terminal && record.terminal.status !== "disconnected" && record.terminal.usageReceipt
+    ? parseNormalizedUsageReceipt(record.terminal.usageReceipt) : null;
+  if (receipt && (receipt.conversation_id !== input.conversationId || receipt.turn_id !== input.turnId)) {
+    throw new TypeError("The stored usage receipt belongs to a different turn");
+  }
+  // Capture even if another projector already completed the transcript. The sink
+  // durably deduplicates receipt identity before its best-effort delivery.
+  if (receipt) await input.usageReceiptSink?.capture(receipt);
+  const conversationId = input.conversationId as ConversationId;
+  for (let attempt = 0; attempt < 4; attempt += 1) {
+    const replay = await replayConversation({ conversationId, eventStore: input.events, checkpointPolicy: false });
+    const state = replay.state;
+    replay.store.destroy();
+    const turn = state.turns.find((candidate) => candidate.turn_id === input.turnId);
+    if (!turn || turn.started_at === null) return false;
+    if (receipt && !state.usage_receipt_links.some((link) => link.usage_receipt_id === receipt.usage_receipt_id)) {
+      try {
+        await events.append({ conversationId, expectedRevision: state.revision, events: [parseConversationEvent({
+          version: 1, event_id: `reconciled-usage:${createHash("sha256").update(JSON.stringify([conversationId, input.turnId, receipt.usage_receipt_id])).digest("hex")}`,
+          conversation_id: conversationId, revision: (state.revision ?? 0) + 1, occurred_at: record.updatedAt,
+          actor: { type: "system" }, source: { type: "runtime" },
+          payload: { type: "usage.receipt_linked", turn_id: input.turnId, usage_receipt_id: receipt.usage_receipt_id },
+        })] });
+        continue;
+      } catch (cause) {
+        if (superseded) return false;
+        if (cause instanceof ConversationEventStoreConflictError) continue;
+        throw cause;
+      }
+    }
+    if (turn.status === "waiting_for_approval" && record.status === "waiting_for_approval") return true;
+    if (turn.status === "completed" || turn.status === "cancelled" || turn.status === "failed") {
+      if (turn.status !== record.status) throw new TypeError("Canonical and durable terminal outcomes disagree");
+      return true;
+    }
+    // Bind the canonical identity even if the browser disconnected before receiving its start handle.
+    const bindingId = `reconcile-binding:${createHash("sha256").update(JSON.stringify([conversationId, input.turnId])).digest("hex")}`;
+    const history = await input.events.read({ conversationId, limit: 500 });
+    let bound = history.entries.some(({ event }) => event.event_id === bindingId ||
+      "turn_id" in event.payload && event.payload.turn_id === input.turnId &&
+      (event.metadata?.handrail_runtime as { transport_turn_id?: unknown } | undefined)?.transport_turn_id === input.turnId);
+    let page = history;
+    while (!bound && page.hasMore) {
+      if (!page.nextCursor) throw new TypeError("Reconciliation history did not advance");
+      const previous = page.nextCursor;
+      page = await input.events.read({ conversationId, after: { cursor: previous }, limit: 500 });
+      bound = page.entries.some(({ event }) => event.event_id === bindingId ||
+        "turn_id" in event.payload && event.payload.turn_id === input.turnId &&
+        (event.metadata?.handrail_runtime as { transport_turn_id?: unknown } | undefined)?.transport_turn_id === input.turnId);
+      if (page.hasMore && previous === page.nextCursor) throw new TypeError("Reconciliation history did not advance");
+    }
+    const bindings: { id: string; payload: ConversationEventPayload }[] = [];
+    if (record.status === "cancelled" && record.cancellation && turn.cancellation_requested_reason === null) {
+      bindings.push({ id: `${bindingId}:cancellation`, payload: { type: "turn.cancellation_requested",
+        turn_id: input.turnId as never, reason: record.cancellation.reason } });
+    }
+    if (!bound) bindings.push({ id: bindingId, payload: { type: "turn.status_changed", turn_id: input.turnId as never, status: turn.status } });
+    if (record.cancellation && turn.cancellation_requested_reason === null) bindings.push({ id: `${bindingId}-cancel`,
+      payload: { type: "turn.cancellation_requested", turn_id: input.turnId as never, reason: record.cancellation.reason } });
+    if (bindings.length > 0) {
+      try {
+        await events.append({ conversationId, expectedRevision: state.revision, events: bindings.map((binding, index) => parseConversationEvent({
+          version: 1, event_id: binding.id, conversation_id: conversationId, revision: (state.revision ?? 0) + index + 1,
+          occurred_at: record.updatedAt, actor: { type: "system" }, source: { type: "runtime" },
+          metadata: { handrail_runtime: { transport_turn_id: input.turnId } }, payload: binding.payload,
+        })) });
+      } catch (cause) {
+        if (superseded) return false;
+        if (cause instanceof ConversationEventStoreConflictError) continue;
+        throw cause;
+      }
+    }
+    const transport: ConversationTransport<StreamEvent, ChatRequest> = {
+      capabilities: { authoritativeCancellation: { supported: false }, documentInput: { supported: false },
+        attachmentUpload: { supported: false }, presence: { supported: false }, synchronization: { supported: false } },
+      async startTurn() { throw new Error("Reconciliation cannot start work"); },
+      async resumeTurn() { return { ok: true, value: recovered ? {
+        events: (async function* () { yield* recovered!.events; })(), result: Promise.resolve(recovered.result), disconnect() {},
+      } : storedObservation(record, input.attribution) }; },
+    };
+    const runtime = await createConversationRuntime({ conversationId, clientId: "server-reconciliation" as never,
+      eventStore: events, transport, retryPolicy: createRetryPolicy({ maximumAttempts: 1 }) });
+    try {
+      const current = runtime.getSnapshot().turns.find((candidate) => candidate.turn_id === input.turnId);
+      if (current && ["completed", "cancelled", "failed"].includes(current.status)) continue;
+      const outcome = await runtime.resumeTurn(input.turnId as never);
+      if (superseded) return false;
+      if (outcome.status === record.status) return true;
+      if (outcome.status !== "interrupted") throw new Error("Stored turn output did not reach its durable outcome");
+      if (outcome.error?.retryable === false) {
+        emitAiDiagnostic(input.diagnostics, { domain: "persistence", operation: "conversation_output_projection",
+          phase: "failed", conversationId: input.conversationId, turnId: input.turnId,
+          code: "invalid_stored_output", retryable: false, cause: outcome.error });
+        if (await settleAcknowledgedCancellation()) return true;
+        // A separate terminal checkpoint may retain valid output even though a
+        // host corrupted its observation stream on reconnect. Keep that stream
+        // rejected and unchanged. The independently read source is projected
+        // through this same strict runtime, including canonical fingerprints.
+        if (!recovered && record.status === "completed" && record.terminal?.status === "completed" &&
+          record.lease === null && input.readCompletedOutput) {
+          await input.authorize?.();
+          const candidate = structuredClone(await input.readCompletedOutput({ conversationId: input.conversationId, turnId: input.turnId }));
+          if (candidate) {
+            if (candidate.conversationId !== input.conversationId || candidate.turnId !== input.turnId ||
+              typeof candidate.sourceRef !== "string" || !candidate.sourceRef.trim() || candidate.sourceRef.length > 1024 ||
+              candidate.result.status !== "completed" || candidate.events.length > 10000 ||
+              new TextEncoder().encode(JSON.stringify(candidate)).length > 1048576) throw new TypeError("Invalid completed output source");
+            const frames = candidate.events.map(event => parseStreamEvent(event));
+            const first = frames[0], retained = record.events[0]?.event;
+            if (first?.type !== "response.started" || first.sequence !== 0 ||
+              !retained || first.request_id !== retained.request_id || first.trace_id !== retained.trace_id ||
+              frames.at(-1)?.type !== "response.completed") throw new TypeError("Completed output source identity changed");
+            recovered = { ...candidate, events: frames };
+            recoveryDigest = createHash("sha256").update(JSON.stringify(recovered)).digest("hex");
+            await input.authorize?.();
+            await verifyRecoverySnapshot();
+            continue;
+          }
+        }
+        // A protocol conflict is not a concurrent-write retry. Preserve it for
+        // diagnosis; in particular, never fabricate successful output from it.
+        throw new Error("Stored turn output failed protocol validation");
+      }
+    } catch (cause) {
+      if (superseded) return false;
+      // A browser or another reconciler may have finalized during our CAS rebase.
+      if (runtime.getSnapshot().turns.some((candidate) => candidate.turn_id === input.turnId && candidate.status === record.status)) return true;
+      throw cause;
+    } finally { runtime.destroy(); }
+  }
+  throw new Error("Stored turn output could not be reconciled after concurrent writes");
+}

@@ -1,0 +1,1311 @@
+import { relatedViews } from "../client/related-records.js";
+import type { TurnApprovalModeInput, TurnApprovalModeResult } from "../composer-approval.js";
+import { approvalDisplayProposalBinding, parseConversationApprovalDisplayDecision, type ConversationApprovalDisplayDecisionInput } from "../conversation/approval-display-review.js";
+import { parseServerSentEvents } from "./sse.js";
+import { parseConversationApprovalDisplayReview, type ConversationApprovalDisplayReviewInput } from "../conversation/approval-display-review.js";
+import { parseConversationDisplayControl, CONVERSATION_DISPLAY_CONTROL_MAXIMUM_BYTES,
+  type ConversationDisplayControlInput } from "../conversation/display-control.js";
+import { ConversationDisplayHistoryError, CONVERSATION_DISPLAY_LIMITS, parseConversationDisplayPage,
+  type ConversationDisplayHistory, type ConversationDisplayPageInput, type ConversationDisplayContentInput,
+  type ConversationDisplayChangesInput } from "../conversation/display-history.js";
+import type { TranscriptionHttpCapability } from "../transcription-http.js";
+import type { AttachmentReference } from "../protocol.js";
+import type { AttachmentUploadAdapter } from "../attachments/types.js";
+import type { LivePresenceEnvelope } from "../presence/live-delivery.js";
+import type { PresenceRecord } from "../presence/types.js";
+import {
+  parseConversationActivityRecord,
+  type ConversationActivityRecord,
+  type DurableConversationActivityStore,
+  type LiveConversationActivityDelivery,
+} from "../conversation/activity.js";
+import {
+  ConversationCatalogError,
+  type ConversationCatalogAuthorizationAction,
+  type ConversationCatalogCapabilities,
+  type ConversationCatalogErrorCode,
+  type ArchiveConversationInput, type ClearConversationInput, type ConversationCatalog, type CreateConversationInput,
+  type GetConversationInput, type ListConversationsInput, type PermanentlyDeleteConversationInput,
+  type RenameConversationInput, type RestoreConversationInput, type ArchiveConversationResult,
+  type ClearConversationResult, type CreateConversationResult, type GetConversationResult,
+  type ListConversationsResult, type PermanentlyDeleteConversationResult,
+  type RenameConversationResult, type RestoreConversationResult,
+} from "../conversation/catalog.js";
+import {
+  ApprovalProposalStoreError,
+  type ApprovalProposalStore, type CreateApprovalProposalInput, type GetApprovalProposalInput,
+  type ListApprovalProposalGroupInput, type TransitionApprovalProposalInput,
+} from "../conversation/approval-proposal-store.js";
+import type { ConversationApprovalProposalRecord } from "../conversation/state.js";
+import type { DocumentInputCapabilityDescriptor, ProviderAdapterMetadata } from "../providers/index.js";
+import type { ToolLoopLimits } from "../tools/loop.js";
+import { diagnoseAiOperation, emitAiDiagnostic, type AiDiagnosticSink } from "../diagnostics.js";
+import type { AppendMutationsInput, AppendMutationsResult, PullSnapshotInput, PullSnapshotResult,
+  ReadSinceInput, ReadSinceResult } from "../sync/types.js";
+import type {
+  AuthoritativeCancelTurnResult,
+  CancelTurnInput,
+  ConversationTransport,
+  ConversationTransportCapabilities,
+  ResumeTurnInput,
+  StartTurnInput,
+  TransportError,
+  TransportResult,
+  TurnHandle,
+  TurnObservation,
+  TurnObservationResult,
+  TurnResumePoint,
+} from "./types.js";
+
+export const APPLICATION_GATEWAY_PROTOCOL_VERSION = "handrail.application-gateway.v1" as const;
+import type { AttachmentDownloadCapability } from "../attachments/downloader.js";
+
+export interface ApplicationGatewayCapabilities {
+  readonly protocolVersion: typeof APPLICATION_GATEWAY_PROTOCOL_VERSION;
+  readonly authoritativeCancellation: boolean;
+  readonly attachments: false | {
+    readonly maximumFiles: number;
+    readonly maximumBytesPerFile: number;
+    readonly acceptedMediaTypes: readonly string[];
+    readonly uploadUrl?: string;
+  };
+  readonly documentInput?: false | DocumentInputCapabilityDescriptor;
+  readonly presence: boolean;
+  readonly synchronization: boolean;
+  /** Complete message records, separate from canonical audit synchronization. */
+  readonly displayHistory?: false | { readonly version: 1; readonly maximumPageSize: number; readonly maximumPageBytes: number; readonly control?: true; readonly readBundle?: true; readonly messageText?: true; readonly recordText?: true; readonly approvalReview?: true; readonly pendingApprovals?: true; readonly approvalHistory?: true };
+  readonly activity?: boolean;
+  /** Omitted by older gateways; never assume saved files have public URLs. */
+  readonly attachmentDownloads?: false | AttachmentDownloadCapability;
+  /** Omitted by older gateways; audio capture must not assume a server transcription route exists. */
+  readonly transcription?: false | TranscriptionHttpCapability;
+  readonly resources?: {
+    /** Detailed lifecycle capabilities are returned by v1 servers when available. */
+    readonly conversations: boolean | ConversationCatalogCapabilities;
+    readonly approvals: boolean;
+    readonly turnApprovalMode?: true;
+    readonly titleGeneration: boolean;
+  };
+  /** Present for high-level assistants; older gateways omit this compatibly. */
+  readonly assistant?: {
+    readonly id: string;
+    readonly version: string;
+    readonly provider: ProviderAdapterMetadata;
+    readonly toolLoopLimits: Readonly<ToolLoopLimits>;
+  };
+}
+
+export interface ApplicationGatewayEventEnvelope<TEvent> {
+  readonly event: TEvent;
+  readonly checkpoint: TurnResumePoint;
+}
+
+export interface ApplicationGatewayAuthorizationContext {
+  readonly principalId: string;
+}
+
+export interface ApplicationGatewayRequestAuthorizer<TContext extends ApplicationGatewayAuthorizationContext> {
+  authorize(request: Request, action: ApplicationGatewayAction): Promise<TContext>;
+}
+
+export type ApplicationGatewayAction = "capabilities" | "start" | "resume" | "cancel" |
+  "conversations" | "approvals" | "attachments" | "attachment_download" | "presence" | "activity" | "synchronization" | "title_generation" | "transcription";
+
+export interface ApplicationGatewayTitleGeneration<TContext> {
+  generate(input: { readonly conversationId: string; readonly idempotencyKey: string }, context: TContext, signal: AbortSignal): Promise<string>;
+}
+
+export interface ApplicationGatewayResourceHandlers<TContext> {
+  readonly attachment_download?: (request: Request, context: TContext) => Response | Promise<Response>;
+  readonly transcription?: (request: Request, context: TContext) => Response | Promise<Response>;
+  readonly attachments?: (request: Request, context: TContext) => Response | Promise<Response>;
+  readonly presence?: (request: Request, context: TContext) => Response | Promise<Response>;
+  readonly activity?: (request: Request, context: TContext) => Response | Promise<Response>;
+  readonly synchronization?: (request: Request, context: TContext) => Response | Promise<Response>;
+}
+
+export interface ApplicationGatewayOptions<TEvent, TRequest, TContext extends ApplicationGatewayAuthorizationContext> {
+  /** Process-global transport for applications whose transport is not identity scoped. */
+  readonly transport?: ConversationTransport<TEvent, TRequest>;
+  /**
+   * Resolves a request-scoped transport from the server-authoritative identity.
+   * Multi-tenant applications should use this instead of accepting identity in
+   * TRequest. Exactly one of transport and transportFor must be configured.
+   */
+  readonly transportFor?: (
+    context: TContext,
+  ) => ConversationTransport<TEvent, TRequest> | Promise<ConversationTransport<TEvent, TRequest>>;
+  readonly authorize: ApplicationGatewayRequestAuthorizer<TContext>["authorize"];
+  /** Trusted denial settlement, never execution. The callback must independently
+   * authenticate/authorize the saved conversation and fence any existing start. */
+  readonly rejectStart?: (request: Request, input: StartTurnInput<TRequest>, error: TransportError) => Promise<void>;
+  /** Converts a durable event into the exact resume point acknowledged by clients. */
+  readonly checkpointForEvent: (event: TEvent) => TurnResumePoint;
+  readonly capabilities?: Partial<Omit<ApplicationGatewayCapabilities, "protocolVersion" | "authoritativeCancellation">>;
+  readonly maximumRequestBytes?: number;
+  readonly conversations?: ConversationCatalog<TContext>;
+  readonly displayHistoryFor?: (context: TContext) => ConversationDisplayHistory;
+  /** Advertise only when every scoped display store supplies control(). */
+  readonly displayControl?: true;
+  readonly displayMessageText?: true;
+  /** Formatted, revision-pinned structured records, one bounded section at a time. */
+  readonly displayRecordText?: true;
+  readonly displayApprovalReview?: true;
+  /** Scoped store supports pending_approvals and approval display views. */
+  readonly displayPendingApprovals?: true;
+  /** Scoped store supports bounded, read-only approval_history pages. */
+  readonly displayApprovalHistory?: true;
+  readonly approvals?: ApprovalProposalStore<TContext>;
+  readonly turnApprovalMode?: (input: TurnApprovalModeInput, context: TContext) => Promise<TurnApprovalModeResult>;
+  readonly titleGeneration?: ApplicationGatewayTitleGeneration<TContext>;
+  readonly handlers?: ApplicationGatewayResourceHandlers<TContext>;
+  readonly diagnostics?: AiDiagnosticSink;
+}
+
+export interface ApplicationGateway {
+  /** Mount at any application-owned path. No framework or Node request type is required. */
+  handle(request: Request): Promise<Response>;
+}
+
+type GatewayStreamMessage<TEvent> =
+  | { readonly type: "started"; readonly conversationId: string; readonly turnId: string; readonly mutationId: string }
+  | ({ readonly type: "event" } & ApplicationGatewayEventEnvelope<TEvent>)
+  | { readonly type: "terminal"; readonly result: TurnObservationResult };
+
+const encoder = new TextEncoder();
+const GATEWAY_STREAM_HEARTBEAT_MILLISECONDS = 2_000;
+const JSON_HEADERS = { "content-type": "application/json; charset=utf-8" };
+const EMPTY_CHECKPOINT: TurnResumePoint = {
+  lastAppliedEventId: null,
+  lastAppliedCursor: null,
+  lastAppliedRevision: null,
+};
+
+function json(value: unknown, status = 200): Response {
+  return new Response(JSON.stringify(value), { status, headers: JSON_HEADERS });
+}
+function diagnosticHeader(request: Request, name: string): string | undefined {
+  const value = request.headers.get(name);
+  return value && /^[A-Za-z0-9._:@/-]{1,256}$/u.test(value) ? value : undefined;
+}
+
+function transportStatus(error: TransportError): number {
+  return ({ invalid_request: 400, unauthenticated: 401, forbidden: 403, not_found: 404,
+    conflict: 409, rate_limited: 429, timeout: 504, unavailable: 503, internal_error: 500 })[error.code];
+}
+
+function failure(error: TransportError): Response {
+  return json({ ok: false, error }, transportStatus(error));
+}
+
+function responseFailure(response: Response, error?: Partial<TransportError>): TransportError {
+  const code = response.status === 401 ? "unauthenticated" : response.status === 403 ? "forbidden"
+    : response.status === 429 ? "rate_limited" : error?.code ?? "unavailable";
+  const header = response.headers.get("retry-after");
+  const milliseconds = header === null ? NaN : /^\d+(?:\.\d+)?$/u.test(header.trim())
+    ? Number(header) * 1000 : Date.parse(header) - Date.now();
+  const hint = Number.isFinite(milliseconds) ? Math.max(0, milliseconds) : error?.retryAfterMs;
+  return { code, message: error?.message ?? (code === "rate_limited" ? "Too many requests. Try again later."
+    : code === "unauthenticated" || code === "forbidden" ? "Conversation access is unavailable." : "Application gateway request failed"),
+    retryable: code === "unauthenticated" || code === "forbidden" ? false : code === "rate_limited" ? true : error?.retryable ?? (response.ok || response.status >= 500),
+    ...(hint === undefined ? {} : { retryAfterMs: hint }) };
+}
+
+type ApplicationGatewayResourceDomain = "conversation_catalog" | "approval_proposals" | "display_history";
+
+interface ApplicationGatewayResourceFailure {
+  readonly domain: ApplicationGatewayResourceDomain;
+  readonly code: string;
+}
+
+function resourceFailure(
+  error: TransportError,
+  resourceError: ApplicationGatewayResourceFailure,
+): Response {
+  return json({ ok: false, error, resourceError }, transportStatus(error));
+}
+
+function publicFailure(error: unknown): Response {
+  if (error instanceof Response) return error;
+  if (error instanceof ConversationDisplayHistoryError) {
+    return resourceFailure({ code: error.code === "invalid_input" ? "invalid_request"
+      : error.code === "not_found" ? "not_found" : "conflict", message: error.message, retryable: false },
+    { domain: "display_history", code: error.code });
+  }
+  if (error instanceof ConversationCatalogError) {
+    const code: TransportError["code"] = error.code === "invalid_input" ? "invalid_request"
+      : error.code === "not_found" ? "not_found"
+      : error.code === "forbidden" ? "forbidden"
+      : error.code === "unavailable" || error.code === "unsupported" ? "unavailable" : "conflict";
+    return resourceFailure(
+      { code, message: error.message, retryable: error.retryable },
+      { domain: "conversation_catalog", code: error.code },
+    );
+  }
+  if (error instanceof ApprovalProposalStoreError) {
+    const code: TransportError["code"] = error.code === "invalid_input" ? "invalid_request"
+      : error.code === "not_found" ? "not_found"
+      : error.code === "permission_denied" ? "forbidden"
+      : error.code === "unavailable" || error.code === "capacity_exceeded" ? "unavailable" : "conflict";
+    return resourceFailure(
+      { code, message: error.message, retryable: error.retryable },
+      { domain: "approval_proposals", code: error.code },
+    );
+  }
+  return failure({
+    code: "unavailable",
+    message: "The application gateway is temporarily unavailable.",
+    retryable: true,
+  });
+}
+
+function authorizationFailure(error: unknown): Response {
+  if (error instanceof Response) return error;
+  return failure({
+    code: "forbidden",
+    message: "The request is not authorized.",
+    retryable: false,
+  });
+}
+
+async function body<T>(request: Request, maximumBytes: number): Promise<T> {
+  const reader = request.body?.getReader();
+  const chunks: Uint8Array[] = [];
+  let size = 0;
+  if (reader) {
+    try {
+      for (;;) {
+        const chunk = await reader.read();
+        if (chunk.done) break;
+        size += chunk.value.byteLength;
+        if (size > maximumBytes) { await reader.cancel(); throw new Response(null, { status: 413 }); }
+        chunks.push(chunk.value);
+      }
+    } finally { reader.releaseLock(); }
+  }
+  const bytes = new Uint8Array(size);
+  let offset = 0;
+  for (const chunk of chunks) { bytes.set(chunk, offset); offset += chunk.byteLength; }
+  try { return JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(bytes)) as T; }
+  catch { throw new Response(null, { status: 400 }); }
+}
+
+function sse<TEvent>(
+  observation: TurnObservation<TEvent>,
+  checkpointForEvent: (event: TEvent) => TurnResumePoint,
+  started?: Extract<GatewayStreamMessage<TEvent>, { type: "started" }>,
+): Response {
+  const stream = new ReadableStream<Uint8Array>({
+    async start(controller) {
+      const send = (message: GatewayStreamMessage<TEvent>, id?: string | null) => {
+        const prefix = id ? `id: ${id}\n` : "";
+        controller.enqueue(encoder.encode(`${prefix}event: ${message.type}\ndata: ${JSON.stringify(message)}\n\n`));
+      };
+      const heartbeat = globalThis.setInterval(() => {
+        try {
+          // SSE comments are ignored by clients but keep ingress/proxy idle
+          // timers from severing a turn while a model or tool is working.
+          controller.enqueue(encoder.encode(": keepalive\n\n"));
+        } catch {
+          globalThis.clearInterval(heartbeat);
+        }
+      }, GATEWAY_STREAM_HEARTBEAT_MILLISECONDS);
+      try {
+        if (started) send(started);
+        for await (const event of observation.events) {
+          const checkpoint = checkpointForEvent(event);
+          send({ type: "event", event, checkpoint }, checkpoint.lastAppliedCursor ?? checkpoint.lastAppliedEventId);
+        }
+        send({ type: "terminal", result: await observation.result });
+        controller.close();
+      } catch (error) {
+        controller.error(error);
+      } finally {
+        globalThis.clearInterval(heartbeat);
+      }
+    },
+    cancel() { observation.disconnect(); },
+  });
+  return new Response(stream, { headers: {
+    "content-type": "text/event-stream; charset=utf-8",
+    "cache-control": "no-cache, no-transform",
+    connection: "keep-alive",
+    "x-accel-buffering": "no",
+    ...(started ? {
+      "x-handrail-conversation-id": started.conversationId,
+      "x-handrail-turn-id": started.turnId,
+      "x-handrail-mutation-id": started.mutationId,
+    } : {}),
+  }});
+}
+
+/** Protected activity endpoint; the application gateway authorizes and scope-binds the store first. */
+export function createConversationActivityHttpHandler(
+  store: DurableConversationActivityStore,
+  options: { readonly delivery?: LiveConversationActivityDelivery } = {},
+) {
+  return async (request: Request): Promise<Response> => {
+    if (request.method === "GET" && options.delivery) {
+      const subscription = options.delivery.subscribe(request.signal);
+      let initial: readonly ConversationActivityRecord[];
+      try { initial = await store.list(); }
+      catch (error) { subscription.close(); throw error; }
+      const encoder = new TextEncoder();
+      const frames = (async function* () {
+        try {
+          for (const record of initial) yield encoder.encode(`event: activity\ndata: ${JSON.stringify({ record })}\n\n`);
+          for await (const envelope of subscription) yield encoder.encode(
+            `id: ${envelope.deliveryId}\nevent: activity\ndata: ${JSON.stringify(envelope)}\n\n`);
+        } finally { subscription.close(); }
+      })();
+      let cancelled = false;
+      return new Response(new ReadableStream<Uint8Array>({
+        async pull(controller) {
+          try {
+            const frame = await frames.next();
+            if (cancelled) return;
+            if (frame.done) controller.close(); else controller.enqueue(frame.value);
+          } catch (error) { subscription.close(); if (!cancelled) controller.error(error); }
+        },
+        async cancel() { cancelled = true; subscription.close(); await frames.return(); },
+      }), { headers: { "content-type": "text/event-stream; charset=utf-8",
+        "cache-control": "no-cache, no-transform", connection: "keep-alive" } });
+    }
+    if (request.method !== "POST") {
+      return new Response(null, { status: 405,
+        headers: { allow: options.delivery ? "GET, POST" : "POST" } });
+    }
+    try {
+      const input = await request.json() as { readonly operation?: unknown; readonly conversationId?: unknown; readonly observed?: unknown };
+      let value: readonly ConversationActivityRecord[] | ConversationActivityRecord | null;
+      if (input.operation === "list") value = await store.list();
+      else if (input.operation === "mark_read" && typeof input.conversationId === "string") {
+        let observed: ConversationActivityRecord | undefined;
+        if (input.observed !== undefined) {
+          try { observed = parseConversationActivityRecord(input.observed as ConversationActivityRecord); }
+          catch { return new Response(null, { status: 400 }); }
+          if (observed.conversationId !== input.conversationId) return new Response(null, { status: 400 });
+        }
+        const record = await store.markRead(input.conversationId, observed);
+        if (record !== null) await options.delivery?.publish(record);
+        value = record;
+      } else return new Response(null, { status: 400 });
+      return new Response(JSON.stringify({ ok: true, value }), {
+        headers: { "content-type": "application/json; charset=utf-8" },
+      });
+    } catch {
+      return new Response(JSON.stringify({ ok: false, error: { code: "unavailable",
+        message: "Conversation activity is unavailable.", retryable: true } }),
+      { status: 503, headers: { "content-type": "application/json; charset=utf-8" } });
+    }
+  };
+}
+
+export function createApplicationGateway<TEvent, TRequest, TContext extends ApplicationGatewayAuthorizationContext>(
+  options: ApplicationGatewayOptions<TEvent, TRequest, TContext>,
+): ApplicationGateway {
+  if ((options.transport === undefined) === (options.transportFor === undefined)) {
+    throw new TypeError("Exactly one application gateway transport source must be configured");
+  }
+  const maximumBytes = options.maximumRequestBytes ?? 1_048_576;
+  const resolveTransport = async (context: TContext) =>
+    options.transport ?? await options.transportFor!(context);
+  const capabilitiesFor = (transport: ConversationTransport<TEvent, TRequest>): ApplicationGatewayCapabilities => Object.freeze({
+    protocolVersion: APPLICATION_GATEWAY_PROTOCOL_VERSION,
+    authoritativeCancellation: transport.capabilities.authoritativeCancellation.supported,
+    attachments: options.capabilities?.attachments ?? false,
+    presence: options.capabilities?.presence ?? false,
+    activity: options.capabilities?.activity ?? false,
+    ...(options.capabilities?.attachmentDownloads === undefined ? {} : { attachmentDownloads: options.capabilities.attachmentDownloads }),
+    ...(options.capabilities?.transcription === undefined ? {} : { transcription: options.capabilities.transcription }),
+    synchronization: options.capabilities?.synchronization ?? false,
+    ...(options.displayHistoryFor ? { displayHistory: { version: 1 as const,
+      readBundle: true as const, maximumPageSize: CONVERSATION_DISPLAY_LIMITS.maximumPageSize, maximumPageBytes: CONVERSATION_DISPLAY_LIMITS.maximumPageBytes,
+      ...(options.displayControl ? { control: true as const } : {}),
+      ...(options.displayApprovalHistory ? { approvalHistory: true as const } : {}),
+      ...(options.displayPendingApprovals ? { pendingApprovals: true as const } : {}),
+      ...(options.displayRecordText ? { recordText: true as const } : {}),
+      ...(options.displayApprovalReview ? { approvalReview: true as const } : {}),
+      ...(options.displayMessageText ? { messageText: true as const } : {}) } } : {}),
+    ...(options.capabilities?.documentInput === undefined ? {} : { documentInput: options.capabilities.documentInput }),
+    ...(options.capabilities?.assistant === undefined ? {} : { assistant: options.capabilities.assistant }),
+    resources: Object.freeze({ conversations: options.conversations?.capabilities ?? false,
+      ...(options.turnApprovalMode ? { turnApprovalMode: true as const } : {}),
+      approvals: options.approvals !== undefined, titleGeneration: options.titleGeneration !== undefined }),
+  });
+  return Object.freeze({
+    async handle(request: Request): Promise<Response> {
+      let diagnosticAction: ApplicationGatewayAction | "route" = "route";
+      const requestStartedAt = Date.now();
+      const requestId = diagnosticHeader(request, "x-request-id"), traceId = diagnosticHeader(request, "traceparent");
+      const diagnosticCorrelation = {
+        ...(requestId ? { requestId } : {}), ...(traceId ? { traceId } : {}),
+      };
+      try {
+        const pathname = new URL(request.url).pathname.replace(/\/+$/, "");
+        const action: ApplicationGatewayAction | null = pathname.endsWith("/capabilities") ? "capabilities"
+          : pathname.endsWith("/turns/start") ? "start"
+          : pathname.endsWith("/turns/resume") ? "resume"
+          : pathname.endsWith("/turns/cancel") ? "cancel"
+          : pathname.includes("/conversations/") ? "conversations"
+          : pathname.includes("/approvals/") ? "approvals"
+          : pathname.endsWith("/attachments") ? "attachments"
+          : pathname.endsWith("/attachments/content") ? "attachment_download"
+          : pathname.endsWith("/transcriptions") ? "transcription"
+          : pathname.endsWith("/presence") ? "presence"
+          : pathname.endsWith("/activity") ? "activity"
+          : pathname.endsWith("/synchronization") ? "synchronization"
+          : pathname.endsWith("/titles/generate") ? "title_generation" : null;
+        if (action === null) return new Response(null, { status: 404 });
+        diagnosticAction = action;
+        if (((action === "capabilities" || action === "attachment_download") && request.method !== "GET") ||
+          (action !== "capabilities" && action !== "presence" && action !== "activity" &&
+            action !== "attachments" && action !== "attachment_download" && request.method !== "POST")) {
+          return new Response(null, { status: 405, headers: { allow: action === "capabilities" || action === "attachment_download" ? "GET" : "POST" } });
+        }
+        const rejectedRequest = action === "start" && options.rejectStart ? request.clone() : null;
+        let authorizationContext: TContext;
+        try {
+          authorizationContext = await options.authorize(request, action);
+        } catch (error) {
+          const response = authorizationFailure(error);
+          if (rejectedRequest && (response.status === 401 || response.status === 403)) {
+            try {
+              const input = await body<StartTurnInput<TRequest>>(rejectedRequest.clone(), maximumBytes);
+              await options.rejectStart!(rejectedRequest, input, {
+                code: response.status === 401 ? "unauthenticated" : "forbidden",
+                message: "Assistant admission was denied. Your message and attachments are saved.", retryable: false,
+              });
+            } catch (cause) {
+              emitAiDiagnostic(options.diagnostics, { domain: "gateway", operation: "reject_start",
+                phase: "failed", code: "rejection_unsettled", retryable: true, cause });
+            }
+          }
+          return response;
+        }
+        if (action === "capabilities") {
+          return json({ ok: true, value: capabilitiesFor(await resolveTransport(authorizationContext)) });
+        }
+        if (action === "attachments" || action === "attachment_download" || action === "presence" || action === "activity" || action === "synchronization" || action === "transcription") {
+          const handler = options.handlers?.[action];
+          return handler ? handler(request, authorizationContext) : new Response(null, { status: 501 });
+        }
+        if (action === "conversations") {
+          if (pathname.endsWith("/conversations/history")) {
+            if (!options.displayHistoryFor) return new Response(null, { status: 501 });
+            const input = await body<{ operation?: unknown; input?: unknown }>(request, Math.min(maximumBytes, 8192));
+            if (!input || typeof input !== "object" || !input.input || typeof input.input !== "object" || Array.isArray(input.input)) {
+              throw new ConversationDisplayHistoryError("invalid_input", "Invalid history request");
+            }
+            const history = options.displayHistoryFor(authorizationContext);
+            const value = input.operation === "bundle" ? await readDisplayBundle(history, input.input, request.signal)
+              : input.operation === "page" ? await history.page(input.input as ConversationDisplayPageInput)
+              : input.operation === "changes" ? await history.changes(input.input as ConversationDisplayChangesInput)
+              : input.operation === "control" && history.control ? await history.control(input.input as ConversationDisplayControlInput)
+              : input.operation === "content" ? await history.content(input.input as ConversationDisplayContentInput)
+              : input.operation === "approval_review" && history.approvalReview ? await history.approvalReview(input.input as ConversationApprovalDisplayReviewInput)
+                : null;
+            if (value === null) throw new ConversationDisplayHistoryError("invalid_input", "Invalid history operation");
+            const response = json({ ok: true, value });
+            response.headers.set("cache-control", "private, no-store");
+            return response;
+          }
+          if (!options.conversations) return new Response(null, { status: 501 });
+          const input = await body<Record<string, unknown>>(request, maximumBytes);
+          const operation = pathname.slice(pathname.lastIndexOf("/") + 1);
+          const value = operation === "list" ? await options.conversations.list({ ...input, authorizationContext } as unknown as ListConversationsInput<TContext>)
+            : operation === "create" ? await options.conversations.create({ ...input, authorizationContext } as unknown as CreateConversationInput<TContext>)
+            : operation === "get" ? await options.conversations.get({ ...input, authorizationContext } as unknown as GetConversationInput<TContext>)
+            : operation === "rename" ? await options.conversations.rename({ ...input, authorizationContext } as unknown as RenameConversationInput<TContext>)
+            : operation === "clear" ? await options.conversations.clear({ ...input, authorizationContext } as unknown as ClearConversationInput<TContext>)
+            : operation === "archive" ? await options.conversations.archive({ ...input, authorizationContext } as unknown as ArchiveConversationInput<TContext>)
+            : operation === "restore" ? await options.conversations.restore({ ...input, authorizationContext } as unknown as RestoreConversationInput<TContext>)
+            : operation === "permanent-delete" ? await options.conversations.permanentlyDelete({ ...input, authorizationContext } as unknown as PermanentlyDeleteConversationInput<TContext>)
+            : null;
+          return value === null ? new Response(null, { status: 404 }) : json({ ok: true, value });
+        }
+        if (action === "approvals" && pathname.endsWith("/approvals/mode")) {
+          if (!options.turnApprovalMode) return new Response(null, { status: 501 });
+          const input = await body<TurnApprovalModeInput>(request, Math.min(maximumBytes, 8192));
+          const response = json({ ok: true, value: await options.turnApprovalMode(input, authorizationContext) });
+          response.headers.set("cache-control", "private, no-store"); return response;
+        }
+        if (action === "approvals") {
+          if (!options.approvals) return new Response(null, { status: 501 });
+          const input = await body<Record<string, unknown>>(request, maximumBytes);
+          const operation = pathname.slice(pathname.lastIndexOf("/") + 1);
+          if (operation === "transition-display" && options.displayApprovalReview) {
+            const i = input as unknown as ConversationApprovalDisplayDecisionInput;
+            if (typeof i.conversationId !== "string" || !i.conversationId || i.conversationId.length > 512 ||
+              typeof i.proposalId !== "string" || !i.proposalId || i.proposalId.length > 512 ||
+              !Number.isSafeInteger(i.expectedVersion) || i.expectedVersion < 1 ||
+              !["confirmed", "rejected"].includes(i.status) || !/^[a-f0-9]{64}$/u.test(i.proposalBinding)) {
+              throw new ConversationDisplayHistoryError("invalid_input", "Invalid approval decision");
+            }
+            const proposal = await options.approvals.get({ proposalId: i.proposalId as never, permissionContext: authorizationContext });
+            if (!proposal) throw new ConversationDisplayHistoryError("not_found", "Approval not found");
+            if (approvalDisplayProposalBinding(i.conversationId, proposal, i.expectedVersion) !== i.proposalBinding) {
+              throw new ConversationDisplayHistoryError("content_changed", "Approval changed. Reload before deciding.");
+            }
+            const result = await options.approvals.transition({ ...input, permissionContext: authorizationContext } as unknown as TransitionApprovalProposalInput<TContext>);
+            const value = parseConversationApprovalDisplayDecision({ schemaVersion: 1, conversationId: i.conversationId,
+              proposalId: result.proposal_id, proposalVersion: result.proposal_version, status: result.status,
+              proposalBinding: approvalDisplayProposalBinding(i.conversationId, result, i.expectedVersion) }, i);
+            const response = json({ ok: true, value }); response.headers.set("cache-control", "private, no-store"); return response;
+          }
+          const value = operation === "create" ? await options.approvals.create({ ...input, permissionContext: authorizationContext } as unknown as CreateApprovalProposalInput<TContext>)
+            : operation === "get" ? await options.approvals.get({ ...input, permissionContext: authorizationContext } as unknown as GetApprovalProposalInput<TContext>)
+            : operation === "list-group" ? await options.approvals.listGroup({ ...input, permissionContext: authorizationContext } as unknown as ListApprovalProposalGroupInput<TContext>)
+            : operation === "transition" ? await options.approvals.transition({ ...input, permissionContext: authorizationContext } as unknown as TransitionApprovalProposalInput<TContext>)
+            : null;
+          return value === null && operation !== "get" ? new Response(null, { status: 404 }) : json({ ok: true, value });
+        }
+        if (action === "title_generation") {
+          if (!options.titleGeneration) return new Response(null, { status: 501 });
+          const input = await body<{ conversationId: string; idempotencyKey: string }>(request, maximumBytes);
+          return json({ ok: true, value: await options.titleGeneration.generate(input, authorizationContext, request.signal) });
+        }
+        if (action === "start") {
+          const transport = await resolveTransport(authorizationContext);
+          const input = await body<StartTurnInput<TRequest>>(request, maximumBytes);
+          emitAiDiagnostic(options.diagnostics, { domain: "gateway", operation: "start", phase: "started",
+            conversationId: input.conversationId, turnId: input.conversationTurnId, ...diagnosticCorrelation });
+          const result = await transport.startTurn(input);
+          if (!result.ok) {
+            if (rejectedRequest && !result.error.retryable && ["unauthenticated", "forbidden"].includes(result.error.code)) {
+              try { await options.rejectStart!(rejectedRequest, input, result.error); }
+              catch (cause) { emitAiDiagnostic(options.diagnostics, { domain: "gateway", operation: "reject_start",
+                phase: "failed", code: "rejection_unsettled", retryable: true, cause }); }
+            }
+            emitAiDiagnostic(options.diagnostics, { domain: "gateway", operation: "start", phase: "failed",
+              conversationId: input.conversationId, turnId: input.conversationTurnId,
+              code: result.error.code, retryable: result.error.retryable, durationMs: Date.now() - requestStartedAt,
+              ...diagnosticCorrelation });
+            return failure(result.error);
+          }
+          emitAiDiagnostic(options.diagnostics, { domain: "gateway", operation: "start", phase: "succeeded",
+            conversationId: result.value.conversationId, turnId: result.value.turnId,
+            durationMs: Date.now() - requestStartedAt, ...diagnosticCorrelation });
+          return sse(result.value.observation, options.checkpointForEvent, {
+            type: "started", conversationId: result.value.conversationId,
+            turnId: result.value.turnId, mutationId: result.value.mutationId,
+          });
+        }
+        if (action === "resume") {
+          const transport = await resolveTransport(authorizationContext);
+          const input = await body<ResumeTurnInput>(request, maximumBytes);
+          emitAiDiagnostic(options.diagnostics, { domain: "gateway", operation: "resume", phase: "started",
+            conversationId: input.conversationId, turnId: input.turnId, ...diagnosticCorrelation });
+          const result = await transport.resumeTurn(input);
+          emitAiDiagnostic(options.diagnostics, { domain: "gateway", operation: "resume",
+            phase: result.ok ? "succeeded" : "failed", conversationId: input.conversationId, turnId: input.turnId,
+            durationMs: Date.now() - requestStartedAt, ...diagnosticCorrelation,
+            ...(!result.ok ? { code: result.error.code, retryable: result.error.retryable } : {}) });
+          return result.ok ? sse(result.value, options.checkpointForEvent) : failure(result.error);
+        }
+        const transport = await resolveTransport(authorizationContext);
+        const cancel = transport.capabilities.authoritativeCancellation;
+        if (!cancel.supported) return new Response(null, { status: 501 });
+        const input = await body<CancelTurnInput>(request, maximumBytes);
+        emitAiDiagnostic(options.diagnostics, { domain: "gateway", operation: "cancel", phase: "started",
+          conversationId: input.conversationId, turnId: input.turnId, ...diagnosticCorrelation });
+        const result = await cancel.capability.cancelTurn(input);
+        emitAiDiagnostic(options.diagnostics, { domain: "gateway", operation: "cancel",
+          phase: result.ok ? "succeeded" : "failed", conversationId: input.conversationId, turnId: input.turnId,
+          durationMs: Date.now() - requestStartedAt, ...diagnosticCorrelation,
+          ...(!result.ok ? { code: result.error.code, retryable: result.error.retryable } : {}) });
+        return result.ok ? json(result) : failure(result.error);
+      } catch (error) {
+        emitAiDiagnostic(options.diagnostics, { domain: "gateway", operation: diagnosticAction,
+          phase: "failed", code: error instanceof Error ? error.name : "unknown", retryable: false,
+          durationMs: Date.now() - requestStartedAt, ...diagnosticCorrelation, cause: error });
+        return publicFailure(error);
+      }
+    },
+  });
+}
+
+export interface ApplicationGatewayTransportOptions<TEvent, TSynchronization = unknown> {
+  readonly baseUrl: string;
+  readonly fetch?: typeof globalThis.fetch;
+  /** Supplies application-owned cookies, bearer tokens, CSRF headers, and correlation metadata. */
+  readonly protectedRequest?: (input: RequestInit & { readonly url: string }) => Promise<RequestInit> | RequestInit;
+  readonly decodeEvent?: (value: unknown) => TEvent;
+  readonly capabilities?: ApplicationGatewayCapabilities;
+  /** Application-specific durable sync adapter, enabled only when the server also negotiates it. */
+  readonly synchronization?: TSynchronization;
+  readonly diagnostics?: AiDiagnosticSink;
+}
+
+export type ApplicationGatewayAttachmentSource = Blob;
+
+export interface ApplicationGatewayPresenceClient {
+  publish(conversationId: string, kind: "upsert" | "leave", record: PresenceRecord): Promise<void>;
+  subscribe(conversationId: string, signal?: AbortSignal): AsyncIterable<LivePresenceEnvelope>;
+}
+
+function createGatewayPresenceClient<TEvent>(options: ApplicationGatewayTransportOptions<TEvent>): ApplicationGatewayPresenceClient {
+  const fetcher = options.fetch ?? globalThis.fetch;
+  const urlFor = (conversationId: string) => `${options.baseUrl.replace(/\/+$/, "")}/presence?conversationId=${encodeURIComponent(conversationId)}`;
+  return Object.freeze({
+    async publish(conversationId: string, kind: "upsert" | "leave", record: PresenceRecord) {
+      const url = urlFor(conversationId);
+      const initial: RequestInit = { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ kind, record }) };
+      const response = await fetcher(url, await options.protectedRequest?.({ url, ...initial }) ?? initial);
+      if (!response.ok) throw new TypeError("Presence publish failed");
+    },
+    subscribe(conversationId: string, signal?: AbortSignal) {
+      const url = urlFor(conversationId);
+      return (async function* () {
+        const initial: RequestInit = { method: "GET", ...(signal ? { signal } : {}) };
+        const response = await fetcher(url, await options.protectedRequest?.({ url, ...initial }) ?? initial);
+        if (!response.ok || !response.body) throw new TypeError("Presence subscription failed");
+        for await (const frame of parseServerSentEvents(response.body)) {
+          if (frame.data) yield JSON.parse(frame.data) as LivePresenceEnvelope;
+        }
+      })();
+    },
+  });
+}
+
+function createGatewayAttachmentUploadAdapter<TEvent>(
+  options: ApplicationGatewayTransportOptions<TEvent>,
+  capability: Exclude<ApplicationGatewayCapabilities["attachments"], false>,
+): AttachmentUploadAdapter<ApplicationGatewayAttachmentSource> | null {
+  const uploadUrl = capability.uploadUrl;
+  if (!uploadUrl || typeof FormData === "undefined") return null;
+  const fetcher = options.fetch ?? globalThis.fetch;
+  return {
+    async upload(request) {
+      if (request.metadata.byteSize > capability.maximumBytesPerFile ||
+        !capability.acceptedMediaTypes.some((accepted) => accepted.endsWith("/*")
+          ? request.metadata.mediaType.startsWith(accepted.slice(0, -1)) : accepted === request.metadata.mediaType)) {
+        throw new TypeError("Attachment does not satisfy negotiated gateway limits");
+      }
+      const url = /^[a-z][a-z0-9+.-]*:/iu.test(uploadUrl) || uploadUrl.startsWith("/")
+        ? new URL(uploadUrl, options.baseUrl).toString()
+        : `${options.baseUrl.replace(/\/+$/u, "")}/${uploadUrl.replace(/^\/+/, "")}`;
+      const form = new FormData();
+      form.set("file", request.source, request.metadata.filename ?? "attachment");
+      form.set("idempotencyKey", request.idempotencyKey);
+      form.set("kind", request.metadata.kind ?? "image");
+      if (request.metadata.conversationId) form.set("conversationId", request.metadata.conversationId);
+      const initial: RequestInit = { method: "POST", body: form, signal: request.signal };
+      const response = await fetcher(url, await options.protectedRequest?.({ url, ...initial }) ?? initial);
+      if (!response.ok) throw new TypeError("Attachment upload failed");
+      request.onProgress({ uploadedBytes: request.metadata.byteSize, totalBytes: request.metadata.byteSize });
+      const result = await response.json() as { readonly ok?: boolean; readonly value?: unknown };
+      if (!result.ok) throw new TypeError("Attachment upload failed");
+      const value = result.value as Partial<AttachmentReference> | undefined;
+      if (!value || typeof value.attachment_id !== "string" || typeof value.content_ref !== "string" ||
+        value.media_type !== request.metadata.mediaType || value.byte_size !== request.metadata.byteSize) {
+        throw new TypeError("Attachment gateway returned an invalid reference");
+      }
+      return Object.freeze({ attachment_id: value.attachment_id, content_ref: value.content_ref,
+        media_type: value.media_type, byte_size: value.byte_size,
+        ...(typeof value.filename === "string" ? { filename: value.filename } : {}) });
+    },
+  };
+}
+
+export async function negotiateApplicationGatewayCapabilities(
+  options: Pick<ApplicationGatewayTransportOptions<unknown>, "baseUrl" | "fetch" | "protectedRequest" | "diagnostics">,
+): Promise<ApplicationGatewayCapabilities> {
+  const fetcher = options.fetch ?? globalThis.fetch;
+  const url = `${options.baseUrl.replace(/\/+$/, "")}/capabilities`;
+  const initial: RequestInit = { method: "GET" };
+  return diagnoseAiOperation(options.diagnostics,
+    { domain: "gateway", operation: "capabilities" }, async () => {
+      const response = await fetcher(url, await options.protectedRequest?.({ url, ...initial }) ?? initial);
+      if (!response.ok) throw new TypeError("Application gateway capability negotiation failed");
+      const result = await response.json() as { readonly ok?: boolean; readonly value?: ApplicationGatewayCapabilities };
+      if (!result.ok || result.value?.protocolVersion !== APPLICATION_GATEWAY_PROTOCOL_VERSION) {
+        throw new TypeError("Application gateway returned an incompatible protocol version");
+      }
+      return Object.freeze(result.value);
+    });
+}
+
+type WithoutAuthorization<T> = Omit<T, "authorizationContext" | "permissionContext">;
+
+export type ApplicationGatewayApprovalTransitionInput =
+  Omit<WithoutAuthorization<TransitionApprovalProposalInput<unknown>>, "attribution"> & {
+    readonly conversationId: string;
+  };
+
+export interface ApplicationGatewayResourceClient {
+  /** Available when the negotiated gateway reports `activity: true`. */
+  listActivity?(): Promise<readonly ConversationActivityRecord[]>;
+  /** Available when the negotiated gateway reports `activity: true`. */
+  markActivityRead?(input: { readonly conversationId: string; readonly observed?: ConversationActivityRecord }): Promise<ConversationActivityRecord | null>;
+  /** Protected SSE stream; callers should retain polling as a convergence fallback. */
+  subscribeActivity?(signal?: AbortSignal): AsyncIterable<ConversationActivityRecord>;
+  listConversations(input: WithoutAuthorization<ListConversationsInput<unknown>>): Promise<ListConversationsResult>;
+  createConversation(input: WithoutAuthorization<CreateConversationInput<unknown>>): Promise<CreateConversationResult>;
+  getConversation(input: WithoutAuthorization<GetConversationInput<unknown>>): Promise<GetConversationResult>;
+  renameConversation(input: WithoutAuthorization<RenameConversationInput<unknown>>): Promise<RenameConversationResult>;
+  clearConversation(input: WithoutAuthorization<ClearConversationInput<unknown>>): Promise<ClearConversationResult>;
+  archiveConversation(input: WithoutAuthorization<ArchiveConversationInput<unknown>>): Promise<ArchiveConversationResult>;
+  restoreConversation(input: WithoutAuthorization<RestoreConversationInput<unknown>>): Promise<RestoreConversationResult>;
+  permanentlyDeleteConversation(input: WithoutAuthorization<PermanentlyDeleteConversationInput<unknown>>): Promise<PermanentlyDeleteConversationResult>;
+  createApproval(input: WithoutAuthorization<CreateApprovalProposalInput<unknown>>): Promise<ConversationApprovalProposalRecord>;
+  getApproval(input: WithoutAuthorization<GetApprovalProposalInput<unknown>>): Promise<ConversationApprovalProposalRecord | null>;
+  listApprovalGroup(input: WithoutAuthorization<ListApprovalProposalGroupInput<unknown>>): Promise<readonly ConversationApprovalProposalRecord[]>;
+  turnApprovalMode?(input: TurnApprovalModeInput): Promise<TurnApprovalModeResult>;
+  transitionApproval(input: ApplicationGatewayApprovalTransitionInput): Promise<ConversationApprovalProposalRecord>;
+  generateTitle(input: { readonly conversationId: string; readonly idempotencyKey: string }): Promise<string>;
+  pullSnapshot(input: PullSnapshotInput): Promise<PullSnapshotResult>;
+  readSince(input: ReadSinceInput): Promise<ReadSinceResult>;
+  appendMutations(input: AppendMutationsInput): Promise<AppendMutationsResult>;
+}
+
+export class ApplicationGatewayResourceError extends Error {
+  readonly retryAfterMs?: number;
+  readonly transportCode: TransportError["code"];
+  readonly retryable: boolean;
+  readonly resourceDomain: ApplicationGatewayResourceDomain | undefined;
+  readonly resourceCode: string | undefined;
+
+  constructor(input: {
+    readonly message: string;
+    readonly transportCode: TransportError["code"];
+    readonly retryable: boolean;
+    readonly retryAfterMs?: number;
+    readonly resourceError?: ApplicationGatewayResourceFailure;
+  }) {
+    super(input.message);
+    this.name = "ApplicationGatewayResourceError";
+    this.transportCode = input.transportCode;
+    this.retryable = input.retryable;
+    if (input.retryAfterMs !== undefined) this.retryAfterMs = input.retryAfterMs;
+    this.resourceDomain = input.resourceError?.domain;
+    this.resourceCode = input.resourceError?.code;
+  }
+}
+
+function fallbackCatalogCapabilities(): ConversationCatalogCapabilities {
+  const unsupported = Object.freeze({ supported: false as const, reason: "not_implemented" as const });
+  return Object.freeze({
+    rename: unsupported,
+    clear: unsupported,
+    archive: unsupported,
+    restore: unsupported,
+    permanentDelete: unsupported,
+  });
+}
+
+function catalogErrorCode(
+  error: unknown,
+): ConversationCatalogErrorCode {
+  if (error instanceof ApplicationGatewayResourceError) {
+    const resourceCode = error.resourceDomain === "conversation_catalog"
+      ? error.resourceCode
+      : undefined;
+    if (resourceCode === "invalid_input" || resourceCode === "not_found" ||
+      resourceCode === "version_conflict" || resourceCode === "idempotency_conflict" ||
+      resourceCode === "forbidden" || resourceCode === "unsupported" ||
+      resourceCode === "unavailable") return resourceCode;
+    if (error.transportCode === "not_found") return "not_found";
+    if (error.transportCode === "forbidden" || error.transportCode === "unauthenticated") {
+      return "forbidden";
+    }
+    if (error.transportCode === "conflict") return "version_conflict";
+    if (error.transportCode === "invalid_request") return "invalid_input";
+  }
+  return "unavailable";
+}
+
+function catalogOperation<T>(
+  operation: ConversationCatalogAuthorizationAction,
+  execute: () => Promise<T>,
+): Promise<T> {
+  return execute().catch((error: unknown) => {
+    if (error instanceof ConversationCatalogError) throw error;
+    throw new ConversationCatalogError(catalogErrorCode(error), operation);
+  });
+}
+
+function withoutAuthorization<T extends { readonly authorizationContext: unknown }>(
+  input: T,
+): Omit<T, "authorizationContext"> {
+  const request: Record<string, unknown> = { ...input };
+  Reflect.deleteProperty(request, "authorizationContext");
+  return request as Omit<T, "authorizationContext">;
+}
+
+/**
+ * Adapts the protected gateway resource client to the exact ConversationCatalog
+ * contract consumed by useConversationPicker and ConversationRuntimeRegistry.
+ * The authorization context is intentionally ignored: the gateway derives it
+ * from the protected request and never trusts a client-supplied identity.
+ */
+export function createApplicationGatewayConversationCatalog<TAuthorizationContext = unknown>(
+  client: ApplicationGatewayResourceClient,
+  capabilities?: ApplicationGatewayCapabilities,
+): ConversationCatalog<TAuthorizationContext> {
+  const negotiated = capabilities?.resources?.conversations;
+  const catalogCapabilities = negotiated && typeof negotiated === "object"
+    ? negotiated
+    : fallbackCatalogCapabilities();
+  return Object.freeze({
+    capabilities: catalogCapabilities,
+    list: (input: ListConversationsInput<TAuthorizationContext>) => catalogOperation("list",
+      () => client.listConversations(withoutAuthorization(input))),
+    create: (input: CreateConversationInput<TAuthorizationContext>) => catalogOperation("create",
+      () => client.createConversation(withoutAuthorization(input))),
+    get: (input: GetConversationInput<TAuthorizationContext>) => catalogOperation("get",
+      () => client.getConversation(withoutAuthorization(input))),
+    rename: (input: RenameConversationInput<TAuthorizationContext>) => catalogOperation("rename",
+      () => client.renameConversation(withoutAuthorization(input))),
+    clear: (input: ClearConversationInput<TAuthorizationContext>) => catalogOperation("clear",
+      () => client.clearConversation(withoutAuthorization(input))),
+    archive: (input: ArchiveConversationInput<TAuthorizationContext>) => catalogOperation("archive",
+      () => client.archiveConversation(withoutAuthorization(input))),
+    restore: (input: RestoreConversationInput<TAuthorizationContext>) => catalogOperation("restore",
+      () => client.restoreConversation(withoutAuthorization(input))),
+    permanentlyDelete: (input: PermanentlyDeleteConversationInput<TAuthorizationContext>) => catalogOperation(
+      "permanent_delete",
+      () => client.permanentlyDeleteConversation(withoutAuthorization(input)),
+    ),
+  });
+}
+
+/** Typed, cross-platform resource client paired with the application gateway. */
+export function createApplicationGatewayResourceClient(
+  options: Pick<ApplicationGatewayTransportOptions<unknown>, "baseUrl" | "fetch" | "protectedRequest" | "diagnostics">,
+): ApplicationGatewayResourceClient {
+  const fetcher = options.fetch ?? globalThis.fetch;
+  const base = options.baseUrl.replace(/\/+$/, "");
+  const invoke = async <T>(path: string, input: unknown): Promise<T> => {
+    const startedAt = Date.now();
+    const domain = path.startsWith("/approvals/") ? "approval" as const : "gateway" as const;
+    emitAiDiagnostic(options.diagnostics, { domain, operation: path, phase: "started" });
+    const url = `${base}${path}`;
+    const initial: RequestInit = { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(input) };
+    let statusCode: number | undefined;
+    try {
+      const response = await fetcher(url, await options.protectedRequest?.({ url, ...initial }) ?? initial);
+      statusCode = response.status;
+      const result = (await response.json().catch(() => ({})) ?? {}) as {
+        readonly ok?: boolean;
+        readonly value?: T;
+        readonly error?: Partial<TransportError>;
+        readonly resourceError?: ApplicationGatewayResourceFailure;
+      };
+      if (!response.ok || !result.ok) {
+        const error = responseFailure(response, result.error);
+        throw new ApplicationGatewayResourceError({
+          ...error, transportCode: error.code,
+          ...(result.resourceError === undefined ? {} : { resourceError: result.resourceError }),
+        });
+      }
+      emitAiDiagnostic(options.diagnostics, { domain, operation: path, phase: "succeeded",
+        durationMs: Date.now() - startedAt, statusCode: response.status });
+      return result.value as T;
+    } catch (cause) {
+      const resourceError = cause instanceof ApplicationGatewayResourceError ? cause : undefined;
+      emitAiDiagnostic(options.diagnostics, {
+        domain: resourceError?.resourceDomain === "approval_proposals" ? "approval" : domain,
+        operation: path, phase: "failed", durationMs: Date.now() - startedAt,
+        code: resourceError?.resourceCode ?? resourceError?.transportCode ??
+          (cause instanceof Error ? cause.name : "unknown"),
+        retryable: resourceError?.retryable ?? true,
+        ...(statusCode === undefined ? {} : { statusCode }), cause,
+      });
+      throw cause;
+    }
+  };
+  const client: ApplicationGatewayResourceClient = {
+    listActivity: () => invoke<readonly ConversationActivityRecord[]>("/activity", { operation: "list" }),
+    markActivityRead: (input) => invoke<ConversationActivityRecord | null>("/activity", { operation: "mark_read", ...input }),
+    subscribeActivity(signal?: AbortSignal) {
+      const url = `${base}/activity`;
+      return (async function* () {
+        const initial: RequestInit = { method: "GET", ...(signal ? { signal } : {}) };
+        const response = await fetcher(url,
+          await options.protectedRequest?.({ url, ...initial }) ?? initial);
+        if (!response.ok || !response.body) throw new TypeError("Activity subscription failed");
+        for await (const frame of parseServerSentEvents(response.body)) {
+          if (!frame.data) continue;
+          const value = JSON.parse(frame.data) as { readonly record?: ConversationActivityRecord };
+          if (value.record) yield parseConversationActivityRecord(value.record);
+        }
+      })();
+    },
+    listConversations: (input) => invoke<ListConversationsResult>("/conversations/list", input),
+    createConversation: (input) => invoke<CreateConversationResult>("/conversations/create", input),
+    getConversation: (input) => invoke<GetConversationResult>("/conversations/get", input),
+    renameConversation: (input) => invoke<RenameConversationResult>("/conversations/rename", input),
+    clearConversation: (input) => invoke<ClearConversationResult>("/conversations/clear", input),
+    archiveConversation: (input) => invoke<ArchiveConversationResult>("/conversations/archive", input),
+    restoreConversation: (input) => invoke<RestoreConversationResult>("/conversations/restore", input),
+    permanentlyDeleteConversation: (input) => invoke<PermanentlyDeleteConversationResult>("/conversations/permanent-delete", input),
+    createApproval: (input) => invoke<ConversationApprovalProposalRecord>("/approvals/create", input),
+    getApproval: (input) => invoke<ConversationApprovalProposalRecord | null>("/approvals/get", input),
+    listApprovalGroup: (input) => invoke<readonly ConversationApprovalProposalRecord[]>("/approvals/list-group", input),
+    turnApprovalMode: (input) => invoke<TurnApprovalModeResult>("/approvals/mode", input),
+    transitionApproval: (input) => invoke<ConversationApprovalProposalRecord>("/approvals/transition", input),
+    generateTitle: (input) => invoke<string>("/titles/generate", input),
+    pullSnapshot: (input) => invoke<PullSnapshotResult>("/synchronization", { operation: "pull_snapshot", input }),
+    readSince: (input) => invoke<ReadSinceResult>("/synchronization", { operation: "read_since", input }),
+    appendMutations: (input) => invoke<AppendMutationsResult>("/synchronization", { operation: "append_mutations", input }),
+  };
+  return Object.freeze(client);
+}
+
+/** Bounded display reads with cancellation. Negotiate displayHistory before use;
+ * old servers retain their explicit canonical synchronization contract. */
+export function createApplicationGatewayDisplayHistory(
+  options: Pick<ApplicationGatewayTransportOptions<unknown>, "baseUrl" | "fetch" | "protectedRequest"> & {
+    readonly historyTimeoutMilliseconds?: number;
+  },
+) {
+  const fetcher = options.fetch ?? globalThis.fetch;
+  const timeout = options.historyTimeoutMilliseconds ?? 30_000;
+  if (!Number.isSafeInteger(timeout) || timeout < 1 || timeout > 300_000) throw new TypeError("Invalid display history timeout");
+  const url = `${options.baseUrl.replace(/\/+$/u, "")}/conversations/history`;
+  const abortable = <T>(work: Promise<T>, signal?: AbortSignal): Promise<T> => {
+    if (!signal) return work;
+    return new Promise<T>((resolve, reject) => {
+      const abort = () => { signal.removeEventListener("abort", abort); reject(signal.reason ?? new DOMException("Aborted", "AbortError")); };
+      if (signal.aborted) abort(); else signal.addEventListener("abort", abort, { once: true });
+      work.then(value => { signal.removeEventListener("abort", abort);
+        if (signal.aborted) { if (value instanceof Response) void value.body?.cancel().catch(() => {}); return; }
+        resolve(value);
+      }, error => { signal.removeEventListener("abort", abort); reject(error); });
+    });
+  };
+  const request = async <T>(operation: string, input: unknown, maximumBytes: number, signal: AbortSignal): Promise<T> => {
+    signal?.throwIfAborted();
+    const target = operation === "approval_decision" ? `${options.baseUrl.replace(/\/+$/u, "")}/approvals/transition-display` : url;
+    const payload = JSON.stringify(operation === "approval_decision" ? input : { operation, input });
+    if (encoder.encode(payload).byteLength > 8192) throw new TypeError("Display history request is too large");
+    const initial: RequestInit = { method: "POST", headers: { "content-type": "application/json" },
+      body: payload, ...(signal ? { signal } : {}) };
+    const protectedInit = await abortable(Promise.resolve(options.protectedRequest?.({ url: target, ...initial }) ?? initial), signal);
+    signal?.throwIfAborted();
+    const response = await abortable(fetcher(target, { ...initial, ...protectedInit, redirect: "error", ...(signal ? { signal } : {}) }), signal);
+    const reader = response.body?.getReader();
+    if (!reader) {
+      if (!response.ok) {
+        const error = responseFailure(response);
+        throw new ApplicationGatewayResourceError({ ...error, transportCode: error.code });
+      }
+      throw new TypeError("Empty display history response");
+    }
+    const chunks: Uint8Array[] = []; let size = 0;
+    try {
+      for (;;) {
+        const next = await abortable(reader.read(), signal);
+        if (next.done) break;
+        size += next.value.byteLength;
+        if (size > maximumBytes) throw new TypeError("Display history response exceeded its byte budget");
+        chunks.push(next.value);
+      }
+    } finally { void reader.cancel().catch(() => {}); reader.releaseLock(); }
+    signal?.throwIfAborted();
+    const bytes = new Uint8Array(size); let offset = 0;
+    for (const chunk of chunks) { bytes.set(chunk, offset); offset += chunk.byteLength; }
+    let result: { ok?: boolean; value?: T; error?: Partial<TransportError>; resourceError?: ApplicationGatewayResourceFailure };
+    try { result = JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(bytes)); }
+    catch (cause) { if (response.ok) throw cause; result = {}; }
+    if (!response.ok || result?.ok !== true || result?.value === undefined) {
+      const error = responseFailure(response, result?.error);
+      throw new ApplicationGatewayResourceError({ ...error, transportCode: error.code,
+        ...(result?.resourceError ? { resourceError: result.resourceError } : {}) });
+    }
+    return result.value;
+  };
+  const invoke = async <T>(operation: string, input: unknown, maximumBytes: number, external?: AbortSignal): Promise<T> => {
+    external?.throwIfAborted();
+    const controller = new AbortController();
+    const abort = () => controller.abort(external?.reason);
+    external?.addEventListener("abort", abort, { once: true });
+    const deadline = setTimeout(() => controller.abort(new DOMException("History took too long to load", "TimeoutError")), timeout);
+    try { return await request<T>(operation, input, maximumBytes, controller.signal); }
+    finally { clearTimeout(deadline); external?.removeEventListener("abort", abort); }
+  };
+  const pageBudget = (input: ConversationDisplayPageInput | ConversationDisplayChangesInput) => {
+    const bytes = input.maximumBytes ?? CONVERSATION_DISPLAY_LIMITS.defaultPageBytes;
+    const count = input.limit ?? CONVERSATION_DISPLAY_LIMITS.defaultPageSize;
+    if (!Number.isSafeInteger(bytes) || bytes < 8192 || bytes > CONVERSATION_DISPLAY_LIMITS.maximumPageBytes ||
+      !Number.isSafeInteger(count) || count < 1 || count > CONVERSATION_DISPLAY_LIMITS.maximumPageSize) {
+      throw new TypeError("Invalid display history page bounds");
+    }
+    return bytes + 1024;
+  };
+  return Object.freeze({
+    decideApproval: async (input: ConversationApprovalDisplayDecisionInput, signal?: AbortSignal) =>
+      parseConversationApprovalDisplayDecision(await invoke("approval_decision", input, 8192, signal), input),
+    approvalReview: async (input: ConversationApprovalDisplayReviewInput, signal?: AbortSignal) =>
+      parseConversationApprovalDisplayReview(await invoke("approval_review", input, 65536, signal), input),
+    control: async (input: ConversationDisplayControlInput, signal?: AbortSignal) =>
+      parseConversationDisplayControl(await invoke("control", input, CONVERSATION_DISPLAY_CONTROL_MAXIMUM_BYTES + 1024, signal), input),
+    page: async (input: ConversationDisplayPageInput, signal?: AbortSignal) =>
+      parseConversationDisplayPage(await invoke("page", input, pageBudget(input), signal), input) as Awaited<ReturnType<ConversationDisplayHistory["page"]>>,
+    content: async (input: ConversationDisplayContentInput, signal?: AbortSignal) => {
+      const chunk = await invoke<Awaited<ReturnType<ConversationDisplayHistory["content"]>>>("content", input, 65536, signal);
+      const plain = input.format === "message-text" || input.format === "record-text";
+      if (!chunk || chunk.encoding !== (plain ? "plain-text" : "json-text") || typeof chunk.text !== "string" || Array.from(chunk.text).length > 8192 ||
+        !Number.isSafeInteger(chunk.revision) || chunk.revision < 1 || input.revision !== undefined && chunk.revision !== input.revision ||
+        chunk.nextOffset !== null && (chunk.text.length === 0 ||
+          plain && Array.from(chunk.text).length !== 8192 ||
+          chunk.nextOffset !== (input.offset ?? 0) + Array.from(chunk.text).length)) {
+        throw new TypeError("Invalid display history content response");
+      }
+      return chunk;
+    },
+    changes: async (input: ConversationDisplayChangesInput, signal?: AbortSignal) =>
+      parseConversationDisplayPage(await invoke("changes", input, pageBudget(input), signal), input) as Awaited<ReturnType<ConversationDisplayHistory["changes"]>>,
+  });
+}
+
+/** A bounded transport envelope, not a snapshot or authorization cache. Every
+ * constituent operation passes through the scoped store's ordinary authorization
+ * and parsers. Callers must fence independently advancing projection revisions. */
+async function readDisplayBundle(history: ConversationDisplayHistory, raw: unknown, signal: AbortSignal) {
+  const input = raw as { conversationId?: unknown; reads?: unknown; contextFromPage?: unknown; tailFromChanges?: unknown };
+  if (typeof input.conversationId !== "string" || !Array.isArray(input.reads) ||
+      input.reads.length < 1 || input.reads.length > 4) {
+    throw new ConversationDisplayHistoryError("invalid_input", "Invalid history bundle");
+  }
+  const reads = input.reads as { operation: string; input: ConversationDisplayPageInput & ConversationDisplayChangesInput & ConversationDisplayControlInput }[];
+  if (reads.some(read => !read || !["control", "page", "changes"].includes(read.operation) ||
+      !read.input || read.input.conversationId !== input.conversationId)) {
+    throw new ConversationDisplayHistoryError("invalid_input", "Invalid history bundle scope");
+  }
+  if (input.contextFromPage !== undefined && (input.contextFromPage !== 1 || reads.length > 3 ||
+      reads[0]?.operation !== "control" || reads[1]?.operation !== "page" ||
+      reads[1].input.view !== undefined || reads[1].input.anchor !== undefined || reads[1].input.cursor !== undefined)) {
+    throw new ConversationDisplayHistoryError("invalid_input", "Invalid bundled context intent");
+  }
+  const tailIds = input.tailFromChanges;
+  if (tailIds !== undefined && (input.contextFromPage !== undefined || reads.length > 3 ||
+      reads[0]?.operation !== "control" || reads[1]?.operation !== "changes" || reads[1].input.cursor !== undefined ||
+      !Array.isArray(tailIds) || tailIds.length > 90 || new Set(tailIds).size !== tailIds.length ||
+      tailIds.some(id => typeof id !== "string" || !id.length || id.length > 512))) {
+    throw new ConversationDisplayHistoryError("invalid_input", "Invalid bundled tail intent");
+  }
+  const results: unknown[] = [];
+  for (const read of reads) {
+    signal.throwIfAborted();
+    const value = read.operation === "control" && history.control ? await history.control(read.input)
+      : read.operation === "page" ? await history.page(read.input)
+      : read.operation === "changes" ? await history.changes(read.input) : null;
+    if (value === null) throw new ConversationDisplayHistoryError("invalid_input", "Unsupported history bundle read");
+    results.push(value);
+  }
+  signal.throwIfAborted();
+  let related = null;
+  if (input.contextFromPage === 1) {
+    const control = parseConversationDisplayControl(results[0], reads[0]!.input);
+    const page = parseConversationDisplayPage(results[1], reads[1]!.input);
+    if (control.status === "ready" && page.status === "ready" && page.generation === control.generation && page.revision === control.revision) {
+      const view = relatedViews(page.records.map(record => record.id), (control.activeTurn ?? control.latestTurn)?.turnId)[0];
+      if (view) {
+        const request = { conversationId: input.conversationId, limit: 30, maximumBytes: 65536, view };
+        const value = await history.page(request);
+        signal.throwIfAborted(); related = { input: request, value };
+      }
+    }
+  }
+  let tail = null;
+  if (Array.isArray(tailIds)) {
+    const control = parseConversationDisplayControl(results[0], reads[0]!.input);
+    const changes = parseConversationDisplayPage(results[1], reads[1]!.input);
+    if (control.status === "ready" && changes.status === "ready" && changes.nextCursor === null &&
+        control.generation === changes.generation && control.revision === changes.revision) {
+      let messageIds = tailIds as string[];
+      if (changes.records.some(record => record.kind === "message" && !record.deleted && !messageIds.includes(record.id))) {
+        const request = { conversationId: input.conversationId, limit: reads[1]!.input.limit ?? 30,
+          maximumBytes: reads[1]!.input.maximumBytes ?? 65536 };
+        const value = await history.page(request); signal.throwIfAborted();
+        tail = { input: request, value };
+        const page = parseConversationDisplayPage(value, request);
+        messageIds = page.status === "ready" && page.generation === control.generation ? page.records.map(record => record.id) : [];
+      } else {
+        const removed = new Set(changes.records.filter(record => record.kind === "message" && record.deleted).map(record => record.id));
+        messageIds = messageIds.filter(id => !removed.has(id));
+      }
+      const view = relatedViews(messageIds, (control.activeTurn ?? control.latestTurn)?.turnId)[0];
+      if (view) {
+        const request = { conversationId: input.conversationId, limit: 30, maximumBytes: 65536, view };
+        const value = await history.page(request); signal.throwIfAborted();
+        related = { input: request, value };
+      }
+    }
+  }
+  return { results, related, tail };
+}
+
+async function readGatewayStream<TEvent>(
+  response: Response,
+  decodeEvent: (value: unknown) => TEvent,
+  started: (value: Extract<GatewayStreamMessage<TEvent>, { type: "started" }>) => void,
+  disconnectRequest: () => void,
+): Promise<TurnObservation<TEvent>> {
+  if (!response.ok || response.body === null) throw response;
+  let resolveResult!: (result: TurnObservationResult) => void;
+  const result = new Promise<TurnObservationResult>((resolve) => { resolveResult = resolve; });
+  let checkpoint = EMPTY_CHECKPOINT;
+  const streamController = new AbortController();
+  const events = (async function* () {
+    let terminal = false;
+    try {
+      for await (const frame of parseServerSentEvents(response.body!, { signal: streamController.signal })) {
+        if (!frame.data) continue;
+        const message = JSON.parse(frame.data) as GatewayStreamMessage<unknown>;
+        if (message.type === "started") started(message);
+        else if (message.type === "event") { checkpoint = message.checkpoint; yield decodeEvent(message.event); }
+        else if (message.type === "terminal") { terminal = true; resolveResult(message.result); }
+      }
+      if (!terminal) resolveResult({ status: "disconnected", checkpoint });
+    } catch { resolveResult({ status: "disconnected", checkpoint }); }
+  })();
+  return { events, result, disconnect() {
+    streamController.abort();
+    disconnectRequest();
+    resolveResult({ status: "disconnected", checkpoint });
+  } };
+}
+
+/** Browser and React-Native-compatible transport for an application-owned gateway. */
+export function createApplicationGatewayTransport<TEvent = unknown, TRequest = unknown, TSynchronization = unknown>(
+  options: ApplicationGatewayTransportOptions<TEvent, TSynchronization>,
+): ConversationTransport<TEvent, TRequest, AttachmentUploadAdapter<ApplicationGatewayAttachmentSource>, ApplicationGatewayPresenceClient, TSynchronization> {
+  const fetcher = options.fetch ?? globalThis.fetch;
+  const base = options.baseUrl.replace(/\/+$/, "");
+  const decode = options.decodeEvent ?? ((value: unknown) => value as TEvent);
+  const invoke = async (path: string, payload: unknown, signal?: AbortSignal): Promise<Response> => {
+    const url = `${base}${path}`;
+    const initial: RequestInit = { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(payload), ...(signal ? { signal } : {}) };
+    return fetcher(url, await options.protectedRequest?.({ url, ...initial }) ?? initial);
+  };
+  const cancellation = {
+    async cancelTurn(input: CancelTurnInput): Promise<TransportResult<AuthoritativeCancelTurnResult>> {
+      const startedAt = Date.now();
+      emitAiDiagnostic(options.diagnostics, { domain: "gateway", operation: "cancel", phase: "started",
+        conversationId: input.conversationId, turnId: input.turnId });
+      try {
+        const response = await invoke("/turns/cancel", input);
+        const result = await response.json() as TransportResult<AuthoritativeCancelTurnResult>;
+        emitAiDiagnostic(options.diagnostics, { domain: "gateway", operation: "cancel",
+          phase: result.ok ? "succeeded" : "failed", conversationId: input.conversationId,
+          turnId: input.turnId, durationMs: Date.now() - startedAt, statusCode: response.status,
+          ...(!result.ok ? { code: result.error.code, retryable: result.error.retryable } : {}) });
+        return result;
+      } catch (cause) {
+        emitAiDiagnostic(options.diagnostics, { domain: "gateway", operation: "cancel", phase: "failed",
+          conversationId: input.conversationId, turnId: input.turnId, durationMs: Date.now() - startedAt,
+          code: cause instanceof Error ? cause.name : "unknown", retryable: true, cause });
+        return { ok: false, error: { code: "unavailable", message: "The application gateway is unavailable.", retryable: true } };
+      }
+    },
+  };
+  const negotiated = options.capabilities;
+  const attachmentUpload = negotiated?.attachments
+    ? createGatewayAttachmentUploadAdapter(options, negotiated.attachments)
+    : null;
+  const capabilities: ConversationTransportCapabilities<AttachmentUploadAdapter<ApplicationGatewayAttachmentSource>, ApplicationGatewayPresenceClient, TSynchronization> = {
+    authoritativeCancellation: negotiated?.authoritativeCancellation === true
+      ? { supported: true, capability: cancellation }
+      : { supported: false },
+    documentInput: negotiated?.documentInput
+      ? { supported: true, capability: negotiated.documentInput }
+      : { supported: false }, attachmentUpload: attachmentUpload
+      ? { supported: true, capability: attachmentUpload }
+      : { supported: false },
+    presence: negotiated?.presence === true
+      ? { supported: true, capability: createGatewayPresenceClient(options) }
+      : { supported: false },
+    synchronization: negotiated?.synchronization === true && options.synchronization !== undefined
+      ? { supported: true, capability: options.synchronization }
+      : { supported: false },
+  };
+  return Object.freeze({
+    capabilities,
+    async startTurn(input: StartTurnInput<TRequest>): Promise<TransportResult<TurnHandle<TEvent>>> {
+      const startedAt = Date.now();
+      emitAiDiagnostic(options.diagnostics, { domain: "gateway", operation: "start", phase: "started",
+        conversationId: input.conversationId, turnId: input.conversationTurnId });
+      try {
+        const connection = new AbortController();
+        const response = await invoke("/turns/start", input, connection.signal);
+        if (!response.ok) {
+          const body = (await response.json().catch(() => ({})) ?? {}) as { error?: Partial<TransportError> };
+          const result = { ok: false as const, error: responseFailure(response, body.error) };
+          emitAiDiagnostic(options.diagnostics, { domain: "gateway", operation: "start", phase: "failed",
+            conversationId: input.conversationId, turnId: input.conversationTurnId,
+            durationMs: Date.now() - startedAt, statusCode: response.status,
+            ...(!result.ok ? { code: result.error.code, retryable: result.error.retryable } : {}) });
+          return result;
+        }
+        const observation = await readGatewayStream(response, decode, () => undefined, () => connection.abort());
+        observeGatewayTurnDiagnostics(options.diagnostics, "start", input.conversationId,
+          response.headers.get("x-handrail-turn-id") ?? input.conversationTurnId, observation, startedAt);
+        return { ok: true, value: {
+          conversationId: response.headers.get("x-handrail-conversation-id") ?? input.conversationId,
+          turnId: response.headers.get("x-handrail-turn-id") ?? input.conversationTurnId,
+          mutationId: response.headers.get("x-handrail-mutation-id") ?? input.mutationId,
+          observation,
+        } };
+      } catch (cause) {
+        emitAiDiagnostic(options.diagnostics, { domain: "gateway", operation: "start", phase: "failed",
+          conversationId: input.conversationId, turnId: input.conversationTurnId,
+          durationMs: Date.now() - startedAt, code: cause instanceof Error ? cause.name : "unknown",
+          retryable: true, cause });
+        return { ok: false, error: { code: "unavailable", message: "The application gateway is unavailable.", retryable: true } };
+      }
+    },
+    async resumeTurn(input: ResumeTurnInput): Promise<TransportResult<TurnObservation<TEvent>>> {
+      const startedAt = Date.now();
+      emitAiDiagnostic(options.diagnostics, { domain: "gateway", operation: "resume", phase: "started",
+        conversationId: input.conversationId, turnId: input.turnId });
+      try {
+        const connection = new AbortController();
+        const response = await invoke("/turns/resume", input, connection.signal);
+        if (!response.ok) {
+          const result = await response.json() as TransportResult<TurnObservation<TEvent>>;
+          emitAiDiagnostic(options.diagnostics, { domain: "gateway", operation: "resume", phase: "failed",
+            conversationId: input.conversationId, turnId: input.turnId,
+            durationMs: Date.now() - startedAt, statusCode: response.status,
+            ...(!result.ok ? { code: result.error.code, retryable: result.error.retryable } : {}) });
+          return result;
+        }
+        const observation = await readGatewayStream(response, decode, () => undefined, () => connection.abort());
+        observeGatewayTurnDiagnostics(options.diagnostics, "resume", input.conversationId,
+          input.turnId, observation, startedAt);
+        return { ok: true, value: observation };
+      } catch (cause) {
+        emitAiDiagnostic(options.diagnostics, { domain: "gateway", operation: "resume", phase: "failed",
+          conversationId: input.conversationId, turnId: input.turnId,
+          durationMs: Date.now() - startedAt, code: cause instanceof Error ? cause.name : "unknown",
+          retryable: true, cause });
+        return { ok: false, error: { code: "unavailable", message: "The application gateway is unavailable.", retryable: true } };
+      }
+    },
+  });
+}
+
+function observeGatewayTurnDiagnostics<TEvent>(
+  sink: AiDiagnosticSink | undefined,
+  operation: "start" | "resume",
+  conversationId: string,
+  turnId: string,
+  observation: TurnObservation<TEvent>,
+  startedAt: number,
+): void {
+  void observation.result.then((result) => {
+    emitAiDiagnostic(sink, { domain: "gateway", operation,
+      phase: result.status === "completed" || result.status === "waiting_for_approval" ? "succeeded" :
+        result.status === "cancelled" ? "cancelled" : "failed",
+      conversationId, turnId, durationMs: Date.now() - startedAt,
+      ...(result.status === "failed"
+        ? { code: result.error.code, retryable: result.error.retryable }
+        : result.status === "disconnected" ? { code: "disconnected", retryable: true } : {}) });
+  }, (cause: unknown) => {
+    emitAiDiagnostic(sink, { domain: "gateway", operation, phase: "failed",
+      conversationId, turnId, durationMs: Date.now() - startedAt,
+      code: cause instanceof Error ? cause.name : "unknown", retryable: true, cause });
+  });
+}

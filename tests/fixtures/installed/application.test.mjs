@@ -97,7 +97,7 @@ test('approval wait remains durable on reconnect; only verified answer can resum
 
 test('standard reader emits validated native protocol frames and stable replay identities',async t=>{
   const {createAgentCheckpointReader}=await import('handrail-agent-sdk/server/application');
-  const {parseStreamEvent}=await import('@handrail/ai-assistant');
+  const {parseStreamEvent}=await import('handrail-agent-sdk/assistant');
   const s=await setup(t);
   const member={id:'fixture',source:'server_derived',trust:'authoritative'};
   const reader=createAgentCheckpointReader({runtime:s.runtime,attribution:async()=>({organization:member,project:member,service_environment:member,known_user:member,session:member,automation:{...member,id:null}}),pendingToolCallIds:async()=>[]});
@@ -121,7 +121,7 @@ test('application catalog adapter preserves validation, read/mutation classifica
 
 test('existing assistant durable wrapper consumes the Agent transport with native protocol checkpoints',async t=>{
   const {createAgentCheckpointReader}=await import('handrail-agent-sdk/server/application');
-  const {createDurableApplicationTransport,InMemoryDurableApplicationTurnStore}=await import('@handrail/ai-assistant/server/application');
+  const {createDurableApplicationTransport,InMemoryDurableApplicationTurnStore}=await import('handrail-agent-sdk/assistant/server/application');
   const s=await setup(t);
   const member={id:'fixture',source:'server_derived',trust:'authoritative'};
   const read=createAgentCheckpointReader({runtime:s.runtime,attribution:async()=>({organization:member,project:member,service_environment:member,known_user:member,session:member,automation:{...member,id:null}}),pendingToolCallIds:async()=>[]});
@@ -203,7 +203,7 @@ test('installed assistance and notification delivery share public durable effect
 // boundaries are controlled. Validate the public wire decoder and replay cursor.
 for (const waiting of [false, true]) test(`explicit Stop projects its durable reason (approval wait=${waiting})`, async t => {
   const { createAgentCheckpointReader } = await import('handrail-agent-sdk/server/application');
-  const { parseStreamEvent } = await import('@handrail/ai-assistant');
+  const { parseStreamEvent } = await import('handrail-agent-sdk/assistant');
   let entered, release;
   const started = new Promise(r => entered = r), held = new Promise(r => release = r);
   t.after(() => release());

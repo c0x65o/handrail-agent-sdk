@@ -1,0 +1,1021 @@
+import 'dart:async';
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:handrail_agent_widgets/handrail_agent_widgets.dart';
+import 'display_transcript_test.dart' as paged;
+
+Map<String, Object?> message(
+  String id,
+  String text, {
+  String role = 'assistant',
+}) => {
+  'message_id': id,
+  'role': role,
+  'content': [
+    {'type': 'text', 'text': text},
+  ],
+  'attachments': [],
+};
+
+class Fixture {
+  final changes = StreamController<Object?>.broadcast();
+  final document = <String, Object?>{
+    'revision': 1,
+    'messages': [
+      message('question', '**Literal question**', role: 'user'),
+      message('answer', 'A **formatted** answer'),
+    ],
+    'turns': [
+      {
+        'turn_id': 'turn',
+        'status': 'completed',
+        'input_message_ids': ['question'],
+        'output_message_ids': ['answer'],
+      },
+    ],
+    'tool_calls': [],
+    'citations': [],
+    'citation_sources': [],
+  };
+  bool running = false, pending = false, submitting = false;
+  String conversationId = 'one';
+  String? error;
+  Future<void> Function()? retryOperation;
+  int reads = 0, retries = 0;
+  HandrailDisplayTranscriptBinding? display;
+  bool relatedTruncated = false;
+  bool hasMoreRelated = false;
+  Future<void> Function()? loadMoreRelated;
+  Map<String, Object?>? outgoingMessage;
+  Future<void> Function()? showLatestRelated;
+  HandrailTranscriptUiBinding get binding => (
+    scope: this,
+    changes: changes.stream,
+    read: () => {
+      'conversationId': conversationId,
+      'document': document,
+      'outgoingMessage': outgoingMessage,
+      'hasMoreRelated': hasMoreRelated,
+      'loadMoreRelated': loadMoreRelated,
+      'running': running,
+      'pending': pending,
+      'submitting': submitting,
+      'displayWindow': display,
+      'relatedTruncated': relatedTruncated,
+      'showLatestRelated': showLatestRelated,
+      'error': error,
+    },
+    retry: () async {
+      retries++;
+      if (retryOperation case final operation?) return operation();
+      error = null;
+      publish();
+    },
+    markRead: () async {
+      reads++;
+    },
+  );
+  void publish() => changes.add(null);
+}
+
+Widget surface(
+  Fixture fixture, {
+  Size size = const Size(720, 650),
+  double scale = 1,
+  ValueChanged<String>? onOpenLink,
+  Widget? Function(BuildContext, Map<String, Object?>)? toolResultBuilder,
+}) => MaterialApp(
+  builder: (context, child) => MediaQuery(
+    data: MediaQuery.of(context).copyWith(textScaler: TextScaler.linear(scale)),
+    child: child!,
+  ),
+  home: Scaffold(
+    body: SizedBox(
+      width: size.width,
+      height: size.height,
+      child: HandrailConversationTranscript(
+        binding: fixture.binding,
+        onOpenLink: onOpenLink,
+        toolResultBuilder: toolResultBuilder,
+      ),
+    ),
+  ),
+);
+
+void main() {
+  for (final pair in {
+    'user': 'Response stopped by you.',
+    'timeout': 'Response timed out.',
+    'superseded':
+        'Response cancelled because authorization changed or it was superseded.',
+    'runtime_shutdown': 'Response stopped because the runtime shut down.',
+  }.entries) {
+    testWidgets('saved cancellation presents ${pair.key}', (tester) async {
+      final f = Fixture();
+      addTearDown(f.changes.close);
+      final turn = (f.document['turns'] as List).first;
+      turn['status'] = 'cancelled';
+      turn['cancellation_reason'] = pair.key;
+      await tester.pumpWidget(surface(f));
+      await tester.pumpAndSettle();
+      expect(find.text(pair.value), findsOneWidget);
+      await tester.pumpWidget(const SizedBox());
+    });
+  }
+
+  for (final partial in [false, true]) {
+    testWidgets(
+      'executed A and declined B stay settled while actual failures remain visible (partial=$partial)',
+      (tester) async {
+        final f = Fixture();
+        addTearDown(f.changes.close);
+        if (partial) {
+          final window = paged.Fixture()
+            ..id = 'one'
+            ..start = 1
+            ..end = 1
+            ..hasOlder = false;
+          addTearDown(window.changes.close);
+          f.display = window.binding;
+          (f.document['turns'] as List).first['output_message_ids'] = [
+            'message-1',
+          ];
+        }
+        f.document['tool_calls'] = [
+          {
+            'turn_id': 'turn',
+            'tool_call_id': 'a',
+            'name': 'update_asset',
+            'started_at': 'saved',
+            'result': {'is_error': false},
+          },
+          {
+            'turn_id': 'turn',
+            'tool_call_id': 'b',
+            'name': 'send_invoice',
+            'result': {'is_error': true},
+          },
+        ];
+        f.document['approval_proposals'] = [
+          {
+            'turn_id': 'turn',
+            'tool_call_id': 'a',
+            'tool_name': 'update_asset',
+            'status': 'executed',
+          },
+          {
+            'turn_id': 'turn',
+            'tool_call_id': 'b',
+            'tool_name': 'send_invoice',
+            'status': 'rejected',
+          },
+        ];
+        await tester.pumpWidget(surface(f));
+        await tester.pumpAndSettle();
+        expect(find.textContaining('failed'), findsNothing);
+        expect(find.text('send_invoice · Rejected'), findsOneWidget);
+        await tester.pumpWidget(const SizedBox());
+        await tester.pumpWidget(surface(f));
+        await tester.pumpAndSettle();
+        expect(find.text('send_invoice · Rejected'), findsOneWidget);
+        (f.document['tool_calls'] as List).add({
+          'turn_id': 'turn',
+          'tool_call_id': 'c',
+          'name': 'read_ledger',
+          'result': {'is_error': true},
+        });
+        f.changes.add(null);
+        await tester.pumpAndSettle();
+        expect(find.text('3 tools called · 1 failed'), findsOneWidget);
+        // A rejection for another turn must never hide a real failure.
+        (f.document['approval_proposals'] as List)[1]['turn_id'] = 'other';
+        f.changes.add(null);
+        await tester.pumpAndSettle();
+        expect(find.text('3 tools called · 2 failed'), findsOneWidget);
+      },
+    );
+  }
+  testWidgets(
+    'answer takes over progress and keeps tool details before its response',
+    (tester) async {
+      final f = Fixture();
+      addTearDown(f.changes.close);
+      f.running = true;
+      f.document['active_turn_id'] = 'turn';
+      (f.document['turns'] as List).first['status'] = 'running';
+      f.document['messages'] = [message('question', 'Question', role: 'user')];
+      await tester.pumpWidget(surface(f));
+      await tester.pumpAndSettle();
+      expect(find.text('Working…'), findsOneWidget);
+      f.document['tool_calls'] = [
+        <String, Object?>{
+          'tool_call_id': 'lookup',
+          'turn_id': 'turn',
+          'name': 'Search invoices',
+          'started_at': '2026-09-23T00:00:00Z',
+          'result': null,
+        },
+      ];
+      f.publish();
+      await tester.pumpAndSettle();
+      expect(find.text('Search invoices · Working'), findsOneWidget);
+      expect(
+        find.text('Working…'),
+        findsNothing,
+        reason:
+            'Named tool progress does not also need a generic working footer',
+      );
+      (f.document['messages'] as List).add(
+        message('answer', 'The answer is arriving.'),
+      );
+      (f.document['tool_calls'] as List).first['result'] = {'is_error': false};
+      f.publish();
+      await tester.pumpAndSettle();
+      expect(find.text('Working…'), findsNothing);
+      expect(
+        tester.getTopLeft(find.text('1 tool called')).dy,
+        lessThan(
+          tester.getTopLeft(find.byType(HandrailTranscriptMessage).last).dy,
+        ),
+      );
+      await tester.tap(find.text('1 tool called'));
+      await tester.pumpAndSettle();
+      expect(find.text('Search invoices'), findsOneWidget);
+      // An old answer must not hide progress for the next request.
+      f.document['active_turn_id'] = 'next-turn';
+      (f.document['turns'] as List).add({
+        'turn_id': 'next-turn',
+        'status': 'running',
+      });
+      f.publish();
+      await tester.pumpAndSettle();
+      expect(find.text('Working…'), findsOneWidget);
+      await tester.pumpWidget(const SizedBox());
+    },
+  );
+
+  testWidgets(
+    'delivery feedback reconciles the saved message without duplicate bubbles',
+    (tester) async {
+      final f = Fixture();
+      addTearDown(f.changes.close);
+      f.outgoingMessage = {
+        ...message('sent', 'My new message', role: 'user'),
+        'delivery_status': 'sending',
+      };
+      await tester.pumpWidget(surface(f));
+      expect(find.text('My new message'), findsOneWidget);
+      await tester.pump(const Duration(milliseconds: 1999));
+      expect(find.text('Sending…'), findsNothing);
+      await tester.pump(const Duration(milliseconds: 1));
+      expect(find.text('Sending…'), findsOneWidget);
+      f.outgoingMessage = {...f.outgoingMessage!, 'delivery_status': 'sent'};
+      f.publish();
+      await tester.pumpAndSettle();
+      expect(find.text('Sending…'), findsNothing);
+      expect(find.text('Sent'), findsOneWidget);
+      (f.document['messages'] as List).add(
+        message('sent', 'My new message', role: 'user'),
+      );
+      f.publish();
+      await tester.pumpAndSettle();
+      expect(find.text('My new message'), findsOneWidget);
+      expect(find.text('Sent'), findsNothing);
+      await tester.pumpWidget(const SizedBox());
+    },
+  );
+
+  testWidgets(
+    'quick delivery stays quiet and keeps the message height stable',
+    (tester) async {
+      final f = Fixture()
+        ..submitting = true
+        ..pending = true;
+      addTearDown(f.changes.close);
+      f.outgoingMessage = {
+        ...message('quick', 'Quick message', role: 'user'),
+        'delivery_status': 'sending',
+      };
+      await tester.pumpWidget(surface(f));
+      final initialHeight = tester
+          .getSize(find.byType(HandrailTranscriptMessage).last)
+          .height;
+      await tester.pump(const Duration(milliseconds: 100));
+      expect(find.text('Sending…'), findsNothing);
+      expect(find.text('Sending message…'), findsNothing);
+      expect(find.text('Checking your saved message…'), findsNothing);
+      f.outgoingMessage = {...f.outgoingMessage!, 'delivery_status': 'sent'};
+      f.publish();
+      await tester.pump();
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 3));
+      expect(find.text('Sent'), findsNothing);
+      (f.document['messages'] as List).add(
+        message('quick', 'Quick message', role: 'user'),
+      );
+      f.outgoingMessage = null;
+      f.submitting = f.pending = false;
+      f.publish();
+      await tester.pumpAndSettle();
+      expect(find.text('Quick message'), findsOneWidget);
+      expect(
+        tester.getSize(find.byType(HandrailTranscriptMessage).last).height,
+        initialHeight,
+      );
+      await tester.pumpWidget(const SizedBox());
+    },
+  );
+
+  testWidgets(
+    'uncertain delivery appears immediately and new messages reset the delay',
+    (tester) async {
+      final f = Fixture();
+      addTearDown(f.changes.close);
+      f.outgoingMessage = {
+        ...message('first', 'First', role: 'user'),
+        'delivery_status': 'sending',
+      };
+      await tester.pumpWidget(surface(f));
+      f.outgoingMessage = {
+        ...f.outgoingMessage!,
+        'delivery_status': 'unconfirmed',
+      };
+      f.pending = true;
+      f.publish();
+      await tester.pump();
+      await tester.pump();
+      expect(find.text('Waiting for confirmation'), findsOneWidget);
+      expect(find.text('Retry'), findsOneWidget);
+      f.outgoingMessage = {...f.outgoingMessage!, 'delivery_status': 'sending'};
+      f.publish();
+      await tester.pump();
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 2));
+      expect(find.text('Sending…'), findsOneWidget);
+      f.outgoingMessage = {
+        ...message('second', 'Second', role: 'user'),
+        'delivery_status': 'sending',
+      };
+      f.publish();
+      await tester.pump();
+      await tester.pump();
+      expect(find.text('Sending…'), findsNothing);
+      await tester.pump(const Duration(seconds: 2));
+      expect(find.text('Sending…'), findsOneWidget);
+      f.conversationId = 'other';
+      f.publish();
+      await tester.pump();
+      await tester.pump();
+      expect(find.text('Sending…'), findsNothing);
+      await tester.pumpWidget(const SizedBox());
+      await tester.pump(const Duration(seconds: 3));
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'current tool names and changing status remain visible with activity collapsed',
+    (tester) async {
+      final f = Fixture();
+      addTearDown(f.changes.close);
+      final tool = <String, Object?>{
+        'tool_call_id': 'lookup',
+        'turn_id': 'turn',
+        'name': 'Search invoices',
+        'started_at': '2026-09-23T00:00:00Z',
+        'result': null,
+        'arguments': {'secret': 'never display this'},
+      };
+      f.document['tool_calls'] = [tool];
+      (f.document['turns'] as List).first['status'] = 'running';
+      await tester.pumpWidget(surface(f));
+      await tester.pumpAndSettle();
+      expect(find.text('Search invoices · Working'), findsOneWidget);
+      expect(find.textContaining('never display this'), findsNothing);
+      tool['started_at'] = null;
+      f.publish();
+      await tester.pumpAndSettle();
+      expect(find.text('Search invoices · Queued'), findsOneWidget);
+      tool['approval_required_at'] = '2026-09-23T00:00:00Z';
+      f.publish();
+      await tester.pumpAndSettle();
+      expect(find.text('Search invoices · Awaiting approval'), findsOneWidget);
+      tool['result'] = {'is_error': false};
+      f.publish();
+      await tester.pumpAndSettle();
+      expect(find.text('Search invoices · Completed'), findsOneWidget);
+      tool['result'] = {'is_error': true};
+      f.publish();
+      await tester.pumpAndSettle();
+      expect(find.text('Search invoices · Failed'), findsOneWidget);
+      tool['result'] = null;
+      (f.document['turns'] as List).first['status'] = 'cancelled';
+      f.publish();
+      await tester.pumpAndSettle();
+      expect(find.text('Search invoices · Cancelled'), findsOneWidget);
+      await tester.pumpWidget(const SizedBox());
+    },
+  );
+
+  testWidgets(
+    'standard transcript uses bounded pages with citations, activity and no duplicate selection',
+    (tester) async {
+      final f = Fixture(),
+          displayChanges = StreamController<Object?>.broadcast(sync: true);
+      addTearDown(f.changes.close);
+      addTearDown(displayChanges.close);
+      var first = 21, selects = 0, older = 0, version = 1;
+      Map<String, Object?> record(int i) => {
+        'id': 'message-$i',
+        'kind': 'message',
+        'revision': 1,
+        'deferred': false,
+        'bytes': 120,
+        'value': message('message-$i', 'Message $i'),
+      };
+      f.document['citation_sources'] = [
+        {
+          'source_id': 'source',
+          'label': 'Source for this answer',
+          'locator': '/source',
+        },
+      ];
+      f.document['citations'] = [
+        {
+          'source_id': 'source',
+          'target': {'type': 'assistant_message', 'message_id': 'message-40'},
+          'order': 1,
+        },
+      ];
+      f.document['tool_calls'] = [
+        {'tool_call_id': 'tool', 'name': 'Lookup', 'status': 'completed'},
+      ];
+      f.running = true;
+      f.display = (
+        scope: displayChanges,
+        changes: displayChanges.stream,
+        read: () => {
+          'conversationId': 'one',
+          'generation': 0,
+          'revision': 1,
+          'status': 'ready',
+          'version': version,
+          'hasOlder': first > 1,
+          'hasNewer': false,
+          'loading': null,
+          'error': null,
+          'change': 'older',
+          'records': [for (var i = first; i <= 40; i++) record(i)],
+        },
+        select: (_, __) async {
+          selects++;
+        },
+        older: () async {
+          first = 1;
+          older++;
+          version++;
+          displayChanges.add(null);
+        },
+        newer: () async {},
+        latest: () async {},
+        refresh: () async {},
+        retry: () async {},
+      );
+      var earlierActivity = 0;
+      f.hasMoreRelated = true;
+      f.loadMoreRelated = () async {
+        earlierActivity++;
+        f.hasMoreRelated = false;
+        f.publish();
+      };
+      await tester.pumpWidget(
+        surface(
+          f,
+          toolResultBuilder: (_, tool) =>
+              Text('Business result: ${tool['name']}'),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(selects, 0);
+      expect(older, 0);
+      expect(earlierActivity, 0);
+      expect(
+        tester.getTopLeft(find.text('Load earlier activity')).dy,
+        lessThan(0),
+        reason:
+            'Earlier activity belongs above messages and is offscreen at the live tail',
+      );
+      expect(find.byType(HandrailDisplayTranscript), findsOneWidget);
+      expect(
+        find.byType(HandrailTranscriptMessage).evaluate().length,
+        inInclusiveRange(1, 19),
+      );
+      expect(find.text('Source for this answer'), findsOneWidget);
+      expect(find.text('Business result: Lookup'), findsOneWidget);
+      var restarted = 0;
+      f.document['display_history'] = {
+        'partial': true,
+        'unresolvedCitationCount': 1,
+      };
+      f.relatedTruncated = true;
+      f.showLatestRelated = () async {
+        restarted++;
+        f.relatedTruncated = false;
+        f.publish();
+      };
+      f.publish();
+      await tester.pumpAndSettle();
+      expect(
+        find.text(
+          'Some citation sources are not loaded in this activity window.',
+        ),
+        findsOneWidget,
+      );
+      await tester.ensureVisible(find.text('Show latest activity'));
+      await tester.tap(find.text('Show latest activity'));
+      await tester.pumpAndSettle();
+      expect(restarted, 1);
+      expect(find.text('Show latest activity'), findsNothing);
+      expect(f.reads, 0);
+      f.running = false;
+      f.publish();
+      await tester.pumpAndSettle();
+      expect(
+        f.reads,
+        1,
+        reason:
+            'Completion on the same loaded revision becomes read at the visible tail',
+      );
+      final scroll = tester
+          .widget<SingleChildScrollView>(find.byType(SingleChildScrollView))
+          .controller!;
+      scroll.jumpTo(0);
+      await tester.pumpAndSettle();
+      expect(older, 1);
+      expect(earlierActivity, 0);
+      scroll.jumpTo(0);
+      await tester.pumpAndSettle();
+      expect(earlierActivity, 1);
+      expect(find.text('Load earlier activity'), findsNothing);
+      expect(
+        find.byType(HandrailTranscriptMessage).evaluate().length,
+        inInclusiveRange(1, 20),
+      );
+      expect(tester.takeException(), null);
+      await tester.pumpWidget(const SizedBox());
+      expect(
+        selects,
+        0,
+        reason: 'The account session owns selection and lifetime',
+      );
+    },
+  );
+
+  for (final showAuthor in [false, true]) {
+    testWidgets(
+      'branding preserves operational message identity ($showAuthor)',
+      (tester) async {
+        final semantics = tester.ensureSemantics();
+        for (final role in ['user', 'assistant', 'system', 'tool', 'unknown']) {
+          final label = switch (role) {
+            'user' => 'Family member',
+            'assistant' => 'Mills',
+            'system' => 'System',
+            'tool' => 'Tool result',
+            _ => 'Message',
+          };
+          await tester.pumpWidget(
+            MaterialApp(
+              home: Scaffold(
+                body: HandrailTranscriptMessage(
+                  message: message(role, 'Saved content', role: role),
+                  style: HandrailTranscriptStyle(
+                    showAuthor: showAuthor,
+                    userLabel: 'Family member',
+                    assistantLabel: 'Mills',
+                    assistantAvatar: const Icon(Icons.auto_awesome),
+                  ),
+                ),
+              ),
+            ),
+          );
+          expect(
+            find.text(label),
+            showAuthor || !['user', 'assistant'].contains(role)
+                ? findsOneWidget
+                : findsNothing,
+          );
+          expect(
+            find.byIcon(Icons.auto_awesome),
+            role == 'assistant' ? findsOneWidget : findsNothing,
+          );
+          expect(
+            find.bySemanticsLabel(
+              role == 'unknown'
+                  ? 'Message, message.'
+                  : '$label, $role message.',
+            ),
+            findsOneWidget,
+          );
+        }
+        semantics.dispose();
+      },
+    );
+  }
+  for (final allow in [false, true]) {
+    testWidgets(
+      'message-link policy is independent of a citation resolver veto ($allow)',
+      (tester) async {
+        final links = <String>[];
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: HandrailTranscriptMessage(
+                message: message('answer', '[Raw message](/home)'),
+                allowMessageLinks: allow,
+                onOpenLink: links.add,
+                citationLink: (source) =>
+                    source['source_id'] == 'trusted' ? '/review' : null,
+                citations: const [
+                  {
+                    'source_id': 'trusted',
+                    'label': 'Trusted reference',
+                    'locator': '/raw',
+                  },
+                  {
+                    'source_id': 'untrusted',
+                    'label': 'Rejected reference',
+                    'locator': '/home',
+                  },
+                ],
+              ),
+            ),
+          ),
+        );
+        tester
+            .widget<HandrailMarkdown>(find.byType(HandrailMarkdown))
+            .onTapLink!('Raw message', '/home', null);
+        expect(links, allow ? ['/home'] : isEmpty);
+        expect(
+          tester
+              .widget<ActionChip>(
+                find.widgetWithText(ActionChip, 'Rejected reference'),
+              )
+              .onPressed,
+          isNull,
+        );
+        await tester.tap(find.text('Trusted reference'));
+        expect(links.last, '/review');
+        expect(links.length, allow ? 2 : 1);
+      },
+    );
+  }
+  testWidgets('user, system and tool message text stays literal', (
+    tester,
+  ) async {
+    for (final role in ['user', 'system', 'tool']) {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: HandrailTranscriptMessage(
+              message: message(role, '**Literal** [link](/home)', role: role),
+            ),
+          ),
+        ),
+      );
+      expect(find.text('**Literal** [link](/home)'), findsOneWidget);
+    }
+  });
+
+  testWidgets(
+    'protected copy reports an accessible failure and retries exact visible text',
+    (tester) async {
+      var fail = true;
+      final copied = <String>[];
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: HandrailTranscriptMessage(
+              message: message('copy', 'A **complete** household answer'),
+              copyText: (text) async {
+                copied.add(text);
+                if (fail) throw StateError('Private clipboard details');
+              },
+            ),
+          ),
+        ),
+      );
+      await tester.tap(find.text('Copy'));
+      await tester.pump();
+      expect(
+        find.textContaining('The message was not copied.'),
+        findsOneWidget,
+      );
+      expect(find.textContaining('Private clipboard'), findsNothing);
+      expect(
+        tester
+            .widget<Semantics>(
+              find
+                  .ancestor(
+                    of: find.textContaining('The message was not copied.'),
+                    matching: find.byType(Semantics),
+                  )
+                  .first,
+            )
+            .properties
+            .liveRegion,
+        isTrue,
+      );
+      fail = false;
+      await tester.tap(find.text('Copy'));
+      await tester.pump();
+      expect(find.text('Copied'), findsOneWidget);
+      expect(find.textContaining('The message was not copied.'), findsNothing);
+      expect(copied, [
+        'A **complete** household answer',
+        'A **complete** household answer',
+      ]);
+      await tester.pumpWidget(const SizedBox.shrink());
+    },
+  );
+  testWidgets('a stale copy failure cannot replace a later success', (
+    tester,
+  ) async {
+    final pending = Completer<void>();
+    var calls = 0;
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: HandrailTranscriptMessage(
+            message: message('copy', 'Answer'),
+            copyText: (_) {
+              calls++;
+              return calls == 1 ? pending.future : Future<void>.value();
+            },
+          ),
+        ),
+      ),
+    );
+    await tester.tap(find.text('Copy'));
+    await tester.pump();
+    await tester.tap(find.text('Copy'));
+    await tester.pump();
+    pending.completeError(StateError('Delayed clipboard failure'));
+    await tester.pump();
+    expect(find.text('Copied'), findsOneWidget);
+    expect(find.textContaining('The message was not copied.'), findsNothing);
+    await tester.pumpWidget(const SizedBox.shrink());
+  });
+
+  testWidgets(
+    'minimal transcript supplies Markdown, safe citations, copy, results and private activity',
+    (tester) async {
+      final fixture = Fixture(), links = <String>[];
+      addTearDown(fixture.changes.close);
+      fixture.document['citation_sources'] = [
+        {'source_id': 'safe', 'label': 'Ledger', 'locator': '/finance/ledger'},
+        {
+          'source_id': 'unsafe',
+          'label': 'Blocked source',
+          'locator': 'javascript:alert(1)',
+        },
+      ];
+      fixture.document['citations'] = [
+        for (final source in ['safe', 'unsafe'])
+          {
+            'source_id': source,
+            'order': 0,
+            'target': {'type': 'assistant_message', 'message_id': 'answer'},
+          },
+      ];
+      fixture.document['tool_calls'] = [
+        {
+          'tool_call_id': 'result',
+          'turn_id': 'turn',
+          'name': 'business_result',
+          'arguments': {'secret': 'private argument'},
+          'result': {'is_error': true},
+        },
+      ];
+      String? copied;
+      tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+        SystemChannels.platform,
+        (call) async {
+          if (call.method == 'Clipboard.setData')
+            copied = (call.arguments as Map)['text'] as String;
+          return null;
+        },
+      );
+      addTearDown(
+        () => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+          SystemChannels.platform,
+          null,
+        ),
+      );
+      await tester.pumpWidget(
+        surface(
+          fixture,
+          onOpenLink: links.add,
+          toolResultBuilder: (_, tool) => const Text('Business result card'),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(find.byType(HandrailTranscriptMessage), findsNWidgets(2));
+      expect(find.text('**Literal question**'), findsOneWidget);
+      expect(find.text('Business result card'), findsOneWidget);
+      expect(find.text('1 tool called · 1 failed'), findsOneWidget);
+      await tester.ensureVisible(find.text('Ledger'));
+      await tester.tap(find.text('Ledger'));
+      expect(links, ['/finance/ledger']);
+      final blocked = tester.widget<ActionChip>(
+        find.widgetWithText(ActionChip, 'Blocked source'),
+      );
+      expect(blocked.onPressed, isNull);
+      await tester.ensureVisible(find.text('Copy').last);
+      await tester.tap(find.text('Copy').last);
+      await tester.pump();
+      expect(copied, 'A **formatted** answer');
+      await tester.ensureVisible(find.text('1 tool called · 1 failed'));
+      await tester.tap(find.text('1 tool called · 1 failed'));
+      await tester.pumpAndSettle();
+      expect(find.text('business_result'), findsOneWidget);
+      expect(find.textContaining('private argument'), findsNothing);
+      expect(tester.takeException(), isNull);
+      await tester.pumpWidget(const SizedBox());
+    },
+  );
+
+  testWidgets(
+    'new replies preserve a scrolled-up position and become read at the visible end',
+    (tester) async {
+      final fixture = Fixture();
+      addTearDown(fixture.changes.close);
+      fixture.document['messages'] = [
+        for (var i = 0; i < 25; i++)
+          message('answer-$i', 'Reply $i\nMore detail\nAnother line'),
+      ];
+      await tester.pumpWidget(surface(fixture, size: const Size(600, 500)));
+      await tester.pumpAndSettle();
+      final list = tester.widget<ListView>(find.byType(ListView));
+      expect(list.controller!.position.extentAfter, lessThan(1));
+      expect(fixture.reads, 1);
+      await tester.drag(find.byType(ListView), const Offset(0, 450));
+      await tester.pumpAndSettle();
+      final offset = list.controller!.offset;
+      expect(find.byTooltip('Jump to latest'), findsOneWidget);
+      fixture.document['revision'] = 2;
+      (fixture.document['messages'] as List).add(
+        message('new-answer', 'A new reply'),
+      );
+      fixture.publish();
+      await tester.pumpAndSettle();
+      expect(list.controller!.offset, closeTo(offset, 1));
+      expect(fixture.reads, 1);
+      await tester.tap(find.byTooltip('Jump to latest'));
+      await tester.pumpAndSettle();
+      expect(list.controller!.position.extentAfter, lessThan(1));
+      expect(fixture.reads, 2);
+    },
+  );
+
+  testWidgets(
+    'covered and background replies become read only when the transcript is visible',
+    (tester) async {
+      final fixture = Fixture()..running = true;
+      addTearDown(fixture.changes.close);
+      await tester.pumpWidget(surface(fixture));
+      await tester.pumpAndSettle();
+      expect(fixture.reads, 0);
+      final navigator = tester.state<NavigatorState>(find.byType(Navigator));
+      unawaited(
+        navigator.push<void>(
+          MaterialPageRoute(
+            builder: (_) => const Scaffold(body: Text('Another screen')),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      fixture.running = false;
+      fixture.publish();
+      await tester.pumpAndSettle();
+      expect(fixture.reads, 0);
+      navigator.pop();
+      await tester.pumpAndSettle();
+      expect(fixture.reads, 1);
+
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.hidden);
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
+      fixture.document['revision'] = 2;
+      fixture.publish();
+      await tester.pumpAndSettle();
+      expect(fixture.reads, 1);
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.hidden);
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+      await tester.pumpAndSettle();
+      expect(fixture.reads, 2);
+    },
+  );
+
+  testWidgets('a prior conversation retry cannot unlock a later retry', (
+    tester,
+  ) async {
+    final first = Completer<void>(), second = Completer<void>();
+    final fixture = Fixture()
+      ..error = 'Connection failed'
+      ..retryOperation = () => first.future;
+    addTearDown(fixture.changes.close);
+    await tester.pumpWidget(surface(fixture));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Retry'));
+    await tester.pumpAndSettle();
+    expect(fixture.retries, 1);
+    fixture.conversationId = 'two';
+    fixture.retryOperation = () => second.future;
+    fixture.publish();
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Retry'));
+    await tester.pumpAndSettle();
+    expect(fixture.retries, 2);
+    first.complete();
+    await tester.pumpAndSettle();
+    expect(find.text('Retrying…'), findsOneWidget);
+    second.complete();
+    await tester.pumpAndSettle();
+    expect(find.text('Retry'), findsOneWidget);
+  });
+
+  testWidgets(
+    'custom domain formatting retains SDK account isolation and visible read lifecycle',
+    (tester) async {
+      final first = Fixture(), second = Fixture();
+      addTearDown(first.changes.close);
+      addTearDown(second.changes.close);
+      Widget custom(Fixture fixture, String label) => MaterialApp(
+        home: Scaffold(
+          body: HandrailConversationTranscript(
+            binding: fixture.binding,
+            contentBuilder: (context, document) => [
+              TextFormField(
+                key: const ValueKey('business-card'),
+                initialValue: label,
+              ),
+            ],
+          ),
+        ),
+      );
+      await tester.pumpWidget(custom(first, 'First account business data'));
+      await tester.pumpAndSettle();
+      expect(first.reads, 1);
+      await tester.enterText(
+        find.byType(TextFormField),
+        'Unsaved first account',
+      );
+      await tester.pumpWidget(custom(second, 'Second account business data'));
+      await tester.pumpAndSettle();
+      expect(
+        tester.widget<TextField>(find.byType(TextField)).controller!.text,
+        'Second account business data',
+      );
+      expect(second.reads, 1);
+      expect(find.text('Unsaved first account'), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'account replacement clears old content and error recovery works with large text',
+    (tester) async {
+      tester.view.physicalSize = const Size(320, 568);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      final first = Fixture(), second = Fixture();
+      addTearDown(first.changes.close);
+      addTearDown(second.changes.close);
+      first.error =
+          'A long connection failure that must remain readable at increased text size.';
+      first.pending = true;
+      await tester.pumpWidget(surface(first, scale: 2));
+      await tester.pumpAndSettle();
+      expect(first.reads, 0);
+      await tester.ensureVisible(find.text('Retry'));
+      await tester.tap(find.text('Retry'));
+      await tester.pumpAndSettle();
+      expect(first.retries, 1);
+      second.document['messages'] = [
+        message('new-account', 'New account content'),
+      ];
+      await tester.pumpWidget(surface(second, scale: 2));
+      first.document['messages'] = [
+        message('old-account', 'Old account secret'),
+      ];
+      first.publish();
+      await tester.pumpAndSettle();
+      expect(find.textContaining('Old account secret'), findsNothing);
+      expect(find.byType(HandrailTranscriptMessage), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    },
+  );
+}

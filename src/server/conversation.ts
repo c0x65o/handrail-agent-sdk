@@ -180,7 +180,7 @@ export function createConversation(deps: { storage: ConversationStorage; authori
             ...workItems, ...ordered.flatMap(r=>(r.value as TranscriptEntry).items)];
         };
         if (bytes(render()) > deps.maxContextBytes) throw Error('CONVERSATION_CONTEXT_CAPACITY');
-        const recent = await tx.page('transcript', { after:view?.through, limit: deps.pageSize, reverse: true });
+        const recent = await tx.page('transcript', { ...(view ? { after: view.through } : {}), limit: deps.pageSize, reverse: true });
         for (const row of recent) {
           if (selected.has(row.id)) continue;
           selected.set(row.id, row);

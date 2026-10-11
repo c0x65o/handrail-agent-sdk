@@ -6,7 +6,7 @@ import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
 import { spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { publicSdkGitSpec, assertSdkGitLock, assertAssistantGitLock } from './helpers/git-consumer-contract.mjs';
+import { publicSdkGitSpec, assertSdkGitLock, assertNoAssistantDependency } from './helpers/git-consumer-contract.mjs';
 
 const sha = process.argv[2], candidate = process.argv[3] === '--candidate-source';
 assert.match(sha ?? '', /^[a-f0-9]{40}$/);
@@ -54,7 +54,7 @@ const lockBytes = await readFile(join(first, 'package-lock.json'));
 const lock = JSON.parse(lockBytes);
 assert.equal(lock.packages['node_modules/@handrail/marketing'].resolved, marketingSpec);
 assert.equal(lock.packages[''].dependencies['@handrail/marketing'], marketingSpec);
-assertAssistantGitLock(lock, manifest.dependencies['@handrail/ai-assistant']);
+assertNoAssistantDependency(lock);
 if (!candidate) assertSdkGitLock(consumerManifest, lock, sha);
 await cp(join(first, 'package.json'), join(dir, 'package.json'));
 await cp(join(first, 'package-lock.json'), join(dir, 'package-lock.json'));
@@ -63,7 +63,7 @@ await run('npm', ['ci', '--engine-strict', '--foreground-scripts', '--no-audit',
 assert.deepEqual(await readFile(join(dir, 'package-lock.json')), lockBytes, 'CI_CHANGED_LOCK');
 const installedLock = JSON.parse(await readFile(join(dir, 'node_modules/.package-lock.json')));
 assert.equal(installedLock.packages['node_modules/@handrail/marketing'].resolved, marketingSpec);
-assertAssistantGitLock(installedLock, manifest.dependencies['@handrail/ai-assistant']);
+assertNoAssistantDependency(installedLock);
 if (!candidate) assert.equal(installedLock.packages['node_modules/handrail-agent-sdk'].resolved, publicSdkGitSpec(sha));
 const installed = join(dir, 'node_modules/handrail-agent-sdk');
 let packed = null;
@@ -101,7 +101,7 @@ assert.equal(files['examples/marketing-onboarding.mts'], hash(await readFile(joi
 if (candidate) assert.equal(files['examples/marketing-onboarding.mts'], hash(await readFile(join(root, 'examples/marketing-onboarding.mts'))));
 files['tests/verify-marketing-install.mjs'] = hash(await readFile(fileURLToPath(import.meta.url)));
 const versions = {};
-for (const name of ['handrail-agent-sdk', '@handrail/marketing', '@handrail/ai-assistant', '@openai/agents',
+for (const name of ['handrail-agent-sdk', '@handrail/marketing', '@openai/agents',
   'typescript', '@types/node', '@types/react', '@types/pg', 'esbuild'])
   versions[name] = JSON.parse(await readFile(join(dir, 'node_modules', name, 'package.json'))).version;
 for (const [name, version] of Object.entries(consumerManifest.devDependencies)) assert.equal(versions[name], version);

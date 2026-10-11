@@ -45,7 +45,7 @@ export function managedBrowser(options: { executablePath?: string; maxSessions?:
       try {
         if (process.env.PWDEBUG || /pw:|\*/.test(process.env.DEBUG ?? '')) throw Error('PRIVATE_BROWSER_DEBUG_FORBIDDEN');
         temporary = await mkdtemp(join(process.platform === 'win32' ? tmpdir() : '/tmp', 'ha-browser-'));
-        browser = await chromium.launch({ executablePath: options.executablePath, headless: true, timeout: 15000,
+        browser = await chromium.launch({ ...(options.executablePath === undefined ? {} : { executablePath: options.executablePath }), headless: true, timeout: 15000,
           env: { ...process.env, TMPDIR: temporary, TMP: temporary, TEMP: temporary },
           chromiumSandbox: true, proxy: { server: proxy.url, bypass: '<-loopback>' },
           args: ['--disable-background-networking', '--disable-breakpad', '--disable-crash-reporter', '--disable-quic',
@@ -53,7 +53,7 @@ export function managedBrowser(options: { executablePath?: string; maxSessions?:
             '--host-resolver-rules=MAP * ~NOTFOUND, EXCLUDE 127.0.0.1'],
         });
         const context = await browser.newContext({ viewport: { width: 1100, height: 760 }, acceptDownloads: false,
-          serviceWorkers: 'block', storageState: account.state });
+          serviceWorkers: 'block', ...(account.state === undefined ? {} : { storageState: account.state }) });
         context.setDefaultTimeout(8000); context.setDefaultNavigationTimeout(15000);
         await context.routeWebSocket('**/*', socket => socket.close());
         await context.route('**/*', route => {

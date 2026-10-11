@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { InMemoryConversationEventStore, parseConversationEvent, replayConversation } from '@handrail/ai-assistant';
-import { InMemoryDurableApplicationTurnStore } from '@handrail/ai-assistant/server/application';
+import { InMemoryConversationEventStore, parseConversationEvent, replayConversation } from 'handrail-agent-sdk/assistant';
+import { InMemoryDurableApplicationTurnStore } from 'handrail-agent-sdk/assistant/server/application';
 import { createAgentConversationContinuation } from '../dist/server/agent-transport.js';
 
 const ref = `managed:${'a'.repeat(64)}`, conversationId = 'conversation', turnId = 'turn';

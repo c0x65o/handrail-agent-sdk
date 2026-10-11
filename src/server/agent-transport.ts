@@ -1,8 +1,8 @@
 import type { ConversationTransport, ConversationTransportCapabilities, StartTurnInput, ResumeTurnInput,
-  TurnObservation, TurnObservationResult, TurnResumePoint, CancelTurnInput, TransportResult } from '@handrail/ai-assistant';
+  TurnObservation, TurnObservationResult, TurnResumePoint, CancelTurnInput, TransportResult } from '../assistant/index.js';
 import type { JobIdentity } from '../contracts/job.js';
 import type { createAgentRuntime } from './agent-runtime.js';
-import type { AuthoritativeAttribution, StreamEvent, ChatRequest } from '@handrail/ai-assistant';
+import type { AuthoritativeAttribution, StreamEvent, ChatRequest } from '../assistant/index.js';
 
 export interface AgentConversationBinding { readonly identity: JobIdentity; readonly turnId: string; readonly mutationId: string }
 export interface AgentConversationPage<TEvent> {

@@ -58,7 +58,7 @@ export function createAgentStateStore(db: AgentPostgresDatabase, keys: AgentStat
     await tx.insert(states).values(record).onConflictDoUpdate({ target: states.jobId, set: record });
   }
   return {
-    checkpointQuotaBytes,
+    ...(checkpointQuotaBytes === undefined ? {} : { checkpointQuotaBytes }),
     load(identity, authority) {
       return safe(() => db.transaction(async tx => {
         const { row } = await lock(tx, identity, authority);

@@ -1,0 +1,1374 @@
+/** @vitest-environment node */
+
+import { act, cleanup, renderHook, waitFor } from "@testing-library/react";
+import type { ReactNode } from "react";
+import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from "vitest";
+import { builtinEnvironments } from "vitest/environments";
+import * as clipboardImages from "../../src/assistant/browser/clipboard-image.js";
+import { createSavedConversationRequestPreparer } from "../../src/assistant/server/saved-conversation-request.js";
+import { createAttachmentContentValidator } from "../../src/assistant/server/attachment-content.js";
+import { createOpenAIResponsesProviderAdapter, type OpenAIResponsesProviderOptions } from "../../src/assistant/providers/openai-responses.js";
+import { ConversationDraftController, InMemoryConversationLocalStateStore } from "../../src/assistant/client/local-state.js";
+import { AttachmentDraftWorkspace } from "../../src/assistant/attachments/draft-workspace.js";
+import { InMemoryAttachmentDraftStore } from "../../src/assistant/attachments/draft-store.js";
+
+// This fixture carries DOM file intake into the real server preparer. Keep
+// Node module resolution for server primitives while installing real jsdom APIs.
+let dom: Awaited<ReturnType<typeof builtinEnvironments.jsdom.setup>>;
+beforeAll(async () => { dom = await builtinEnvironments.jsdom.setup(globalThis, {}); });
+afterAll(async () => { await dom.teardown(globalThis); });
+
+import {
+  AttachmentUploadAdapterError,
+  createAttachmentUploader,
+  createConversationStore,
+  InMemoryConversationEventStore,
+  parseConversationEvent,
+  parseChatRequest,
+  type AttachmentReference,
+  type AttachmentUploadRequest,
+  type ConversationId,
+  type ConversationRuntime,
+  type ConversationRuntimeTurnResult,
+} from "../../src/assistant/index.js";
+import {
+  ConversationProvider,
+  useConversationComposer,
+  type ConversationComposerAttachmentIntakeOptions,
+  type ConversationComposerResult,
+  type UseConversationComposerOptions,
+} from "../../src/assistant/react/index.js";
+
+afterEach(() => { cleanup(); vi.restoreAllMocks(); });
+
+for (const durable of [false, true]) it(`rejects oversized editor input without sending or changing retained text; durable=${durable}`, async () => {
+  const storage = new InMemoryConversationLocalStateStore(), controller = durable ? new ConversationDraftController("conversation_composer", storage) : undefined;
+  await controller?.flush();
+  const { runtime, sendMessage } = fakeRuntime(), uploader = immediateUploader();
+  const { result, unmount } = renderHook(() => useConversationComposer({ uploader, ...(controller ? { draftController: controller } : {}), initialDraft: "kept" }), { wrapper: wrapper(runtime) });
+  try {
+    await waitFor(() => expect(result.current.draft).toBe("kept"));
+    act(() => result.current.setDraft("🦊".repeat(16385)));
+    expect(result.current.draft).toBe("kept"); expect(result.current.getTextareaProps().value).toBe("kept");
+    expect(result.current.draftInputError).toContain("64 KiB"); expect(sendMessage).not.toHaveBeenCalled();
+    await act(async () => { await result.current.submit(); });
+    expect(sendMessage.mock.calls[0]?.[0].content).toBe("kept");
+    act(() => result.current.setDraft("valid edit")); expect(result.current.draftInputError).toBeNull();
+  } finally { unmount(); await controller?.dispose(); uploader.dispose(); }
+});
+
+for (const durable of [false, true]) it(`rejects oversized initial text without a restore notification loop; durable=${durable}`, async () => {
+  const controller = durable ? new ConversationDraftController("conversation_composer", new InMemoryConversationLocalStateStore()) : undefined;
+  const { runtime } = fakeRuntime(), uploader = immediateUploader();
+  const { result, unmount } = renderHook(() => useConversationComposer({ uploader, ...(controller ? { draftController: controller } : {}), initialDraft: "x".repeat(65537) }), { wrapper: wrapper(runtime) });
+  try {
+    await waitFor(() => expect(result.current.draftInputError).toContain("64 KiB"));
+    expect(result.current.draft).toBe(""); expect(result.current.canSend).toBe(false);
+    act(() => result.current.setDraft("valid edit")); expect(result.current.draftInputError).toBeNull();
+  } finally { unmount(); await controller?.dispose(); uploader.dispose(); }
+});
+
+it("retains accepted send text through unmount until the actual request callback settles", async () => {
+  const storage = new InMemoryConversationLocalStateStore();
+  const controller = new ConversationDraftController("conversation_composer", storage);
+  const other = Array.from({ length: 7 }, (_, i) => new ConversationDraftController(`other-${i}`, storage));
+  await Promise.all([controller, ...other].map(c => c.flush()));
+  for (const c of other) c.setText("x".repeat(65536));
+  const { runtime, sendMessage } = fakeRuntime(), uploader = immediateUploader();
+  let accept!: () => void, settle!: (value: ConversationRuntimeTurnResult) => void;
+  sendMessage.mockImplementation(input => {
+    accept = () => input.onAccepted?.({ conversationId: "conversation_composer" as never, messageId: "accepted" as never, turnId: "turn_composer" as never });
+    return new Promise(resolve => { settle = resolve; });
+  });
+  const { result, unmount } = renderHook(() => useConversationComposer({ uploader, draftController: controller }), { wrapper: wrapper(runtime) });
+  let sending!: ReturnType<ConversationComposerResult["submit"]>;
+  try {
+    act(() => result.current.setDraft("y".repeat(65536)));
+    act(() => { sending = result.current.submit(); });
+    act(() => accept()); expect(result.current.draft).toBe("");
+    act(() => result.current.setDraft("next")); expect(result.current.draft).toBe("");
+    expect(result.current.draftInputError).toContain("account’s text limit");
+    unmount(); await controller.dispose();
+    expect(other[0]!.setText("z".repeat(65536))).toBe(true);
+    const extra = new ConversationDraftController("extra", storage); other.push(extra);
+    expect(extra.setText("new")).toBe(false);
+    await act(async () => { settle(completed()); await sending; });
+    expect(extra.setText("new")).toBe(true);
+  } finally {
+    settle?.(completed()); await sending; unmount();
+    await Promise.all([controller, ...other].map(c => c.dispose())); uploader.dispose();
+  }
+});
+
+it("saves the exact device receipt before dispatching a session send and keeps source bytes out of the input", async () => {
+  const storage = new InMemoryConversationLocalStateStore(), text = new ConversationDraftController("conversation_composer", storage);
+  const fileStore = new InMemoryAttachmentDraftStore<Blob>(), owner = new AttachmentDraftWorkspace(fileStore, { upload: async request => reference(request) });
+  const files = owner.forConversation("conversation_composer"); await text.flush(); await files.flush();
+  const { runtime, sendMessage } = fakeRuntime<{ prompt: string }>();
+  Object.defineProperty(runtime, "displaySession", { value: { draft: text, subscribe: () => () => undefined,
+    getSnapshot: () => ({ submitting: false, hasPendingSubmission: false, control: { status: "ready" }, window: { status: "ready" } }),
+  } });
+  let savedVersion: string | undefined;
+  sendMessage.mockImplementation(async () => { savedVersion = (await storage.readDraft("conversation_composer"))?.version; return completed(); });
+  const { result, unmount } = renderHook(() => useConversationComposer({ uploader: files.uploader, attachmentDraftController: files,
+    attachmentIntake: { previews: false }, createRequest: ({ text }) => ({ prompt: text }),
+  }), { wrapper: wrapper(runtime) });
+  let release!: () => void;
+  const gate = new Promise<void>(resolve => { release = resolve; }), write = storage.writeDraft.bind(storage);
+  try {
+    act(() => result.current.getFileInputProps().onChange({ currentTarget: { files: fileList(file("file.pdf", "application/pdf")) } } as never));
+    await waitFor(() => expect(result.current.attachments[0]?.status).toBe("ready"));
+    await act(async () => { await files.flush(); });
+    const ids = files.getSnapshot().files.map(value => value.id);
+    vi.spyOn(storage, "writeDraft").mockImplementationOnce(async (...args) => { await gate; return write(...args); });
+    let sending!: ReturnType<ConversationComposerResult["submit"]>;
+    act(() => { result.current.setDraft("question"); sending = result.current.submit(); });
+    await waitFor(() => expect(storage.writeDraft).toHaveBeenCalledOnce()); expect(sendMessage).not.toHaveBeenCalled();
+    await act(async () => { release(); await sending; });
+    expect(sendMessage).toHaveBeenCalledOnce();
+    expect(sendMessage.mock.calls[0]![0].localDraft).toEqual({ version: 1, textVersion: savedVersion, fileIds: ids });
+    expect(sendMessage.mock.calls[0]![0].request).toEqual({ prompt: "question" });
+    expect(sendMessage.mock.calls[0]![0].attachments?.[0]).not.toHaveProperty("source");
+  } finally { release(); unmount(); await text.dispose(); await owner.dispose(); }
+});
+
+it("keeps account-owned files through chat switches/unmount and recreates only view-owned previews", async () => {
+  const { runtime } = fakeRuntime(), urls = objectUrls(), storage = new InMemoryAttachmentDraftStore<Blob>();
+  let settle!: (result: AttachmentReference) => void, uploaded!: AttachmentUploadRequest<Blob>;
+  const upload = vi.fn((request: AttachmentUploadRequest<Blob>) => { uploaded = request; return new Promise<AttachmentReference>(resolve => { settle = resolve; }); });
+  const owner = new AttachmentDraftWorkspace(storage, { upload });
+  const first = owner.forConversation("first"), second = owner.forConversation("second"); await first.flush(); await second.flush();
+  const { result, rerender, unmount } = renderHook(({ controller }) => useConversationComposer({
+    uploader: controller.uploader, attachmentDraftController: controller, conversationId: controller.conversationId as ConversationId,
+    attachmentIntake: { previews: { objectUrlApi: urls.api } },
+  }), { wrapper: wrapper(runtime), initialProps: { controller: first } });
+  try {
+    act(() => result.current.getFileInputProps().onChange({ currentTarget: { files: fileList(file("keep.png")) } } as never));
+    await waitFor(() => expect(result.current.attachments[0]?.status).toBe("uploading"));
+    rerender({ controller: second }); expect(result.current.attachments).toEqual([]); expect(uploaded.signal.aborted).toBe(false);
+    await act(async () => { settle(reference(uploaded)); await first.flush(); });
+    rerender({ controller: first });
+    await waitFor(() => expect(result.current.canSend).toBe(true));
+    expect(result.current.attachments[0]?.filename).toBe("keep.png"); expect(upload).toHaveBeenCalledTimes(1);
+    unmount(); expect(first.uploader.disposed).toBe(false); expect(first.getSnapshot().files).toHaveLength(1);
+    expect(urls.revoked.length).toBe(urls.created.length);
+    await first.flush(); expect((await storage.readAttachmentDraft("first"))?.files[0]?.reference).toEqual(reference(uploaded));
+  } finally { unmount(); await owner.dispose(); }
+});
+
+it("clears only admitted files from the original account after its composer is replaced", async () => {
+  const { runtime, sendMessage } = fakeRuntime(), a = new InMemoryAttachmentDraftStore<Blob>(), b = new InMemoryAttachmentDraftStore<Blob>();
+  const adapter = { upload: async (request: AttachmentUploadRequest<Blob>) => reference(request) };
+  const firstOwner = new AttachmentDraftWorkspace(a, adapter), secondOwner = new AttachmentDraftWorkspace(b, adapter);
+  const first = firstOwner.forConversation("conversation_composer"), second = secondOwner.forConversation("conversation_composer");
+  await first.flush(); await second.flush();
+  let accept!: () => void, settle!: (result: ConversationRuntimeTurnResult) => void;
+  sendMessage.mockImplementation(input => {
+    accept = () => input.onAccepted?.({ conversationId: "conversation_composer" as never, messageId: "accepted" as never, turnId: "turn_composer" as never });
+    return new Promise(resolve => { settle = resolve; });
+  });
+  const renders: { account: object; files: string[] }[] = [];
+  const { result, rerender, unmount } = renderHook(({ controller }) => {
+    const composer = useConversationComposer({ uploader: controller.uploader, attachmentDraftController: controller, attachmentIntake: { previews: false } });
+    renders.push({ account: controller, files: composer.attachments.map(value => value.filename!) }); return composer;
+  }, { wrapper: wrapper(runtime), initialProps: { controller: first } });
+  try {
+    act(() => result.current.getFileInputProps().onChange({ currentTarget: { files: fileList(file("private-a.png")) } } as never));
+    await waitFor(() => expect(result.current.canSend).toBe(true));
+    let sending!: ReturnType<ConversationComposerResult["submit"]>;
+    act(() => { sending = result.current.submit(); });
+    rerender({ controller: second });
+    act(() => result.current.getFileInputProps().onChange({ currentTarget: { files: fileList(file("private-b.png")) } } as never));
+    await waitFor(() => expect(result.current.canSend).toBe(true));
+    await act(async () => { accept(); settle(completed()); await sending; await first.flush(); });
+    expect(await a.readAttachmentDraft("conversation_composer")).toBeNull();
+    expect(result.current.attachments.map(value => value.filename)).toEqual(["private-b.png"]);
+    expect(renders.filter(value => value.account === second).every(value => !value.files.includes("private-a.png"))).toBe(true);
+  } finally { unmount(); await firstOwner.dispose(); await secondOwner.dispose(); }
+});
+
+it("exposes recoverable file storage errors and restores ready references after replacing the account owner", async () => {
+  const { runtime } = fakeRuntime(), storage = new InMemoryAttachmentDraftStore<Blob>();
+  const upload = vi.fn(async (request: AttachmentUploadRequest<Blob>) => reference(request));
+  const firstOwner = new AttachmentDraftWorkspace(storage, { upload }), first = firstOwner.forConversation("conversation_composer"); await first.flush();
+  const { result, rerender, unmount } = renderHook(({ controller }) => useConversationComposer({ uploader: controller.uploader,
+    attachmentDraftController: controller, attachmentIntake: { previews: false },
+  }), { wrapper: wrapper(runtime), initialProps: { controller: first } });
+  let secondOwner: AttachmentDraftWorkspace<Blob> | undefined;
+  try {
+    vi.spyOn(storage, "writeAttachmentDraft").mockRejectedValueOnce(new Error("quota"));
+    act(() => result.current.getFileInputProps().onChange({ currentTarget: { files: fileList(file("persist.pdf", "application/pdf")) } } as never));
+    await waitFor(() => expect(result.current.attachmentPersistence?.status).toBe("error"));
+    expect(result.current.canSend).toBe(false); expect(result.current.attachments).toHaveLength(1); expect(upload).not.toHaveBeenCalled();
+    await act(async () => { await result.current.attachmentPersistence!.retry(); });
+    await waitFor(() => expect(result.current.canSend).toBe(true));
+    await act(async () => { await firstOwner.dispose(); });
+    secondOwner = new AttachmentDraftWorkspace(storage, { upload }); const restored = secondOwner.forConversation("conversation_composer");
+    rerender({ controller: restored });
+    await waitFor(() => expect(result.current.canSend).toBe(true));
+    expect(result.current.attachments[0]?.filename).toBe("persist.pdf"); expect(upload).toHaveBeenCalledTimes(1);
+  } finally { unmount(); await firstOwner.dispose(); await secondOwner?.dispose(); }
+});
+
+it("restores the saved composer before sending, preserves it over initial text, and flushes on unmount", async () => {
+  const storage = new InMemoryConversationLocalStateStore();
+  await storage.writeDraft("conversation_composer", "saved before reload", null);
+  const controller = new ConversationDraftController("conversation_composer", storage);
+  const { runtime } = fakeRuntime(), uploader = immediateUploader();
+  const { result, unmount } = renderHook(() => useConversationComposer({ uploader, draftController: controller, initialDraft: "initial placeholder" }), { wrapper: wrapper(runtime) });
+  try {
+    expect(result.current.canSend).toBe(false);
+    await waitFor(() => expect(result.current.draft).toBe("saved before reload"));
+    expect(result.current.canSend).toBe(true);
+    act(() => result.current.setDraft("last edit before close"));
+    unmount();
+    await vi.waitFor(async () => expect((await storage.readDraft("conversation_composer"))?.text).toBe("last edit before close"));
+  } finally { unmount(); await controller.dispose(); uploader.dispose(); }
+});
+
+it("never renders another account's draft during a scope change, and late admission clears only its original journal", async () => {
+  const a = new InMemoryConversationLocalStateStore(), b = new InMemoryConversationLocalStateStore();
+  await a.writeDraft("conversation_composer", "private account A", null);
+  await b.writeDraft("conversation_composer", "private account B", null);
+  const first = new ConversationDraftController("conversation_composer", a), second = new ConversationDraftController("conversation_composer", b);
+  await first.flush(); await second.flush();
+  const { runtime, sendMessage } = fakeRuntime(), uploader = immediateUploader();
+  let accept!: () => void, settle!: (value: ConversationRuntimeTurnResult) => void;
+  sendMessage.mockImplementation(input => {
+    accept = () => input.onAccepted?.({ conversationId: "conversation_composer" as never, messageId: "accepted" as never, turnId: "turn_composer" as never });
+    return new Promise(resolve => { settle = resolve; });
+  });
+  const renders: { controller: ConversationDraftController; text: string }[] = [];
+  const { result, rerender, unmount } = renderHook(({ controller }) => {
+    const composer = useConversationComposer({ uploader, draftController: controller });
+    renders.push({ controller, text: composer.draft }); return composer;
+  }, { wrapper: wrapper(runtime), initialProps: { controller: first } });
+  try {
+    let sending!: ReturnType<ConversationComposerResult["submit"]>;
+    act(() => { sending = result.current.submit(); });
+    rerender({ controller: second });
+    expect(renders.filter(row => row.controller === second).every(row => row.text === "private account B")).toBe(true);
+    await act(async () => { accept(); settle(completed()); await sending; await first.flush(); });
+    expect(await a.readDraft("conversation_composer")).toBeNull();
+    expect((await b.readDraft("conversation_composer"))?.text).toBe("private account B");
+    expect(result.current.draft).toBe("private account B");
+  } finally { unmount(); await first.dispose(); await second.dispose(); uploader.dispose(); }
+});
+
+it("keeps newer text after admission and exposes recoverable draft storage failures", async () => {
+  const storage = new InMemoryConversationLocalStateStore(), controller = new ConversationDraftController("conversation_composer", storage);
+  await controller.flush();
+  const { runtime, sendMessage } = fakeRuntime(), uploader = immediateUploader();
+  let accept!: () => void, settle!: (value: ConversationRuntimeTurnResult) => void;
+  sendMessage.mockImplementation(input => {
+    accept = () => input.onAccepted?.({ conversationId: "conversation_composer" as never, messageId: "accepted" as never, turnId: "turn_composer" as never });
+    return new Promise(resolve => { settle = resolve; });
+  });
+  const { result, unmount } = renderHook(() => useConversationComposer({ uploader, draftController: controller }), { wrapper: wrapper(runtime) });
+  try {
+    act(() => result.current.setDraft("sent"));
+    let sending!: ReturnType<ConversationComposerResult["submit"]>;
+    act(() => { sending = result.current.submit(); result.current.setDraft("newer draft"); });
+    await act(async () => { accept(); settle(completed()); await sending; });
+    expect(result.current.draft).toBe("newer draft");
+    vi.spyOn(storage, "writeDraft").mockRejectedValueOnce(new Error("Device quota"));
+    await act(async () => { await expect(result.current.draftPersistence!.retry()).rejects.toThrow("Device quota"); });
+    expect(result.current.draftPersistence).toMatchObject({ status: "error", error: expect.stringContaining("could not be saved") });
+    expect(result.current.draft).toBe("newer draft");
+    await act(async () => { await result.current.draftPersistence!.retry(); });
+    expect(result.current.draftPersistence!.status).toBe("saved");
+    expect((await storage.readDraft("conversation_composer"))?.text).toBe("newer draft");
+  } finally { unmount(); await controller.dispose(); uploader.dispose(); }
+});
+
+it("clears the failed Stop error after a successful retry and preserves the draft", async () => {
+  const { runtime } = fakeRuntime();
+  const uploader = immediateUploader();
+  const onCancel = vi.fn().mockRejectedValueOnce(new Error("Offline")).mockResolvedValue(undefined);
+  const { result, unmount } = renderHook(() => useConversationComposer({ uploader, onCancel, initialDraft: "My next question" }),
+    { wrapper: wrapper(runtime) });
+  await act(async () => { expect(await result.current.cancel()).toBe(false); });
+  expect(result.current.errors).toContainEqual(expect.objectContaining({ source: "cancel" }));
+  await act(async () => { expect(await result.current.cancel()).toBe(true); });
+  expect(result.current.errors).toEqual([]);
+  expect(result.current.draft).toBe("My next question");
+  unmount(); uploader.dispose();
+});
+
+const completed = (status: ConversationRuntimeTurnResult["status"] = "completed") => ({
+  turnId: "turn_composer",
+  status,
+  checkpoint: {
+    lastAppliedEventId: null,
+    lastAppliedCursor: null,
+    lastAppliedRevision: null,
+  },
+}) as ConversationRuntimeTurnResult;
+
+it.each(["completed", "failed", "cancelled", "disconnected"] as const)(
+  "clears on admission and preserves an identical next draft after %s", async (status) => {
+    const { runtime, sendMessage } = fakeRuntime();
+    const uploader = immediateUploader();
+    let settle!: (value: ConversationRuntimeTurnResult) => void;
+    sendMessage.mockImplementation((input) => {
+      input.onAccepted?.({ conversationId: "conversation_composer" as never, messageId: "accepted" as never, turnId: "turn_composer" as never });
+      return new Promise((resolve) => { settle = resolve; });
+    });
+    const { result, unmount } = renderHook(() => useConversationComposer({ uploader, initialDraft: "Repeat" }), { wrapper: wrapper(runtime) });
+    let sending!: ReturnType<ConversationComposerResult["submit"]>;
+    act(() => { sending = result.current.submit(); });
+    expect(result.current.draft).toBe("");
+    expect(result.current.isSending).toBe(true);
+    act(() => { result.current.setDraft("Repeat"); });
+    expect(result.current.canSend).toBe(false);
+    await act(async () => { expect(await result.current.submit()).toBeNull(); });
+    expect(sendMessage).toHaveBeenCalledOnce();
+    await act(async () => { settle(completed(status)); await sending; });
+    expect(result.current.draft).toBe("Repeat");
+    expect(result.current.isSending).toBe(false);
+    unmount(); uploader.dispose();
+  });
+
+it("preserves edits made before admission even when changed back to submitted text", async () => {
+  const { runtime, sendMessage } = fakeRuntime();
+  const uploader = immediateUploader();
+  let accept!: () => void;
+  let settle!: (value: ConversationRuntimeTurnResult) => void;
+  sendMessage.mockImplementation((input) => {
+    accept = () => input.onAccepted?.({ conversationId: "conversation_composer" as never, messageId: "accepted" as never, turnId: "turn_composer" as never });
+    return new Promise((resolve) => { settle = resolve; });
+  });
+  const { result, unmount } = renderHook(() => useConversationComposer({ uploader, initialDraft: "Repeat" }), { wrapper: wrapper(runtime) });
+  let sending!: ReturnType<ConversationComposerResult["submit"]>;
+  act(() => { sending = result.current.submit(); });
+  act(() => { result.current.setDraft("Edited"); result.current.setDraft("Repeat"); });
+  act(() => { accept(); });
+  expect(result.current.draft).toBe("Repeat");
+  await act(async () => { settle(completed()); await sending; });
+  expect(result.current.draft).toBe("Repeat");
+  unmount(); uploader.dispose();
+});
+
+function fakeRuntime<TRequest>(conversationId = "conversation_composer") {
+  const store = createConversationStore(conversationId as ConversationId);
+  const sendMessage = vi.fn<ConversationRuntime<TRequest>["sendMessage"]>();
+  sendMessage.mockResolvedValue(completed());
+  const runtime = {
+    store,
+    getSnapshot: store.getSnapshot,
+    observe(observer: Parameters<ConversationRuntime<TRequest>["observe"]>[0]) {
+      return store.subscribe(() => observer(store.getSnapshot()));
+    },
+    sendMessage,
+    resumeTurn: vi.fn(),
+    restoreActiveTurn: vi.fn(),
+    destroy: vi.fn(),
+  } as unknown as ConversationRuntime<TRequest>;
+  return { runtime, sendMessage };
+}
+
+it("does not apply a previous conversation's late admission or failure to the current draft", async () => {
+  const { runtime, sendMessage } = fakeRuntime();
+  const uploader = immediateUploader();
+  let accept!: () => void;
+  let settle!: (value: ConversationRuntimeTurnResult) => void;
+  sendMessage.mockImplementation((input) => {
+    accept = () => input.onAccepted?.({ conversationId: "first" as never, messageId: "accepted" as never, turnId: "turn_composer" as never });
+    return new Promise((resolve) => { settle = resolve; });
+  });
+  const { result, rerender, unmount } = renderHook(({ conversationId }) => useConversationComposer({ uploader, conversationId, initialDraft: "First" }),
+    { wrapper: wrapper(runtime), initialProps: { conversationId: "first" as ConversationId } });
+  let sending!: ReturnType<ConversationComposerResult["submit"]>;
+  act(() => { sending = result.current.submit(); });
+  rerender({ conversationId: "second" as ConversationId });
+  act(() => { result.current.setDraft("Second"); accept(); });
+  await act(async () => { settle(completed("failed")); await sending; });
+  expect(result.current.draft).toBe("Second");
+  expect(result.current.errors).toEqual([]);
+  expect(result.current.isSending).toBe(false);
+  unmount(); uploader.dispose();
+});
+
+it("keeps text editable without accepting files during an active submission", async () => {
+  const { runtime, sendMessage } = fakeRuntime();
+  const uploader = immediateUploader();
+  let settle!: (value: ConversationRuntimeTurnResult) => void;
+  sendMessage.mockImplementation(() => new Promise((resolve) => { settle = resolve; }));
+  const { result, unmount } = renderHook(() => useConversationComposer({ uploader, initialDraft: "First" }), { wrapper: wrapper(runtime) });
+  let sending!: ReturnType<ConversationComposerResult["submit"]>;
+  const preventPaste = vi.fn(), preventDrop = vi.fn();
+  const source = file("during-turn.png");
+  act(() => {
+    sending = result.current.submit();
+    result.current.getTextareaProps().onChange({ currentTarget: { value: "Second" } } as never);
+    result.current.getTextareaProps().onPaste({ clipboardData: { items: itemList(fileItem(source)) }, preventDefault: preventPaste } as never);
+    result.current.getFileInputProps().onChange({ currentTarget: { files: fileList(source) } } as never);
+    result.current.getDropProps().onDrop({ dataTransfer: { files: fileList(source), items: itemList(fileItem(source)) }, preventDefault: preventDrop } as never);
+  });
+  expect(result.current.draft).toBe("Second");
+  expect(preventPaste).toHaveBeenCalled();
+  expect(preventDrop).toHaveBeenCalled();
+  expect(uploader.getSnapshot().items).toEqual([]);
+  await act(async () => { settle(completed()); await sending; });
+  expect(result.current.draft).toBe("Second");
+  unmount(); uploader.dispose();
+});
+
+function wrapper<TRequest>(runtime: ConversationRuntime<TRequest>) {
+  return function Wrapper({ children }: { children: ReactNode }) {
+    return <ConversationProvider runtime={runtime}>{children}</ConversationProvider>;
+  };
+}
+
+function file(name: string, type = "image/png", contents = "image"): File {
+  return new File([contents], name, { type, lastModified: 1_700_000_000_000 });
+}
+
+function fileList(...files: File[]): FileList {
+  return Object.assign([...files], {
+    item(index: number) {
+      return files[index] ?? null;
+    },
+  }) as unknown as FileList;
+}
+
+function fileItem(source: File): DataTransferItem {
+  return {
+    kind: "file",
+    type: source.type,
+    getAsFile: () => source,
+  } as DataTransferItem;
+}
+
+function itemList(...items: DataTransferItem[]): DataTransferItemList {
+  return Object.assign([...items], {
+    item(index: number) {
+      return items[index] ?? null;
+    },
+  }) as unknown as DataTransferItemList;
+}
+
+function reference(request: AttachmentUploadRequest<Blob>): AttachmentReference {
+  const suffix = request.idempotencyKey.slice(-8);
+  return {
+    attachment_id: `att_${suffix}`,
+    content_ref: `ref_${suffix}`,
+    media_type: request.metadata.mediaType,
+    byte_size: request.metadata.byteSize,
+    ...(request.metadata.filename === undefined
+      ? {}
+      : { filename: request.metadata.filename }),
+  };
+}
+
+function immediateUploader() {
+  return createAttachmentUploader<Blob>({
+    async upload(request) {
+      return reference(request);
+    },
+  });
+}
+
+function objectUrls() {
+  const created: Blob[] = [];
+  const revoked: string[] = [];
+  let next = 0;
+  return {
+    created,
+    revoked,
+    api: {
+      createObjectURL(source: Blob) {
+        created.push(source);
+        next += 1;
+        return `blob:composer-${next}`;
+      },
+      revokeObjectURL(url: string) {
+        revoked.push(url);
+      },
+    },
+  };
+}
+
+function keyEvent(overrides: Record<string, unknown> = {}) {
+  return {
+    key: "Enter",
+    shiftKey: false,
+    altKey: false,
+    ctrlKey: false,
+    metaKey: false,
+    nativeEvent: { isComposing: false, keyCode: 13 },
+    preventDefault: vi.fn(),
+    ...overrides,
+  };
+}
+
+describe("useConversationComposer", () => {
+  it("sends on Enter by default, supports explicit newline mode, and stays IME-safe", async () => {
+    const { runtime, sendMessage } = fakeRuntime<{ model: string }>();
+    const uploader = immediateUploader();
+    const presence = {
+      noteActivity: vi.fn(),
+      setTyping: vi.fn(),
+      stopTyping: vi.fn(),
+      switchConversation: vi.fn(),
+    };
+    const onCancel = vi.fn();
+    const { result, rerender } = renderHook(
+      ({ enterBehavior }: { enterBehavior: "newline" | "send" | undefined }) =>
+        useConversationComposer({
+          uploader,
+          presence,
+          request: { model: "test" },
+          ...(enterBehavior === undefined ? {} : { enterBehavior }),
+          onCancel,
+          imageIntake: { previews: false },
+        }),
+      {
+        initialProps: {
+          enterBehavior: "newline" as "newline" | "send" | undefined,
+        },
+        wrapper: wrapper(runtime),
+      },
+    );
+
+    act(() => result.current.setDraft("hello"));
+    expect(result.current.canSend).toBe(true);
+    expect(presence.noteActivity).toHaveBeenCalled();
+    expect(presence.setTyping).toHaveBeenCalledWith(true);
+
+    const newline = keyEvent();
+    act(() => result.current.getTextareaProps().onKeyDown(newline as never));
+    expect(newline.preventDefault).not.toHaveBeenCalled();
+    expect(sendMessage).not.toHaveBeenCalled();
+
+    rerender({ enterBehavior: undefined });
+    for (const overrides of [
+      { shiftKey: true }, { altKey: true }, { ctrlKey: true }, { metaKey: true },
+      { nativeEvent: { isComposing: true } }, { nativeEvent: { keyCode: 229 } },
+      { defaultPrevented: true },
+    ]) {
+      const event = keyEvent(overrides);
+      act(() => result.current.getTextareaProps().onKeyDown(event as never));
+      expect(event.preventDefault).not.toHaveBeenCalled();
+      expect(sendMessage).not.toHaveBeenCalled();
+    }
+    const repeat = keyEvent({ repeat: true });
+    act(() => result.current.getTextareaProps().onKeyDown(repeat as never));
+    expect(repeat.preventDefault).toHaveBeenCalledOnce();
+    expect(sendMessage).not.toHaveBeenCalled();
+    act(() => result.current.getTextareaProps().onCompositionStart({} as never));
+    const composing = keyEvent();
+    act(() => result.current.getTextareaProps().onKeyDown(composing as never));
+    expect(sendMessage).not.toHaveBeenCalled();
+    act(() => result.current.getTextareaProps().onCompositionEnd({} as never));
+
+    const sending = keyEvent();
+    act(() => result.current.getTextareaProps().onKeyDown(sending as never));
+    expect(sending.preventDefault).toHaveBeenCalledOnce();
+    await waitFor(() => expect(sendMessage).toHaveBeenCalledOnce());
+    await waitFor(() => expect(result.current.draft).toBe(""));
+    expect(sendMessage).toHaveBeenCalledWith({
+      content: "hello",
+      attachments: [],
+      onAccepted: expect.any(Function),
+      request: { model: "test" },
+    });
+    expect(presence.stopTyping).toHaveBeenCalledWith("send");
+
+    const ineligible = keyEvent();
+    act(() => result.current.getTextareaProps().onKeyDown(ineligible as never));
+    expect(ineligible.preventDefault).toHaveBeenCalledOnce();
+    expect(sendMessage).toHaveBeenCalledOnce();
+
+    act(() => result.current.getTextareaProps().onBlur());
+    expect(presence.stopTyping).toHaveBeenCalledWith("blur");
+    await expect(result.current.cancel()).resolves.toBe(true);
+    expect(onCancel).toHaveBeenCalledOnce();
+  });
+
+  it("enables file drops and prevents rejected files from navigating away", () => {
+    const { runtime } = fakeRuntime();
+    const uploader = immediateUploader();
+    const { result } = renderHook(() => useConversationComposer({
+      uploader, createRequest: () => ({}),
+    }), { wrapper: wrapper(runtime) });
+    const fileDrag = { dataTransfer: { types: ["Files"], dropEffect: "none" }, preventDefault: vi.fn() };
+    act(() => result.current.getDropProps().onDragOver(fileDrag as never));
+    expect(fileDrag.preventDefault).toHaveBeenCalledOnce();
+    expect(fileDrag.dataTransfer.dropEffect).toBe("copy");
+    const textDrag = { dataTransfer: { types: ["text/plain"] }, preventDefault: vi.fn() };
+    act(() => result.current.getDropProps().onDragOver(textDrag as never));
+    expect(textDrag.preventDefault).not.toHaveBeenCalled();
+    const rejected = file("script.exe", "application/octet-stream");
+    const drop = { dataTransfer: { items: itemList(fileItem(rejected)), files: fileList(rejected) },
+      preventDefault: vi.fn() };
+    act(() => result.current.getDropProps().onDrop(drop as never));
+    expect(drop.preventDefault).toHaveBeenCalledOnce();
+    expect(result.current.attachments).toHaveLength(0);
+    expect(result.current.errors).toHaveLength(1);
+    uploader.dispose();
+  });
+
+  it.each(["paste", "drop"] as const)("accepts %s files when each clipboard read returns a new File", async (method) => {
+    const { runtime, sendMessage } = fakeRuntime();
+    const uploader = immediateUploader();
+    const urls = objectUrls();
+    const { result, unmount } = renderHook(() => useConversationComposer({
+      uploader,
+      attachmentIntake: { previews: { objectUrlApi: urls.api } },
+    }), { wrapper: wrapper(runtime) });
+    const sources = [
+      file("screenshot.png"),
+      file("report.pdf", "application/pdf", "pdf"),
+    ];
+    const readers = sources.map((source) => vi.fn(() => new File([source], source.name, {
+      type: source.type, lastModified: source.lastModified,
+    })));
+    const items = itemList(...sources.map((source, index) => ({
+      kind: "file", type: source.type, getAsFile: readers[index]!,
+    }) as unknown as DataTransferItem));
+    const transfer = { items, files: fileList(...sources) };
+    const preventDefault = vi.fn();
+    act(() => {
+      if (method === "paste") {
+        result.current.getTextareaProps().onPaste({ clipboardData: transfer, preventDefault } as never);
+      } else {
+        result.current.getDropProps().onDrop({ dataTransfer: transfer, preventDefault } as never);
+      }
+    });
+    expect(result.current.errors).toEqual([]);
+    expect(preventDefault).toHaveBeenCalledOnce();
+    for (const read of readers) expect(read).toHaveBeenCalledOnce();
+    await waitFor(() => expect(result.current.attachments.map(({ status }) => status)).toEqual(["ready", "ready"]));
+    expect(result.current.attachments.map(({ filename }) => filename)).toEqual(["screenshot.png", "report.pdf"]);
+    expect(urls.created).toHaveLength(1);
+    await act(() => result.current.submit());
+    expect(sendMessage).toHaveBeenCalledWith(expect.objectContaining({ attachments: [
+      expect.objectContaining({ filename: "screenshot.png", media_type: "image/png", kind: "image" }),
+      expect.objectContaining({ filename: "report.pdf", kind: "document" }),
+    ] }));
+    expect(urls.revoked).toEqual(["blob:composer-1"]);
+    unmount(); uploader.dispose();
+  });
+
+  it("accepts paste, picker, and drop images and sends a ready image-only message", async () => {
+    const { runtime, sendMessage } = fakeRuntime<{ refs: readonly string[] }>();
+    const uploader = immediateUploader();
+    const urls = objectUrls();
+    const { result } = renderHook(() => useConversationComposer({
+      uploader,
+      createRequest: ({ attachments }) => ({
+        refs: attachments.map((attachment) => attachment.content_ref),
+      }),
+      imageIntake: { previews: { objectUrlApi: urls.api } },
+    }), { wrapper: wrapper(runtime) });
+
+    const pasted = file("paste.png", "image/png", "pasted");
+    const picked = file("picker.jpg", "image/jpeg", "picked");
+    const dropped = file("drop.webp", "image/webp", "dropped");
+    const pastePreventDefault = vi.fn();
+    act(() => result.current.getTextareaProps().onPaste({
+      clipboardData: { items: itemList(fileItem(pasted)) },
+      preventDefault: pastePreventDefault,
+    } as never));
+    act(() => result.current.getFileInputProps().onChange({
+      currentTarget: { files: fileList(picked) },
+    } as never));
+    const dropPreventDefault = vi.fn();
+    act(() => result.current.getDropProps().onDrop({
+      dataTransfer: {
+        items: itemList(fileItem(dropped)),
+        files: fileList(dropped),
+      },
+      preventDefault: dropPreventDefault,
+    } as never));
+
+    expect(pastePreventDefault).toHaveBeenCalledOnce();
+    expect(dropPreventDefault).toHaveBeenCalledOnce();
+    await waitFor(() => expect(result.current.attachments.map(({ status }) => status)).toEqual([
+      "ready",
+      "ready",
+      "ready",
+    ]));
+    expect(result.current.draft).toBe("");
+    expect(result.current.canSend).toBe(true);
+
+    await act(() => result.current.submit());
+    expect(sendMessage).toHaveBeenCalledWith(expect.objectContaining({
+      content: [],
+      attachments: [
+        expect.objectContaining({ filename: "paste.png" }),
+        expect.objectContaining({ filename: "picker.jpg" }),
+        expect.objectContaining({ filename: "drop.webp" }),
+      ],
+      request: { refs: expect.any(Array) },
+    }));
+    expect(result.current.attachments).toEqual([]);
+    expect(urls.revoked).toEqual([
+      "blob:composer-1",
+      "blob:composer-2",
+      "blob:composer-3",
+    ]);
+  });
+
+  it("accepts mixed picker and drop attachments and submits in selection order", async () => {
+    const { runtime, sendMessage } = fakeRuntime<undefined>();
+    const pending = new Map<string, {
+      request: AttachmentUploadRequest<Blob>;
+      resolve: (value: AttachmentReference) => void;
+    }>();
+    const uploader = createAttachmentUploader<Blob>({
+      upload(request) {
+        return new Promise<AttachmentReference>((resolve) => {
+          pending.set(request.metadata.filename ?? "", { request, resolve });
+        });
+      },
+    });
+    const urls = objectUrls();
+    const { result } = renderHook(() => useConversationComposer({
+      uploader,
+      attachmentIntake: { previews: { objectUrlApi: urls.api } },
+    }), { wrapper: wrapper(runtime) });
+
+    expect(result.current.getFileInputProps().accept).toBe(
+      "image/jpeg,image/png,image/gif,image/webp,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,text/csv,text/tab-separated-values",
+    );
+    const pickedPdf = file("picked.pdf", "application/pdf", "pdf");
+    const pickedImage = file("picked.png", "image/png", "image");
+    act(() => result.current.getFileInputProps().onChange({
+      currentTarget: { files: fileList(pickedPdf, pickedImage) },
+    } as never));
+    await waitFor(() => expect(pending.size).toBe(2));
+
+    act(() => pending.get("picked.png")!.request.onProgress({
+      uploadedBytes: 3,
+      totalBytes: pickedImage.size,
+    }));
+    expect(result.current.attachments).toEqual([
+      expect.objectContaining({
+        filename: "picked.pdf",
+        kind: "document",
+        mediaType: "application/pdf",
+        status: "uploading",
+        retryable: false,
+        cancellable: true,
+      }),
+      expect.objectContaining({
+        filename: "picked.png",
+        kind: "image",
+        mediaType: "image/png",
+        status: "uploading",
+        progress: { uploadedBytes: 3, totalBytes: pickedImage.size },
+      }),
+    ]);
+    expect(result.current.attachments[0]?.previewUrl).toBeUndefined();
+    expect(result.current.attachments[1]?.previewUrl).toBe("blob:composer-1");
+    expect(urls.created).toEqual([pickedImage]);
+
+    act(() => pending.get("picked.png")!.resolve(reference(
+      pending.get("picked.png")!.request,
+    )));
+    await waitFor(() => expect(result.current.attachments[1]?.status).toBe("ready"));
+    act(() => pending.get("picked.pdf")!.resolve(reference(
+      pending.get("picked.pdf")!.request,
+    )));
+    await waitFor(() => expect(result.current.canSend).toBe(true));
+
+    await act(() => result.current.submit());
+    expect(sendMessage).toHaveBeenCalledWith(expect.objectContaining({
+      attachments: [
+        expect.objectContaining({ filename: "picked.pdf", media_type: "application/pdf", kind: "document" }),
+        expect.objectContaining({ filename: "picked.png", media_type: "image/png" }),
+      ],
+    }));
+    expect(urls.revoked).toEqual(["blob:composer-1"]);
+
+    const droppedImage = file("drop.gif", "image/gif", "gif");
+    const droppedPdf = file("drop.pdf", "application/pdf", "drop-pdf");
+    const preventDefault = vi.fn();
+    act(() => result.current.getDropProps().onDrop({
+      dataTransfer: {
+        items: itemList(fileItem(droppedImage), fileItem(droppedPdf)),
+        files: fileList(droppedImage, droppedPdf),
+      },
+      preventDefault,
+    } as never));
+    expect(preventDefault).toHaveBeenCalledOnce();
+    expect(result.current.attachments.map(({ filename, kind }) => ({ filename, kind })))
+      .toEqual([
+        { filename: "drop.gif", kind: "image" },
+        { filename: "drop.pdf", kind: "document" },
+      ]);
+  });
+
+  it("accepts only file-kind clipboard PDFs and never creates document previews", async () => {
+    const { runtime } = fakeRuntime<undefined>();
+    const urls = objectUrls();
+    const uploader = immediateUploader();
+    const { result } = renderHook(() => useConversationComposer({
+      uploader,
+      attachmentIntake: { previews: { objectUrlApi: urls.api } },
+    }), { wrapper: wrapper(runtime) });
+    const pdf = file("clipboard.pdf", "application/pdf", "pdf");
+    const preventDefault = vi.fn();
+    act(() => result.current.getTextareaProps().onPaste({
+      clipboardData: {
+        items: itemList(
+          { kind: "string", type: "text/plain", getAsFile: () => null } as DataTransferItem,
+          fileItem(pdf),
+        ),
+      },
+      preventDefault,
+    } as never));
+    expect(preventDefault).toHaveBeenCalledOnce();
+    await waitFor(() => expect(result.current.attachments[0]?.status).toBe("ready"));
+    expect(result.current.attachments[0]).toEqual(expect.objectContaining({
+      kind: "document",
+      mediaType: "application/pdf",
+      filename: "clipboard.pdf",
+    }));
+    expect(result.current.attachments[0]?.previewUrl).toBeUndefined();
+    expect(urls.created).toEqual([]);
+    expect(urls.revoked).toEqual([]);
+  });
+
+  it("gives attachmentIntake deterministic precedence over imageIntake", async () => {
+    const { runtime } = fakeRuntime<undefined>();
+    const uploader = immediateUploader();
+    const { result } = renderHook(() => useConversationComposer({
+      uploader,
+      attachmentIntake: {
+        acceptedMediaTypes: ["application/pdf"],
+        previews: false,
+      },
+      imageIntake: {
+        acceptedMediaTypes: ["image/png"],
+        previews: false,
+      },
+    }), { wrapper: wrapper(runtime) });
+    expect(result.current.getFileInputProps().accept).toBe("application/pdf");
+    act(() => result.current.getFileInputProps().onChange({
+      currentTarget: {
+        files: fileList(
+          file("ignored.png", "image/png", "image"),
+          file("accepted.pdf", "application/pdf", "pdf"),
+        ),
+      },
+    } as never));
+    await waitFor(() => expect(result.current.attachments).toHaveLength(1));
+    expect(result.current.attachments[0]).toEqual(expect.objectContaining({
+      filename: "accepted.pdf",
+      kind: "document",
+    }));
+    expect(result.current.errors).toContainEqual(expect.objectContaining({
+      code: "unsupported_type",
+    }));
+  });
+
+  it("reports bounded provider-neutral intake rejection messages", async () => {
+    const { runtime } = fakeRuntime<undefined>();
+    const uploader = immediateUploader();
+    const { result } = renderHook(() => useConversationComposer({
+      uploader,
+      attachmentIntake: {
+        previews: false,
+        maxFileBytes: { image: 4, document: 4 },
+        maxSelectionCount: { image: 1, document: 1 },
+      },
+    }), { wrapper: wrapper(runtime) });
+    const first = file("first.png", "image/png", "a");
+    act(() => result.current.getFileInputProps().onChange({
+      currentTarget: { files: fileList(
+        first,
+        first,
+        file("overflow.png", "image/png", "b"),
+        file("large.pdf", "application/pdf", "large"),
+        file("empty.pdf", "application/pdf", ""),
+        file("unsafe/name.pdf", "application/pdf", "x"),
+        file("notes.txt", "text/plain", "x"),
+      ) },
+    } as never));
+    await waitFor(() => expect(result.current.attachments).toHaveLength(1));
+    expect(result.current.errors.map(({ code, message }) => ({ code, message }))).toEqual([
+      { code: "duplicate", message: "The selected attachment is already attached." },
+      { code: "count_overflow", message: "The attachment selection limit has been reached." },
+      { code: "too_large", message: "The selected attachment is 5 bytes; the limit is 4 bytes." },
+      { code: "empty_file", message: "The selected attachment is empty." },
+      { code: "unsafe_filename", message: "The selected attachment has an unsafe filename." },
+      { code: "unsupported_type", message: "The selected file is not a supported attachment type." },
+    ]);
+  });
+
+  it("cancels only owned uploads and exactly cleans image previews after partial intake failure", async () => {
+    const { runtime } = fakeRuntime<undefined>();
+    const urls = objectUrls();
+    const uploader = createAttachmentUploader<Blob>({
+      upload(request) {
+        return new Promise<AttachmentReference>((_resolve, reject) => {
+          request.signal.addEventListener("abort", () => reject(new Error("aborted")));
+        });
+      },
+    }, { maxImageCount: 1 });
+    const { result } = renderHook(() => useConversationComposer({
+      uploader,
+      attachmentIntake: {
+        previews: { objectUrlApi: urls.api },
+        maxSelectionCount: { image: 2 },
+      },
+    }), { wrapper: wrapper(runtime) });
+    act(() => result.current.getFileInputProps().onChange({
+      currentTarget: { files: fileList(file("one.png"), file("two.png")) },
+    } as never));
+    await waitFor(() => expect(result.current.errors).toContainEqual(expect.objectContaining({
+      code: "intake_failed",
+      message: "The selected attachments could not be prepared.",
+    })));
+    expect(result.current.attachments).toEqual([]);
+    expect(uploader.getSnapshot().items).toEqual([]);
+    expect(urls.created).toHaveLength(2);
+    expect(urls.revoked).toEqual(["blob:composer-1", "blob:composer-2"]);
+
+    const shared = createAttachmentUploader<Blob>({
+      upload(request) {
+        return new Promise<AttachmentReference>((_resolve, reject) => {
+          request.signal.addEventListener("abort", () => reject(new Error("aborted")));
+        });
+      },
+    });
+    const externalId = shared.enqueue({
+      source: file("external.png"),
+      fingerprint: "external-fingerprint",
+      idempotencyKey: "external-key",
+      mediaType: "image/png",
+      byteSize: 5,
+      filename: "external.png",
+    });
+    const owned = renderHook(() => useConversationComposer({
+      uploader: shared,
+      attachmentIntake: { previews: false },
+    }), { wrapper: wrapper(runtime) });
+    act(() => owned.result.current.getFileInputProps().onChange({
+      currentTarget: { files: fileList(file("owned.pdf", "application/pdf", "pdf")) },
+    } as never));
+    await waitFor(() => expect(owned.result.current.attachments).toHaveLength(1));
+    act(() => {
+      expect(owned.result.current.cancelAttachment(owned.result.current.attachments[0]!.id))
+        .toBe(true);
+    });
+    expect(owned.result.current.attachments).toEqual([]);
+    expect(shared.getSnapshot().items.some(({ id }) => id === externalId)).toBe(true);
+    owned.unmount();
+  });
+
+  it("gates pending and failed uploads, then supports retry and removal", async () => {
+    let resolvePending: ((value: AttachmentReference) => void) | undefined;
+    const attempts = new Map<string, number>();
+    const uploader = createAttachmentUploader<Blob>({
+      upload(request) {
+        const name = request.metadata.filename ?? "";
+        const attempt = (attempts.get(name) ?? 0) + 1;
+        attempts.set(name, attempt);
+        if (name === "retry.pdf" && attempt === 1) {
+          return Promise.reject(new AttachmentUploadAdapterError({ retryable: true }));
+        }
+        if (name === "pending.png") {
+          return new Promise<AttachmentReference>((resolve, reject) => {
+            resolvePending = resolve;
+            request.signal.addEventListener("abort", () => reject(new Error("aborted")));
+          });
+        }
+        return Promise.resolve(reference(request));
+      },
+    });
+    const { runtime } = fakeRuntime<undefined>();
+    const { result } = renderHook(() => useConversationComposer({
+      uploader,
+      attachmentIntake: { previews: false },
+    }), { wrapper: wrapper(runtime) });
+
+    act(() => result.current.getFileInputProps().onChange({
+      currentTarget: {
+        files: fileList(
+          file("retry.pdf", "application/pdf", "pdf"),
+          file("pending.png"),
+        ),
+      },
+    } as never));
+    await waitFor(() => expect(result.current.attachments.map(({ status }) => status)).toEqual([
+      "failed",
+      "uploading",
+    ]));
+    expect(result.current.canSend).toBe(false);
+    expect(result.current.errors).toContainEqual(expect.objectContaining({
+      source: "upload",
+      retryable: true,
+    }));
+
+    const [failed, pending] = result.current.attachments;
+    expect(failed).toBeDefined();
+    expect(pending).toBeDefined();
+    act(() => {
+      expect(result.current.retryAttachment(failed!.id)).toBe(true);
+    });
+    await waitFor(() => expect(result.current.attachments[0]?.status).toBe("ready"));
+    act(() => {
+      expect(result.current.removeAttachment(pending!.id)).toBe(true);
+    });
+    await waitFor(() => expect(result.current.attachments).toHaveLength(1));
+    expect(result.current.canSend).toBe(true);
+    expect(resolvePending).toBeDefined();
+  });
+
+  it("retains recoverable input after failure and clears only after success", async () => {
+    const { runtime, sendMessage } = fakeRuntime<undefined>();
+    sendMessage
+      .mockResolvedValueOnce({
+        ...completed("failed"),
+        error: { code: "provider_failed", message: "Try again.", retryable: true },
+      })
+      .mockResolvedValueOnce(completed());
+    const uploader = immediateUploader();
+    const urls = objectUrls();
+    const { result } = renderHook(() => useConversationComposer({
+      uploader,
+      imageIntake: { previews: { objectUrlApi: urls.api } },
+    }), { wrapper: wrapper(runtime) });
+
+    act(() => result.current.setDraft("recover me"));
+    act(() => result.current.getFileInputProps().onChange({
+      currentTarget: { files: fileList(file("recover.png")) },
+    } as never));
+    await waitFor(() => expect(result.current.canSend).toBe(true));
+
+    await act(() => result.current.submit());
+    expect(result.current.draft).toBe("recover me");
+    expect(result.current.attachments).toHaveLength(1);
+    expect(result.current.errors).toContainEqual(expect.objectContaining({
+      source: "send",
+      code: "provider_failed",
+    }));
+    expect(urls.revoked).toEqual([]);
+
+    await act(() => result.current.submit());
+    expect(result.current.draft).toBe("");
+    expect(result.current.attachments).toEqual([]);
+    expect(urls.revoked).toEqual(["blob:composer-1"]);
+  });
+
+  it("clears stale send errors when the user edits the retained draft", async () => {
+    const { runtime, sendMessage } = fakeRuntime<undefined>();
+    sendMessage.mockResolvedValueOnce({
+      ...completed("failed"),
+      error: { code: "provider_failed", message: "Try again.", retryable: true },
+    });
+    const uploader = immediateUploader();
+    const { result } = renderHook(() => useConversationComposer({
+      uploader,
+    }), { wrapper: wrapper(runtime) });
+
+    act(() => result.current.setDraft("first attempt"));
+    await act(() => result.current.submit());
+    expect(result.current.errors).toContainEqual(expect.objectContaining({
+      source: "send",
+      code: "provider_failed",
+    }));
+
+    act(() => result.current.setDraft("revised attempt"));
+    expect(result.current.errors).toEqual([]);
+    expect(result.current.draft).toBe("revised attempt");
+  });
+
+  it("cleans up previews and typing across conversation switches and unmount", async () => {
+    const { runtime } = fakeRuntime<undefined>("conversation_one");
+    const firstUploader = immediateUploader();
+    const secondUploader = immediateUploader();
+    const urls = objectUrls();
+    const presence = {
+      noteActivity: vi.fn(),
+      setTyping: vi.fn(),
+      stopTyping: vi.fn(),
+      switchConversation: vi.fn(),
+    };
+    const firstId = "conversation_one" as ConversationId;
+    const secondId = "conversation_two" as ConversationId;
+    const { result, rerender, unmount } = renderHook(
+      ({ conversationId, uploader }: {
+        conversationId: ConversationId;
+        uploader: ReturnType<typeof immediateUploader>;
+      }) =>
+        useConversationComposer({
+          uploader,
+          presence,
+          conversationId,
+          attachmentIntake: { previews: { objectUrlApi: urls.api } },
+        }),
+      {
+        initialProps: { conversationId: firstId, uploader: firstUploader },
+        wrapper: wrapper(runtime),
+      },
+    );
+    act(() => result.current.setDraft("typing"));
+    act(() => result.current.getFileInputProps().onChange({
+      currentTarget: {
+        files: fileList(file("first.png"), file("first.pdf", "application/pdf", "pdf")),
+      },
+    } as never));
+    await waitFor(() => expect(result.current.attachments).toHaveLength(2));
+
+    rerender({ conversationId: firstId, uploader: secondUploader });
+    await waitFor(() => expect(result.current.attachments).toEqual([]));
+    expect(firstUploader.getSnapshot().items).toEqual([]);
+    expect(urls.revoked).toEqual(["blob:composer-1"]);
+
+    act(() => result.current.getFileInputProps().onChange({
+      currentTarget: { files: fileList(file("switch.png")) },
+    } as never));
+    await waitFor(() => expect(result.current.attachments).toHaveLength(1));
+    rerender({ conversationId: secondId, uploader: secondUploader });
+    await waitFor(() => expect(result.current.attachments).toEqual([]));
+    expect(urls.revoked).toEqual(["blob:composer-1", "blob:composer-2"]);
+    expect(presence.stopTyping).toHaveBeenCalledWith("conversation_switch");
+    expect(presence.switchConversation).toHaveBeenCalledWith(secondId);
+
+    act(() => result.current.getFileInputProps().onChange({
+      currentTarget: {
+        files: fileList(file("second.pdf", "application/pdf", "pdf"), file("second.png")),
+      },
+    } as never));
+    await waitFor(() => expect(result.current.attachments).toHaveLength(2));
+    unmount();
+    expect(urls.revoked).toEqual([
+      "blob:composer-1",
+      "blob:composer-2",
+      "blob:composer-3",
+    ]);
+    expect(presence.stopTyping).toHaveBeenCalledWith("destroy");
+  });
+
+  it("isolates two composer drafts and upload ownership on one runtime and uploader", async () => {
+    const { runtime, sendMessage } = fakeRuntime<undefined>();
+    const uploader = immediateUploader();
+    const first = renderHook(() => useConversationComposer({
+      uploader,
+      imageIntake: { previews: false },
+    }), { wrapper: wrapper(runtime) });
+    const second = renderHook(() => useConversationComposer({
+      uploader,
+      imageIntake: { previews: false },
+    }), { wrapper: wrapper(runtime) });
+
+    act(() => first.result.current.setDraft("first draft"));
+    act(() => second.result.current.setDraft("second draft"));
+    const sameMetadata = file("same.png", "image/png", "same");
+    act(() => first.result.current.getFileInputProps().onChange({
+      currentTarget: { files: fileList(sameMetadata) },
+    } as never));
+    act(() => second.result.current.getFileInputProps().onChange({
+      currentTarget: { files: fileList(sameMetadata) },
+    } as never));
+    await waitFor(() => {
+      expect(first.result.current.canSend).toBe(true);
+      expect(second.result.current.canSend).toBe(true);
+    });
+    expect(uploader.getSnapshot().items).toHaveLength(2);
+
+    await act(() => first.result.current.submit());
+    expect(first.result.current.draft).toBe("");
+    expect(first.result.current.attachments).toEqual([]);
+    expect(second.result.current.draft).toBe("second draft");
+    expect(second.result.current.attachments).toHaveLength(1);
+    expect(uploader.getSnapshot().items).toHaveLength(1);
+    expect(sendMessage).toHaveBeenCalledOnce();
+  });
+
+  it("preserves the generic request type in the public option contract", () => {
+    type Request = { readonly model: string };
+    const options = {} as UseConversationComposerOptions<Request>;
+    const composer = {} as ConversationComposerResult;
+    const intake = {} as ConversationComposerAttachmentIntakeOptions;
+    expect(options).toBeDefined();
+    expect(composer).toBeDefined();
+    expect(intake).toBeDefined();
+  });
+});
+
+
+it("blocks synchronous, keyboard and direct submissions until all local tasks release", async () => {
+  const { runtime, sendMessage } = fakeRuntime();
+  const uploader = createAttachmentUploader<Blob>({ upload: async () => { throw new Error("Unused"); } });
+  const { result } = renderHook(() => useConversationComposer({ uploader, initialDraft: "Draft" }), {
+    wrapper: wrapper(runtime),
+  });
+  let releaseFirst!: () => void;
+  let releaseSecond!: () => void;
+  await act(async () => {
+    releaseFirst = result.current.acquireSubmissionBlock();
+    releaseSecond = result.current.acquireSubmissionBlock();
+    expect(await result.current.submit()).toBeNull();
+  });
+  expect(result.current.canSend).toBe(false);
+  act(() => result.current.getTextareaProps().onKeyDown({ key: "Enter", shiftKey: false,
+    nativeEvent: { isComposing: false }, preventDefault: vi.fn(),
+  } as unknown as Parameters<ReturnType<ConversationComposerResult["getTextareaProps"]>["onKeyDown"]>[0]));
+  act(() => { releaseFirst(); releaseFirst(); });
+  expect(result.current.canSend).toBe(false);
+  expect(sendMessage).not.toHaveBeenCalled();
+  act(() => releaseSecond());
+  expect(result.current.canSend).toBe(true);
+  await act(async () => { await result.current.submit(); });
+  expect(sendMessage).toHaveBeenCalledTimes(1);
+});
+
+
+it("accepts PDF documents with the default composer intake", async () => {
+  const { runtime } = fakeRuntime();
+  const uploader = immediateUploader();
+  const { result } = renderHook(() => useConversationComposer({ uploader }), { wrapper: wrapper(runtime) });
+  expect(result.current.getFileInputProps().accept).toContain("application/pdf");
+  act(() => result.current.getFileInputProps().onChange({ currentTarget: { files: fileList(file("report.pdf", "application/pdf", "%PDF-1.4")), value: "" } } as never));
+  await waitFor(() => expect(result.current.attachments[0]?.status).toBe("ready"));
+  expect(result.current.attachments[0]?.kind).toBe("document");
+  expect(result.current.errors).toEqual([]);
+});
+
+it.each([
+  ["invoice.png", "image/png", "input_image"],
+  ["invoice.pdf", "application/pdf", "input_file"],
+  ["invoice-scan.pdf", "application/pdf", "input_file"],
+  ["invoice.docx", "application/vnd.openxmlformats-officedocument.wordprocessingml.document", "input_file"],
+] as const)("carries real %s bytes from composer output through saved events to provider input on a follow-up", async (filename, mediaType, inputType) => {
+  const bytes = process.getBuiltinModule("fs").readFileSync(`${process.cwd()}/test/fixtures/documents/${filename}`);
+  const { runtime, sendMessage } = fakeRuntime();
+  let uploaded: AttachmentReference | undefined;
+  const uploader = createAttachmentUploader<Blob>({ async upload(request) {
+    const received = await new Promise<Uint8Array>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(new Uint8Array(reader.result as ArrayBuffer));
+      reader.onerror = reject;
+      reader.readAsArrayBuffer(request.source);
+    });
+    expect(Buffer.from(received)).toEqual(bytes);
+    const [validated] = createAttachmentContentValidator()([{ data: received, fileName: filename, declaredMediaType: mediaType }]);
+    expect(validated?.mediaType).toBe(mediaType);
+    uploaded = reference(request);
+    return uploaded;
+  } });
+  const { result, unmount } = renderHook(() => useConversationComposer({ uploader, attachmentIntake: { previews: false } }), { wrapper: wrapper(runtime) });
+  try {
+    act(() => result.current.getFileInputProps().onChange({ currentTarget: {
+      files: fileList(new File([new Uint8Array(bytes)], filename, { type: mediaType })), value: "",
+    } } as never));
+    await waitFor(() => expect(result.current.attachments[0]?.status).toBe("ready"));
+    await act(async () => { await result.current.submit(); });
+    const durable = JSON.parse(JSON.stringify(sendMessage.mock.calls[0]![0].attachments![0]));
+    expect(durable.kind).toBe(mediaType.startsWith("image/") ? "image" : "document");
+    expect(durable).not.toHaveProperty("content_ref");
+    const eventStore = new InMemoryConversationEventStore();
+    const payloads = [
+      { type: "message.created", message_id: "original", role: "user", content: [{ type: "text", text: "Read this file" }] },
+      { type: "message.attachment_referenced", message_id: "original", attachment: durable },
+      { type: "message.created", message_id: "follow-up", role: "user", content: [{ type: "text", text: "What was the total?" }] },
+      { type: "turn.started", turn_id: "follow-up-turn", input_message_ids: ["follow-up"] },
+    ];
+    await eventStore.append({ conversationId: "conversation_composer" as never, expectedRevision: null,
+      events: payloads.map((payload, index) => parseConversationEvent({ version: 1,
+        conversation_id: "conversation_composer", event_id: `saved-${index}`, revision: index + 1,
+        occurred_at: "2026-09-15T12:00:00Z", actor: { type: "user" }, source: { type: "runtime" }, payload })) });
+    const prepare = createSavedConversationRequestPreparer({ eventStore, authorize: async () => {},
+      resolveAttachment: async ({ attachment }) => {
+        expect(attachment.attachment_id).toBe(uploaded!.attachment_id);
+        return uploaded!;
+      } });
+    const signal = new AbortController().signal;
+    const prepared = await prepare({ conversationId: "conversation_composer", turnId: "follow-up-turn", mutationId: "follow-up",
+      signal, request: parseChatRequest({ protocol_version: "handrail.ai-runtime.v1", continuation_of: null,
+        messages: [{ role: "user", content: [{ type: "text", text: "untrusted" }] }], tools: [], tool_results: [],
+        generation: { max_output_tokens: 100, temperature: 0 }, correlation_hints: {} }) });
+    const network = vi.fn<OpenAIResponsesProviderOptions["request"]>(async function* () {
+      yield { type: "response.completed", response: { status: "completed", output: [], usage: { input_tokens: 1, output_tokens: 0, total_tokens: 1 } } };
+    });
+    const adapter = createOpenAIResponsesProviderAdapter({ model: "fixture", request: network, supportsToolSearch: false,
+      document_input: { supported_mime_types: ["application/pdf", "application/vnd.openxmlformats-officedocument.wordprocessingml.document"],
+        max_document_count: 2, max_document_bytes: 20 * 1024 * 1024, requires_host_resolution: true } });
+    const stream = adapter.invoke({ ...prepared.request, signal,
+      resolve_attachment_reference: async () => ({ media_type: mediaType, bytes: new Uint8Array(bytes) }),
+      context: { request_id: "fixture", trace_id: "fixture", correlation_hints: {}, attribution: {
+        organization: { id: "org", source: "server_derived", trust: "authoritative" },
+        project: { id: "project", source: "server_derived", trust: "authoritative" },
+        service_environment: { id: "env", source: "server_derived", trust: "authoritative" },
+        known_user: { id: null, source: "server_derived", trust: "authoritative" },
+        session: { id: null, source: "server_derived", trust: "authoritative" },
+        automation: { id: null, source: "server_derived", trust: "authoritative" },
+      } } });
+    for await (const event of stream) { void event; }
+    expect(network).toHaveBeenCalledOnce();
+    const body = JSON.stringify(network.mock.calls[0]![0]);
+    expect(body).toContain(inputType);
+    expect(body).toContain(`data:${mediaType};base64,${bytes.toString("base64")}`);
+    expect(body).toContain("What was the total?");
+    expect(body).not.toContain("untrusted");
+  } finally { unmount(); uploader.dispose(); }
+});
+
+it("explains how to replace an unsupported legacy Word file", () => {
+  const { runtime } = fakeRuntime();
+  const uploader = immediateUploader();
+  const { result, unmount } = renderHook(() => useConversationComposer({ uploader }), { wrapper: wrapper(runtime) });
+  act(() => result.current.getFileInputProps().onChange({ currentTarget: { files: fileList(file("old.doc", "application/msword", "legacy")) } } as never));
+  expect(result.current.errors[0]?.message).toContain("Save the file as .docx or PDF");
+  unmount(); uploader.dispose();
+});
+
+it("prepares large pasted images before upload, blocks premature sends and uses prepared metadata", async () => {
+  const { runtime, sendMessage } = fakeRuntime();
+  const uploader = immediateUploader();
+  let finish!: (file: Blob) => void;
+  const prepare = vi.spyOn(clipboardImages, "prepareClipboardImage").mockImplementation(() => new Promise(resolve => { finish = resolve; }));
+  const { result, unmount } = renderHook(() => useConversationComposer({ uploader, initialDraft: "Read these measurements",
+    attachmentIntake: { maxFileBytes: { image: 8 }, previews: false } }), { wrapper: wrapper(runtime) });
+  const preventDefault = vi.fn();
+  act(() => result.current.getTextareaProps().onPaste({ clipboardData: { items: itemList(fileItem(file("image.png", "image/png", "expanded clipboard"))) }, preventDefault } as never));
+  expect(preventDefault).toHaveBeenCalledOnce();
+  expect(result.current.canSend).toBe(false);
+  await act(async () => { expect(await result.current.submit()).toBeNull(); });
+  expect(sendMessage).not.toHaveBeenCalled();
+  expect(prepare).toHaveBeenCalledWith(expect.any(Blob), expect.objectContaining({ maximumBytes: 8 }));
+  const jpeg = file("image.jpg", "image/jpeg", "jpeg");
+  await act(async () => { finish(jpeg); });
+  await waitFor(() => expect(result.current.attachments[0]?.status).toBe("ready"));
+  expect(result.current.attachments[0]).toMatchObject({ source: jpeg, filename: "image.jpg", mediaType: "image/jpeg", byteSize: 4 });
+  expect(result.current.errors).toEqual([]);
+  expect(result.current.canSend).toBe(true);
+  await act(async () => { await result.current.submit(); });
+  expect(sendMessage.mock.calls[0]?.[0].attachments?.[0]).toMatchObject({ media_type: "image/jpeg", size_bytes: 4 });
+  unmount(); uploader.dispose();
+});
+
+it.each(["conversation", "unmount"])("cancels paste preparation on %s changes without uploading stale bytes", async change => {
+  const { runtime } = fakeRuntime();
+  const uploader = immediateUploader();
+  let finish!: (file: Blob) => void;
+  const prepare = vi.spyOn(clipboardImages, "prepareClipboardImage").mockImplementation(() => new Promise(resolve => { finish = resolve; }));
+  const { result, rerender, unmount } = renderHook(({ conversationId }) => useConversationComposer({ uploader, conversationId,
+    attachmentIntake: { maxFileBytes: { image: 8 }, previews: false } }), { wrapper: wrapper(runtime), initialProps: { conversationId: "first" as ConversationId } });
+  act(() => result.current.getTextareaProps().onPaste({ clipboardData: { items: itemList(fileItem(file("image.png", "image/png", "expanded clipboard"))) }, preventDefault: vi.fn() } as never));
+  if (change === "unmount") unmount(); else rerender({ conversationId: "second" as ConversationId });
+  expect(prepare.mock.calls[0]?.[1].signal.aborted).toBe(true);
+  await act(async () => { finish(file("image.jpg", "image/jpeg", "jpeg")); });
+  expect(uploader.getSnapshot().items).toEqual([]);
+  if (change !== "unmount") {
+    act(() => result.current.setDraft("New conversation"));
+    expect(result.current.canSend).toBe(true);
+    expect(result.current.errors).toEqual([]);
+    unmount();
+  }
+  uploader.dispose();
+});
+
+it("accepts clipboard files when the browser exposes only the files collection", async () => {
+  const { runtime } = fakeRuntime(), uploader = immediateUploader();
+  const { result, unmount } = renderHook(() => useConversationComposer({ uploader, attachmentIntake: { previews: false } }), { wrapper: wrapper(runtime) });
+  act(() => result.current.getTextareaProps().onPaste({ clipboardData: { items: itemList(), files: fileList(file("image.png")) }, preventDefault: vi.fn() } as never));
+  await waitFor(() => expect(result.current.attachments[0]?.status).toBe("ready"));
+  unmount(); uploader.dispose();
+});

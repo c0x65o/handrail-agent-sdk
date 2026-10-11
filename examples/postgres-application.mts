@@ -3,7 +3,7 @@
 // No keys, models, pools, migrations, services or network calls start on import.
 import type { Pool } from 'pg';
 import type { ChatRequest, StreamEvent, AuthoritativeAttribution,
-  ConversationTransportCapabilities, StartTurnInput } from '@handrail/ai-assistant';
+  ConversationTransportCapabilities, StartTurnInput } from 'handrail-agent-sdk/assistant';
 import type { JobIdentity } from 'handrail-agent-sdk';
 import { createPostgresAgentStores, createPostgresAssistanceDatabase, migrateAgentPostgres,
   type AgentStateKeys } from 'handrail-agent-sdk/server/postgres';

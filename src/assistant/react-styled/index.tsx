@@ -1,0 +1,1310 @@
+import { useTurnApprovalMode } from "../react/use-turn-approval-mode.js";
+import type { TurnApprovalModeInput, TurnApprovalModeResult } from "../composer-approval.js";
+import { ConversationPagedApprovalReview } from "../react/paged-approval-review.js";
+import type { ConversationPresentationRuntime as ConversationRuntime } from "../conversation/presentation.js";
+import type { ConversationPresentationState as ConversationState } from "../conversation/presentation.js";
+import { ConversationActivityCard, HANDRAIL_ACTIVITY_CSS } from "./activity.js";
+import { ConversationRequestStatus, REQUEST_STATUS_CSS } from "./request-status.js";
+import { createInitialConversationState } from "../conversation/state.js";
+import { ConversationPendingApprovals } from "../react/pending-approvals.js";
+import { ConversationTranscript } from "../react/conversation-transcript.js";
+import { useBoundApprovalReview } from "../react/use-bound-approval-review.js";
+import { jsonValuesEqual } from "../json-equality.js";
+import { reviewedToolArguments } from "../conversation/approval-arguments.js";
+import { StructuredDetailsDisclosure, shouldCollapseStructuredDetails, structuredDetailLabel, HANDRAIL_STRUCTURED_DETAILS_CSS } from "../react/structured-details.js";
+export { StructuredDetails, StructuredDetailsDisclosure, shouldCollapseStructuredDetails, structuredDetailLabel, HANDRAIL_STRUCTURED_DETAILS_CSS, type StructuredDetailsProps, type StructuredDetailsDisclosureProps } from "../react/structured-details.js";
+import type { ConversationTimelineOptions } from "../conversation/timeline.js";
+import type { ConversationApprovalResources } from "../react/use-conversation-approvals.js";
+import type { ConversationApprovalProposalRecord, ConversationToolCallRecord } from "../conversation/state.js";
+import { HandrailMarkdown } from "../react-markdown/index.js";
+import { useConversationHistory, type UseConversationHistoryOptions } from "../react/conversation-history.js";
+import { useComposerApprovalPreference } from "../react/composer-approval-preference.js";
+import { useWorkspaceUploaders } from "../react/workspace-uploaders.js";
+import { ConversationHistoryPanel, HANDRAIL_CONVERSATION_HISTORY_CSS } from "./history.js";
+export { ConversationHistoryPanel, HANDRAIL_CONVERSATION_HISTORY_CSS, type ConversationHistoryPanelProps } from "./history.js";
+export { HandrailMarkdown, type HandrailMarkdownProps } from "../react-markdown/index.js";
+import { useConversationTitles, type UseConversationTitlesOptions } from "../react/use-conversation-titles.js";
+import { StandardChatComposer, type ComposerApprovalControlProps } from "./composer.js";
+import type { ComposerTranscriptionOptions } from "../react/composer-transcription.js";
+export { ComposerTranscriptionControl } from "./transcription.js";
+export type { ComposerTranscriptionOptions } from "../react/composer-transcription.js";
+import { type ComposerApprovalMode } from "../composer-approval.js";
+export { StandardChatComposer, ComposerApprovalControl, ComposerIcon, BrowserDictationControl, HANDRAIL_CHAT_COMPOSER_CSS, type StandardChatComposerProps, type ComposerApprovalControlProps } from "./composer.js";
+import type { ConversationActivityRecord } from "../conversation/activity.js";
+import { useRealtimeWorkspaceActivity } from "../react/realtime-workspace.js";
+import { RealtimeWorkspaceMonitor, summarizeRealtimeWorkspace, type RealtimeWorkspaceMonitorOptions, type RealtimeWorkspaceSnapshot, type RealtimeWorkspaceSummary } from "../realtime/workspace.js";
+import { useConversationApprovals } from "../react/use-conversation-approvals.js";
+import { useCallback, useContext, useEffect, useMemo, useRef, useState, useSyncExternalStore, type CSSProperties, type ReactNode } from "react";
+import { ConversationContext } from "../react/context.js";
+import { InMemoryApplicationConversationPendingStore, type ApplicationConversationPendingStore } from "../client/session-submission.js";
+import { createHandrailAiClient, type HandrailAiClient } from "../client/bootstrap.js";
+import { type AttachmentUploader } from "../attachments/uploader.js";
+import type { AttachmentUploadAdapter } from "../attachments/types.js";
+import type { ApplicationGatewayCapabilities } from "../transports/application-gateway.js";
+import { AI_RUNTIME_DOCUMENT_MIME_TYPES, AI_RUNTIME_IMAGE_MIME_TYPES, AI_RUNTIME_PROTOCOL_LIMITS,
+  AI_RUNTIME_PROTOCOL_VERSION, type AttachmentMimeType, type ChatRequest, type StreamEvent } from "../protocol.js";
+import type { ConversationClientId, ConversationDeviceId } from "../conversation/events.js";
+import type { ConversationAttachmentReference } from "../conversation/events.js";
+import { ProtectedMessageAttachmentPreview, type MessageAttachmentLoader } from "./protected-attachment.js";
+import { AttachmentImage, ATTACHMENT_IMAGE_CSS } from "./attachment-image.js";
+export { ATTACHMENT_IMAGE_CSS } from "./attachment-image.js";
+export { ProtectedMessageAttachmentPreview, type MessageAttachmentLoader } from "./protected-attachment.js";
+import type { ConversationMessageRecord,  ConversationToolResultRecord } from "../conversation/state.js";
+import type { PresenceController } from "../presence/controller.js";
+import { type AiDiagnosticSink } from "../diagnostics.js";
+import type { MessageAttachmentRenderer, MessageContentRenderer, ToolResultRenderer } from "../react/primitives.js";
+import { ConversationProvider } from "../react/context.js";
+import { useConversationComposer, type ConversationComposerResult, type UseConversationComposerOptions } from "../react/use-conversation-composer.js";
+import { resolveConversationActivity } from "../conversation/activity-projection.js";
+import { useResolvedState } from "../react/primitive-context.js";
+import type { ConversationId } from "../conversation/events.js";
+import type { ConversationCatalog, ConversationCatalogDescriptor, ConversationCatalogIdempotencyKey } from "../conversation/catalog.js";
+import type { ConversationWorkspaceOpenInput } from "../conversation/workspace.js";
+import { useConversationLauncherBinding, useConversationWorkspaceSnapshot, useConversationActivitySnapshot, useConversationReadState,
+  type ConversationActivityReadable, type ConversationWorkspaceReadable } from "../react/workspace.js";
+import type { ChatLauncherConnectionStatus, ChatLauncherState } from "../react/launcher.js";
+import {
+  ChatRoot, LiveRegion,
+  Message, TypingIndicator,
+} from "../react/primitives.js";
+import { CopyMessageButton } from "../react/message-actions.js";
+import { BadResponseButton } from "../react/bad-response-button.js";
+import type { BadResponseReportingOptions } from "../response-feedback.js";
+
+import type { ToolActivitySnapshot } from "../conversation/tool-activity.js";
+import { CitationList } from "../react/citations.js";
+import { ChatLauncherBadge, ChatLauncherPanel, ChatLauncherPortal, ChatLauncherRoot,
+  ChatLauncherStatus, ChatLauncherTitle, ChatLauncherTrigger } from "../react/launcher.js";
+import { ChatDialogContent, ChatDialogOverlay, ChatDialogPortal, ChatDialogRoot, ChatDialogTrigger } from "../react/dialog.js";
+import { ChatDrawerContent, ChatDrawerOverlay, ChatDrawerPortal, ChatDrawerRoot, ChatDrawerTrigger, type ChatDrawerSide } from "../react/drawer.js";
+
+const EMPTY_CHAT_STATE = createInitialConversationState(null);
+
+export const HANDRAIL_CHAT_PRESET_VERSION = "handrail.react-preset.v1" as const;
+export const HANDRAIL_ASSISTANT_UI_STANDARD_VERSION = "handrail.ai-assistant-ui.v1" as const;
+
+export type StyledChatLayout = "launcher" | "dialog" | "drawer" | "page";
+export type HandrailChatThemeMode = "light" | "dark" | "system";
+
+export interface HandrailChatTheme {
+  readonly mode?: HandrailChatThemeMode;
+  readonly colors?: Partial<{
+    accent: string;
+    background: string;
+    panel: string;
+    text: string;
+    muted: string;
+    border: string;
+    danger: string;
+    activity: string;
+  }>;
+  readonly radii?: Partial<{ panel: string; message: string; control: string }>;
+  readonly fontFamily?: string;
+}
+
+export interface ToolResultRendererRegistry {
+  readonly [rendererKey: string]: (result: ConversationToolResultRecord) => ReactNode;
+}
+
+export interface ToolRendererPlugin {
+  readonly pluginId: string;
+  readonly version: string;
+  readonly renderers: ToolResultRendererRegistry;
+  readonly toolRendererKeys?: Readonly<Record<string, string>>;
+}
+
+/** Data-only subset returned by AiApplication.catalog(). */
+export interface ToolRendererCatalog {
+  readonly plugins: readonly {
+    readonly pluginId: string;
+    readonly version: string;
+    readonly presentations: readonly {
+      readonly toolName: string;
+      readonly rendererKey: string;
+    }[];
+  }[];
+}
+
+export function installToolRendererPlugins(
+  plugins: readonly ToolRendererPlugin[],
+  catalog?: ToolRendererCatalog,
+): {
+  readonly renderers: ToolResultRendererRegistry;
+  readonly toolRendererKeys: Readonly<Record<string, string>>;
+} {
+  const renderers: Record<string, ToolResultRendererRegistry[string]> = {};
+  const toolRendererKeys: Record<string, string> = {};
+  const identities = new Set<string>();
+  const installMapping = (toolName: string, key: string) => {
+    const existing = toolRendererKeys[toolName];
+    if (existing !== undefined && existing !== key) {
+      throw new TypeError(`Conflicting renderer mapping for "${toolName}"`);
+    }
+    toolRendererKeys[toolName] = key;
+  };
+  for (const plugin of plugins) {
+    const identity = `${plugin.pluginId}@${plugin.version}`;
+    if (identities.has(identity)) throw new TypeError(`Duplicate renderer plugin "${identity}"`);
+    identities.add(identity);
+    for (const [key, renderer] of Object.entries(plugin.renderers)) {
+      if (renderers[key]) throw new TypeError(`Duplicate renderer key "${key}"`);
+      renderers[key] = renderer;
+    }
+    for (const [toolName, key] of Object.entries(plugin.toolRendererKeys ?? {})) {
+      if (!renderers[key] && !plugin.renderers[key]) throw new TypeError(`Renderer plugin maps "${toolName}" to an unknown key`);
+      installMapping(toolName, key);
+    }
+  }
+  for (const plugin of catalog?.plugins ?? []) {
+    if (!identities.has(`${plugin.pluginId}@${plugin.version}`)) continue;
+    for (const presentation of plugin.presentations) {
+      if (renderers[presentation.rendererKey]) {
+        installMapping(presentation.toolName, presentation.rendererKey);
+      }
+    }
+  }
+  return Object.freeze({ renderers: Object.freeze(renderers), toolRendererKeys: Object.freeze(toolRendererKeys) });
+}
+
+export interface StyledApprovalRenderContext {
+  readonly state: ConversationState;
+  readonly busy: boolean;
+  readonly readOnly: boolean;
+  readonly decide: (status: "confirmed" | "rejected") => Promise<void>;
+}
+export interface StyledChatPresetProps extends ComposerApprovalControlProps, ConversationTimelineOptions {
+  /** Disable composer style injection when styles are supplied by the host build. */
+  readonly includeStyles?: boolean;
+  /** Hide attachment selection when the gateway has no attachment capability. */
+  readonly attachmentsEnabled?: boolean;
+  readonly title?: ReactNode;
+  readonly layout?: StyledChatLayout;
+  readonly composer?: ConversationComposerResult;
+  readonly state?: ConversationState;
+  readonly presence?: PresenceController;
+  /** Shared server activity; the status line shows only this conversation's current work. */
+  readonly activity?: ConversationActivityReadable;
+  /** Default collapsed. Hiding technical activity does not disable execution or telemetry. */
+  readonly toolActivity?: "collapsed" | "expanded" | "hidden";
+  /** Optional content inside each request group’s expanded details. */
+  readonly renderToolActivity?: (activity: ToolActivitySnapshot) => ReactNode;
+  readonly conversationPicker?: ReactNode;
+  readonly approvals?: ReactNode;
+  /** Protected proposal resources; supplied automatically by the client workspace. */
+  readonly approvalResources?: ConversationApprovalResources;
+  readonly changeTurnApprovalMode?: (input: TurnApprovalModeInput) => Promise<TurnApprovalModeResult>;
+  readonly renderApproval?: (proposal: ConversationApprovalProposalRecord, context: StyledApprovalRenderContext) => ReactNode;
+  readonly renderConversationMessage?: (message: ConversationMessageRecord, state: ConversationState) => ReactNode;
+  readonly renderCompletedTool?: (call: ConversationToolCallRecord, state: ConversationState) => ReactNode;
+  readonly citations?: ReactNode;
+  readonly emptyState?: ReactNode;
+  readonly footer?: ReactNode;
+  /** Optional transcription or realtime-voice controls rendered beside Attach. */
+  readonly voiceControls?: ReactNode;
+  readonly transcription?: false | ComposerTranscriptionOptions;
+  /** Accessories render below the toolbar, independently of microphone controls. */
+  readonly composerActions?: ReactNode;
+  readonly maxPromptCharacters?: number;
+  /** Presentation for archived history. Server authorization still governs every action. */
+  readonly readOnly?: boolean;
+  /** Safe semantic Markdown for assistant/system messages. Enabled by default. */
+  readonly markdown?: boolean;
+  /** Normalized citations are rendered below their target message by default. */
+  readonly messageCitations?: boolean;
+  /** Enabled by default; disable when the host renders its own message actions. */
+  readonly messageActions?: boolean;
+  /** Off by default; requires a host reporter with confirmed manual-review intake support. */
+  readonly badResponseReporting?: BadResponseReportingOptions;
+  readonly renderMessageContent?: MessageContentRenderer;
+  readonly renderMessageAttachment?: MessageAttachmentRenderer;
+  /** Authenticated binary loader; the high-level workspace negotiates this automatically. */
+  readonly loadAttachment?: MessageAttachmentLoader;
+  /** Resolves authorized, short-lived display URLs. Opaque references are never treated as URLs. */
+  readonly resolveAttachmentUrl?: (
+    attachment: ConversationAttachmentReference,
+    message: ConversationMessageRecord,
+    conversationId: ConversationId | null,
+  ) => string | undefined;
+  readonly toolRendererKeys?: Readonly<Record<string, string>>;
+  /** Only registered presentations appear in the transcript; other tool results stay in activity. */
+  readonly toolResultRenderers?: ToolResultRendererRegistry;
+  readonly className?: string;
+  readonly style?: CSSProperties;
+  /** Typed tokens layered over the selected light, dark, or system preset. */
+  readonly theme?: HandrailChatTheme;
+  readonly labels?: Partial<{ attach: string; send: string; stop: string; retry: string; placeholder: string }>;
+}
+
+export interface HandrailChatVoiceControlsContext {
+  readonly conversationId: ConversationId | null;
+  readonly composer: ConversationComposerResult;
+}
+
+export interface HandrailChatProps<TRequest> extends Omit<StyledChatPresetProps,
+  "composer" | "state" | "presence" | "toolRendererKeys" | "toolResultRenderers"> {
+  readonly runtime: ConversationRuntime<TRequest>;
+  /** Return a control component bound to this conversation and its current draft. */
+  readonly renderVoiceControls?: (context: HandrailChatVoiceControlsContext) => ReactNode;
+  readonly renderComposerActions?: (context: HandrailChatVoiceControlsContext) => ReactNode;
+  readonly composer: UseConversationComposerOptions<TRequest>;
+  readonly presence?: PresenceController;
+  readonly rendererPlugins?: readonly ToolRendererPlugin[];
+  /** Optional server catalog that automatically binds presentation renderer keys. */
+  readonly toolCatalog?: ToolRendererCatalog;
+}
+
+const DEFAULT_LABELS = { attach: "Attach", send: "Send", stop: "Stop", retry: "Retry", placeholder: "Message…" };
+
+/** A zero-runtime-dependency stylesheet; copy or override every custom property. */
+export const handrailChatPresetCss = `
+.hr-chat{--hr-accent:#635bff;--hr-bg:#fff;--hr-panel:#f6f7fb;--hr-text:#171927;--hr-muted:#687083;--hr-border:#dfe3eb;--hr-danger:#a32020;--hr-activity:#6750a4;--hr-radius-panel:16px;--hr-radius-message:12px;--hr-radius-control:8px;--hr-font:ui-sans-serif,system-ui,sans-serif;color:var(--hr-text);background:var(--hr-bg);border:1px solid var(--hr-border);border-radius:var(--hr-radius-panel);display:flex;flex-direction:column;min-inline-size:0;min-block-size:0;inline-size:min(100%,48rem);block-size:min(80dvh,48rem);font-family:var(--hr-font);font-size:13px;font-weight:400;line-height:1.45;overflow:hidden;box-shadow:0 18px 55px #1719272b}
+.hr-chat[data-theme=dark]{--hr-accent:#9f9aff;--hr-bg:#171927;--hr-panel:#242735;--hr-text:#f4f5fa;--hr-muted:#aeb5c4;--hr-border:#3b4051;--hr-danger:#ff8c8c;--hr-activity:#c7b8ff}@media(prefers-color-scheme:dark){.hr-chat[data-theme=system]{--hr-accent:#9f9aff;--hr-bg:#171927;--hr-panel:#242735;--hr-text:#f4f5fa;--hr-muted:#aeb5c4;--hr-border:#3b4051;--hr-danger:#ff8c8c;--hr-activity:#c7b8ff}}
+.hr-chat[data-layout=page]{inline-size:100%;block-size:100%;min-block-size:0}.hr-chat[data-layout=drawer]{border-radius:var(--hr-radius-panel) 0 0 var(--hr-radius-panel);max-inline-size:30rem}.hr-chat[data-layout=launcher]{inline-size:min(48rem,calc(100vw - 2rem));block-size:min(46rem,calc(100dvh - 6rem))}.hr-chat__sr{block-size:1px;clip:rect(0 0 0 0);clip-path:inset(50%);inline-size:1px;overflow:hidden;position:absolute;white-space:nowrap}.hr-chat__header{position:relative;flex:0 0 auto;min-inline-size:0;align-items:center;background:var(--hr-bg);border-block-end:1px solid var(--hr-border);display:flex;gap:8px;padding:6px 12px}.hr-chat__header h2{min-inline-size:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px;font-weight:700;margin:0}.hr-chat__picker{flex:none;margin-inline-start:auto}.hr-chat__single-actions{max-inline-size:calc(100vw - 3rem)}.hr-chat__single-actions [role=group]{display:flex;flex-wrap:wrap;align-items:center;justify-content:flex-end;gap:6px}.hr-chat__header:has(.hr-chat__single-actions [role=group]){flex-wrap:wrap}.hr-chat__header:has(.hr-chat__single-actions [role=group]) .hr-chat__picker{flex-basis:100%}.hr-chat__single-actions span,.hr-chat__single-actions [role=alert]{flex-basis:100%;font-size:12px;white-space:normal}.hr-chat__body{flex:1;background:color-mix(in srgb,var(--hr-panel),var(--hr-bg) 52%);display:grid;grid-template-columns:minmax(0,1fr);min-block-size:0}.hr-chat__transcript{overflow:auto;padding:12px 16px;scrollbar-gutter:stable;overflow-anchor:none;overscroll-behavior-y:contain}.hr-chat [role=listitem]{background:var(--hr-bg);border:1px solid color-mix(in srgb,var(--hr-border),transparent 25%);border-radius:var(--hr-radius-message);box-shadow:0 1px 2px #1719270d;margin:6px 0;inline-size:fit-content;min-inline-size:0;max-inline-size:94%;padding:9px 12px;white-space:pre-wrap;overflow-wrap:anywhere}.hr-chat [aria-label='user message']{background:var(--hr-accent);border-color:var(--hr-accent);color:white;margin-inline-start:auto}.hr-chat__message-row{display:grid;min-inline-size:0;margin:0 0 12px}.hr-chat__message-row>[role=listitem]{margin:0}.hr-chat__message-row>[aria-label="user message"]{margin-inline-start:auto}.hr-chat [role=listitem] p{margin-block:0 8px}.hr-chat [role=listitem] p:last-child{margin-bottom:0}.hr-chat__message-actions{display:flex;justify-content:flex-end;margin-block-start:.15rem}.hr-message-action-status:not(:empty){margin-inline-start:.4rem}.hr-chat__status{align-items:center;background:var(--hr-bg);color:var(--hr-muted);display:flex;gap:.75rem;min-block-size:0;padding:5px 16px;font-size:12px}.hr-chat__composer{background:var(--hr-bg);border-block-start:1px solid var(--hr-border);padding:.75rem}.hr-chat__attachments{display:flex;gap:.5rem;list-style:none;margin:0 0 .5rem;padding:0}.hr-chat__voice{grid-column:1/-1;display:flex;align-items:center;gap:8px;flex-wrap:wrap}.hr-chat__form{align-items:end;display:grid;gap:.5rem;grid-template-columns:auto minmax(0,1fr) auto auto}.hr-chat textarea{background:var(--bg,var(--hr-bg));border:1px solid var(--hr-border);border-radius:var(--hr-radius-control);color:inherit;font:inherit;min-block-size:2.75rem;padding:.65rem .75rem;resize:none}.hr-chat button,.hr-chat__file{align-items:center;background:var(--hr-panel);border:1px solid var(--hr-border);border-radius:var(--hr-radius-control);color:inherit;cursor:pointer;display:inline-flex;font:inherit;justify-content:center;padding:5px 8px}.hr-chat button:hover:not(:disabled),.hr-chat__file:hover{border-color:color-mix(in srgb,var(--hr-accent),var(--hr-border) 45%)}.hr-chat button[type=submit]{background:var(--hr-accent);border-color:var(--hr-accent);color:#fff;font-weight:650}.hr-chat .hr-chat__copy{background:transparent;border-color:transparent;color:var(--hr-muted);font-size:11px;line-height:1;padding:3px 4px}.hr-chat button:focus-visible,.hr-chat textarea:focus-visible,.hr-chat input:focus-visible,.hr-chat summary:focus-visible{outline:3px solid color-mix(in srgb,var(--hr-accent),transparent 55%);outline-offset:2px}.hr-chat button:disabled{cursor:not-allowed;opacity:.5}.hr-chat__errors{color:var(--hr-danger);grid-column:1/-1;margin:.25rem 0 0;padding-inline-start:1.25rem}.hr-chat__aux{background:var(--hr-bg);border-block-start:1px solid var(--hr-border);padding:.75rem 1rem}@media(max-width:520px){.hr-chat[data-layout=launcher]{block-size:calc(100dvh - 16px);border:0;border-radius:0;inline-size:calc(100vw - 16px)}.hr-chat__form{grid-template-columns:auto minmax(0,1fr) auto}.hr-chat__header{padding-inline:.75rem}.hr-chat__transcript{padding:.75rem}}@media(prefers-reduced-motion:reduce){.hr-chat *{scroll-behavior:auto!important;transition:none!important}}
+.hr-chat__markdown{overflow-wrap:anywhere;white-space:normal}.hr-chat__markdown p{margin-block:0 8px}.hr-chat__markdown>:first-child{margin-block-start:0}.hr-chat__markdown>:last-child{margin-block-end:0}.hr-chat__markdown pre{max-inline-size:100%;overflow:auto;white-space:pre}.hr-chat__markdown code{font-family:ui-monospace,SFMono-Regular,Consolas,monospace}.hr-chat__markdown a{color:inherit;text-decoration:underline}.hr-chat__message-citations{font-size:11px;margin:6px 0 0;padding-inline-start:16px}.hr-chat__message-citations li{background:transparent;margin:.15rem 0;max-inline-size:none;padding:0}.hr-chat__message-citations li>span:last-child{color:var(--hr-muted);margin-inline-start:.35rem}.hr-chat__attachment-card{align-items:center;border:1px solid var(--hr-border);border-radius:10px;color:inherit;display:flex;gap:.65rem;min-inline-size:11rem;overflow:hidden;padding:.5rem;text-decoration:none}.hr-chat__attachment-card img{block-size:5rem;inline-size:7rem;object-fit:cover}.hr-chat__attachment-copy{display:flex;min-inline-size:0;flex-direction:column}.hr-chat__attachment-copy strong{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.hr-chat__attachment-copy small{color:inherit;opacity:.8}.hr-chat__attachment-copy button{color:var(--hr-text);background:var(--hr-panel)}.hr-chat__voice{align-items:center;display:flex}.hr-chat [aria-label="Message attachments"]{display:flex;flex-wrap:wrap;gap:.6rem;list-style:none;margin:.65rem 0 0;padding:0}.hr-chat [aria-label="Message attachments"]>li{min-inline-size:0;max-inline-size:100%}.hr-chat__attachment-card{min-inline-size:0;max-inline-size:100%}
+.hr-chat__transcript-wrap{display:grid;min-block-size:0;position:relative}.hr-chat__transcript-wrap>.hr-chat__transcript{min-block-size:0}.hr-chat__jump{inset-block-end:.75rem;inset-inline-end:.75rem;position:absolute;z-index:1}.hr-chat__assistant-activity:not(:empty){font-weight:600}.hr-chat__body{grid-template-rows:minmax(0,1fr) auto}.hr-chat__tool-activity{background:var(--hr-bg);border-block-start:1px solid var(--hr-border);max-block-size:12rem;overflow:auto;padding:5px 16px;font-size:11px}.hr-chat__tool-activity summary{cursor:pointer;color:var(--hr-muted)}.hr-chat__tool-activity ol{margin:.5rem 0;padding-inline-start:1.5rem}.hr-chat__tool-activity li{padding:.2rem 0}
+.hr-chat__launcher-trigger{align-items:center;display:inline-flex;gap:.45rem}.hr-chat__launcher-status{font-size:.75rem;font-weight:600}.hr-chat__launcher-trigger[data-busy=true] .hr-chat__launcher-status{color:var(--hr-activity)}.hr-chat__launcher-badge:empty{display:none}.hr-chat__launcher-badge{align-items:center;background:var(--hr-activity);border-radius:999px;color:#fff;display:inline-flex;font-size:.7rem;justify-content:center;min-block-size:1.2rem;min-inline-size:1.2rem;padding-inline:.25rem}
+.hr-chat__voice-activity{display:block;font-size:.75rem;font-weight:400;line-height:1.35;max-inline-size:18rem;overflow-wrap:anywhere}.hr-chat__workspace-picker li .hr-chat__voice-activity{flex-basis:100%;margin-block-start:.25rem}.hr-chat__workspace-picker li button:first-child{flex-wrap:wrap}
+.hr-chat__workspace-picker{align-items:flex-start;display:flex;gap:.4rem;position:relative}.hr-chat__workspace-picker summary{background:var(--hr-panel,#f6f7fb);border:1px solid var(--hr-border,#dfe3eb);border-radius:9px;cursor:pointer;list-style:none;padding:.55rem .7rem}.hr-chat__workspace-picker summary::-webkit-details-marker{display:none}.hr-chat__workspace-picker ul{background:var(--hr-bg,#fff);border:1px solid var(--hr-border,#dfe3eb);border-radius:10px;box-shadow:0 12px 35px #17192724;display:grid;gap:.2rem;inset-block-start:calc(100% + .35rem);inset-inline-end:0;list-style:none;margin:0;max-block-size:20rem;min-inline-size:18rem;overflow:auto;padding:.4rem;position:absolute;z-index:10}.hr-chat__workspace-picker li{align-items:center;display:flex;margin:0;padding:0}.hr-chat__workspace-picker li button:first-child{align-items:center;display:flex;flex:1;inline-size:100%;justify-content:space-between;max-inline-size:none;text-align:start}.hr-chat__workspace-picker small{color:var(--hr-muted,#687083);margin-inline-start:.5rem}.hr-chat__workspace-picker [data-turn-status=running] small{color:var(--hr-activity)}.hr-chat__empty{display:grid;min-block-size:12rem;place-items:center;padding:1rem}
+.hr-chat__pending-approvals{max-block-size:50vh;overflow:auto;overflow-wrap:anywhere;padding:.75rem;border-block-start:1px solid var(--hr-border)}.hr-chat__pending-approvals ul{padding-inline-start:1.5rem}.hr-chat__approvals{display:grid;gap:.5rem}.hr-chat .hr-chat__approval{background:var(--hr-bg);border:1px solid var(--hr-border);border-radius:var(--hr-radius-control);display:grid;gap:.75rem;padding:1rem;inline-size:auto;white-space:normal}.hr-chat__approval>strong{font-size:1.05em}.hr-chat__approval-status{color:var(--hr-muted);font-size:.9em}.hr-chat__approval details{min-inline-size:0}.hr-chat__approval summary{cursor:pointer;font-weight:600}.hr-chat__approval details[open]>summary{margin-block-end:.75rem}.hr-chat__approval-actions{display:flex;flex-wrap:wrap;gap:.5rem;border-block-start:1px solid var(--hr-border);padding-block-start:.75rem}.hr-chat__approval-error{color:var(--hr-danger)}
+.hr-chat__message-actions{align-items:center;flex-wrap:wrap;gap:.25rem}
+` + HANDRAIL_CONVERSATION_HISTORY_CSS + HANDRAIL_STRUCTURED_DETAILS_CSS + HANDRAIL_ACTIVITY_CSS + REQUEST_STATUS_CSS + ATTACHMENT_IMAGE_CSS;
+
+export function StyledChatPresetStyles(): ReactNode {
+  return <style data-handrail-ai-preset={HANDRAIL_CHAT_PRESET_VERSION}>{handrailChatPresetCss}</style>;
+}
+
+type HandrailThemeStyle = CSSProperties & Record<`--hr-${string}`, string>;
+
+/** Convert typed theme tokens to the stable CSS custom-property contract. */
+export function createHandrailChatThemeStyle(theme: HandrailChatTheme = {}): HandrailThemeStyle {
+  const style: HandrailThemeStyle = {};
+  const colors = theme.colors;
+  if (colors?.accent !== undefined) style["--hr-accent"] = colors.accent;
+  if (colors?.background !== undefined) style["--hr-bg"] = colors.background;
+  if (colors?.panel !== undefined) style["--hr-panel"] = colors.panel;
+  if (colors?.text !== undefined) style["--hr-text"] = colors.text;
+  if (colors?.muted !== undefined) style["--hr-muted"] = colors.muted;
+  if (colors?.border !== undefined) style["--hr-border"] = colors.border;
+  if (colors?.danger !== undefined) style["--hr-danger"] = colors.danger;
+  if (colors?.activity !== undefined) style["--hr-activity"] = colors.activity;
+  if (theme.radii?.panel !== undefined) style["--hr-radius-panel"] = theme.radii.panel;
+  if (theme.radii?.message !== undefined) style["--hr-radius-message"] = theme.radii.message;
+  if (theme.radii?.control !== undefined) style["--hr-radius-control"] = theme.radii.control;
+  if (theme.fontFamily !== undefined) style["--hr-font"] = theme.fontFamily;
+  return style;
+}
+
+/** Accessible responsive drop-in surface; all headless primitives remain independently usable. */
+export function StyledChatPreset(props: StyledChatPresetProps): ReactNode {
+  const labels = { ...DEFAULT_LABELS, ...props.labels };
+  const resolvedState = useResolvedState(props.state) ?? EMPTY_CHAT_STATE;
+  const session = useContext(ConversationContext)?.runtime?.displaySession;
+  const approvalReview = useConversationApprovals(props.approvalResources ?? null, resolvedState?.conversation_id ?? null, session);
+  const turnApproval = useTurnApprovalMode({ scope: session ?? resolvedState.conversation_id,
+    ...(props.changeTurnApprovalMode ? { change: props.changeTurnApprovalMode } : {}),
+    ...(props.onApprovalModeChange ? { onChange: props.onApprovalModeChange } : {}),
+    target: () => {
+      const control = session?.getSnapshot().control;
+      if (session && control?.status !== "ready") throw new Error("Conversation is loading");
+      const turn = control?.activeTurn ?? (control?.latestTurn?.status === "waiting_for_approval" ? control.latestTurn : null);
+      if (control) return turn ? { conversationId: control.conversationId, turnId: turn.turnId } : null;
+      const latest = resolvedState.turns.at(-1);
+      const target = resolvedState.active_turn_id ?? (latest?.status === "waiting_for_approval" ? latest.turn_id : null);
+      return target && resolvedState.conversation_id ? { conversationId: resolvedState.conversation_id, turnId: target } : null;
+    } });
+  const proposals = props.proposals ?? (props.approvalResources ? approvalReview.proposals : resolvedState?.approval_proposals);
+  const statusRoot = useRef<HTMLDivElement>(null);
+  const subscribeApprovals = useCallback((notify: () => void) => session?.subscribe(notify) ?? (() => undefined), [session]);
+  const getPendingApprovals = useCallback(() => session?.getSnapshot().control?.hasPendingApprovals ?? false, [session]);
+  const hasPendingApprovals = useSyncExternalStore(subscribeApprovals, getPendingApprovals, getPendingApprovals);
+  const reviewNextApproval = () => {
+    const chat = statusRoot.current?.closest(".hr-chat");
+    const card = chat?.querySelector<HTMLElement>('[data-pending-approval="true"]');
+    if (card) { card.scrollIntoView({ block: "nearest" }); card.focus({ preventScroll: true }); return; }
+    const inbox = chat?.querySelector<HTMLButtonElement>(".hr-chat__pending-approvals>button");
+    if (inbox?.getAttribute("aria-expanded") === "false") inbox.click();
+    inbox?.focus();
+  };
+  const activity = props.activity;
+  const subscribeActivity = useCallback((notify: () => void) =>
+    activity?.subscribe(notify) ?? (() => undefined), [activity]);
+  const getActivity = useCallback(() => activity?.getSnapshot().find((record) =>
+    record.conversationId === resolvedState?.conversation_id),
+  [activity, resolvedState?.conversation_id]);
+  const remoteActivity = useSyncExternalStore(subscribeActivity, getActivity, getActivity);
+  const latestTurn = resolvedState?.turns.find(turn => turn.turn_id === resolvedState.active_turn_id) ?? resolvedState?.turns.at(-1);
+  const currentActivity = resolvedState?.conversation_id ? resolveConversationActivity(resolvedState, {
+    conversationId: resolvedState.conversation_id,
+    turnStatus: resolvedState.active_turn_id ? "running" : latestTurn?.status === "failed" ? "error"
+      : latestTurn?.status === "completed" || latestTurn?.status === "cancelled" || latestTurn?.status === "waiting_for_approval" ? "completed"
+        : latestTurn ? "running" : "idle", unread: false,
+  }, remoteActivity) : remoteActivity;
+  const canStop = Boolean(props.composer?.isSending || resolvedState?.active_turn_id);
+  const renderContent = props.renderMessageContent ?? (props.markdown === false
+    ? undefined
+    : renderSafeMessageMarkdown);
+  const renderAttachment = props.renderMessageAttachment ?? defaultAttachmentRenderer(
+    props.resolveAttachmentUrl, resolvedState?.conversation_id ?? null, props.loadAttachment,
+  );
+  const renderToolResult: ToolResultRenderer | undefined = props.toolResultRenderers ? (result, toolCall) => {
+    const key = props.toolRendererKeys?.[toolCall.name ?? ""];
+    const renderer = key ? props.toolResultRenderers?.[key] : undefined;
+    return renderer ? renderer(result) : null;
+  } : undefined;
+  return <ChatRoot
+    className={["hr-chat", props.className].filter(Boolean).join(" ")}
+    data-layout={props.layout ?? "page"}
+    data-theme={props.theme?.mode ?? "light"}
+    style={{ ...createHandrailChatThemeStyle(props.theme), ...props.style }}
+    {...(props.composer ? { composer: props.composer } : {})}
+    {...(props.state ? { state: props.state } : {})}
+    {...(props.presence ? { presence: props.presence } : {})}
+  >
+    <header className="hr-chat__header"><h2>{props.title ?? "Assistant"}</h2>{props.conversationPicker && <div className="hr-chat__picker">{props.conversationPicker}</div>}</header>
+    <main className="hr-chat__body">
+      {resolvedState && <ConversationTranscript state={resolvedState} className="hr-chat__transcript" role="region" includeActivity
+        renderActivity={group => <ConversationActivityCard state={resolvedState} group={group}
+          display={props.toolActivity ?? "collapsed"} renderDetails={props.renderToolActivity}/>}
+        {...(proposals ? { proposals } : {})} emptyState={props.emptyState}
+        includeToolResult={props.includeToolResult ?? (call => !!props.toolRendererKeys?.[call.name ?? ""])}
+        renderToolResult={call => props.renderCompletedTool ? props.renderCompletedTool(call, resolvedState)
+          : call.result && renderToolResult ? renderToolResult(call.result, call, undefined) : null}
+        renderApproval={proposal => {
+          const context: StyledApprovalRenderContext = { state: resolvedState, busy: approvalReview.busy !== null,
+            readOnly: Boolean(props.readOnly || !props.approvalResources || approvalReview.error),
+            decide: async status => { if (!props.readOnly && !approvalReview.error) await approvalReview.decide(proposal, status); } };
+          return <div data-pending-approval={proposal.status === "pending"} tabIndex={-1}>
+            {props.renderApproval ? props.renderApproval(proposal, context)
+              : <StandardApprovalCard proposal={proposal} context={context}/>}</div>;
+        }}
+        renderMessage={message => props.renderConversationMessage ? props.renderConversationMessage(message, resolvedState)
+          : <div className="hr-chat__message-row">
+          <Message message={message} toolCalls={[]}
+            {...(renderContent ? { renderContent } : {})} renderAttachment={renderAttachment}/>
+          {props.messageCitations === false ? null : <CitationList className="hr-chat__message-citations" messageId={message.message_id}/>}
+          {props.messageActions === false ? null : <div className="hr-chat__message-actions"><CopyMessageButton className="hr-chat__copy" message={message}/>
+            {props.badResponseReporting?.enabled && resolvedState.conversation_id && <BadResponseButton className="hr-chat__copy" message={message}
+              conversationId={resolvedState.conversation_id} disabled={!responseIsComplete(resolvedState, message)} reporting={props.badResponseReporting}/>}
+          </div>}
+        </div>}>
+          <TypingIndicator/>
+        </ConversationTranscript>}
+      {session && resolvedState && <ConversationPendingApprovals key={resolvedState.conversation_id ?? "unselected"} session={session}
+        {...(!props.renderApproval && props.approvalResources ? { renderPagedReview: (proposalId: string, generation: number, refresh: () => void) =>
+          <ConversationPagedApprovalReview conversationId={resolvedState.conversation_id!} generation={generation} proposalId={proposalId}
+            read={session.readApprovalReview} readOnly={Boolean(props.readOnly)} onRefresh={refresh}
+            decide={async (input, signal) => {
+              const result = await session.decideApproval(input, signal);
+              void session.refresh().catch(() => undefined);
+              return result;
+            }}/> } : {})}
+        renderApproval={(proposal, tools) => {
+          const context: StyledApprovalRenderContext = { state: { ...resolvedState, tool_calls: tools }, busy: approvalReview.busy !== null,
+            readOnly: Boolean(props.readOnly || !props.approvalResources || approvalReview.error),
+            decide: async status => { if (!props.readOnly && !approvalReview.error) await approvalReview.decide(proposal, status); } };
+          return props.renderApproval ? props.renderApproval(proposal, context) : <StandardApprovalCard proposal={proposal} context={context}/>;
+        }}/>}
+      {approvalReview.error && <p className="hr-chat__approval-error" role="alert">{approvalReview.error === "decision"
+        ? "That approval decision could not be saved. Please retry." : "Action approvals could not be refreshed."}
+        <button type="button" onClick={approvalReview.refresh}>Retry approvals</button></p>}
+      <LiveRegion className="hr-chat__sr"/>
+    </main>
+    {(props.approvals || props.citations) && <aside className="hr-chat__aux">{props.readOnly
+      ? <fieldset disabled style={{ border: 0, margin: 0, padding: 0 }}>{props.approvals}</fieldset> : props.approvals}{props.citations}</aside>}
+    <div ref={statusRoot} style={{ flex: "none" }}><ConversationRequestStatus state={resolvedState} proposals={proposals ?? []}
+      activity={currentActivity} hasPendingApprovals={hasPendingApprovals} savingDecision={approvalReview.busy !== null}
+      onReview={!props.readOnly && (proposals?.some(proposal => proposal.status === "pending") || hasPendingApprovals)
+        ? reviewNextApproval : undefined}/></div>
+    {props.readOnly ? <p className="hr-history__notice">Archived conversations are read-only. Restore this conversation to continue.</p>
+      : <StandardChatComposer key={resolvedState?.conversation_id ?? "unselected"} {...(props.composer ? { composer: props.composer } : {})} canStop={canStop}
+      placeholder={labels.placeholder} labels={labels}
+      {...(props.maxPromptCharacters === undefined ? {} : { maxLength: props.maxPromptCharacters })}
+      {...(resolvedState?.conversation_id ? { conversationId: resolvedState.conversation_id } : {})}
+      {...(props.transcription === undefined ? {} : { transcription: props.transcription })}
+      actions={props.composerActions}
+      {...(props.includeStyles === undefined ? {} : { includeStyles: props.includeStyles })}
+      {...(props.attachmentsEnabled === undefined ? {} : { attachmentsEnabled: props.attachmentsEnabled })}
+      {...(props.approvalMode === undefined ? {} : { approvalMode: props.approvalMode })}
+      {...(turnApproval.onChange ? { onApprovalModeChange: turnApproval.onChange } : {})}
+      approvalModeAppliesToCurrentRequest={Boolean(props.changeTurnApprovalMode)}
+      approvalModeSaving={turnApproval.busy} approvalModeError={turnApproval.error}
+      {...(props.showApprovalControl === undefined ? {} : { showApprovalControl: props.showApprovalControl })}
+      {...(props.voiceControls === undefined ? {} : { voiceControls: props.voiceControls })}/>}
+    {props.footer}
+  </ChatRoot>;
+}
+
+function responseIsComplete(state: ConversationState, message: ConversationMessageRecord): boolean {
+  const turn = state.turns.find((candidate) => candidate.turn_id === message.turn_id
+    || candidate.output_message_ids.includes(message.message_id));
+  return turn ? ["completed", "cancelled", "failed", "waiting_for_approval"].includes(turn.status) && !turn.remote_may_still_be_running
+    : !state.active_turn_id;
+}
+
+function messageText(parts: ConversationMessageRecord["content"]): string {
+  return parts.map((part) => part.text).join("");
+}
+
+const renderSafeMessageMarkdown: MessageContentRenderer = (parts, message) =>
+  <HandrailMarkdown role={message?.role === "user" ? "user" : "assistant"}>{messageText(parts)}</HandrailMarkdown>;
+
+function safeAttachmentUrl(value: string | undefined): string | undefined {
+  if (!value) return undefined;
+  const trimmed = value.trim();
+  if (trimmed.startsWith("/") && !trimmed.startsWith("//")) return trimmed;
+  try {
+    const url = new URL(trimmed);
+    return ["http:", "https:", "blob:"].includes(url.protocol) ? url.toString() : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+function attachmentSize(value: number | undefined): string | null {
+  if (value === undefined) return null;
+  return value >= 1024 * 1024
+    ? `${(value / (1024 * 1024)).toFixed(1)} MB`
+    : `${Math.max(1, Math.ceil(value / 1024))} KB`;
+}
+
+function defaultAttachmentRenderer(
+  resolve: StyledChatPresetProps["resolveAttachmentUrl"],
+  conversationId: ConversationId | null,
+  loadAttachment?: MessageAttachmentLoader,
+): MessageAttachmentRenderer {
+  return (attachment, message) => {
+    if (!resolve && loadAttachment && conversationId) return <ProtectedMessageAttachmentPreview
+      attachment={attachment} conversationId={conversationId} loadAttachment={loadAttachment}/>;
+    const url = safeAttachmentUrl(resolve?.(attachment, message, conversationId));
+    return <MessageAttachmentPreview attachment={attachment} {...(url === undefined ? {} : { url })}/>;
+  };
+}
+
+/** Saved attachment display with a recoverable fallback for expired or unavailable images. */
+export function MessageAttachmentPreview({ attachment, url: rawUrl }: {
+  readonly attachment: ConversationAttachmentReference;
+  readonly url?: string;
+}): ReactNode {
+  const url = safeAttachmentUrl(rawUrl);
+  const [failedUrl, setFailedUrl] = useState<string | null>(null);
+  const name = attachment.filename ?? (attachment.media_type.startsWith("image/") ? "Image" : "Document");
+  const size = attachmentSize(attachment.size_bytes);
+  const copy = <><strong>{name}</strong>
+      <small>{[attachment.media_type, size].filter(Boolean).join(" · ")}</small>
+      {url && failedUrl === url ? <small>Preview unavailable. Open the attachment to try again.</small> : null}</>;
+  if (attachment.media_type.startsWith("image/") && url && failedUrl !== url) return <span className="hr-chat__attachment-card">
+    <AttachmentImage key={`${attachment.attachment_id}:${url}`} url={url} name={name} onError={() => setFailedUrl(url)}/>
+    <span className="hr-chat__attachment-copy">{copy}<a href={url} target="_blank" rel="noopener noreferrer">Open original</a></span>
+  </span>;
+  const content = <><strong aria-hidden="true">{attachment.media_type === "application/pdf" ? "PDF" : "FILE"}</strong><span className="hr-chat__attachment-copy">{copy}</span></>;
+  return url
+    ? <a className="hr-chat__attachment-card" href={url} target="_blank" rel="noopener noreferrer">{content}</a>
+    : <span className="hr-chat__attachment-card">{content}</span>;
+}
+
+function BoundHandrailChat<TRequest>(props: HandrailChatProps<TRequest>): ReactNode {
+  const composer = useConversationComposer(props.composer);
+  const installed = installToolRendererPlugins(props.rendererPlugins ?? [], props.toolCatalog);
+  const { runtime: _runtime, rendererPlugins: _plugins, toolCatalog: _catalog,
+    composer: _composer, presence: _presence, renderVoiceControls: _voiceRenderer, renderComposerActions: _actionsRenderer, ...preset } = props;
+  void _actionsRenderer;
+  void _runtime; void _plugins; void _catalog; void _composer; void _presence; void _voiceRenderer;
+  const voiceControls = props.renderVoiceControls === undefined ? props.voiceControls
+    : props.renderVoiceControls({ composer,
+      conversationId: props.composer.conversationId ?? props.runtime.getSnapshot().conversation_id });
+  const composerActions = props.renderComposerActions?.({ composer,
+    conversationId: props.composer.conversationId ?? props.runtime.getSnapshot().conversation_id }) ?? props.composerActions;
+  return <StyledChatPreset {...preset} composer={composer} voiceControls={voiceControls} composerActions={composerActions} {...(props.presence ? { presence: props.presence } : {})}
+    toolRendererKeys={installed.toolRendererKeys} toolResultRenderers={installed.renderers}/>;
+}
+
+/** One-component optional UI; pass a headless runtime to retain full host control. */
+export function HandrailChat<TRequest>(props: HandrailChatProps<TRequest>): ReactNode {
+  return <ConversationProvider runtime={props.runtime}><BoundHandrailChat {...props}/></ConversationProvider>;
+}
+
+export interface ConversationWorkspaceController<TRequest, TAuthorizationContext>
+  extends ConversationWorkspaceReadable {
+  open(input: ConversationWorkspaceOpenInput<TAuthorizationContext>): Promise<ConversationRuntime<TRequest>>;
+  select(conversationId: ConversationId | null): void;
+  markRead?(conversationId: ConversationId): void;
+  setVisible?(visible: boolean): void;
+  close?(conversationId: ConversationId): Promise<boolean>;
+}
+
+export interface ConversationCatalogWorkspaceOptions<TAuthorizationContext> {
+  readonly catalog: ConversationCatalog<TAuthorizationContext>;
+  readonly authorizationContext: TAuthorizationContext;
+  /** Metadata records per catalog page; additional pages load on demand. Defaults to 50. */
+  readonly pageSize?: number;
+}
+
+export interface VoiceActivityRenderInput {
+  readonly summary: RealtimeWorkspaceSummary;
+  readonly snapshot: RealtimeWorkspaceSnapshot;
+  readonly conversationId?: string;
+}
+export type VoiceActivityRenderer = (input: VoiceActivityRenderInput) => ReactNode;
+
+/** Safe default voice summary, independent of text run state and read receipts. */
+export function RealtimeWorkspaceActivity(props: { readonly monitor?: RealtimeWorkspaceMonitor;
+  readonly conversationId?: string; readonly render?: VoiceActivityRenderer; readonly showConnectionState?: boolean }): ReactNode {
+  const snapshot = useRealtimeWorkspaceActivity(props.monitor);
+  if (!props.monitor) return null;
+  const summary = summarizeRealtimeWorkspace(snapshot, props.conversationId);
+  const input = { summary, snapshot, ...(props.conversationId === undefined ? {} : { conversationId: props.conversationId }) };
+  if (props.render) return props.render(input);
+  const parts: string[] = [];
+  if (summary.activeCalls) parts.push(`${summary.activeCalls} voice ${summary.activeCalls === 1 ? "call" : "calls"} ${snapshot.error ? "last reported active" : "active"}`);
+  if (summary.unconfirmedCalls) parts.push(`${summary.unconfirmedCalls} voice ${summary.unconfirmedCalls === 1 ? "call needs" : "calls need"} end confirmation`);
+  if (summary.unreadCalls) parts.push(`${summary.unreadCalls} voice ${summary.unreadCalls === 1 ? "call" : "calls"} with unread results`);
+  if (summary.unresolvedTools) parts.push(`${summary.unresolvedTools} voice tool ${summary.unresolvedTools === 1 ? "outcome" : "outcomes"} unresolved`);
+  const connection = props.showConnectionState === false ? null : snapshot.error ?? (!snapshot.synchronized ? "Checking voice activity…" : null);
+  if (!parts.length && !connection) return null;
+  return <span className="hr-chat__voice-activity" aria-live="polite">
+    {parts.join(" · ")}{connection && <span role="status">{parts.length ? " · " : ""}{connection}</span>}
+  </span>;
+}
+
+export interface WorkspaceThreadPickerProps<TRequest, TAuthorizationContext> {
+  readonly voiceActivity?: RealtimeWorkspaceMonitor;
+  /** Return null to hide voice summaries or render a custom design. */
+  readonly renderVoiceActivity?: VoiceActivityRenderer;
+  readonly activity?: ConversationActivityReadable;
+  readonly workspace: ConversationWorkspaceController<TRequest, TAuthorizationContext>;
+  readonly createConversation?: () => Promise<ConversationWorkspaceOpenInput<TAuthorizationContext>>;
+  readonly getThreadLabel?: (conversationId: ConversationId) => ReactNode;
+  readonly onConversationRead?: (conversationId: ConversationId, observed?: ConversationActivityRecord) => void | Promise<void>;
+}
+
+/** Compact open-thread picker that never blocks New while another turn runs. */
+export function WorkspaceThreadPicker<TRequest, TAuthorizationContext>(
+  props: WorkspaceThreadPickerProps<TRequest, TAuthorizationContext>,
+): ReactNode {
+  const snapshot = useConversationWorkspaceSnapshot(props.workspace);
+  const activity = useConversationActivitySnapshot(props.workspace, props.activity);
+  const voiceIds = JSON.stringify(snapshot.threads.map((thread) => String(thread.conversationId)).sort());
+  useEffect(() => {
+    if (props.voiceActivity && !props.voiceActivity.usesConversationLoader) void props.voiceActivity.setConversations(JSON.parse(voiceIds) as string[]);
+  }, [props.voiceActivity, voiceIds]);
+  const runningCount = activity.filter((record) => record.turnStatus === "running").length;
+  const [creating, setCreating] = useState(false);
+  const [error, setError] = useState("");
+  const create = async () => {
+    if (!props.createConversation || creating) return;
+    setCreating(true); setError("");
+    try { await props.workspace.open(await props.createConversation()); }
+    catch { setError("Conversation could not be created."); }
+    finally { setCreating(false); }
+  };
+  return <div className="hr-chat__workspace-picker">
+    {props.createConversation && <button type="button" disabled={creating} aria-busy={creating}
+      onClick={() => void create()}>{creating ? "Creating…" : "New"}</button>}
+    <details><summary>Threads{runningCount > 0 ? ` (${runningCount} running)` : ""}
+      <RealtimeWorkspaceActivity {...(props.voiceActivity ? { monitor: props.voiceActivity } : {})} {...(props.renderVoiceActivity ? { render: props.renderVoiceActivity } : {})}/>
+    </summary>
+    <ul aria-label="Open conversations">{snapshot.threads.map((localThread) => {
+      const thread = { ...localThread, ...activity.find((record) => record.conversationId === localThread.conversationId),
+        conversationId: localThread.conversationId };
+      return <li key={thread.conversationId}><button type="button"
+        aria-current={snapshot.selectedConversationId === thread.conversationId ? "true" : undefined}
+        data-turn-status={thread.turnStatus === "running" ? "running" : thread.unread ? "unread" : "idle"}
+        onClick={() => { props.workspace.select(thread.conversationId); props.workspace.markRead?.(thread.conversationId);
+          void Promise.resolve(props.onConversationRead?.(thread.conversationId)).catch(() => undefined); }}>
+        <span>{props.getThreadLabel?.(thread.conversationId) ?? thread.conversationId}</span>
+        <small>{thread.turnStatus === "running" ? `Running${thread.unread ? " · Unread" : ""}` : thread.unread ? "Unread" : ""}</small>
+        <RealtimeWorkspaceActivity {...(props.voiceActivity ? { monitor: props.voiceActivity } : {})} conversationId={String(thread.conversationId)}
+          showConnectionState={false} {...(props.renderVoiceActivity ? { render: props.renderVoiceActivity } : {})}/>
+      </button></li>; })}</ul></details>
+    {error && <span role="alert">{error}</span>}
+  </div>;
+}
+
+export interface CatalogWorkspaceThreadPickerProps<TRequest, TAuthorizationContext>
+  extends WorkspaceThreadPickerProps<TRequest, TAuthorizationContext> {
+  readonly catalogOptions: ConversationCatalogWorkspaceOptions<TAuthorizationContext>;
+}
+
+/** Paginated authorized catalog picker with reversible archive lifecycle controls. */
+export function CatalogWorkspaceThreadPicker<TRequest, TAuthorizationContext>(
+  props: CatalogWorkspaceThreadPickerProps<TRequest, TAuthorizationContext>,
+): ReactNode {
+  const history = useConversationHistory({ workspace: props.workspace, ...props.catalogOptions,
+    ...(props.activity ? { activity: props.activity } : {}),
+    ...(props.createConversation ? { createConversation: props.createConversation } : {}),
+    ...(props.onConversationRead ? { onConversationRead: props.onConversationRead } : {}),
+  });
+  const voiceIds = JSON.stringify(history.descriptors.filter((row) => row.lifecycle === "active").map((row) => String(row.conversationId)).sort());
+  useEffect(() => {
+    if (props.voiceActivity && !props.voiceActivity.usesConversationLoader) void props.voiceActivity.setConversations(JSON.parse(voiceIds) as string[]);
+  }, [props.voiceActivity, voiceIds]);
+  const runningCount = history.activity.filter((record) => record.turnStatus === "running").length;
+  return <details className="hr-history" data-presentation="compact"><summary>Threads{runningCount ? ` (${runningCount} running)` : ""}
+    <RealtimeWorkspaceActivity {...(props.voiceActivity ? { monitor: props.voiceActivity } : {})}
+      {...(props.renderVoiceActivity ? { render: props.renderVoiceActivity } : {})}/>
+  </summary><div className="hr-history__panel"><ConversationHistoryPanel controller={history}
+    {...(props.getThreadLabel ? { getThreadLabel: props.getThreadLabel } : {})}
+    renderActivity={(conversationId) => <RealtimeWorkspaceActivity conversationId={String(conversationId)} showConnectionState={false}
+      {...(props.voiceActivity ? { monitor: props.voiceActivity } : {})}
+      {...(props.renderVoiceActivity ? { render: props.renderVoiceActivity } : {})}/>}/></div></details>;
+}
+
+export interface HandrailChatWorkspaceProps<TRequest, TAuthorizationContext>
+  extends Omit<HandrailChatProps<TRequest>, "runtime" | "composer" | "conversationPicker"> {
+  readonly workspace: ConversationWorkspaceController<TRequest, TAuthorizationContext>;
+  /** False keeps background work alive without acknowledging hidden messages as read. */
+  readonly visible?: boolean;
+  readonly voiceActivity?: RealtimeWorkspaceMonitor;
+  readonly renderVoiceActivity?: VoiceActivityRenderer;
+  readonly composerForConversation: (
+    runtime: ConversationRuntime<TRequest>,
+    conversationId: ConversationId,
+  ) => UseConversationComposerOptions<TRequest>;
+  readonly createConversation?: () => Promise<ConversationWorkspaceOpenInput<TAuthorizationContext>>;
+  /** Omit or use true for standard New/Threads controls; false disables them; a node customizes them. */
+  readonly conversationPicker?: ReactNode;
+  /** Enables paginated authorized metadata plus archive/restore UI. */
+  readonly catalogOptions?: ConversationCatalogWorkspaceOptions<TAuthorizationContext>;
+  /** The endpoint launcher defaults to the complete sidebar; custom workspace hosts can opt in. */
+  readonly historyLayout?: "sidebar" | "compact";
+  /** Disable thread navigation and titles; requires a server single-scope catalog. */
+  readonly threads?: boolean;
+  /** Show the selected saved title in the conversation header; title remains the fallback. */
+  readonly showConversationTitle?: boolean;
+  readonly historyOptions?: Pick<UseConversationHistoryOptions<TRequest, TAuthorizationContext>, "preloadCount" | "recover" | "autoSelect" | "autoCreate" | "refreshKey">;
+  readonly getThreadLabel?: (conversationId: ConversationId) => ReactNode;
+  readonly onConversationRead?: (conversationId: ConversationId, observed?: ConversationActivityRecord) => void | Promise<void>;
+  readonly noConversation?: ReactNode;
+  /** Optional stable controller factory, normally `client.presenceControllerFor`. */
+  readonly presenceForConversation?: (conversationId: ConversationId) => PresenceController | null;
+}
+
+/** Complete selected-runtime binding for concurrent background conversations. */
+export function HandrailChatWorkspace<TRequest, TAuthorizationContext>(
+  props: HandrailChatWorkspaceProps<TRequest, TAuthorizationContext>,
+): ReactNode {
+  return props.catalogOptions
+    ? <CatalogChatWorkspace {...props} catalogOptions={props.catalogOptions}/>
+    : <SelectedChatWorkspace {...props}/>;
+}
+
+function SingleConversationClear<TContext>(props: { catalog: ConversationCatalog<TContext>; context: TContext;
+  descriptor: ConversationCatalogDescriptor; readOnly: boolean; onCleared(): Promise<void> }) {
+  const [confirming, setConfirming] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState(false);
+  const request = useRef<{ conversationId: ConversationId; expectedVersion: ConversationCatalogDescriptor["version"];
+    idempotencyKey: ConversationCatalogIdempotencyKey } | null>(null);
+  const clear = async () => {
+    if (busy || props.readOnly) return;
+    request.current ??= { conversationId: props.descriptor.conversationId, expectedVersion: props.descriptor.version,
+      idempotencyKey: browserIdentity("clear") as ConversationCatalogIdempotencyKey };
+    setBusy(true); setError(false);
+    try {
+      await props.catalog.clear({ ...request.current, authorizationContext: props.context });
+      request.current = null; setConfirming(false);
+      await props.onCleared();
+    } catch (cause) {
+      if (cause && typeof cause === "object" && "code" in cause && cause.code === "version_conflict") {
+        // A definitive CAS rejection can be retried against fresh state. An
+        // uncertain reply must retain the original idempotency identity.
+        request.current = null;
+        await props.onCleared().catch(() => undefined);
+      }
+      setError(true);
+    }
+    finally { setBusy(false); }
+  };
+  if (!props.catalog.capabilities.clear.supported) return null;
+  return <div className="hr-chat__single-actions">
+    {!confirming ? <button type="button" disabled={props.readOnly} onClick={() => setConfirming(true)}>Clear conversation</button>
+      : <div role="group" aria-label="Clear conversation confirmation">
+        <span>Clear this conversation and start fresh?</span>
+        <button type="button" disabled={busy || props.readOnly} onClick={() => void clear()}>{busy ? "Clearing…" : "Clear"}</button>
+        <button type="button" disabled={busy} onClick={() => { setConfirming(false); setError(false); request.current = null; }}>Cancel</button>
+      </div>}
+    {error && <p role="alert">The conversation could not be cleared. Finish any pending review, response or voice call, then retry.</p>}
+  </div>;
+}
+
+function CatalogChatWorkspace<TRequest, TAuthorizationContext>(props: HandrailChatWorkspaceProps<TRequest, TAuthorizationContext> & {
+  readonly catalogOptions: ConversationCatalogWorkspaceOptions<TAuthorizationContext>;
+}): ReactNode {
+  const history = useConversationHistory({ workspace: props.workspace, ...props.catalogOptions,
+    ...props.historyOptions,
+    ...(props.threads === false ? { autoCreate: true, autoSelect: true } : {}),
+    ...(props.activity ? { activity: props.activity } : {}),
+    ...(props.createConversation ? { createConversation: props.createConversation } : {}),
+    ...(props.onConversationRead ? { onConversationRead: props.onConversationRead } : {}),
+  });
+  const voiceIds = JSON.stringify(history.descriptors.filter((row) => row.lifecycle === "active").map((row) => String(row.conversationId)).sort());
+  useEffect(() => {
+    if (props.voiceActivity && !props.voiceActivity.usesConversationLoader) void props.voiceActivity.setConversations(JSON.parse(voiceIds) as string[]);
+  }, [props.voiceActivity, voiceIds]);
+  const panel = <ConversationHistoryPanel controller={history} includeStyles={false}
+    {...(props.getThreadLabel ? { getThreadLabel: props.getThreadLabel } : {})}
+    renderActivity={conversationId => <RealtimeWorkspaceActivity conversationId={String(conversationId)} showConnectionState={false}
+      {...(props.voiceActivity ? { monitor: props.voiceActivity } : {})} {...(props.renderVoiceActivity ? { render: props.renderVoiceActivity } : {})}/>}/>;
+  const readOnly = props.readOnly || history.selected?.lifecycle === "archived";
+  const clearScopeKey = useMemo(() => browserIdentity("clear-scope"),
+    [props.catalogOptions.catalog, props.catalogOptions.authorizationContext]);
+  const title = props.threads !== false && props.showConversationTitle ? history.selected?.title ?? props.title : props.title;
+  const singleAction = props.threads === false && history.selected ? <SingleConversationClear
+    key={`${clearScopeKey}:${history.selected.conversationId}`}
+    catalog={props.catalogOptions.catalog} context={props.catalogOptions.authorizationContext}
+    descriptor={history.selected} readOnly={!!readOnly} onCleared={async () => {
+      const runtime = props.workspace.getSnapshot().threads.find(thread => thread.conversationId === history.selected?.conversationId)?.runtime;
+      await runtime?.synchronize?.();
+      await history.refresh();
+    }}/> : false;
+  if (props.conversationPicker === false || props.threads === false) return <>
+    {props.includeStyles === false ? null : <StyledChatPresetStyles/>}
+    {history.loadFailed || history.error || !history.selected && history.failedThreads.size > 0
+      ? <div role="alert">{props.threads === false ? "The conversation could not be opened. Please retry." : history.error ?? "Conversation history could not be loaded."}
+        <button type="button" disabled={history.loading} onClick={() => void history.refresh()}>Retry history</button>
+        {!history.selected && <button type="button" disabled={history.busyId !== null} onClick={() => void history.create()}>{props.threads === false ? "Retry conversation" : "New"}</button>}
+      </div> : null}
+    <SelectedChatWorkspace {...props} conversationPicker={singleAction} title={title} readOnly={readOnly}
+      {...(props.threads === false ? { noConversation: "Opening conversation…" } : {})}/>
+  </>;
+  if (props.historyLayout !== "sidebar") return <>
+    {props.includeStyles === false ? null : <StyledChatPresetStyles/>}
+    <SelectedChatWorkspace {...props} title={title} readOnly={readOnly} conversationPicker={props.conversationPicker === undefined || props.conversationPicker === true
+      ? <details className="hr-history" data-presentation="compact"><summary>Threads</summary><div className="hr-history__panel">{panel}</div></details>
+      : props.conversationPicker}/>
+  </>;
+  return <div className="hr-chat-workspace" data-layout={props.layout ?? "page"} style={{ ...createHandrailChatThemeStyle(props.theme), ...props.style }}>
+    {props.includeStyles === false ? null : <StyledChatPresetStyles/>}
+    <aside className="hr-history" aria-label="Conversation history">{panel}</aside>
+    <SelectedChatWorkspace {...props} conversationPicker={false} title={title} historyLayout="compact" readOnly={readOnly}/>
+  </div>;
+}
+
+function SelectedChatWorkspace<TRequest, TAuthorizationContext>(props: HandrailChatWorkspaceProps<TRequest, TAuthorizationContext>): ReactNode {
+  useConversationReadState(props.workspace, props.activity, props.visible !== false, props.onConversationRead);
+  const snapshot = useConversationWorkspaceSnapshot(props.workspace);
+  const selected = snapshot.threads.find((thread) =>
+    thread.conversationId === snapshot.selectedConversationId);
+  const picker = props.threads === false && (props.conversationPicker === undefined || props.conversationPicker === true) ? false : (props.conversationPicker === true ? undefined : props.conversationPicker) ?? (props.catalogOptions
+    ? <CatalogWorkspaceThreadPicker workspace={props.workspace} catalogOptions={props.catalogOptions}
+      {...(props.activity ? { activity: props.activity } : {})}
+      {...(props.voiceActivity ? { voiceActivity: props.voiceActivity } : {})}
+      {...(props.renderVoiceActivity ? { renderVoiceActivity: props.renderVoiceActivity } : {})}
+      {...(props.createConversation ? { createConversation: props.createConversation } : {})}
+      {...(props.getThreadLabel ? { getThreadLabel: props.getThreadLabel } : {})}
+      {...(props.onConversationRead ? { onConversationRead: props.onConversationRead } : {})}/>
+    : <WorkspaceThreadPicker workspace={props.workspace}
+    {...(props.activity ? { activity: props.activity } : {})}
+      {...(props.voiceActivity ? { voiceActivity: props.voiceActivity } : {})}
+      {...(props.renderVoiceActivity ? { renderVoiceActivity: props.renderVoiceActivity } : {})}
+    {...(props.createConversation ? { createConversation: props.createConversation } : {})}
+    {...(props.getThreadLabel ? { getThreadLabel: props.getThreadLabel } : {})}
+    {...(props.onConversationRead ? { onConversationRead: props.onConversationRead } : {})}/>);
+  if (!selected) return <section className={["hr-chat", props.className].filter(Boolean).join(" ")}
+    data-layout={props.layout ?? "page"} style={props.style}>
+    <header className="hr-chat__header"><h2>{props.title ?? "Assistant"}</h2>
+      {picker && <div className="hr-chat__picker">{picker}</div>}</header>
+    <div className="hr-chat__empty">{props.noConversation ?? "Start or select a conversation."}</div>
+  </section>;
+  const { workspace: _workspace, composerForConversation: _composerFor, createConversation: _create,
+    getThreadLabel: _label, onConversationRead: _onConversationRead, noConversation: _empty, conversationPicker: _picker,
+    presenceForConversation: _presenceFor, catalogOptions: _catalogOptions, voiceActivity: _voiceActivity,
+    renderVoiceActivity: _renderVoiceActivity, historyLayout: _historyLayout, threads: _threads, historyOptions: _historyOptions, showConversationTitle: _showTitle, ...chat } = props;
+  void _threads;
+  void _historyLayout; void _historyOptions; void _showTitle;
+  void _workspace; void _composerFor; void _create; void _label; void _onConversationRead; void _empty; void _picker; void _presenceFor; void _catalogOptions; void _voiceActivity; void _renderVoiceActivity;
+  const runtime = selected.runtime as ConversationRuntime<TRequest>;
+  const presence = props.presenceForConversation?.(selected.conversationId) ?? props.presence;
+  const composer = props.composerForConversation(runtime, selected.conversationId);
+  return <HandrailChat {...chat} key={selected.conversationId} runtime={runtime}
+    composer={presence && composer.presence === undefined ? { ...composer, presence } : composer}
+    {...(presence ? { presence } : {})} conversationPicker={picker}/>;
+}
+
+export interface HandrailChatWorkspaceLauncherProps<TRequest, TAuthorizationContext>
+  extends HandrailChatWorkspaceProps<TRequest, TAuthorizationContext> {
+  readonly trigger?: ReactNode;
+  readonly connectionStatus?: ChatLauncherConnectionStatus;
+  readonly activity?: ConversationActivityReadable;
+  readonly onOpenChange?: (open: boolean) => void;
+}
+
+function launcherStatusText(state: ChatLauncherState): string {
+  if (!state.busy) return state.unreadCount > 0 ? "Unread" : "";
+  if (!state.activitySummary) return state.runningCount > 1 ? `${state.runningCount} running` : "Running";
+  const progress = state.activityProgress;
+  return progress
+    ? `${state.activitySummary} (${progress.completed}/${progress.total}${progress.unit ? ` ${progress.unit}` : ""})`
+    : state.activitySummary;
+}
+
+/** Drop-in launcher whose button reflects every open background conversation. */
+export function HandrailChatWorkspaceLauncher<TRequest, TAuthorizationContext>(
+  props: HandrailChatWorkspaceLauncherProps<TRequest, TAuthorizationContext>,
+): ReactNode {
+  const binding = useConversationLauncherBinding(props.workspace, props.connectionStatus, props.activity);
+  const selectedBeforeClose = useRef<ConversationId | null>(props.workspace.getSnapshot().selectedConversationId);
+  useEffect(() => {
+    selectedBeforeClose.current = props.workspace.getSnapshot().selectedConversationId;
+    props.workspace.setVisible?.(false);
+    props.workspace.select(null);
+  }, [props.workspace]);
+  const { trigger, connectionStatus: _connection, onOpenChange, ...workspaceProps } = props;
+  void _connection;
+  const handleOpenChange = (open: boolean) => {
+    props.workspace.setVisible?.(open);
+    if (open) {
+      const selected = selectedBeforeClose.current ?? props.workspace.getSnapshot().threads[0]?.conversationId ?? null;
+      props.workspace.select(selected);
+    } else {
+      selectedBeforeClose.current = props.workspace.getSnapshot().selectedConversationId;
+      props.workspace.select(null);
+    }
+    onOpenChange?.(open);
+  };
+  return <ChatLauncherRoot {...binding} onOpenChange={handleOpenChange}><ChatLauncherTrigger className="hr-chat__launcher-trigger">
+    {trigger ?? "Open chat"}<ChatLauncherStatus className="hr-chat__launcher-status">{(state) =>
+      launcherStatusText(state)
+    }</ChatLauncherStatus><ChatLauncherBadge className="hr-chat__launcher-badge">{(state) =>
+      state.unreadCount > 0 ? state.unreadCount : null
+    }</ChatLauncherBadge>
+    <RealtimeWorkspaceActivity {...(props.voiceActivity ? { monitor: props.voiceActivity } : {})}
+      {...(props.renderVoiceActivity ? { render: props.renderVoiceActivity } : {})}/>
+  </ChatLauncherTrigger><ChatLauncherPortal><ChatLauncherPanel>
+    <ChatLauncherTitle className="hr-chat__sr">{props.title ?? "Assistant"}</ChatLauncherTitle>
+    <HandrailChatWorkspace {...workspaceProps} layout="launcher"/>
+  </ChatLauncherPanel></ChatLauncherPortal></ChatLauncherRoot>;
+}
+
+export interface HandrailAssistantLauncherProps extends Omit<HandrailChatWorkspaceLauncherProps<ChatRequest, object>,
+  "workspace" | "composerForConversation" | "createConversation" | "activity" | "presenceForConversation" | "voiceActivity"> {
+  /** Host-authenticated voice feed; catalog discovery, polling and cleanup are SDK-owned. */
+  readonly voiceActivity?: Omit<RealtimeWorkspaceMonitorOptions, "loadConversationIds">;
+  /** The only required integration value; capabilities and resources are negotiated from this endpoint. */
+  readonly endpoint: string;
+  /** Account/API-scoped durable retry storage, retained by the host across reloads. */
+  readonly pendingStore?: ApplicationConversationPendingStore<ChatRequest>;
+  /** Domain upload adapter with SDK-owned durable files and bounded queues. */
+  readonly attachmentUploadAdapter?: AttachmentUploadAdapter<Blob>;
+  readonly fetch?: typeof globalThis.fetch;
+  readonly protectedRequest?: (input: RequestInit & { readonly url: string }) => RequestInit | Promise<RequestInit>;
+  /** Receives safe lifecycle diagnostics from browser transports and controllers. */
+  readonly diagnostics?: AiDiagnosticSink;
+  readonly clientId?: string;
+  readonly deviceId?: string;
+  /** Activity feed interval in milliseconds. Defaults to 5000; integer 500–300000. */
+  readonly activityPollingMilliseconds?: number;
+  /** Selected/visible or running conversation polling. Defaults to 1000ms; integer 100–300000. */
+  readonly synchronizationPollingMilliseconds?: number;
+  /** Hidden, inactive conversation polling. Defaults to 15000ms; integer 100–300000.
+   * Legacy event runtimes require this to be at least synchronizationPollingMilliseconds. */
+  readonly idleSynchronizationPollingMilliseconds?: number;
+  readonly loading?: ReactNode;
+  readonly failure?: (error: unknown) => ReactNode;
+  readonly onWorkingChange?: (working: boolean) => void;
+  /** Generate and persist a bounded title after a conversation's first completed turn. Defaults to true. */
+  readonly autoTitle?: boolean;
+  /** Uncontrolled preference for new client lifetimes. Defaults to required. */
+  readonly defaultApprovalMode?: ComposerApprovalMode;
+  /** Render the endpoint-driven workspace directly when the host already owns the surrounding shell. */
+  readonly presentation?: "launcher" | "page";
+  /** Migration/domain seam for an existing authorized upload route. The SDK uploader remains the default. */
+  readonly uploaderForConversation?: (conversationId: ConversationId) => AttachmentUploader<Blob>;
+  /** Override negotiated browser intake when a host-owned uploader has stricter limits. */
+  readonly attachmentIntake?: UseConversationComposerOptions<ChatRequest>["attachmentIntake"];
+  /** Inject the canonical scoped preset once with the launcher. Defaults to true. */
+  readonly includeStyles?: boolean;
+}
+
+/** Derives browser intake from the protected gateway instead of exposing unsupported file controls. */
+export function gatewayAttachmentIntake(
+  capabilities: ApplicationGatewayCapabilities,
+  hostUploader = false,
+): UseConversationComposerOptions<ChatRequest>["attachmentIntake"] | undefined {
+  if (capabilities.attachments === false && !hostUploader) return undefined;
+  const documentCapability = capabilities.documentInput === false
+    ? undefined
+    : capabilities.documentInput;
+  const advertised = capabilities.attachments === false
+    ? [
+      ...AI_RUNTIME_IMAGE_MIME_TYPES,
+      ...(documentCapability?.supported_mime_types ?? []),
+    ]
+    : capabilities.attachments.acceptedMediaTypes;
+  const acceptedMediaTypes = [
+    ...AI_RUNTIME_IMAGE_MIME_TYPES,
+    ...AI_RUNTIME_DOCUMENT_MIME_TYPES,
+  ].filter((mediaType): mediaType is AttachmentMimeType => {
+    if (!mediaType.startsWith("image/") && (capabilities.documentInput === false ||
+      documentCapability && !documentCapability.supported_mime_types.some((type) => type === mediaType))) return false;
+    return advertised.some((candidate) => candidate === mediaType ||
+      (candidate.endsWith("/*") && mediaType.startsWith(candidate.slice(0, -1))));
+  });
+  if (acceptedMediaTypes.length === 0) return undefined;
+  const imageMaximumBytes = capabilities.attachments === false
+    ? AI_RUNTIME_PROTOCOL_LIMITS.imageAttachmentMaxBytes
+    : capabilities.attachments.maximumBytesPerFile;
+  const documentMaximumBytes = capabilities.attachments === false
+    ? documentCapability?.max_document_bytes ?? AI_RUNTIME_PROTOCOL_LIMITS.documentAttachmentMaxBytes
+    : capabilities.attachments.maximumBytesPerFile;
+  const imageMaximumFiles = capabilities.attachments === false
+    ? AI_RUNTIME_PROTOCOL_LIMITS.imageAttachmentsPerMessage
+    : capabilities.attachments.maximumFiles;
+  const documentMaximumFiles = capabilities.attachments === false
+    ? documentCapability?.max_document_count ?? AI_RUNTIME_PROTOCOL_LIMITS.documentAttachmentsPerMessage
+    : capabilities.attachments.maximumFiles;
+  return {
+    acceptedMediaTypes,
+    maxFileBytes: {
+      image: Math.min(imageMaximumBytes, AI_RUNTIME_PROTOCOL_LIMITS.imageAttachmentMaxBytes),
+      document: Math.min(documentMaximumBytes, documentCapability?.max_document_bytes ?? Infinity, AI_RUNTIME_PROTOCOL_LIMITS.documentAttachmentMaxBytes),
+    },
+    maxSelectionCount: {
+      image: Math.min(imageMaximumFiles, AI_RUNTIME_PROTOCOL_LIMITS.imageAttachmentsPerMessage),
+      document: Math.min(documentMaximumFiles, documentCapability?.max_document_count ?? Infinity, AI_RUNTIME_PROTOCOL_LIMITS.documentAttachmentsPerMessage),
+    },
+  };
+}
+
+interface AssistantLauncherState {
+  readonly configurationKey: object;
+  readonly client: HandrailAiClient<StreamEvent, ChatRequest, object>;
+}
+
+function AssistantWorkingObserver({ workspace, activity, voiceActivity, onChange }: {
+  readonly workspace: ConversationWorkspaceReadable;
+  readonly activity?: ConversationActivityReadable;
+  readonly voiceActivity?: RealtimeWorkspaceMonitor;
+  readonly onChange?: (working: boolean) => void;
+}) {
+  const binding = useConversationLauncherBinding(workspace, undefined, activity);
+  const voice = useRealtimeWorkspaceActivity(voiceActivity);
+  const working = binding.turnStatus === "busy" || summarizeRealtimeWorkspace(voice).activeCalls > 0;
+  useEffect(() => onChange?.(working), [working, onChange]);
+  useEffect(() => () => onChange?.(false), [onChange]);
+  return null;
+}
+
+/** Shared first-turn title QoL; failures are diagnostic-only and never block chat. */
+export function StandardConversationTitleObserver(options: UseConversationTitlesOptions) {
+  useConversationTitles(options);
+  return null;
+}
+
+/** Default bounded approval review used by the endpoint-only launcher. */
+export function StandardGatewayApprovals({ client }: { readonly client: HandrailAiClient<StreamEvent, ChatRequest, object> }) {
+  const snapshot = useConversationWorkspaceSnapshot(client.workspace!);
+  const conversationId = snapshot.selectedConversationId;
+  return conversationId === null ? null : <ConversationGatewayApprovals
+    key={conversationId} resources={client.resources} conversationId={conversationId}/>;
+}
+
+function ConversationGatewayApprovals({ resources, conversationId }: {
+  readonly resources: HandrailAiClient<StreamEvent, ChatRequest, object>["resources"];
+  readonly conversationId: string;
+}) {
+  const { proposals, busy, error, decide } = useConversationApprovals(resources, conversationId);
+  const state = useResolvedState() ?? createInitialConversationState(conversationId as ConversationId);
+  return <section className="hr-chat__approvals" aria-label="Assistant approvals">
+    {error && <span className="hr-chat__approval-error" role="alert">Approvals could not be refreshed.</span>}
+    {proposals.filter(proposal => proposal.status === "pending").map(proposal =>
+      <StandardApprovalCard key={proposal.proposal_id} proposal={proposal} context={{ state, busy: busy !== null, readOnly: false,
+        decide: status => decide(proposal, status) }}/>) }
+  </section>;
+}
+
+/** Concrete review with argument-binding checks; domain formatting can replace this card. */
+export function StandardApprovalCard({ proposal, context }: {
+  readonly proposal: ConversationApprovalProposalRecord; readonly context: StyledApprovalRenderContext;
+}) {
+  const session = useContext(ConversationContext)?.runtime?.displaySession;
+  const inlineArguments = reviewedToolArguments(context.state, proposal);
+  const conversationId = context.state.conversation_id;
+  const saved = useBoundApprovalReview({ scope: session, conversationId: conversationId ?? "", proposal,
+    enabled: inlineArguments === null && proposal.status !== "pending" && Boolean(session?.supportsPendingApprovals) &&
+      session?.getSnapshot().conversationId === conversationId,
+    load: async signal => {
+      const page = await session!.readApprovals({ proposalId: proposal.proposal_id }, signal);
+      const record = page.records.find(record => record.kind === "approval" && record.id === proposal.proposal_id);
+      const current = record?.kind === "approval" ? record.value : null;
+      if (!current || current.proposal_version !== proposal.proposal_version || current.status !== proposal.status ||
+        current.turn_id !== proposal.turn_id || current.tool_call_id !== proposal.tool_call_id ||
+        current.tool_name !== proposal.tool_name || current.group_id !== proposal.group_id ||
+        !jsonValuesEqual(current.reviewed_arguments, proposal.reviewed_arguments)) throw new Error("Action changed");
+      const tool_calls = page.records.flatMap(record => record.kind === "tool" && record.value ? [record.value] : []);
+      const value = reviewedToolArguments({ tool_calls }, proposal);
+      if (!value) throw new Error("Saved details unavailable");
+      return value;
+    },
+  });
+  const arguments_ = inlineArguments ?? saved.review;
+  const pending = proposal.status === "pending";
+  const expired = proposal.status === "expired";
+  return <article className="hr-chat__approval" role="listitem" aria-label="Assistant action">
+    <strong>{structuredDetailLabel(proposal.tool_name)}</strong><span className="hr-chat__approval-status">{expired && pending ? "Expired" : ({
+      pending: "Review required", confirmed: "Approved · awaiting execution", rejected: "Rejected",
+      executing: "Executing", executed: "Executed", failed: "Execution failed", expired: "Expired",
+    })[proposal.status]}</span>
+    {arguments_ ? <StructuredDetailsDisclosure value={arguments_} summary="Action details" always
+      defaultOpen={pending && !shouldCollapseStructuredDetails(arguments_)}/>
+      : saved.status === "loading" ? <p role="status">Loading saved action details…</p>
+        : <p>{pending ? "Action details are unavailable. Refresh this conversation before confirming." : "Saved action details are unavailable."}
+          {saved.status === "error" && <button type="button" onClick={saved.retry}>Retry action details</button>}</p>}
+    {proposal.failure_reason && <p>{proposal.failure_reason}</p>}
+    {pending && <div className="hr-chat__approval-actions">
+      <button type="button" disabled={context.busy || context.readOnly || expired || arguments_ === null}
+        onClick={() => { void context.decide("confirmed"); }}>Confirm</button>
+      <button type="button" disabled={context.busy || context.readOnly || expired}
+        onClick={() => { void context.decide("rejected"); }}>Reject</button>
+    </div>}
+  </article>;
+}
+
+const EMPTY_ASSISTANT_AUTHORIZATION_CONTEXT = Object.freeze({});
+
+export interface HandrailAssistantWorkspaceProps extends Omit<HandrailChatWorkspaceLauncherProps<ChatRequest, object>,
+  "workspace" | "composerForConversation" | "createConversation" | "activity" | "presenceForConversation" | "catalogOptions"> {
+  /** Already authenticated SDK client; the host retains its account lifetime. */
+  readonly client: HandrailAiClient<StreamEvent, ChatRequest, object>;
+  readonly authorizationContext?: object;
+  readonly presentation?: "page" | "launcher";
+  readonly defaultApprovalMode?: ComposerApprovalMode;
+  readonly autoTitle?: boolean;
+  readonly titleOptions?: Pick<UseConversationTitlesOptions, "placeholderTitles" | "diagnostics">;
+  readonly newConversationTitle?: string;
+  readonly uploaderForConversation?: (conversationId: ConversationId) => AttachmentUploader<Blob>;
+  readonly attachmentIntake?: UseConversationComposerOptions<ChatRequest>["attachmentIntake"];
+}
+
+/** Complete optional UI for hosts that already create an authenticated SDK client. */
+export function HandrailAssistantWorkspace(props: HandrailAssistantWorkspaceProps): ReactNode {
+  const { client } = props;
+  if (!client.workspace) throw new TypeError("The assistant client requires a multiple-conversation workspace.");
+  return <ClientAssistantWorkspace {...props} workspace={client.workspace}/>;
+}
+
+function ClientAssistantWorkspace(props: HandrailAssistantWorkspaceProps & {
+  readonly workspace: NonNullable<HandrailAiClient<StreamEvent, ChatRequest, object>["workspace"]>;
+}): ReactNode {
+  const { client, workspace, authorizationContext = EMPTY_ASSISTANT_AUTHORIZATION_CONTEXT } = props;
+  const { approvalMode, onApprovalModeChange, decorateRequest } = useComposerApprovalPreference(client, props);
+  const uploaderFor = useWorkspaceUploaders(workspace, client.attachmentUpload, props.uploaderForConversation);
+  const [titles, setTitles] = useState({ client, values: new Map<ConversationId, string>() });
+  const rememberTitle = useCallback((id: ConversationId, title: string) => setTitles((previous) => ({ client,
+    values: new Map(previous.client === client ? previous.values : []).set(id, title) })), [client]);
+  const generatedTitles = titles.client === client ? titles.values : new Map<ConversationId, string>();
+  const attachmentIntake = props.attachmentIntake ?? gatewayAttachmentIntake(client.capabilities, !!props.uploaderForConversation);
+  const { client: _client, authorizationContext: _context, presentation, defaultApprovalMode: _defaultMode,
+    autoTitle: _autoTitle, titleOptions: _titleOptions, newConversationTitle: _newTitle,
+    uploaderForConversation: _upload, attachmentIntake: _intake, ...view } = props;
+  void _client; void _context; void _defaultMode; void _autoTitle; void _titleOptions; void _newTitle; void _upload; void _intake;
+  const options: HandrailChatWorkspaceProps<ChatRequest, object> = {
+    ...view, workspace, approvalMode,
+    ...(props.loadAttachment ? { loadAttachment: props.loadAttachment }
+      : client.attachmentDownload ? { loadAttachment: client.attachmentDownload } : {}),
+    ...(onApprovalModeChange ? { onApprovalModeChange } : {}),
+    historyLayout: props.historyLayout ?? "sidebar",
+    ...(props.threads === false ? { conversationPicker: false, showConversationTitle: false } : {}),
+    historyOptions: { autoCreate: true, refreshKey: generatedTitles, ...props.historyOptions },
+    catalogOptions: { catalog: client.catalog, authorizationContext },
+    ...(client.activity ? { activity: client.activity } : {}),
+    presenceForConversation: client.presenceControllerFor,
+    attachmentsEnabled: props.attachmentsEnabled ?? (!!client.attachmentUpload || !!props.uploaderForConversation),
+    transcription: props.transcription ?? (client.transcription && client.capabilities.transcription
+      ? { transcribe: client.transcription, capability: client.capabilities.transcription } : false),
+    ...(props.approvals === undefined ? { approvalResources: client.resources } : {}),
+    ...(client.capabilities.resources?.turnApprovalMode && client.resources.turnApprovalMode
+      ? { changeTurnApprovalMode: client.resources.turnApprovalMode } : {}),
+    getThreadLabel: (id) => generatedTitles.get(id) ?? props.getThreadLabel?.(id),
+    onConversationRead: props.onConversationRead ?? ((id, observed) => client.markActivityRead(id, observed)),
+    createConversation: async (input?: { readonly idempotencyKey: ConversationCatalogIdempotencyKey }) => {
+      const created = await client.catalog.create({ authorizationContext,
+        idempotencyKey: input?.idempotencyKey ?? browserIdentity("conversation") as never,
+        ...(props.threads !== false && props.newConversationTitle ? { title: props.newConversationTitle } : {}),
+      });
+      return { authorizationContext, conversationId: created.descriptor.conversationId };
+    },
+    composerForConversation: (_runtime, conversationId) => ({
+      conversationId,
+      ...(props.uploaderForConversation ? { uploader: uploaderFor(conversationId) } : {
+        uploader: client.attachmentDrafts.forConversation(conversationId).uploader,
+        attachmentDraftController: client.attachmentDrafts.forConversation(conversationId),
+      }),
+      ...(attachmentIntake ? { attachmentIntake } : {}),
+      createRequest: ({ text, attachments }) => {
+        if (props.maxPromptCharacters !== undefined && text.length > props.maxPromptCharacters) {
+          throw new TypeError(`Shorten your message to ${props.maxPromptCharacters.toLocaleString()} characters before sending.`);
+        }
+        return decorateRequest(client.buildRequest({ content: text, attachments }));
+      },
+    }),
+  };
+  return <><StandardConversationTitleObserver client={client} enabled={props.autoTitle !== false && props.threads !== false}
+    onTitle={rememberTitle} {...props.titleOptions}/>
+    {presentation === "launcher" ? <HandrailChatWorkspaceLauncher {...options}/>
+      : <HandrailChatWorkspace {...options} layout={props.layout ?? "page"}/>}</>;
+}
+
+function browserIdentity(prefix: string): string {
+  const id = globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+  return `${prefix}-${id}`;
+}
+
+/** Endpoint-only production launcher. It owns negotiation, catalog, runtimes, uploads, recovery, and cleanup. */
+export function HandrailAssistantLauncher(props: HandrailAssistantLauncherProps): ReactNode {
+  if (props.attachmentUploadAdapter && props.uploaderForConversation) throw new TypeError("Choose an attachment adapter or a custom uploader factory, not both");
+  // Timing changes replace observers, but must retain uncertain admission IDs
+  // even when the host uses the account-lifetime in-memory journal.
+  const ownership = useMemo(() => ({
+    clientId: (props.clientId ?? browserIdentity("client")) as ConversationClientId,
+    deviceId: (props.deviceId ?? browserIdentity("device")) as ConversationDeviceId,
+    pendingStore: props.pendingStore ?? new InMemoryApplicationConversationPendingStore<ChatRequest>(),
+  }),
+    [props.endpoint, props.fetch, props.protectedRequest, props.diagnostics, props.clientId, props.deviceId, props.pendingStore, props.attachmentUploadAdapter]);
+  const configurationKey = useMemo(() => Object.freeze({}), [ownership,
+    props.activityPollingMilliseconds, props.synchronizationPollingMilliseconds, props.idleSynchronizationPollingMilliseconds]);
+  const [savedState, setState] = useState<AssistantLauncherState | null>(null);
+  // Never render or observe a previous account/endpoint while the replacement boots.
+  const state = savedState?.configurationKey === configurationKey ? savedState : null;
+  const [failure, setFailure] = useState<{ readonly configurationKey: object; readonly cause: unknown } | null>(null);
+  const error = failure?.configurationKey === configurationKey ? failure.cause : null;
+  useEffect(() => {
+    let disposed = false;
+    let owned: AssistantLauncherState | null = null;
+    setFailure(null);
+    void (async () => {
+      try {
+        const { clientId, deviceId, pendingStore } = ownership;
+        const client = await createHandrailAiClient<StreamEvent, ChatRequest, object>({
+          baseUrl: props.endpoint,
+          pendingStore,
+          ...(props.activityPollingMilliseconds === undefined ? {} : { activityPollingMilliseconds: props.activityPollingMilliseconds }),
+          ...(props.synchronizationPollingMilliseconds === undefined ? {} : { synchronizationPollingMilliseconds: props.synchronizationPollingMilliseconds }),
+          ...(props.idleSynchronizationPollingMilliseconds === undefined ? {} : { idleSynchronizationPollingMilliseconds: props.idleSynchronizationPollingMilliseconds }),
+          ...(props.attachmentUploadAdapter ? { attachmentUploadAdapter: props.attachmentUploadAdapter } : {}),
+          ...(props.fetch === undefined ? {} : { fetch: props.fetch }),
+          ...(props.protectedRequest === undefined ? {} : { protectedRequest: props.protectedRequest }),
+          ...(props.diagnostics === undefined ? {} : { diagnostics: props.diagnostics }),
+          conversations: { mode: "multiple", clientId, deviceId, authorize: () => "allow" },
+          buildRequest: ({ content, attachments }) => ({
+            protocol_version: AI_RUNTIME_PROTOCOL_VERSION,
+            continuation_of: null,
+            messages: [{ role: "user", content: [
+              ...(content ? [{ type: "text" as const, text: content }] : []),
+              ...attachments.map((attachment) => ({
+                type: String((attachment as { media_type?: string }).media_type).startsWith("image/")
+                  ? "image" as const : "document" as const,
+                attachment: attachment as never,
+              })),
+            ] }],
+            tools: [], tool_results: [],
+            generation: { max_output_tokens: 2048, temperature: 0.2 },
+            correlation_hints: {},
+          }),
+        });
+        if (disposed) { await client.dispose(); return; }
+        if (!client.workspace) {
+          await client.dispose();
+          throw new TypeError("The assistant endpoint did not create a conversation workspace");
+        }
+        owned = { client, configurationKey };
+        client.workspace.setVisible(props.presentation === "page");
+        if (!disposed) setState(owned);
+      } catch (cause) {
+        const failed = owned; owned = null;
+        await failed?.client.dispose();
+        if (!disposed) setFailure({ configurationKey, cause });
+      }
+    })();
+    return () => {
+      disposed = true;
+      const previous = owned; owned = null;
+      void previous?.client.dispose();
+    };
+  }, [configurationKey, ownership, props.endpoint, props.fetch, props.protectedRequest, props.diagnostics, props.attachmentUploadAdapter,
+    props.activityPollingMilliseconds, props.synchronizationPollingMilliseconds, props.idleSynchronizationPollingMilliseconds]);
+
+  const voiceMonitor = useMemo(() => {
+    if (!state || !props.voiceActivity) return null;
+    const client = state.client;
+    return new RealtimeWorkspaceMonitor({ ...props.voiceActivity, loadConversationIds: async (signal) => {
+      const ids: string[] = [], cursors = new Set<string>();
+      let cursor: Awaited<ReturnType<typeof client.catalog.list>>["nextCursor"] | undefined;
+      for (let index = 0; index < 100; index++) {
+        if (signal.aborted) throw new Error("Voice catalog observation cancelled.");
+        const page = await client.catalog.list({ authorizationContext: EMPTY_ASSISTANT_AUTHORIZATION_CONTEXT,
+          lifecycle: "active", pageSize: 100, order: { field: "updated_at", direction: "desc" }, ...(cursor ? { cursor } : {}) });
+        ids.push(...page.items.map((item) => String(item.conversationId)));
+        if (!page.hasMore) return ids;
+        if (!page.nextCursor || cursors.has(String(page.nextCursor))) throw new TypeError("Voice catalog cursor did not advance.");
+        cursor = page.nextCursor; cursors.add(String(cursor));
+      }
+      throw new TypeError("Voice catalog page limit reached.");
+    } });
+  }, [state, props.voiceActivity]);
+  useEffect(() => { voiceMonitor?.start(); return () => voiceMonitor?.dispose(); }, [voiceMonitor]);
+
+  const styles = props.includeStyles === false ? null : <StyledChatPresetStyles/>;
+  if (error !== null) return <>{styles}{props.failure?.(error) ?? <span role="alert">Assistant unavailable.</span>}</>;
+  if (state === null || state.client.workspace === null) return <>{styles}{props.loading ?? null}</>;
+  const { endpoint: _endpoint, fetch: _fetch, protectedRequest: _protected, diagnostics: _diagnostics, clientId: _clientId,
+    deviceId: _deviceId, pendingStore: _pendingStore, attachmentUploadAdapter: _attachmentAdapter, loading: _loading, failure: _failure, includeStyles: _includeStyles,
+    activityPollingMilliseconds: _activityPolling, synchronizationPollingMilliseconds: _synchronizationPolling,
+    idleSynchronizationPollingMilliseconds: _idlePolling,
+    onWorkingChange: _onWorkingChange, autoTitle: _autoTitle,
+    presentation: _presentation, uploaderForConversation: _uploaderForConversation,
+    attachmentIntake: _attachmentIntake, voiceActivity: _voiceOptions, ...launcher } = props;
+  void _endpoint; void _fetch; void _protected; void _diagnostics; void _clientId; void _deviceId; void _loading;
+  void _failure; void _includeStyles; void _onWorkingChange; void _autoTitle; void _presentation; void _pendingStore;
+  void _uploaderForConversation; void _attachmentIntake; void _voiceOptions; void _attachmentAdapter;
+  void _activityPolling; void _synchronizationPolling; void _idlePolling;
+  const authorizationContext = EMPTY_ASSISTANT_AUTHORIZATION_CONTEXT;
+  return <>{styles}<AssistantWorkingObserver workspace={state.client.workspace}
+    {...(voiceMonitor ? { voiceActivity: voiceMonitor } : {})}
+    {...(state.client.activity === null ? {} : { activity: state.client.activity })}
+    {...(props.onWorkingChange === undefined ? {} : { onChange: props.onWorkingChange })}/>
+    <HandrailAssistantWorkspace {...launcher} client={state.client} authorizationContext={authorizationContext}
+      presentation={props.presentation ?? "launcher"}
+      {...(props.autoTitle === undefined ? {} : { autoTitle: props.autoTitle })}
+      {...(props.diagnostics ? { titleOptions: { diagnostics: props.diagnostics } } : {})}
+      {...(props.uploaderForConversation ? { uploaderForConversation: props.uploaderForConversation } : {})}
+      {...(props.attachmentIntake ? { attachmentIntake: props.attachmentIntake } : {})}
+      {...(voiceMonitor ? { voiceActivity: voiceMonitor } : {})}
+      {...(props.includeStyles === undefined ? {} : { includeStyles: props.includeStyles })}/></>;
+}
+
+export interface StyledChatLauncherProps extends StyledChatPresetProps {
+  readonly trigger?: ReactNode;
+  readonly workspace?: ConversationWorkspaceReadable;
+  readonly connectionStatus?: ChatLauncherConnectionStatus;
+  readonly activity?: ConversationActivityReadable;
+}
+
+export function StyledChatLauncher(props: StyledChatLauncherProps): ReactNode {
+  const binding = useConversationLauncherBinding(props.workspace, props.connectionStatus, props.activity);
+  const { workspace: _workspace, connectionStatus: _connectionStatus,
+    trigger, ...preset } = props;
+  void _workspace; void _connectionStatus;
+  return <ChatLauncherRoot {...binding}><ChatLauncherTrigger className="hr-chat__launcher-trigger">
+    {trigger ?? "Open chat"}<ChatLauncherStatus className="hr-chat__launcher-status">{(state) =>
+      launcherStatusText(state)
+    }</ChatLauncherStatus><ChatLauncherBadge className="hr-chat__launcher-badge">{(state) =>
+      state.unreadCount > 0 ? state.unreadCount : null
+    }</ChatLauncherBadge>
+  </ChatLauncherTrigger>
+    <ChatLauncherPortal><ChatLauncherPanel><ChatLauncherTitle className="hr-chat__sr">{props.title ?? "Assistant"}</ChatLauncherTitle>
+      <StyledChatPreset {...preset} layout="launcher"/></ChatLauncherPanel></ChatLauncherPortal>
+  </ChatLauncherRoot>;
+}
+
+export function StyledChatDialog(props: StyledChatPresetProps & { readonly trigger: ReactNode; readonly open: boolean; readonly onOpenChange: (open: boolean) => void }): ReactNode {
+  return <ChatDialogRoot open={props.open} onOpenChange={props.onOpenChange}><ChatDialogTrigger>{props.trigger}</ChatDialogTrigger><ChatDialogPortal>
+    <ChatDialogOverlay className="hr-chat__overlay"/><ChatDialogContent><StyledChatPreset {...props} layout="dialog"/></ChatDialogContent>
+  </ChatDialogPortal></ChatDialogRoot>;
+}
+
+export function StyledChatDrawer(props: StyledChatPresetProps & { readonly trigger: ReactNode; readonly side?: ChatDrawerSide; readonly open: boolean; readonly onOpenChange: (open: boolean) => void }): ReactNode {
+  return <ChatDrawerRoot open={props.open} onOpenChange={props.onOpenChange} side={props.side ?? "end"}><ChatDrawerTrigger>{props.trigger}</ChatDrawerTrigger><ChatDrawerPortal>
+    <ChatDrawerOverlay className="hr-chat__overlay"/><ChatDrawerContent><StyledChatPreset {...props} layout="drawer"/></ChatDrawerContent>
+  </ChatDrawerPortal></ChatDrawerRoot>;
+}

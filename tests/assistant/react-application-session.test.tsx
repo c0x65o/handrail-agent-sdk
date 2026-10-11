@@ -1,0 +1,211 @@
+// @vitest-environment jsdom
+import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { afterEach, expect, it, vi } from "vitest";
+import { createHandrailAiClient, APPLICATION_GATEWAY_PROTOCOL_VERSION, type ApplicationGatewayCapabilities } from "../../src/assistant/client/index.js";
+import { ConversationProvider } from "../../src/assistant/react/context.js";
+import { StyledChatPreset } from "../../src/assistant/react-styled/index.js";
+
+afterEach(cleanup);
+const capabilities: ApplicationGatewayCapabilities = { protocolVersion: APPLICATION_GATEWAY_PROTOCOL_VERSION,
+  authoritativeCancellation: false, attachments: false, presence: false, activity: false, synchronization: false,
+  resources: { conversations: true, approvals: true, titleGeneration: false },
+  displayHistory: { version: 1, maximumPageSize: 50, maximumPageBytes: 262144, control: true } };
+function gateway(options: { large?: boolean; activity?: boolean; citation?: boolean; pending?: boolean } = {}) {
+  const requests: { path: string; operation: string; input: Record<string, unknown>; bytes: number }[] = [];
+  const fetcher = vi.fn<typeof fetch>(async (url, init) => {
+    const path = new URL(String(url)).pathname, body = JSON.parse(String(init?.body)), input = body.input ?? body;
+    let value: unknown;
+    if (path.endsWith("/conversations/get")) value = { operation: "get", status: "found", descriptor: {
+      conversationId: input.conversationId, title: "Saved", lifecycle: "active", archivedAt: null,
+      createdAt: "2026-09-16T00:00:00.000Z", updatedAt: "2026-09-16T00:00:00.000Z", version: 1, metadata: {} } };
+    else {
+      if (!path.endsWith("/conversations/history")) throw new Error(`Unexpected full-history endpoint: ${path}`);
+      const header = { schemaVersion: 1, status: "ready", conversationId: input.conversationId, generation: 0,
+        revision: 200, canonicalRevision: 200, activeTurnId: null };
+      if (body.operation === "control") value = { ...header, activeTurn: null, latestTurn: null, requestedTurn: null,
+        ...(options.pending ? { hasPendingApprovals: true } : {}) };
+      else if (body.operation === "content") value = { encoding: "plain-text", text: "Expanded message text", revision: 200, nextOffset: null };
+      else if (body.operation === "changes") value = { ...header, records: [], nextCursor: null, throughRevision: 200 };
+      else if (input.view?.type === "approval_history") value = { ...header, records: [{ kind: "approval", id: "settled", turnId: "old-turn", revision: 1, bytes: 200, deferred: false, value: { proposal_id: "settled", status: "executed" } }], nextCursor: "older-actions" };
+      else if (input.view?.type === "pending_approvals") value = { ...header, records: [{ kind: "approval", id: "old-approval", turnId: "old-turn",
+        revision: 1, bytes: 200, deferred: false, value: { proposal_id: "old-approval", tool_name: "update_device", status: "pending" } }], nextCursor: null };
+      else if (input.view?.type === "context") {
+        const page = Number(input.cursor ?? 0);
+        value = { ...header, records: options.activity ? Array.from({ length: 30 }, (_, i) => ({ kind: "source", id: `source-${page * 30 + i}`,
+          turnId: null, revision: 1, bytes: 200, deferred: false, value: { source_id: `source-${page * 30 + i}`, label: "Source", locator: "/source" } })) : options.citation ? (input.cursor ? [{ kind: "source", id: "source", turnId: null, revision: 200, bytes: 100, deferred: false,
+            value: { source_id: "source", label: "Loaded source", type: "record", locator: "/source" } }] : [{ kind: "citation", id: "citation", turnId: null,
+            revision: 200, bytes: 150, deferred: false, value: { citation_id: "citation", source_id: "source", order: 0,
+              target: { type: "assistant_message", message_id: "m-200" } } }]) : [],
+          nextCursor: options.citation ? (input.cursor ? null : "source") : options.activity && page < 3 ? String(page + 1) : null };
+      }
+      else {
+        const end = input.anchor ? Number(String(input.anchor.messageId).split("-").at(-1)) - 1 : 200;
+        const start = Math.max(1, end - (input.limit ?? 30) + 1);
+        const records = Array.from({ length: end - start + 1 }, (_, i) => ({ kind: "message", id: `m-${start + i}`, revision: start + i,
+          turnId: null, bytes: 200, deferred: false, value: { message_id: `m-${start + i}`, role: "assistant",
+            content: [{ type: "text", text: `${input.conversationId} saved ${start + i}` }], attachments: [], created_at: null, attribution: null } }));
+        value = { ...header, records: records.map(record => options.large && record.id === "m-200"
+          ? { ...record, value: null, deferred: true, bytes: 80000 } : record), nextCursor: start > 1 ? "older" : null };
+      }
+    }
+    const json = JSON.stringify({ ok: true, value }); requests.push({ path, operation: body.operation, input, bytes: new TextEncoder().encode(json).byteLength });
+    return new Response(json, { headers: { "content-type": "application/json" } });
+  });
+  return { requests, fetcher };
+}
+
+it("keeps unloaded approvals visible and opens their inbox from the fixed request status", async () => {
+  const f = gateway({ pending: true });
+  const client = await createHandrailAiClient({ baseUrl: "https://app.test/ai", fetch: f.fetcher,
+    capabilities: { ...capabilities, displayHistory: { version: 1, maximumPageSize: 50, maximumPageBytes: 262144, control: true, pendingApprovals: true } },
+    conversations: { mode: "single", conversationId: "single" as never, clientId: "client" as never } });
+  try {
+    render(<ConversationProvider runtime={client.conversation!}><StyledChatPreset includeStyles={false}/></ConversationProvider>);
+    const status = await screen.findByRole("region", { name: "Current request" });
+    expect(status.textContent).toContain("Waiting for approval");
+    expect(client.conversation!.getSnapshot().approval_proposals).toHaveLength(0);
+    fireEvent.click(screen.getByRole("button", { name: "Review next" }));
+    await screen.findByRole("button", { name: "Review update_device" });
+    expect(screen.getByRole("button", { name: "Close pending approvals" })).toBe(document.activeElement);
+    expect(f.requests.some(request => request.input.view && (request.input.view as { type: string }).type === "pending_approvals")).toBe(true);
+  } finally { cleanup(); await client.dispose(); }
+});
+
+it("uses negotiated large text and bounded activity navigation through the standard preset", async () => {
+  const f = gateway({ large: true, activity: true });
+  const client = await createHandrailAiClient({ baseUrl: "https://app.test/ai", fetch: f.fetcher,
+    capabilities: { ...capabilities, displayHistory: { version: 1, maximumPageSize: 50, maximumPageBytes: 262144, control: true, messageText: true } },
+    conversations: { mode: "single", conversationId: "single" as never, clientId: "client" as never } });
+  try {
+    const view = render(<ConversationProvider runtime={client.conversation!}><StyledChatPreset/></ConversationProvider>);
+    await screen.findByRole("button", { name: "Read message" });
+    expect(f.requests.filter(request => request.operation === "content")).toHaveLength(0);
+    fireEvent.click(screen.getByRole("button", { name: "Read message" }));
+    await screen.findByText("Expanded message text");
+    expect(f.requests.find(request => request.operation === "content")?.input.format).toBe("message-text");
+    for (let i = 0; i < 3; i++) {
+      fireEvent.click(screen.getByRole("button", { name: "Load more activity" }));
+      await waitFor(() => expect(f.requests.filter(request => request.input.view)).toHaveLength(i + 2));
+    }
+    await screen.findByRole("button", { name: "Show latest activity" });
+    expect(client.conversation!.displaySession!.getSnapshot().related).toHaveLength(90);
+    fireEvent.click(screen.getByRole("button", { name: "Show latest activity" }));
+    await waitFor(() => expect(client.conversation!.displaySession!.getSnapshot().related).toHaveLength(30));
+    expect(screen.queryByRole("button", { name: "Show latest activity" })).toBeNull();
+    view.unmount();
+  } finally { await client.dispose(); }
+});
+
+it("keeps the transcript usable while a source arrives on a later activity page", async () => {
+  const f = gateway({ citation: true });
+  const client = await createHandrailAiClient({ baseUrl: "https://app.test/ai", fetch: f.fetcher, capabilities,
+    conversations: { mode: "single", conversationId: "single" as never, clientId: "client" as never } });
+  try {
+    const view = render(<ConversationProvider runtime={client.conversation!}><StyledChatPreset/></ConversationProvider>);
+    await screen.findByText("Some citation sources are not loaded in this activity window.");
+    expect(client.conversation!.getSnapshot().citations).toHaveLength(0);
+    expect(screen.getByText("single saved 200")).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Load more activity" }));
+    await waitFor(() => expect(client.conversation!.getSnapshot().citations).toHaveLength(1));
+    expect(client.conversation!.getSnapshot().citation_sources[0]?.label).toBe("Loaded source");
+    expect(screen.queryByText("Some citation sources are not loaded in this activity window.")).toBeNull();
+    view.unmount();
+  } finally { await client.dispose(); }
+});
+
+it("places activity paging above history and loads activity on an upward scroll before older messages", async () => {
+  const f = gateway({ citation: true });
+  const client = await createHandrailAiClient({ baseUrl: "https://app.test/ai", fetch: f.fetcher, capabilities,
+    conversations: { mode: "single", conversationId: "single" as never, clientId: "client" as never } });
+  try {
+    const view = render(<ConversationProvider runtime={client.conversation!}><StyledChatPreset/></ConversationProvider>);
+    const more = await screen.findByRole("button", { name: "Load more activity" });
+    const transcript = screen.getByRole("region", { name: "Conversation transcript" });
+    const first = view.container.querySelector("[data-display-message]")!;
+    expect(more.compareDocumentPosition(first) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    Object.defineProperties(transcript, { scrollHeight: { configurable: true, value: 2000 }, clientHeight: { configurable: true, value: 500 } });
+    fireEvent.scroll(transcript, { target: { scrollTop: 1500 } });
+    expect(f.requests.filter(request => request.input.view)).toHaveLength(1);
+    fireEvent.scroll(transcript, { target: { scrollTop: 0 } });
+    await waitFor(() => expect(client.conversation!.getSnapshot().citations).toHaveLength(1));
+    expect(f.requests.filter(request => request.operation === "page" && !request.input.view)).toHaveLength(1);
+    expect(screen.queryByRole("button", { name: "Load more activity" })).toBeNull();
+    fireEvent.scroll(transcript, { target: { scrollTop: 0 } });
+    await screen.findByText("single saved 141");
+    view.unmount();
+  } finally { await client.dispose(); }
+});
+
+it("negotiates bounded history in the standard React preset with no snapshot, saved stream replay, or approval-list hydration", async () => {
+  const f = gateway(); const client = await createHandrailAiClient({ baseUrl: "https://app.test/ai", fetch: f.fetcher, capabilities,
+    conversations: { mode: "single", conversationId: "single" as never, clientId: "client" as never } });
+  const approvals = { listApprovalGroup: vi.fn(async () => []), transitionApproval: vi.fn() };
+  try {
+    const view = render(<ConversationProvider runtime={client.conversation!}><StyledChatPreset approvalResources={approvals}/></ConversationProvider>);
+    await screen.findByText("single saved 200");
+    expect(view.container.querySelectorAll("[data-display-message]")).toHaveLength(30);
+    expect(screen.queryByText("single saved 170")).toBeNull();
+    expect(client.conversation!.getSnapshot().partial).toBe(true);
+    expect(client.conversation!.getSnapshot()).not.toHaveProperty("processed_event_ids");
+    expect(client.conversation!.store).not.toHaveProperty("applyEvents");
+    expect(client.workspace).toBeNull(); expect(approvals.listApprovalGroup).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole("button", { name: "Load older messages" })); await screen.findByText("single saved 141");
+    expect(view.container.querySelectorAll("[data-display-message]")).toHaveLength(60);
+    fireEvent.click(screen.getByRole("button", { name: "Load older messages" })); await screen.findByText("single saved 111");
+    fireEvent.click(screen.getByRole("button", { name: "Load older messages" })); await screen.findByText("single saved 81");
+    expect(view.container.querySelectorAll("[data-display-message]")).toHaveLength(90);
+    expect(screen.queryByText("single saved 200")).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "Jump to latest" })); await screen.findByText("single saved 200");
+    expect(view.container.querySelectorAll("[data-display-message]")).toHaveLength(30);
+    expect(f.requests.every(request => request.path.endsWith("/conversations/history"))).toBe(true);
+    expect(Math.max(...f.requests.map(request => request.bytes))).toBeLessThan(65536);
+    view.unmount();
+  } finally { await client.dispose(); }
+});
+
+it("negotiates multiple conversations lazily and drops the previous chat body when switching", async () => {
+  const f = gateway(); const client = await createHandrailAiClient({ baseUrl: "https://app.test/ai", fetch: f.fetcher, capabilities,
+    conversations: { mode: "multiple", clientId: "client" as never, authorize: () => "allow" } });
+  try {
+    expect(f.fetcher).not.toHaveBeenCalled();
+    const a = await client.workspace!.open({ authorizationContext: {}, conversationId: "a" as never });
+    const view = render(<ConversationProvider runtime={a}><StyledChatPreset/></ConversationProvider>);
+    await screen.findByText("a saved 200");
+    let b!: typeof a;
+    await act(async () => { b = await client.workspace!.open({ authorizationContext: {}, conversationId: "b" as never }); });
+    view.rerender(<ConversationProvider runtime={b}><StyledChatPreset/></ConversationProvider>);
+    expect(screen.queryByText("a saved 200")).toBeNull(); await screen.findByText("b saved 200");
+    await waitFor(() => expect(a.getSnapshot().messages).toEqual([]));
+    expect(a.displaySession?.getSnapshot().related).toEqual([]);
+    expect(client.workspace!.getSnapshot().selectedConversationId).toBe("b");
+    expect(f.requests.filter(request => request.operation === "page" && !request.input.view)).toHaveLength(2);
+    view.unmount();
+    for (let index = 0; index < 6; index++) {
+      const runtime = await client.workspace!.open({ authorizationContext: {}, conversationId: `additional-${index}` as never });
+      await runtime.synchronize!();
+    }
+    await waitFor(() => expect(client.workspace!.getSnapshot().threads).toHaveLength(4));
+    expect(client.workspace!.getSnapshot().threads.filter(thread => thread.runtime.getSnapshot().messages.length)).toHaveLength(1);
+    expect(client.registry!.getSnapshot().liveCount).toBe(4);
+  } finally { await client.dispose(); }
+});
+
+
+it("negotiates bounded read-only history without expanding the React transcript", async () => {
+  const f = gateway();
+  const client = await createHandrailAiClient({ baseUrl: "https://app.test/ai", fetch: f.fetcher,
+    capabilities: { ...capabilities, displayHistory: { ...capabilities.displayHistory as Exclude<ApplicationGatewayCapabilities["displayHistory"], false | undefined>, approvalHistory: true } },
+    conversations: { mode: "single", conversationId: "single" as never, clientId: "client" as never } });
+  try {
+    render(<ConversationProvider runtime={client.conversation!}><StyledChatPreset includeStyles={false}/></ConversationProvider>);
+    await screen.findByText("single saved 200");
+    const session = client.conversation!.displaySession!;
+    const before = session.window.getSnapshot().records;
+    const page = await session.readApprovals({ history: true }, new AbortController().signal);
+    expect(page.records.map(r => r.id)).toEqual(["settled"]);
+    expect(page.nextCursor).toBe("older-actions");
+    expect(session.window.getSnapshot().records).toBe(before);
+    const cancelled = new AbortController(); cancelled.abort();
+    await expect(session.readApprovals({ history: true }, cancelled.signal)).rejects.toMatchObject({ name: "AbortError" });
+  } finally { cleanup(); await client.dispose(); }
+});

@@ -1,6 +1,6 @@
 import { isDeepStrictEqual } from 'node:util';
 import { replayConversation, parseConversationEvent, ConversationEventStoreConflictError,
-  type ConversationEventStore, type ConversationId, type DurableApplicationTurnStore } from '@handrail/ai-assistant';
+  type ConversationEventStore, type ConversationId, type DurableApplicationTurnStore } from '../assistant/index.js';
 import type { JobIdentity } from '../contracts/job.js';
 import type { createAgentRuntime } from './agent-runtime.js';
 

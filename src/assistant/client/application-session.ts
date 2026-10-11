@@ -1,0 +1,713 @@
+import type { ConversationMessageRecord } from "../conversation/state.js";
+import { ReadBackoff } from "../read-backoff.js";
+import type { ConversationApprovalDisplayDecision, ConversationApprovalDisplayDecisionInput, ConversationApprovalDisplayReview, ConversationApprovalDisplayReviewInput } from "../conversation/approval-display-review.js";
+import type { ConversationClientId, ConversationId, ConversationTurnCancellationReason } from "../conversation/events.js";
+import type { ConversationDisplayControl, ConversationDisplayControlInput, ConversationDisplayTurnControl } from "../conversation/display-control.js";
+import type { ConversationDisplayRecord, ConversationDisplayContentInput, ConversationDisplayContentChunk } from "../conversation/display-history.js";
+import type { ConversationRuntimeSendMessageInput } from "../runtime.js";
+import { ApplicationGatewayResourceError, type ApplicationGatewayResourceClient } from "../transports/application-gateway.js";
+import { ConversationSyncMutationRejectedError } from "../sync/rejection.js";
+import type { ConversationTransport, TurnObservation } from "../transports/types.js";
+import { ConversationDisplayWindow, type ConversationDisplayReader, type ConversationDisplayWindowSnapshot } from "./display-window.js";
+import type { ConversationDraftWorkspace } from "./draft-workspace.js";
+import { ConversationDraftController, parseSavedPosition, type ConversationLocalStateStore, type ConversationSavedPosition } from "./local-state.js";
+import { mergeRelatedRecords, relatedViews } from "./related-records.js";
+import { captureApplicationConversationInput, parseApplicationConversationSubmission, prepareApplicationConversationSubmission,
+  type ApplicationConversationPendingStore, type ApplicationConversationSubmission } from "./session-submission.js";
+
+export interface ApplicationConversationReader extends ConversationDisplayReader {
+  decideApproval?(input: ConversationApprovalDisplayDecisionInput, signal?: AbortSignal): Promise<ConversationApprovalDisplayDecision>;
+  approvalReview?(input: ConversationApprovalDisplayReviewInput, signal?: AbortSignal): Promise<ConversationApprovalDisplayReview>;
+  control(input: ConversationDisplayControlInput, signal?: AbortSignal): Promise<ConversationDisplayControl>;
+  content?(input: ConversationDisplayContentInput, signal?: AbortSignal): Promise<ConversationDisplayContentChunk>;
+}
+/** A partial presentation, intentionally not assignable to ConversationState. */
+export interface ApplicationConversationSessionSnapshot {
+  readonly kind: "display";
+  readonly conversationId: string;
+  readonly control: ConversationDisplayControl | null;
+  readonly window: ConversationDisplayWindowSnapshot;
+  readonly related: readonly ConversationDisplayRecord[];
+  readonly hasMoreRelated: boolean;
+  readonly relatedTruncated: boolean;
+  readonly loading: boolean;
+  readonly submitting: boolean;
+  readonly hasPendingSubmission: boolean;
+  readonly outgoingMessage?: { readonly message: ConversationMessageRecord; readonly status: "sending" | "sent" | "unconfirmed" } | null;
+  readonly error: ApplicationConversationSessionError | null;
+}
+export interface ApplicationConversationSessionOptions<TRequest> {
+  readonly conversationId: ConversationId;
+  readonly clientId: ConversationClientId;
+  readonly reader: ApplicationConversationReader;
+  readonly resources: Pick<ApplicationGatewayResourceClient, "appendMutations">;
+  readonly transport: ConversationTransport<unknown, TRequest>;
+  readonly pendingStore: ApplicationConversationPendingStore<TRequest>;
+  readonly localStateStore?: ConversationLocalStateStore;
+  /** Shared account owner; display-session disposal releases only its lease. */
+  readonly draftWorkspace?: ConversationDraftWorkspace;
+  /** Exact device-file cleanup after confirmed (including replayed) admission. */
+  readonly reconcileAcceptedFiles?: (fileIds: readonly string[]) => Promise<void>;
+  readonly messageText?: boolean;
+  readonly recordText?: boolean;
+  readonly approvalReview?: boolean;
+  readonly pendingApprovals?: boolean;
+  readonly approvalHistory?: boolean;
+  /** Bootstrap waits for account-owned local flushes before completing disposal. */
+  readonly onLocalStateFlush?: (operation: Promise<void>) => void;
+  /** Automatic display/stream cadence; defaults to 1s. Explicit refresh and Stop remain immediate. */
+  readonly pollMilliseconds?: number;
+  readonly idlePollMilliseconds?: number;
+  readonly createId?: () => string;
+  readonly now?: () => string;
+}
+export class ApplicationConversationSessionError extends Error {
+  constructor(readonly code: string, message: string, readonly retryable = false, readonly retryAfterMs?: number) {
+    super(message); this.name = "ApplicationConversationSessionError";
+  }
+}
+const terminal = (turn: ConversationDisplayTurnControl) =>
+  ["completed", "failed", "cancelled", "waiting_for_approval"].includes(turn.status);
+const executionTerminal = (turn: ConversationDisplayTurnControl) =>
+  ["completed", "failed", "cancelled"].includes(turn.status);
+const errorCode = (cause: unknown) => {
+  if (!cause || typeof cause !== "object") return "unavailable";
+  const error = cause as { resourceCode?: string; code?: string; transportCode?: string };
+  return error.resourceCode ?? error.code ?? error.transportCode ?? "unavailable";
+};
+const denied = (cause: unknown) => ["forbidden", "permission_denied", "unauthenticated", "not_found"].includes(errorCode(cause));
+function normalize(cause: unknown): ApplicationConversationSessionError {
+  return cause instanceof ApplicationConversationSessionError ? cause
+    : new ApplicationConversationSessionError(errorCode(cause), denied(cause)
+      ? "Conversation access is unavailable." : cause instanceof ApplicationGatewayResourceError
+        ? cause.message : "Conversation could not be refreshed. Try again.", !denied(cause) &&
+        !(cause && typeof cause === "object" && "retryable" in cause && cause.retryable === false),
+        cause && typeof cause === "object" && "retryAfterMs" in cause && typeof cause.retryAfterMs === "number" ? cause.retryAfterMs : undefined);
+}
+function delay(milliseconds: number, signal: AbortSignal): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const abort = () => { clearTimeout(timer); signal.removeEventListener("abort", abort); reject(new ApplicationConversationSessionError("observation_closed", "Conversation observation was closed.")); };
+    const timer = setTimeout(() => { signal.removeEventListener("abort", abort); resolve(); }, milliseconds);
+    if (signal.aborted) abort(); else signal.addEventListener("abort", abort, { once: true });
+  });
+}
+
+function observationRead<T>(work: Promise<T>, signal: AbortSignal): Promise<T> {
+  return new Promise((resolve, reject) => {
+    const abort = () => { signal.removeEventListener("abort", abort);
+      reject(new ApplicationConversationSessionError("observation_closed", "Conversation observation was closed.")); };
+    if (signal.aborted) { abort(); return; }
+    signal.addEventListener("abort", abort, { once: true });
+    work.then(value => { signal.removeEventListener("abort", abort); resolve(value); },
+      cause => { signal.removeEventListener("abort", abort); reject(cause); });
+  });
+}
+
+/** Server-owned execution with bounded browser presentation. Opening and observing
+ * never hydrate checkpoints, replay provider logs or write assistant output.
+ * Durable local intent precedes admission; stream frames only wake display reads. */
+export class ApplicationConversationSession<TRequest = unknown> {
+  readonly window: ConversationDisplayWindow;
+  readonly draft: ConversationDraftController | null;
+  private position: ConversationSavedPosition | null = null;
+  private positionLoaded = false;
+  private positionDirty = false;
+  private positionWrite: Promise<void> | null = null;
+  private positionTimer: ReturnType<typeof setTimeout> | undefined;
+  private readonly lifetime = new AbortController();
+  private displayLifetime = new AbortController();
+  private readonly listeners = new Set<() => void>();
+  private readonly waits = new Map<string, { turnId: string; controller: AbortController; wake?: () => void }>();
+  private readonly observedControls = new Map<string, Promise<ConversationDisplayControl>>();
+  private readonly cancellationIds = new Map<string, { identity: string; reason: ConversationTurnCancellationReason }>();
+  private readonly pollMilliseconds: number;
+  private readonly idlePollMilliseconds: number;
+  private state: ApplicationConversationSessionSnapshot;
+  private readonly unsubscribeWindow: () => void;
+  private active = true;
+  private pending: Promise<void> | null = null;
+  private submission: { json: string; promise: Promise<ConversationDisplayTurnControl> } | null = null;
+  private control: ConversationDisplayControl | null = null;
+  private related: readonly ConversationDisplayRecord[] = Object.freeze([]);
+  private relatedCursor: string | null = null;
+  private relatedKey = "";
+  private relatedViewKey = "";
+  private relatedTruncated = false;
+  private relatedInitialized = false;
+  private relatedGroup = 0;
+  private relatedGroups: ReturnType<typeof relatedViews> = [];
+  private relatedPending: Promise<void> | null = null;
+  private observation: TurnObservation<unknown> | null = null;
+  private observationTurnId: string | null = null;
+  private poll: ReturnType<typeof setTimeout> | undefined;
+  private wake: ReturnType<typeof setTimeout> | undefined;
+  private refreshDemand = 0;
+  private lastRefreshStarted = -Infinity;
+  private readonly readBackoff = new ReadBackoff();
+  private readonly startBackoff = new ReadBackoff();
+  private followingLatest = true;
+  private preparingSend = false;
+  private outgoing: Exclude<ApplicationConversationSessionSnapshot["outgoingMessage"], undefined> = null;
+  private admitted: ApplicationConversationSubmission<TRequest> | null = null;
+  private callbacks: NonNullable<ConversationRuntimeSendMessageInput<TRequest>["onAccepted"]>[] = [];
+
+  constructor(private readonly options: ApplicationConversationSessionOptions<TRequest>) {
+    this.pollMilliseconds = options.pollMilliseconds ?? 1000;
+    this.idlePollMilliseconds = options.idlePollMilliseconds ?? 15000;
+    if (![this.pollMilliseconds, this.idlePollMilliseconds].every(value => Number.isSafeInteger(value) && value >= 100 && value <= 300000)) {
+      throw new TypeError("Invalid conversation polling interval");
+    }
+    this.draft = options.draftWorkspace?.acquire(options.conversationId) ??
+      (options.localStateStore ? new ConversationDraftController(options.conversationId, options.localStateStore) : null);
+    this.window = new ConversationDisplayWindow({ reader: options.reader, onChanges: page => {
+      const result = mergeRelatedRecords(this.related, page.records, "changes");
+      this.related = result.records; this.relatedTruncated ||= result.trimmed;
+    } });
+    this.state = Object.freeze({ kind: "display", conversationId: options.conversationId, control: null,
+      window: this.window.getSnapshot(), related: this.related, hasMoreRelated: false, relatedTruncated: false, loading: false, submitting: false, hasPendingSubmission: false, error: null });
+    this.unsubscribeWindow = this.window.subscribe(() => {
+      const next = this.window.getSnapshot();
+      const changed = next.version !== this.state.window.version;
+      if (next.version !== this.state.window.version && next.change === "older") this.followingLatest = false;
+      if (next.version !== this.state.window.version && next.change === "latest") this.followingLatest = true;
+      this.publish();
+      if (this.active && this.relatedKey !== this.contextKey() &&
+          (!this.pending || changed && next.change !== "changes")) this.scheduleRefresh();
+    });
+  }
+  getSnapshot = (): ApplicationConversationSessionSnapshot => this.state;
+  subscribe = (listener: () => void): (() => void) => {
+    this.assertOpen(); this.listeners.add(listener); return () => { this.listeners.delete(listener); };
+  };
+  private assertOpen() {
+    if (this.lifetime.signal.aborted) throw new ApplicationConversationSessionError("observation_closed", "Conversation account was closed.");
+  }
+  private publish(patch: Partial<ApplicationConversationSessionSnapshot> = {}) {
+    if (this.lifetime.signal.aborted) return;
+    if (this.outgoing && this.window.getSnapshot().records.some(record => record.id === this.outgoing!.message.message_id)) this.outgoing = null;
+    this.state = Object.freeze({ ...this.state, outgoingMessage: this.followingLatest ? this.outgoing : null, control: this.control, window: this.window.getSnapshot(),
+      related: this.related, hasMoreRelated: this.relatedCursor !== null || this.relatedGroup + 1 < this.relatedGroups.length,
+      relatedTruncated: this.relatedTruncated, ...patch });
+    for (const listener of this.listeners) { try { listener(); } catch { /* Observers do not own admission or reads. */ } }
+  }
+  async initialize(): Promise<void> {
+    try {
+      const pending = await this.options.pendingStore.load(this.options.conversationId); this.assertOpen();
+      this.publish({ hasPendingSubmission: pending !== null }); await this.refresh();
+      if (pending) {
+        const control = await this.options.reader.control({ conversationId: this.options.conversationId,
+          turnId: pending.start.conversationTurnId }, this.lifetime.signal);
+        this.assertOpen();
+        if (control.status === "ready" && control.requestedTurn && executionTerminal(control.requestedTurn)) {
+          await this.cleanAcceptedDraft(pending);
+          await this.options.pendingStore.acknowledge(pending); this.assertOpen();
+          this.publish({ hasPendingSubmission: false });
+        }
+      }
+    } catch (cause) { const error = normalize(cause); this.publish({ error }); throw error; }
+    finally { this.schedulePoll(); }
+  }
+  private schedulePoll() {
+    clearTimeout(this.poll);
+    if (this.lifetime.signal.aborted || this.readBackoff.terminal || this.state.error && !this.state.error.retryable) return;
+    this.poll = setTimeout(() => {
+      // Choose the next cadence after this read has observed the current turn.
+      // A second zero-delay wake both delays this poll and uses stale state.
+      void this.refresh().catch(() => undefined).finally(() => this.schedulePoll());
+    }, Math.max(this.readBackoff.remaining, this.active || this.control?.activeTurn ? this.pollMilliseconds : this.idlePollMilliseconds));
+  }
+  private scheduleRefresh() {
+    this.refreshDemand++;
+    if (this.wake || this.lifetime.signal.aborted || this.readBackoff.terminal || this.state.error && !this.state.error.retryable) return;
+    this.wake = setTimeout(() => { this.wake = undefined; void this.refresh().catch(() => undefined); }, Math.max(0, this.readBackoff.remaining,
+      this.lastRefreshStarted + this.pollMilliseconds - Date.now()));
+  }
+  setFollowingLatest(value: boolean): void { this.followingLatest = value; this.publish(); }
+  get supportsApprovalHistory(): boolean { return this.options.approvalHistory === true; }
+  get supportsPendingApprovals(): boolean { return this.options.pendingApprovals === true; }
+  /** Explicit inbox/review reads share account and selection cancellation. They
+   * never hydrate the message window or become provider context. */
+  async readApprovals(input: { readonly proposalId?: string; readonly cursor?: string; readonly history?: boolean }, signal: AbortSignal) {
+    this.assertOpen();
+    if (input.history && input.proposalId) throw new TypeError("History cannot select a decision");
+    if (!(input.history ? this.supportsApprovalHistory : this.supportsPendingApprovals) || !this.active || this.control?.status !== "ready") {
+      throw new ApplicationConversationSessionError("approval_inbox_unavailable", "Pending approvals are unavailable.", true);
+    }
+    const generation = this.control.generation;
+    const combined = AbortSignal.any([signal, this.displayLifetime.signal, this.lifetime.signal]);
+    const page = await this.options.reader.page({ conversationId: this.options.conversationId,
+      view: input.proposalId ? { type: "approval", proposalId: input.proposalId } : input.history ? { type: "approval_history" } : { type: "pending_approvals" },
+      ...(input.proposalId ? { limit: 2, maximumBytes: 128 * 1024 } : {}),
+      ...(input.cursor ? { cursor: input.cursor } : {}) }, combined);
+    if (combined.aborted) throw new DOMException("Approval read cancelled", "AbortError");
+    if (page.status !== "ready" || page.generation !== generation || this.control?.generation !== generation ||
+        page.revision < Math.max(this.control?.revision ?? 0, this.window.getSnapshot().revision)) {
+      throw new ApplicationConversationSessionError("stale_approvals", "Approval details changed. Try again.", true);
+    }
+    if (input.history && page.records.some(record => record.kind !== "approval" || record.deleted ||
+      record.value && !["executed", "rejected", "expired"].includes(record.value.status))) {
+      throw new TypeError("Invalid action history page");
+    }
+    return page;
+  }
+  get supportsApprovalReview(): boolean { return this.options.approvalReview === true && !!this.options.reader.approvalReview && !!this.options.reader.decideApproval; }
+  decideApproval = async (input: ConversationApprovalDisplayDecisionInput, signal: AbortSignal): Promise<ConversationApprovalDisplayDecision> => {
+    this.assertOpen();
+    if (!this.supportsApprovalReview || !this.active || input.conversationId !== this.options.conversationId) throw new TypeError("Approval decision is unavailable");
+    const combined = AbortSignal.any([signal, this.displayLifetime.signal, this.lifetime.signal]);
+    combined.throwIfAborted();
+    const receipt = await this.options.reader.decideApproval!(input, combined);
+    combined.throwIfAborted(); return receipt;
+  };
+  readApprovalReview = async (input: ConversationApprovalDisplayReviewInput, signal: AbortSignal): Promise<ConversationApprovalDisplayReview> => {
+    this.assertOpen();
+    if (!this.supportsApprovalReview || !this.active || input.conversationId !== this.options.conversationId ||
+        input.generation !== this.control?.generation) throw new TypeError("Approval review is unavailable");
+    const combined = AbortSignal.any([signal, this.displayLifetime.signal, this.lifetime.signal]);
+    const review = await this.options.reader.approvalReview!(input, combined);
+    combined.throwIfAborted();
+    if (input.generation !== this.control?.generation) throw new TypeError("Approval review changed");
+    return review;
+  };
+  get supportsMessageText(): boolean { return this.options.messageText === true && !!this.options.reader.content; }
+  get supportsRecordText(): boolean { return this.options.recordText === true && !!this.options.reader.content; }
+  readRecordText = async (input: ConversationDisplayContentInput, signal: AbortSignal): Promise<ConversationDisplayContentChunk> => {
+    this.assertOpen();
+    if (!this.supportsRecordText || !this.active || input.conversationId !== this.options.conversationId ||
+        input.generation !== this.control?.generation || input.format !== "record-text") throw new TypeError("Record reader is unavailable");
+    const combined = AbortSignal.any([signal, this.displayLifetime.signal, this.lifetime.signal]);
+    const chunk = await this.options.reader.content!(input, combined);
+    combined.throwIfAborted();
+    if (input.generation !== this.control?.generation) throw new TypeError("Record reader changed");
+    return chunk;
+  };
+  readMessageText = (input: ConversationDisplayContentInput, signal: AbortSignal): Promise<ConversationDisplayContentChunk> => {
+    this.assertOpen();
+    if (!this.supportsMessageText || input.conversationId !== this.options.conversationId ||
+        input.kind !== "message" || input.format !== "message-text") throw new TypeError("Message text reader is unavailable");
+    return this.options.reader.content!(input, AbortSignal.any([signal, this.displayLifetime.signal, this.lifetime.signal]));
+  };
+  getPosition = (): ConversationSavedPosition | undefined => this.lifetime.signal.aborted ? undefined : this.position ?? undefined;
+  savePosition = (position: ConversationSavedPosition): void => {
+    if (this.lifetime.signal.aborted) return;
+    this.position = parseSavedPosition(position); this.positionLoaded = true; this.positionDirty = true;
+    clearTimeout(this.positionTimer);
+    this.positionTimer = setTimeout(() => { this.positionTimer = undefined; void this.flushPosition().catch(() => undefined); }, 250);
+  };
+  private async restorePosition(signal: AbortSignal) {
+    if (this.positionLoaded) return;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    try {
+      // A local preference must never hold authorized history behind blocked
+      // device storage. Late restoration is ignored once display has opened.
+      const value = await Promise.race([this.options.localStateStore?.readPosition(this.options.conversationId),
+        new Promise<null>(resolve => { timer = setTimeout(() => resolve(null), 100); })]);
+      if (signal.aborted || this.positionLoaded) return;
+      this.position = value ? parseSavedPosition(value) : null;
+      this.followingLatest = this.position?.following ?? true;
+    } catch { /* Local position failure must not hide an authorized conversation. */ }
+    finally { clearTimeout(timer); }
+    if (!signal.aborted) this.positionLoaded = true;
+  }
+  private flushPosition(): Promise<void> {
+    clearTimeout(this.positionTimer); this.positionTimer = undefined;
+    if (this.positionWrite) return this.positionWrite;
+    const work = Promise.resolve().then(async () => {
+      while (this.positionDirty && this.position) {
+        const value = this.position;
+        await this.options.localStateStore?.writePosition(this.options.conversationId, value);
+        if (this.position === value) this.positionDirty = false;
+      }
+    }).finally(() => { if (this.positionWrite === work) this.positionWrite = null; });
+    this.positionWrite = work; return work;
+  }
+  async setActive(active: boolean): Promise<void> {
+    this.assertOpen();
+    if (this.active === active) return;
+    this.active = active;
+    this.displayLifetime.abort(); this.displayLifetime = new AbortController();
+    this.clearRelated();
+    if (!active) {
+      // A display invalidation queued while visible must not keep the old
+      // foreground cadence after the panel closes. Durable running work keeps
+      // its regular poll and its independent stream/terminal observation.
+      if (!this.control?.activeTurn) { clearTimeout(this.wake); this.wake = undefined; }
+      await this.window.select(null); this.publish();
+    }
+    else { await this.pending?.catch(() => undefined); await this.refresh(); }
+    this.schedulePoll();
+  }
+  refresh(): Promise<void> {
+    this.assertOpen();
+    if (this.pending) return this.pending;
+    if (this.readBackoff.remaining) return Promise.resolve();
+    clearTimeout(this.wake); this.wake = undefined;
+    this.lastRefreshStarted = Date.now();
+    const demand = this.refreshDemand;
+    const readGeneration = this.readBackoff.generation;
+    const signal = AbortSignal.any([this.lifetime.signal, this.displayLifetime.signal]);
+    const work = Promise.resolve().then(async () => {
+      this.publish({ loading: true });
+      try {
+        const control = await this.options.reader.control({ conversationId: this.options.conversationId }, signal);
+        if (signal.aborted) return;
+        if (control.status === "preparing") {
+          this.control = control; this.clearRelated();
+          await this.window.select(null);
+          throw new ApplicationConversationSessionError("history_preparing", "Preparing saved conversation…", true);
+        }
+        if (this.control && control.revision < this.control.revision) throw new ApplicationConversationSessionError("stale_control", "Conversation controls are temporarily behind.", true);
+        const previous = this.control; this.control = control;
+        if (previous?.generation !== control.generation) { this.clearRelated(); }
+        if (this.active) {
+          await this.restorePosition(signal); if (signal.aborted) return;
+          if (this.window.getSnapshot().conversationId !== this.options.conversationId || previous?.generation !== control.generation) {
+            const saved = this.position;
+            const anchor = saved && !saved.following && saved.generation === control.generation
+              ? { messageId: saved.messageId, generation: saved.generation, direction: "newer" as const, inclusive: true } : undefined;
+            if (!anchor) this.followingLatest = true;
+            await this.window.select(this.options.conversationId, anchor);
+          }
+          else await this.window.refresh();
+          if (signal.aborted) return;
+          if (this.followingLatest && this.window.getSnapshot().hasNewer && !this.window.getSnapshot().error) await this.window.jumpToLatest();
+          if (signal.aborted) return;
+          const window = this.window.getSnapshot();
+          if (window.error) throw window.error.cause;
+          if (window.status !== "ready" || window.generation !== control.generation) throw new ApplicationConversationSessionError("history_preparing", "Preparing saved conversation…", true);
+          if (this.relatedKey !== this.contextKey()) {
+            const viewKey = this.contextViewKey();
+            if (this.relatedViewKey !== viewKey) {
+              this.related = Object.freeze([]); this.relatedCursor = null; this.relatedTruncated = false;
+              this.relatedGroups = relatedViews(window.records.map(record => record.id), (control.activeTurn ?? control.latestTurn)?.turnId);
+              this.relatedGroup = 0;
+              this.relatedInitialized = false;
+            }
+            this.relatedViewKey = viewKey; this.relatedKey = this.contextKey();
+            try { await this.readRelated(signal, true); } catch (cause) { this.relatedKey = ""; throw cause; }
+          }
+        }
+        if (!signal.aborted) { this.readBackoff.succeeded(readGeneration); this.publish({ error: null }); }
+      } catch (cause) {
+        if (signal.aborted) return;
+        if (denied(cause)) {
+          this.observation?.disconnect(); this.observation = null;
+          clearTimeout(this.wake); this.wake = undefined;
+          this.control = null; this.outgoing = null; this.clearRelated();
+          await this.window.select(null);
+        }
+        const error = normalize(cause); this.readBackoff.failed(error); this.publish({ error }); throw error;
+      } finally { if (!this.lifetime.signal.aborted) this.publish({ loading: false }); }
+    }).finally(() => {
+      if (this.pending === work) this.pending = null;
+      if (this.refreshDemand !== demand) this.scheduleRefresh();
+    });
+    this.pending = work; return work;
+  }
+  private clearRelated() {
+    this.related = Object.freeze([]); this.relatedCursor = null;
+    this.relatedKey = ""; this.relatedViewKey = "";
+    this.relatedTruncated = false; this.relatedInitialized = false;
+    this.relatedGroups = []; this.relatedGroup = 0;
+  }
+  private contextKey() {
+    const window = this.window.getSnapshot();
+    return `${this.control?.generation}/${this.control?.revision}/${window.revision}/${window.version}`;
+  }
+  private contextViewKey() { return JSON.stringify([this.control?.generation,
+    this.control?.activeTurn?.turnId ?? this.control?.latestTurn?.turnId, this.window.getSnapshot().records.map(record => record.id)]); }
+  private async readRelated(signal: AbortSignal, latest = false) {
+    const key = this.relatedKey;
+    const group = latest ? 0 : this.relatedCursor ? this.relatedGroup : this.relatedGroup + 1;
+    const view = this.relatedGroups[group];
+    if (!view) return;
+    const page = await this.options.reader.page({ conversationId: this.options.conversationId,
+      view,
+      ...(!latest && this.relatedCursor ? { cursor: this.relatedCursor } : {}) }, signal);
+    if (signal.aborted || this.relatedKey !== key || key !== this.contextKey()) return;
+    if (page.revision < this.window.getSnapshot().revision) throw new ApplicationConversationSessionError("stale_activity", "Saved activity is temporarily behind. Try again.", true);
+    if (page.status !== "ready" || page.generation !== this.control?.generation) throw new ApplicationConversationSessionError("history_preparing", "Preparing saved activity…", true);
+    const initial = !this.relatedInitialized;
+    const result = mergeRelatedRecords(this.related, page.records, latest ? "latest" : "older");
+    this.related = result.records; this.relatedTruncated ||= result.trimmed;
+    this.relatedInitialized = true;
+    if (!latest || initial) { this.relatedCursor = page.nextCursor; this.relatedGroup = group; }
+  }
+  loadMoreRelated(): Promise<void> {
+    this.assertOpen();
+    if (this.relatedPending) return this.relatedPending;
+    if (!this.state.hasMoreRelated) return Promise.resolve();
+    const signal = AbortSignal.any([this.lifetime.signal, this.displayLifetime.signal]);
+    return this.relatedPending = this.readRelated(signal).then(() => this.publish({ error: null })).catch(async cause => {
+      if (signal.aborted) return;
+      if (denied(cause)) {
+        this.control = null; this.outgoing = null; this.clearRelated();
+        this.observation?.disconnect(); this.observation = null;
+        await this.window.select(null);
+      }
+      const error = normalize(cause); this.publish({ error }); throw error;
+    }).finally(() => { this.relatedPending = null; });
+  }
+  async showLatestRelated(): Promise<void> {
+    this.assertOpen();
+    await this.pending; this.assertOpen();
+    this.relatedKey = ""; this.relatedViewKey = "";
+    await this.refresh();
+  }
+  async prepare(input: ConversationRuntimeSendMessageInput<TRequest>, operationId = this.options.createId?.() ?? crypto.randomUUID()): Promise<ApplicationConversationSubmission<TRequest>> {
+    const captured = captureApplicationConversationInput(input);
+    await this.refresh(); this.assertOpen();
+    if (this.readBackoff.remaining) throw this.state.error ?? new ApplicationConversationSessionError(
+      "read_unavailable", "Fresh conversation controls are temporarily unavailable.", true, this.readBackoff.remaining);
+    if (!this.control || this.control.status !== "ready") throw new ApplicationConversationSessionError("history_preparing", "Preparing saved conversation…", true);
+    if (this.submission || this.control.activeTurnId) throw new ApplicationConversationSessionError("turn_active", "Wait for the active response or stop it before sending.");
+    return prepareApplicationConversationSubmission({ conversationId: this.options.conversationId,
+      clientId: this.options.clientId, revision: this.control.canonicalRevision,
+      operationId, now: this.options.now?.() ?? new Date().toISOString(), input: captured });
+  }
+  async sendMessage(input: ConversationRuntimeSendMessageInput<TRequest>): Promise<ConversationDisplayTurnControl> {
+    this.assertOpen();
+    if (this.preparingSend || this.submission || this.state.hasPendingSubmission) throw new ApplicationConversationSessionError("pending_send_exists", "Retry the saved message before sending another one.");
+    const captured = captureApplicationConversationInput(input), onAccepted = input.onAccepted;
+    const operationId = this.options.createId?.() ?? crypto.randomUUID();
+    const preview = prepareApplicationConversationSubmission({ conversationId: this.options.conversationId,
+      clientId: this.options.clientId, revision: this.control?.canonicalRevision ?? 0,
+      operationId, now: this.options.now?.() ?? new Date().toISOString(), input: captured });
+    this.preparingSend = true;
+    this.showOutgoing(preview);
+    this.publish({ submitting: true, error: null });
+    let submitted = false;
+    try {
+      const saved = await this.options.pendingStore.load(this.options.conversationId); this.assertOpen();
+      if (saved) throw new ApplicationConversationSessionError("pending_send_exists", "Retry the saved message before sending another one.");
+      const prepared = await this.prepare(captured, operationId);
+      submitted = true;
+      return await this.submit(prepared, onAccepted);
+    } finally {
+      this.preparingSend = false;
+      if (!submitted) { this.outgoing = null; this.publish({ submitting: false }); }
+    }
+  }
+  private showOutgoing(saved: ApplicationConversationSubmission<TRequest>) {
+    const payload = saved.admission.mutations[0]!.events[0]!.payload;
+    if (payload.type !== "message.created") return;
+    this.outgoing = { status: this.outgoing?.message.message_id === saved.messageId && this.outgoing.status === "sent" ? "sent" : "sending",
+      message: { message_id: saved.messageId, role: "user", content: payload.content,
+        attachments: saved.admission.mutations.flatMap(mutation => mutation.events.flatMap(event =>
+          event.payload.type === "message.attachment_referenced" ? [event.payload.attachment] : [])),
+        attribution: null, created_at: saved.admission.mutations[0]!.events[0]!.occurred_at } };
+  }
+
+  async retryPending(onAccepted?: ConversationRuntimeSendMessageInput<TRequest>["onAccepted"]): Promise<ConversationDisplayTurnControl | null> {
+    const saved = await this.options.pendingStore.load(this.options.conversationId); this.assertOpen();
+    return saved ? this.submit(saved, onAccepted) : null;
+  }
+  submit(value: ApplicationConversationSubmission<TRequest>, onAccepted?: ConversationRuntimeSendMessageInput<TRequest>["onAccepted"]): Promise<ConversationDisplayTurnControl> {
+    this.assertOpen();
+    const saved = parseApplicationConversationSubmission<TRequest>(value, this.options.conversationId), json = JSON.stringify(saved);
+    if (this.submission) {
+      if (this.submission.json !== json) return Promise.reject(new ApplicationConversationSessionError("pending_send_exists", "Another message is being submitted."));
+      this.acceptCallback(onAccepted); return this.submission.promise;
+    }
+    if (this.startBackoff.remaining) return Promise.reject(new ApplicationConversationSessionError("rate_limited",
+      "Your message is saved. Wait before retrying its original submission.", true, this.startBackoff.remaining));
+    this.showOutgoing(saved);
+    this.admitted = null; this.callbacks = []; this.acceptCallback(onAccepted);
+    let retained = false;
+    const promise = Promise.resolve().then(async () => {
+      await this.options.pendingStore.retain(saved); this.assertOpen();
+      retained = true;
+      this.publish({ hasPendingSubmission: true });
+      const result = await this.options.resources.appendMutations(saved.admission); this.assertOpen();
+      if (result.status === "rejected") {
+        // This response certifies that nothing was admitted. Release only the
+        // exact send journal; the editable text and files remain for correction.
+        this.outgoing = null;
+        const rejection = new ConversationSyncMutationRejectedError(result.code);
+        await this.options.pendingStore.acknowledge(saved); this.assertOpen();
+        this.publish({ hasPendingSubmission: false });
+        throw new ApplicationConversationSessionError(rejection.code, rejection.message);
+      }
+      if (result.status === "unauthorized") throw new ApplicationConversationSessionError("forbidden", "Conversation access is unavailable.");
+      if (result.status !== "mutations" || result.acknowledgements.length !== saved.admission.mutations.length ||
+        saved.admission.mutations.some(mutation => result.acknowledgements.filter(ack => ack.mutationId === mutation.mutationId && ["accepted", "duplicate"].includes(ack.status)).length !== 1)) {
+        throw new ApplicationConversationSessionError("admission_unconfirmed", "The saved message could not be confirmed. Retry its original submission.", true);
+      }
+      if (this.outgoing) this.outgoing = { ...this.outgoing, status: "sent" };
+      this.publish();
+      await this.cleanAcceptedDraft(saved);
+      this.assertOpen(); this.admitted = saved;
+      for (const callback of this.callbacks.splice(0)) this.acceptCallback(callback);
+      this.assertOpen();
+      let control = await this.options.reader.control({ conversationId: this.options.conversationId, turnId: saved.start.conversationTurnId }, this.lifetime.signal);
+      this.assertOpen();
+      if (control.status !== "ready" || !control.requestedTurn) throw new ApplicationConversationSessionError("admission_unconfirmed", "The saved turn is not visible yet.", true);
+      this.scheduleRefresh();
+      if (!terminal(control.requestedTurn)) {
+        const started = await this.options.transport.startTurn(saved.start);
+        if (!started.ok) {
+          if (started.error.code === "rate_limited") this.startBackoff.failed(started.error);
+          // The HTTP rejection alone cannot settle a previous uncertain start.
+          // Only an authorized canonical terminal control releases this journal.
+          if (!started.error.retryable && ["unauthenticated", "forbidden"].includes(started.error.code)) {
+            control = await this.options.reader.control({ conversationId: this.options.conversationId,
+              turnId: saved.start.conversationTurnId }, this.lifetime.signal);
+            this.assertOpen();
+          }
+          if (control.status !== "ready" || !control.requestedTurn || !executionTerminal(control.requestedTurn)) {
+            throw new ApplicationConversationSessionError(started.error.code, started.error.message, started.error.retryable, started.error.retryAfterMs);
+          }
+        } else {
+          this.startBackoff.succeeded();
+          if (this.lifetime.signal.aborted) { started.value.observation.disconnect(); this.assertOpen(); }
+          if (started.value.conversationId !== this.options.conversationId || started.value.turnId !== saved.start.conversationTurnId || started.value.mutationId !== saved.start.mutationId) {
+            started.value.observation.disconnect(); throw new ApplicationConversationSessionError("invalid_start", "The server acknowledged a different turn.");
+          }
+          this.observe(started.value.observation, saved.start.conversationTurnId);
+        }
+      }
+      await this.options.pendingStore.acknowledge(saved); this.assertOpen();
+      this.publish({ hasPendingSubmission: false });
+      if (control.requestedTurn && terminal(control.requestedTurn)) {
+        await this.refresh(); return control.requestedTurn;
+      }
+      return this.waitForTurn(saved.start.conversationTurnId);
+    }).catch((cause: unknown) => {
+      if (!retained || denied(cause)) this.outgoing = null;
+      if (this.outgoing?.status === "sending") this.outgoing = { ...this.outgoing, status: "unconfirmed" };
+      const error = normalize(cause); this.publish({ error }); throw error; })
+      .finally(() => { this.submission = null; this.callbacks = []; this.admitted = null; this.publish({ submitting: false }); });
+    this.submission = { json, promise }; this.publish({ submitting: true }); return promise;
+  }
+  private async cleanAcceptedDraft(saved: ApplicationConversationSubmission<TRequest>): Promise<void> {
+    if (saved.localDraft) {
+      try {
+        if (saved.localDraft.textVersion !== undefined) {
+          if (!this.draft) throw new Error("No local draft owner");
+          await this.draft.reconcileAccepted(saved.localDraft.textVersion);
+        }
+        if (saved.localDraft.fileIds?.length) {
+          if (!this.options.reconcileAcceptedFiles) throw new Error("No local file owner");
+          await this.options.reconcileAcceptedFiles(saved.localDraft.fileIds);
+        }
+      } catch {
+        throw new ApplicationConversationSessionError("draft_cleanup_failed",
+          "Your message was saved, but its local draft could not be cleared. Retry the saved message.", true);
+      }
+    }
+  }
+  private acceptCallback(callback: ConversationRuntimeSendMessageInput<TRequest>["onAccepted"]) {
+    if (!callback || this.lifetime.signal.aborted) return;
+    if (!this.admitted) { this.callbacks.push(callback); return; }
+    try { callback({ conversationId: this.options.conversationId, messageId: this.admitted.messageId, turnId: this.admitted.start.conversationTurnId }); } catch { /* Presentation does not own admission. */ }
+  }
+  private observe(observation: TurnObservation<unknown>, turnId: string) {
+    this.observation?.disconnect(); this.observation = observation; this.observationTurnId = turnId;
+    void (async () => {
+      try { for await (const event of observation.events) { void event; if (this.lifetime.signal.aborted) break; this.scheduleRefresh(); } }
+      catch { /* The durable controls remain authoritative after disconnection. */ }
+      finally {
+        if (this.observation === observation) {
+          this.observation = null; this.observationTurnId = null;
+          for (const wait of this.waits.values()) if (wait.turnId === turnId) wait.wake?.();
+        }
+        this.scheduleRefresh();
+      }
+    })();
+  }
+  async waitForTurn(turnId: string, signal?: AbortSignal): Promise<ConversationDisplayTurnControl> {
+    this.assertOpen();
+    if (this.waits.size >= 32) throw new ApplicationConversationSessionError("observation_capacity", "Too many conversation observers.");
+    const controller = new AbortController(), key = `${turnId}:${crypto.randomUUID()}`;
+    const wait: { turnId: string; controller: AbortController; wake?: () => void } = { turnId, controller };
+    this.waits.set(key, wait);
+    const lifetime = AbortSignal.any([this.lifetime.signal, controller.signal, ...(signal ? [signal] : [])]);
+    try {
+      for (;;) {
+        if (lifetime.aborted) throw new ApplicationConversationSessionError("observation_closed", "Conversation observation was closed.");
+        if (this.readBackoff.remaining) await delay(this.readBackoff.remaining, lifetime);
+        try {
+          // Share only concurrent observation reads of this exact turn. Admission,
+          // recovery and cancellation retain their own fresh authorization reads.
+          let reading = this.observedControls.get(turnId);
+          if (!reading) {
+            reading = this.options.reader.control({ conversationId: this.options.conversationId, turnId }, this.lifetime.signal)
+              .finally(() => { if (this.observedControls.get(turnId) === reading) this.observedControls.delete(turnId); });
+            this.observedControls.set(turnId, reading);
+          }
+          const control = await observationRead(reading, lifetime);
+          if (lifetime.aborted) continue;
+          if (control.status === "ready" && control.requestedTurn &&
+            (executionTerminal(control.requestedTurn) ||
+              terminal(control.requestedTurn) && !this.cancellationIds.has(turnId))) {
+            // Authorized scalar controls settle execution. A slow display read must
+            // not hold its observer open; refresh still owns presentation/errors.
+            void this.refresh().catch(() => undefined);
+            this.assertOpen(); return control.requestedTurn;
+          }
+        } catch (cause) {
+          if (lifetime.aborted) throw new ApplicationConversationSessionError("observation_closed", "Conversation observation was closed.");
+          const error = normalize(cause); this.readBackoff.failed(error);
+          if (denied(cause)) {
+            this.observation?.disconnect(); this.observation = null;
+            clearTimeout(this.wake); this.wake = undefined;
+            this.control = null; this.outgoing = null; this.clearRelated();
+            await this.window.select(null); this.publish({ error });
+          }
+          if (!error.retryable) throw error;
+        }
+        const wake = new AbortController();
+        wait.wake = () => wake.abort();
+        try {
+          const interval = this.cancellationIds.has(turnId) ? Math.min(1000, this.pollMilliseconds) : this.pollMilliseconds;
+          await delay(Math.max(interval, this.readBackoff.remaining),
+            AbortSignal.any([lifetime, wake.signal]));
+        } catch (cause) { if (!wake.signal.aborted) throw cause; }
+        finally { delete wait.wake; }
+      }
+    } finally { this.waits.delete(key); }
+  }
+  async cancelTurn(turnId: string, reason: ConversationTurnCancellationReason): Promise<"already_terminal" | "cancellation_requested"> {
+    this.assertOpen();
+    const control = await this.options.reader.control({ conversationId: this.options.conversationId, turnId }, this.lifetime.signal);
+    this.assertOpen();
+    if (control.status !== "ready" || !control.requestedTurn) throw new ApplicationConversationSessionError("turn_unavailable", "Refresh the conversation before stopping this response.", true);
+    if (executionTerminal(control.requestedTurn)) return "already_terminal";
+    const currentApprovalWait = control.requestedTurn.status === "waiting_for_approval" &&
+      control.latestTurn?.turnId === turnId && control.activeTurnId === null;
+    if (control.activeTurnId !== turnId && !currentApprovalWait) throw new ApplicationConversationSessionError("turn_changed", "The active response changed.", true);
+    const capability = this.options.transport.capabilities.authoritativeCancellation;
+    if (!capability.supported) throw new ApplicationConversationSessionError("cancellation_unavailable", "Stopping responses is unavailable.");
+    const cancellation = this.cancellationIds.get(turnId) ?? { identity: `cancel_${crypto.randomUUID()}`, reason };
+    this.cancellationIds.set(turnId, cancellation);
+    while (this.cancellationIds.size > 32) this.cancellationIds.delete(this.cancellationIds.keys().next().value!);
+    const result = await capability.capability.cancelTurn({ conversationId: this.options.conversationId,
+      turnId, mutationId: cancellation.identity, idempotencyKey: cancellation.identity, reason: cancellation.reason });
+    this.assertOpen();
+    if (!result.ok) throw new ApplicationConversationSessionError(result.error.code, result.error.message, result.error.retryable);
+    // The authoritative receipt is independent of transcript rendering latency.
+    for (const wait of this.waits.values()) if (wait.turnId === turnId) wait.wake?.();
+    void this.refresh().catch(() => undefined); return result.value.status;
+  }
+  stopObserving(turnId: string): boolean {
+    let stopped = false;
+    for (const wait of this.waits.values()) if (wait.turnId === turnId) { wait.controller.abort(); stopped = true; }
+    if (this.observationTurnId === turnId) {
+      this.observation?.disconnect(); this.observation = null; this.observationTurnId = null; stopped = true;
+    }
+    return stopped;
+  }
+  dispose(): void {
+    if (this.lifetime.signal.aborted) return;
+    this.lifetime.abort(); this.displayLifetime.abort(); clearTimeout(this.poll); clearTimeout(this.wake);
+    const flushed = Promise.allSettled([this.draft && (this.options.draftWorkspace
+      ? this.options.draftWorkspace.release(this.draft) : this.draft.dispose()), this.flushPosition()]).then(() => { this.position = null; });
+    this.options.onLocalStateFlush?.(flushed);
+    this.observation?.disconnect(); this.observation = null; this.observationTurnId = null; this.unsubscribeWindow(); this.window.dispose();
+    this.control = null; this.outgoing = null; this.clearRelated();
+    this.admitted = null; this.submission = null; this.callbacks = []; this.cancellationIds.clear();
+    this.state = Object.freeze({ kind: "display", conversationId: this.options.conversationId, control: null,
+      window: this.window.getSnapshot(), related: this.related, hasMoreRelated: false, relatedTruncated: false, loading: false, submitting: false, hasPendingSubmission: false, error: null });
+    this.listeners.clear();
+  }
+}

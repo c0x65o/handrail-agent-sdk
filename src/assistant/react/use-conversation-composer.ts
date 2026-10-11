@@ -1,0 +1,1377 @@
+import type { ConversationPresentationTurnResult as ConversationRuntimeTurnResult } from "../conversation/presentation.js";
+import {
+  useCallback,
+  useContext,
+  useEffect,
+  useId,
+  useMemo,
+  useRef,
+  useState,
+  useSyncExternalStore,
+  type ChangeEvent,
+  type ClipboardEvent,
+  type CompositionEvent,
+  type DragEvent,
+  type FormEvent,
+  type KeyboardEvent,
+} from "react";
+import { ConversationContext } from "./context.js";
+import { validateDraftText, type ConversationDraftController, type ConversationDraftSnapshot } from "../client/local-state.js";
+import { DraftTextCapacityError, DraftTextRetentionOwner } from "../client/draft-retention.js";
+import type { AttachmentDraftController, AttachmentDraftSnapshot } from "../attachments/draft-workspace.js";
+import { AttachmentDraftCapacityError } from "../attachments/draft-store.js";
+const EMPTY_DRAFT: ConversationDraftSnapshot = Object.freeze({ text: "", edit: 0, status: "saved", error: null, inputError: null });
+const noDraftSubscribe = () => () => undefined;
+const noDraftSnapshot = () => EMPTY_DRAFT;
+const EMPTY_FILES: AttachmentDraftSnapshot<Blob> = Object.freeze({ files: Object.freeze([]), status: "saved", error: null });
+const noFileSnapshot = () => EMPTY_FILES;
+
+import type {
+  AttachmentSelection,
+  AttachmentUploadFailure,
+  AttachmentUploadItem,
+  AttachmentUploadKind,
+} from "../attachments/types.js";
+import type { AttachmentUploader } from "../attachments/uploader.js";
+import { toConversationAttachmentReference } from "../attachments/references.js";
+import { prepareClipboardImage } from "../browser/clipboard-image.js";
+import {
+  intakeFileInputImages,
+  createBrowserImagePreviews,
+  intakeFileInputPdfs,
+  type BrowserAttachmentSource,
+  type BrowserDropImageIntakeResult,
+  type BrowserDropPdfIntakeResult,
+  type BrowserImageIntakeOptions,
+  type BrowserImageIntakeRejection,
+  type BrowserImageIntakeResult,
+  type BrowserImagePreview,
+  type BrowserPdfIntakeOptions,
+  type BrowserPdfIntakeRejection,
+  type BrowserPdfIntakeResult,
+} from "../browser/attachments.js";
+import type {
+  ConversationAttachmentReference,
+  ConversationId,
+  ConversationTurnId,
+} from "../conversation/events.js";
+import type { PresenceController } from "../presence/controller.js";
+import {
+  AI_RUNTIME_DOCUMENT_MIME_TYPES,
+  AI_RUNTIME_IMAGE_MIME_TYPES,
+  AI_RUNTIME_PROTOCOL_LIMITS,
+  type AttachmentReference,
+  type AttachmentMimeType,
+  type DocumentMimeType,
+  type ImageMimeType,
+} from "../protocol.js";
+import type {
+  ConversationRuntimeError,
+} from "../runtime.js";
+import { useConversationActions, useConversationSelector, useConversationStore } from "./hooks.js";
+
+export type ConversationComposerEnterBehavior = "newline" | "send";
+
+export interface ConversationComposerImageIntakeOptions {
+  readonly acceptedMediaTypes?: readonly ImageMimeType[];
+  readonly maxFileBytes?: number;
+  readonly maxSelectionCount?: number;
+  readonly previews?: BrowserImageIntakeOptions["previews"];
+}
+
+export interface ConversationComposerAttachmentIntakeOptions {
+  /** Defaults to every protocol image and document MIME type. */
+  readonly acceptedMediaTypes?: readonly AttachmentMimeType[];
+  /** Per-kind byte limits, bounded by the protocol maxima. */
+  readonly maxFileBytes?: Readonly<Partial<Record<AttachmentUploadKind, number>>>;
+  /** Per-kind selection limits, bounded by the protocol per-message maxima. */
+  readonly maxSelectionCount?: Readonly<Partial<Record<AttachmentUploadKind, number>>>;
+  /** Image-only object-URL previews. Documents never create previews. */
+  readonly previews?: BrowserImageIntakeOptions["previews"];
+}
+
+export interface ConversationComposerSubmission {
+  readonly text: string;
+  readonly attachments: readonly AttachmentReference[];
+}
+
+export interface UseConversationComposerOptions<TRequest = undefined> {
+  /** May be shared: the hook removes only upload items created by this instance. */
+  readonly uploader: AttachmentUploader<BrowserAttachmentSource>;
+  /** Optional ephemeral controller. It remains host-owned. */
+  readonly presence?: Pick<
+    PresenceController,
+    "noteActivity" | "setTyping" | "stopTyping" | "switchConversation"
+  >;
+  /** Static transport request used when createRequest is omitted. */
+  readonly request?: TRequest;
+  /** Build the transport request from the exact draft and ready references submitted. */
+  readonly createRequest?: (submission: ConversationComposerSubmission) => TRequest;
+  /** Defaults to send. Shift+Enter inserts a newline; use newline to opt out. */
+  readonly enterBehavior?: ConversationComposerEnterBehavior;
+  /** Overrides the provider store identity for lifecycle switching. */
+  readonly conversationId?: ConversationId;
+  /**
+   * Opts into mixed image/document intake. When present, this option takes precedence
+   * over imageIntake, including when both are supplied.
+   */
+  readonly attachmentIntake?: ConversationComposerAttachmentIntakeOptions;
+  /**
+   * Backward-compatible image-only intake alias. Existing defaults and behavior
+   * are retained when imageIntake is explicitly supplied. With neither option, mixed intake is enabled.
+   */
+  readonly imageIntake?: ConversationComposerImageIntakeOptions;
+  /** Narrow cancellation seam; no runtime cancellation contract is assumed here. */
+  readonly onCancel?: () => void | Promise<void>;
+  readonly initialDraft?: string;
+  /** Optional account/chat-owned controller; negotiated sessions supply their own. */
+  readonly draftController?: ConversationDraftController;
+  /** Account-owned files. Its uploader must be the uploader supplied above. */
+  readonly attachmentDraftController?: AttachmentDraftController<BrowserAttachmentSource>;
+}
+
+export type ConversationComposerAttachmentStatus =
+  | AttachmentUploadItem["status"]
+  | "missing";
+
+export interface ConversationComposerAttachment {
+  readonly id: string;
+  readonly fingerprint: string;
+  /** The composer-local browser file/blob selected by the user. */
+  readonly source: BrowserAttachmentSource;
+  readonly filename?: string;
+  readonly kind: AttachmentUploadKind;
+  readonly mediaType: AttachmentMimeType;
+  readonly byteSize: number;
+  readonly previewUrl?: string;
+  readonly status: ConversationComposerAttachmentStatus;
+  readonly progress: {
+    readonly uploadedBytes: number;
+    readonly totalBytes: number;
+  };
+  readonly reference?: AttachmentReference;
+  readonly error?: AttachmentUploadFailure;
+  readonly retryable: boolean;
+  readonly cancellable: boolean;
+}
+
+export type ConversationComposerError =
+  | {
+      readonly source: "intake";
+      readonly code:
+        | BrowserImageIntakeRejection["reason"]
+        | BrowserPdfIntakeRejection["reason"]
+        | "intake_failed";
+      readonly message: string;
+      readonly retryable: false;
+      readonly fingerprint?: string;
+      readonly filename?: string;
+    }
+  | {
+      readonly source: "upload";
+      readonly code: AttachmentUploadFailure["code"] | "cancelled" | "missing";
+      readonly message: string;
+      readonly retryable: boolean;
+      readonly attachmentId: string;
+    }
+  | {
+      readonly source: "send";
+      readonly code: string;
+      readonly message: string;
+      readonly retryable: boolean;
+      readonly retryAfterMs?: number;
+    }
+  | {
+      readonly source: "cancel";
+      readonly code: "cancel_failed";
+      readonly message: string;
+      readonly retryable: true;
+    };
+
+export interface ConversationComposerTextareaProps {
+  readonly value: string;
+  readonly onChange: (event: ChangeEvent<HTMLTextAreaElement>) => void;
+  readonly onPaste: (event: ClipboardEvent<HTMLTextAreaElement>) => void;
+  readonly onBlur: () => void;
+  readonly onKeyDown: (event: KeyboardEvent<HTMLTextAreaElement>) => void;
+  readonly onCompositionStart: (event: CompositionEvent<HTMLTextAreaElement>) => void;
+  readonly onCompositionEnd: (event: CompositionEvent<HTMLTextAreaElement>) => void;
+}
+
+export interface ConversationComposerFileInputProps {
+  readonly accept: string;
+  readonly multiple: true;
+  readonly onChange: (event: ChangeEvent<HTMLInputElement>) => void;
+}
+
+export interface ConversationComposerDropProps {
+  readonly onDragOver: (event: DragEvent<HTMLElement>) => void;
+  readonly onDrop: (event: DragEvent<HTMLElement>) => void;
+}
+
+export interface ConversationComposerResult {
+  readonly attachmentPersistence?: {
+    readonly status: AttachmentDraftSnapshot<Blob>["status"]; readonly error: string | null;
+    readonly retry: () => Promise<void>; readonly reload: () => Promise<void>;
+  };
+  readonly draftPersistence?: {
+    readonly status: ConversationDraftSnapshot["status"]; readonly error: string | null;
+    readonly retry: () => Promise<void>; readonly reload: () => Promise<void>;
+  };
+  readonly draftInputError?: string | null;
+  readonly draft: string;
+  readonly setDraft: (draft: string) => void;
+  readonly attachments: readonly ConversationComposerAttachment[];
+  readonly errors: readonly ConversationComposerError[];
+  /**
+   * Blocks every submit path until the returned idempotent release function is called.
+   * An optional preparation lets Send finish draft input (such as transcription),
+   * even for an empty draft. It must release its block and return true to proceed.
+   * False or rejection abandons that send; ordinary blocks always prevent preparation.
+   */
+  readonly acquireSubmissionBlock: (prepare?: () => Promise<boolean>) => () => void;
+  readonly canSend: boolean;
+  readonly isSending: boolean;
+  readonly submit: (
+    event?: FormEvent<Element>,
+  ) => Promise<ConversationRuntimeTurnResult | null>;
+  readonly cancel: () => Promise<boolean>;
+  readonly stop: () => Promise<boolean>;
+  readonly retryAttachment: (attachmentId: string) => boolean;
+  readonly cancelAttachment: (attachmentId: string) => boolean;
+  readonly removeAttachment: (attachmentId: string) => boolean;
+  readonly getTextareaProps: () => ConversationComposerTextareaProps;
+  readonly getFileInputProps: () => ConversationComposerFileInputProps;
+  readonly getDropProps: () => ConversationComposerDropProps;
+}
+
+interface OwnedAttachment {
+  readonly id: string;
+  readonly fingerprint: string;
+  readonly source: BrowserAttachmentSource;
+  readonly filename?: string;
+  readonly kind: AttachmentUploadKind;
+  readonly mediaType: AttachmentMimeType;
+  readonly byteSize: number;
+  readonly preview?: BrowserImagePreview;
+}
+
+type IntakeRejectionReason =
+  | BrowserImageIntakeRejection["reason"]
+  | BrowserPdfIntakeRejection["reason"];
+
+interface ComposerIntakeRejection {
+  readonly reason: IntakeRejectionReason;
+  readonly fingerprint?: string;
+  readonly filename?: string;
+  readonly byteSize?: number;
+  readonly mediaType?: string;
+}
+
+interface ComposerIntakeResult {
+  readonly selections: readonly AttachmentSelection<BrowserAttachmentSource>[];
+  readonly rejections: readonly ComposerIntakeRejection[];
+  readonly previews: readonly BrowserImagePreview[];
+  readonly shouldPreventDefault: boolean;
+  dispose(): void;
+}
+
+const INTAKE_MESSAGES: Record<IntakeRejectionReason, string> = {
+  unsupported_type: "The selected file is not a supported attachment type.",
+  too_large: "The selected attachment is too large.",
+  count_overflow: "The attachment selection limit has been reached.",
+  duplicate: "The selected attachment is already attached.",
+  empty_file: "The selected attachment is empty.",
+  unsafe_filename: "The selected attachment has an unsafe filename.",
+};
+
+const IMAGE_MIME_TYPES = new Set<string>(AI_RUNTIME_IMAGE_MIME_TYPES);
+const DOCUMENT_MIME_TYPES = new Set<string>(AI_RUNTIME_DOCUMENT_MIME_TYPES);
+
+function formatAttachmentBytes(bytes: number): string {
+  if (bytes < 1024) return `${bytes} bytes`;
+  if (bytes < 1024 * 1024) return `${Math.ceil(bytes / 1024)} KB`;
+  return `${Number((bytes / (1024 * 1024)).toFixed(1))} MB`;
+}
+
+function validateAttachmentIntakeOptions(
+  options: ConversationComposerAttachmentIntakeOptions,
+): void {
+  const accepted = options.acceptedMediaTypes ?? [
+    ...AI_RUNTIME_IMAGE_MIME_TYPES,
+    ...AI_RUNTIME_DOCUMENT_MIME_TYPES,
+  ];
+  if (
+    accepted.length === 0 ||
+    accepted.some((mediaType) =>
+      !IMAGE_MIME_TYPES.has(mediaType) && !DOCUMENT_MIME_TYPES.has(mediaType)
+    )
+  ) {
+    throw new TypeError(
+      "attachmentIntake.acceptedMediaTypes must contain protocol attachment MIME types",
+    );
+  }
+  const validateBytes = (
+    kind: AttachmentUploadKind,
+    minimum: number,
+    maximum: number,
+  ): void => {
+    const value = options.maxFileBytes?.[kind];
+    if (
+      value !== undefined &&
+      (!Number.isSafeInteger(value) || value < minimum || value > maximum)
+    ) {
+      throw new TypeError(
+        `attachmentIntake.maxFileBytes.${kind} must be an integer from ${minimum} through ${maximum}`,
+      );
+    }
+  };
+  const validateCount = (kind: AttachmentUploadKind, maximum: number): void => {
+    const value = options.maxSelectionCount?.[kind];
+    if (
+      value !== undefined &&
+      (!Number.isSafeInteger(value) || value < 1 || value > maximum)
+    ) {
+      throw new TypeError(
+        `attachmentIntake.maxSelectionCount.${kind} must be an integer from 1 through ${maximum}`,
+      );
+    }
+  };
+  validateBytes(
+    "image",
+    AI_RUNTIME_PROTOCOL_LIMITS.imageAttachmentMinBytes,
+    AI_RUNTIME_PROTOCOL_LIMITS.imageAttachmentMaxBytes,
+  );
+  validateBytes(
+    "document",
+    AI_RUNTIME_PROTOCOL_LIMITS.documentAttachmentMinBytes,
+    AI_RUNTIME_PROTOCOL_LIMITS.documentAttachmentMaxBytes,
+  );
+  validateCount("image", AI_RUNTIME_PROTOCOL_LIMITS.imageAttachmentsPerMessage);
+  validateCount("document", AI_RUNTIME_PROTOCOL_LIMITS.documentAttachmentsPerMessage);
+}
+
+type ImageResult = BrowserImageIntakeResult | BrowserDropImageIntakeResult;
+type PdfResult = BrowserPdfIntakeResult | BrowserDropPdfIntakeResult;
+
+function filesFromList(files: FileList | undefined): BrowserAttachmentSource[] {
+  const sources: BrowserAttachmentSource[] = [];
+  if (!files) return sources;
+  for (let index = 0; index < files.length; index += 1) {
+    const source = files[index] ?? files.item(index);
+    if (source !== null && source !== undefined) sources.push(source);
+  }
+  return sources;
+}
+
+function filesFromItems(items: DataTransferItemList): BrowserAttachmentSource[] {
+  const sources: BrowserAttachmentSource[] = [];
+  for (let index = 0; index < items.length; index += 1) {
+    const item = items[index];
+    if (item?.kind !== "file") continue;
+    const source = item.getAsFile();
+    if (source !== null) sources.push(source);
+  }
+  return sources;
+}
+
+function filesFromTransfer(dataTransfer: DataTransfer): BrowserAttachmentSource[] {
+  const items = filesFromItems(dataTransfer.items);
+  return items.length > 0 ? items : filesFromList(dataTransfer.files);
+}
+
+type IntakeRecord =
+  | { readonly selection: AttachmentSelection<BrowserAttachmentSource> }
+  | { readonly rejection: ComposerIntakeRejection };
+
+function recordsBySource(
+  result: ImageResult | PdfResult,
+): Map<BrowserAttachmentSource, IntakeRecord[]> {
+  const records = new Map<BrowserAttachmentSource, IntakeRecord[]>();
+  const add = (source: BrowserAttachmentSource, record: IntakeRecord): void => {
+    const current = records.get(source);
+    if (current === undefined) records.set(source, [record]);
+    else current.push(record);
+  };
+  for (const selection of result.selections) add(selection.source, { selection });
+  for (const rejection of result.rejections) {
+    add(rejection.source, {
+      rejection: {
+        reason: rejection.reason,
+        fingerprint: rejection.fingerprint,
+        byteSize: rejection.byteSize,
+        mediaType: rejection.mediaType,
+        ...(rejection.filename === undefined ? {} : { filename: rejection.filename }),
+      },
+    });
+  }
+  return records;
+}
+
+function combineIntake(
+  sources: readonly BrowserAttachmentSource[],
+  imageResult: ImageResult | undefined,
+  pdfResult: PdfResult | undefined,
+): ComposerIntakeResult {
+  const imageRecords = imageResult === undefined
+    ? new Map<BrowserAttachmentSource, IntakeRecord[]>()
+    : recordsBySource(imageResult);
+  const pdfRecords = pdfResult === undefined
+    ? new Map<BrowserAttachmentSource, IntakeRecord[]>()
+    : recordsBySource(pdfResult);
+  const selections: AttachmentSelection<BrowserAttachmentSource>[] = [];
+  const rejections: ComposerIntakeRejection[] = [];
+
+  for (const source of sources) {
+    const imageRecord = imageRecords.get(source)?.shift();
+    const pdfRecord = pdfRecords.get(source)?.shift();
+    const accepted = imageRecord && "selection" in imageRecord
+      ? imageRecord.selection
+      : pdfRecord && "selection" in pdfRecord
+        ? pdfRecord.selection
+        : undefined;
+    if (accepted !== undefined) {
+      selections.push(accepted);
+      continue;
+    }
+    const preferred = DOCUMENT_MIME_TYPES.has(source.type)
+      ? pdfRecord
+      : IMAGE_MIME_TYPES.has(source.type)
+        ? imageRecord
+        : imageRecord ?? pdfRecord;
+    rejections.push(
+      preferred && "rejection" in preferred
+        ? preferred.rejection
+        : { reason: "unsupported_type" },
+    );
+  }
+
+  let disposed = false;
+  return Object.freeze({
+    selections: Object.freeze(selections),
+    rejections: Object.freeze(rejections),
+    previews: Object.freeze([...(imageResult?.previews ?? [])]),
+    shouldPreventDefault: selections.length > 0,
+    dispose(): void {
+      if (disposed) return;
+      disposed = true;
+      imageResult?.dispose();
+      pdfResult?.dispose();
+    },
+  });
+}
+
+function compactHash(value: string): string {
+  let hash = 0x811c9dc5;
+  for (let index = 0; index < value.length; index += 1) {
+    hash = Math.imul(hash ^ value.charCodeAt(index), 0x01000193);
+  }
+  return (hash >>> 0).toString(16).padStart(8, "0");
+}
+
+function durableAttachment(reference: AttachmentReference): ConversationAttachmentReference {
+  return toConversationAttachmentReference(reference);
+}
+
+function sendError(error: ConversationRuntimeError): ConversationComposerError {
+  return {
+    source: "send",
+    code: error.code,
+    message: error.message,
+    retryable: error.retryable,
+    ...(error.retryAfterMs === undefined ? {} : { retryAfterMs: error.retryAfterMs }),
+  };
+}
+
+/**
+ * Coordinate draft, browser attachment intake, uploads, typing, and submission
+ * without rendering markup or imposing presentation semantics.
+ */
+export function useConversationComposer<TRequest = undefined>(
+  options: UseConversationComposerOptions<TRequest>,
+): ConversationComposerResult {
+  const actions = useConversationActions<TRequest>();
+  const store = useConversationStore();
+  const conversationBinding = useContext(ConversationContext);
+  const session = conversationBinding?.runtime?.displaySession;
+  const durableDraftReceipts = Boolean(session);
+  const draftController = options.draftController ?? session?.draft ?? undefined;
+  // Closing the launcher unmounts this composer, but the session still owns
+  // admission and completion observation. A terminal display can arrive before
+  // that observation settles; local isSending/activeTurnId alone are not enough.
+  const getSessionReady = useCallback(() => {
+    if (!session) return true;
+    const snapshot = session.getSnapshot();
+    return !snapshot.submitting && !snapshot.hasPendingSubmission &&
+      snapshot.control?.status === "ready" && snapshot.window.status === "ready";
+  }, [session]);
+  const sessionReady = useSyncExternalStore(session?.subscribe ?? noDraftSubscribe, getSessionReady, getSessionReady);
+  const fileController = options.attachmentDraftController;
+  if (fileController && fileController.uploader !== options.uploader) throw new TypeError("Attachment draft must use its owned uploader");
+  const persistedFiles = useSyncExternalStore(fileController?.subscribe ?? noDraftSubscribe,
+    fileController?.getSnapshot ?? noFileSnapshot, fileController?.getSnapshot ?? noFileSnapshot);
+  const persistedDraft = useSyncExternalStore(draftController?.subscribe ?? noDraftSubscribe,
+    draftController?.getSnapshot ?? noDraftSnapshot, draftController?.getSnapshot ?? noDraftSnapshot);
+  const storeConversationId = useConversationSelector((state) => state.conversation_id);
+  const activeTurnId = useConversationSelector((state) => state.active_turn_id);
+  const reactId = useId();
+  const scope = useMemo(() => compactHash(reactId), [reactId]);
+  const {
+    uploader,
+    presence,
+    request,
+    createRequest,
+    enterBehavior = "send",
+    onCancel,
+  } = options;
+  const conversationId = options.conversationId ?? storeConversationId;
+  if (draftController && draftController.conversationId !== conversationId) throw new TypeError("Text draft belongs to another conversation");
+  if (fileController && fileController.conversationId !== conversationId) throw new TypeError("Attachment draft belongs to another conversation");
+  const generalizedIntake = options.attachmentIntake ?? (options.imageIntake === undefined ? {} : undefined);
+  if (generalizedIntake !== undefined) validateAttachmentIntakeOptions(generalizedIntake);
+  const acceptedMediaTypes: readonly AttachmentMimeType[] = generalizedIntake === undefined
+    ? options.imageIntake?.acceptedMediaTypes ?? AI_RUNTIME_IMAGE_MIME_TYPES
+    : generalizedIntake.acceptedMediaTypes ?? [
+      ...AI_RUNTIME_IMAGE_MIME_TYPES,
+      ...AI_RUNTIME_DOCUMENT_MIME_TYPES,
+    ];
+  const acceptedImageMediaTypes = acceptedMediaTypes.filter(
+    (mediaType): mediaType is ImageMimeType => IMAGE_MIME_TYPES.has(mediaType),
+  );
+  const acceptedDocumentMediaTypes = acceptedMediaTypes.filter(
+    (mediaType): mediaType is DocumentMimeType => DOCUMENT_MIME_TYPES.has(mediaType),
+  );
+  const maxImageFileBytes = generalizedIntake === undefined
+    ? options.imageIntake?.maxFileBytes ??
+      AI_RUNTIME_PROTOCOL_LIMITS.imageAttachmentMaxBytes
+    : generalizedIntake.maxFileBytes?.image ??
+      AI_RUNTIME_PROTOCOL_LIMITS.imageAttachmentMaxBytes;
+  const maxDocumentFileBytes = generalizedIntake?.maxFileBytes?.document ??
+    AI_RUNTIME_PROTOCOL_LIMITS.documentAttachmentMaxBytes;
+  const maxImageSelectionCount = generalizedIntake === undefined
+    ? options.imageIntake?.maxSelectionCount ??
+      AI_RUNTIME_PROTOCOL_LIMITS.imageAttachmentsPerMessage
+    : generalizedIntake.maxSelectionCount?.image ??
+      AI_RUNTIME_PROTOCOL_LIMITS.imageAttachmentsPerMessage;
+  const maxDocumentSelectionCount = generalizedIntake?.maxSelectionCount?.document ??
+    AI_RUNTIME_PROTOCOL_LIMITS.documentAttachmentsPerMessage;
+  const previews = generalizedIntake === undefined
+    ? options.imageIntake?.previews ?? true
+    : generalizedIntake.previews ?? true;
+
+  const localTextOwner = useMemo(() => new DraftTextRetentionOwner(store), [store, conversationId]);
+  const [localDraft, setDraftState] = useState(() => {
+    if (draftController) return draftController.getSnapshot().text;
+    const initial = options.initialDraft ?? "";
+    try { validateDraftText(initial); return initial; } catch { return ""; }
+  });
+  const [localInputError, setLocalInputError] = useState<string | null>(() => {
+    if (draftController) return null;
+    try { validateDraftText(options.initialDraft ?? ""); return null; }
+    catch (cause) { return cause instanceof DraftTextCapacityError ? cause.message : "This edit could not be retained."; }
+  });
+  const [localOwned, setOwned] = useState<readonly OwnedAttachment[]>([]);
+  const [filePreviews, setFilePreviews] = useState<readonly BrowserImagePreview[]>([]);
+  const owned = useMemo<readonly OwnedAttachment[]>(() => fileController ? persistedFiles.files.map(file => ({
+    ...file.selection, id: file.uploadId, kind: file.selection.kind ?? "image",
+    ...(filePreviews.find(preview => preview.fingerprint === file.selection.fingerprint)
+      ? { preview: filePreviews.find(preview => preview.fingerprint === file.selection.fingerprint)! } : {}),
+  })) : localOwned, [fileController, persistedFiles.files, filePreviews, localOwned]);
+  const previewApi = previews === true || previews === false ? undefined : previews.objectUrlApi;
+  useEffect(() => {
+    if (!fileController || !previews) { setFilePreviews([]); return; }
+    try {
+      const result = createBrowserImagePreviews(persistedFiles.files.filter(file => (file.selection.kind ?? "image") === "image")
+        .map(file => file.selection), previewApi ? { objectUrlApi: previewApi } : {});
+      setFilePreviews(result.previews);
+      return () => result.dispose();
+    } catch { setFilePreviews([]); /* A preview failure must not discard a file. */ }
+  }, [fileController, persistedFiles.files, !!previews, previewApi]);
+  useEffect(() => {
+    if (!fileController) return;
+    const flush = () => { void fileController.flush().catch(() => undefined); };
+    const hidden = () => { if (document.visibilityState === "hidden") flush(); };
+    window.addEventListener("pagehide", flush); document.addEventListener("visibilitychange", hidden);
+    return () => { window.removeEventListener("pagehide", flush); document.removeEventListener("visibilitychange", hidden); flush(); };
+  }, [fileController]);
+  const [snapshot, setSnapshot] = useState(() => uploader.getSnapshot());
+  const [operationErrors, setOperationErrors] = useState<
+    readonly ConversationComposerError[]
+  >([]);
+  const [isSending, setIsSending] = useState(false);
+  const sendingRef = useRef(false);
+  const pendingCancellation = useRef<{ scope: object; requested: boolean; turnId: ConversationTurnId | null } | null>(null);
+  const submissionBlocks = useRef(new Map<symbol, (() => Promise<boolean>) | undefined>());
+  const [submissionBlockCount, setSubmissionBlockCount] = useState(0);
+  const preparingSubmission = useRef<object | null>(null);
+  const [isPreparingSubmission, setIsPreparingSubmission] = useState(false);
+  const acquireSubmissionBlock = useCallback((prepare?: () => Promise<boolean>) => {
+    const token = Symbol("composer task");
+    submissionBlocks.current.set(token, prepare);
+    setSubmissionBlockCount(submissionBlocks.current.size);
+    return () => {
+      if (submissionBlocks.current.delete(token)) {
+        setSubmissionBlockCount(submissionBlocks.current.size);
+      }
+    };
+  }, []);
+  const composing = useRef(false);
+  const draftRef = useRef(localDraft);
+  const draftRevision = useRef(0);
+  const ownedRef = useRef(owned);
+  const uploaderRef = useRef(uploader);
+  const presenceRef = useRef(presence);
+  const lifecycleRef = useRef({
+    conversationId,
+    store,
+    uploader,
+    presence,
+    initialized: false,
+    draftController,
+    fileController,
+  });
+  const previousScope = lifecycleRef.current;
+  const scopeChanged = previousScope.initialized && (previousScope.conversationId !== conversationId ||
+    previousScope.store !== store || previousScope.uploader !== uploader || previousScope.presence !== presence ||
+    previousScope.draftController !== draftController || previousScope.fileController !== fileController);
+  // Storage snapshots belong to the current account immediately, before effects
+  // run. Never render the previous scope's editor during a prop transition.
+  const draft = draftController ? persistedDraft.text : scopeChanged ? "" : localDraft;
+  const pastePreparations = useRef(new Set<{ abort: AbortController; release(): void }>());
+  useEffect(() => () => {
+    for (const job of pastePreparations.current) { job.abort.abort(); job.release(); }
+    pastePreparations.current.clear();
+  }, [conversationId, store, uploader, presence]);
+
+  draftRef.current = draft;
+  useEffect(() => {
+    if (!draftController) {
+      try { localTextOwner.replace(draftRef.current); }
+      catch (cause) {
+        draftRef.current = ""; setDraftState("");
+        setLocalInputError(cause instanceof DraftTextCapacityError ? cause.message : "This edit could not be retained.");
+      }
+    }
+    return () => localTextOwner.clear();
+  }, [draftController, localTextOwner]);
+  ownedRef.current = owned;
+  uploaderRef.current = uploader;
+  presenceRef.current = presence;
+
+  useEffect(() => {
+    setSnapshot(uploader.getSnapshot());
+    return uploader.subscribe(setSnapshot);
+  }, [uploader]);
+
+  const releaseOwned = useCallback(
+    (
+      entries: readonly OwnedAttachment[],
+      targetUploader = uploaderRef.current,
+    ): void => {
+      for (const entry of entries) {
+        try {
+          targetUploader.remove(entry.id);
+        } catch {
+          // A host-disposed uploader must not prevent preview cleanup.
+        }
+        try {
+          entry.preview?.revoke();
+        } catch {
+          // Continue releasing later previews when one host URL call fails.
+        }
+      }
+    },
+    [],
+  );
+
+  useEffect(() => {
+    const previous = lifecycleRef.current;
+    if (!previous.initialized) {
+      previous.initialized = true;
+      return;
+    }
+    if (
+      previous.conversationId === conversationId &&
+      previous.store === store &&
+      previous.uploader === uploader &&
+      previous.presence === presence && previous.draftController === draftController && previous.fileController === fileController
+    ) {
+      return;
+    }
+
+    const previousOwned = ownedRef.current;
+    if (!previous.fileController) releaseOwned(previousOwned, previous.uploader);
+    ownedRef.current = [];
+    setOwned([]);
+    draftRef.current = draftController?.getSnapshot().text ?? "";
+    setLocalInputError(null);
+    draftRevision.current += 1;
+    setDraftState(draftRef.current);
+    sendingRef.current = false;
+    setIsSending(false);
+    preparingSubmission.current = null;
+    setIsPreparingSubmission(false);
+    setOperationErrors([]);
+    previous.presence?.stopTyping("conversation_switch");
+    if (conversationId !== null) presence?.switchConversation(conversationId);
+    lifecycleRef.current = {
+      conversationId,
+      store,
+      uploader,
+      presence,
+      initialized: true,
+      draftController,
+      fileController,
+    };
+  }, [conversationId, presence, releaseOwned, store, uploader, draftController, fileController]);
+
+  useEffect(() => {
+    if (!draftController) return;
+    const adopt = () => {
+      const snapshot = draftController.getSnapshot();
+      if (options.initialDraft !== undefined && snapshot.status === "saved" && snapshot.inputError === null && snapshot.edit === 0 && !snapshot.text) {
+        draftController.setText(options.initialDraft); return;
+      }
+      const next = snapshot.text;
+      if (draftRef.current !== next) { draftRevision.current++; draftRef.current = next; setDraftState(next); }
+    };
+    const unsubscribe = draftController.subscribe(adopt);
+    adopt();
+    const flush = () => { void draftController.flush().catch(() => undefined); };
+    const visibility = () => { if (document.visibilityState === "hidden") flush(); };
+    window.addEventListener("pagehide", flush);
+    document.addEventListener("visibilitychange", visibility);
+    return () => {
+      window.removeEventListener("pagehide", flush);
+      document.removeEventListener("visibilitychange", visibility);
+      unsubscribe(); flush();
+    };
+  }, [draftController, options.initialDraft]);
+
+  useEffect(() => () => {
+    // Late runtime notifications belong to the disposed composer, not a later mount.
+    lifecycleRef.current = { ...lifecycleRef.current };
+    if (!lifecycleRef.current.fileController) releaseOwned(ownedRef.current, uploaderRef.current);
+    presenceRef.current?.stopTyping("destroy");
+  }, [releaseOwned]);
+
+  const itemById = useMemo(
+    () => new Map(snapshot.items.map((item) => [item.id, item])),
+    [snapshot],
+  );
+  const attachments = useMemo<readonly ConversationComposerAttachment[]>(
+    () => owned.map((entry) => {
+      const item = itemById.get(entry.id);
+      if (item === undefined) {
+        return {
+          id: entry.id,
+          fingerprint: entry.fingerprint,
+          source: entry.source,
+          ...(entry.filename === undefined ? {} : { filename: entry.filename }),
+          kind: entry.kind,
+          mediaType: entry.mediaType,
+          byteSize: entry.byteSize,
+          ...(entry.preview === undefined ? {} : { previewUrl: entry.preview.url }),
+          status: "missing",
+          progress: { uploadedBytes: 0, totalBytes: entry.byteSize },
+          retryable: false,
+          cancellable: false,
+        };
+      }
+      return {
+        id: entry.id,
+        fingerprint: entry.fingerprint,
+        source: entry.source,
+        ...(entry.filename === undefined ? {} : { filename: entry.filename }),
+        kind: entry.kind,
+        mediaType: entry.mediaType,
+        byteSize: entry.byteSize,
+        ...(entry.preview === undefined ? {} : { previewUrl: entry.preview.url }),
+        status: item.status,
+        progress: item.progress,
+        ...(item.status === "ready" ? { reference: item.reference } : {}),
+        ...(item.status === "failed" ? { error: item.error } : {}),
+        retryable: item.status === "failed" && item.error.retryable,
+        cancellable: item.status === "queued" || item.status === "uploading",
+      };
+    }),
+    [itemById, owned],
+  );
+
+  const uploadErrors = useMemo<readonly ConversationComposerError[]>(() =>
+    attachments.flatMap((attachment): readonly ConversationComposerError[] => {
+      if (attachment.status === "failed" && attachment.error !== undefined) {
+        return [{
+          source: "upload",
+          code: attachment.error.code,
+          message: attachment.error.message,
+          retryable: attachment.error.retryable,
+          attachmentId: attachment.id,
+        }];
+      }
+      if (attachment.status === "cancelled" || attachment.status === "missing") {
+        return [{
+          source: "upload",
+          code: attachment.status,
+          message: attachment.status === "cancelled"
+            ? "The attachment upload was cancelled."
+            : "The attachment upload is no longer available.",
+          retryable: false,
+          attachmentId: attachment.id,
+        }];
+      }
+      return [];
+    }), [attachments]);
+  const errors = useMemo(
+    () => Object.freeze([...operationErrors, ...uploadErrors]),
+    [operationErrors, uploadErrors],
+  );
+  const uploadsReady = attachments.every((attachment) => attachment.status === "ready");
+  const hasContent = draft.trim().length > 0 || attachments.length > 0;
+  const canPrepare = submissionBlockCount > 0 && [...submissionBlocks.current.values()].every((prepare) => prepare !== undefined);
+  const canSend = sessionReady && (submissionBlockCount === 0 || canPrepare) && !isPreparingSubmission && !isSending &&
+    persistedDraft.status !== "loading" && persistedFiles.status === "saved" && activeTurnId === null && (hasContent || canPrepare) && uploadsReady;
+
+  const updateDraft = useCallback((nextDraft: string): void => {
+    // Never retain a rejected edit in local React state or the submission ref.
+    if (draftController) { if (!draftController.setText(nextDraft)) return; }
+    else {
+      try { localTextOwner.replace(nextDraft); }
+      catch (cause) {
+        setLocalInputError(cause instanceof DraftTextCapacityError ? cause.message : "This edit could not be retained.");
+        return;
+      }
+    }
+    setLocalInputError(null);
+    draftRevision.current += 1;
+    draftRef.current = nextDraft;
+    setDraftState(nextDraft);
+    // A send/cancel failure describes the previous attempt. Once the user
+    // edits the draft it is no longer actionable and must not linger beside a
+    // new message (intake errors remain until the next intake operation).
+    setOperationErrors((current) => current.some(
+      (error) => error.source === "send" || error.source === "cancel",
+    ) ? current.filter(
+        (error) => error.source !== "send" && error.source !== "cancel",
+      ) : current);
+    presence?.noteActivity();
+    if (nextDraft.length === 0) presence?.stopTyping("explicit");
+    else presence?.setTyping(true);
+  }, [presence, draftController, localTextOwner]);
+
+  const imageOptions = useCallback((): BrowserImageIntakeOptions => ({
+    acceptedMediaTypes: acceptedImageMediaTypes,
+    maxFileBytes: maxImageFileBytes,
+    maxSelectionCount: maxImageSelectionCount,
+    existingFingerprints: ownedRef.current.map((entry) => entry.fingerprint),
+    existingSelectionCount: ownedRef.current.filter((entry) => entry.kind === "image").length,
+    previews,
+  }), [acceptedImageMediaTypes, maxImageFileBytes, maxImageSelectionCount, previews]);
+
+  const pdfOptions = useCallback((): BrowserPdfIntakeOptions => ({
+    acceptedMediaTypes: acceptedDocumentMediaTypes,
+    maxFileBytes: maxDocumentFileBytes,
+    maxSelectionCount: maxDocumentSelectionCount,
+    existingSelections: ownedRef.current.map((entry) => ({
+      fingerprint: entry.fingerprint,
+      kind: entry.kind,
+    })),
+  }), [
+    acceptedDocumentMediaTypes,
+    maxDocumentFileBytes,
+    maxDocumentSelectionCount,
+  ]);
+
+  const acceptIntake = useCallback((result: ComposerIntakeResult) => {
+    const added: OwnedAttachment[] = [];
+    try {
+      if (fileController) {
+        fileController.add(result.selections);
+        result.dispose();
+      }
+      for (const selection of fileController ? [] : result.selections) {
+        const preview = result.previews.find(
+          (candidate) => candidate.fingerprint === selection.fingerprint,
+        );
+        const id = uploader.enqueue({
+          ...selection,
+          ...(conversationId === null ? {} : { conversationId }),
+          fingerprint: `composer:${scope}:${compactHash(selection.fingerprint)}`,
+          idempotencyKey: `composer:${scope}:${compactHash(selection.idempotencyKey)}`,
+        });
+        added.push({
+          id,
+          fingerprint: selection.fingerprint,
+          source: selection.source,
+          ...(selection.filename === undefined ? {} : { filename: selection.filename }),
+          kind: selection.kind ?? "image",
+          mediaType: selection.mediaType,
+          byteSize: selection.byteSize,
+          ...(preview === undefined ? {} : { preview }),
+        });
+      }
+    } catch (error) {
+      releaseOwned(added);
+      result.dispose();
+      setOperationErrors([{
+        source: "intake",
+        code: "intake_failed",
+        message: error instanceof AttachmentDraftCapacityError ? error.message : "The selected attachments could not be prepared.",
+        retryable: false,
+      }]);
+      return;
+    }
+
+    if (added.length > 0) {
+      const next = [...ownedRef.current, ...added];
+      ownedRef.current = next;
+      setOwned(next);
+    }
+    setOperationErrors(result.rejections.map((rejection) => ({
+      source: "intake" as const,
+      code: rejection.reason,
+      message: rejection.reason === "too_large" && rejection.byteSize !== undefined
+        ? `The selected attachment is ${formatAttachmentBytes(rejection.byteSize)}; the limit is ${formatAttachmentBytes(
+          rejection.mediaType?.startsWith("image/") ? maxImageFileBytes : maxDocumentFileBytes,
+        )}.${rejection.mediaType?.startsWith("image/") ? " For a pasted image, try attaching the original file." : ""}`
+        : rejection.reason === "unsupported_type" && (rejection.mediaType === "application/msword" || /\.doc$/iu.test(rejection.filename ?? ""))
+          ? "Legacy Word (.doc) files are not supported. Save the file as .docx or PDF and attach it again."
+          : INTAKE_MESSAGES[rejection.reason],
+      retryable: false as const,
+      ...(rejection.fingerprint === undefined
+        ? {}
+        : { fingerprint: rejection.fingerprint }),
+      ...(rejection.filename === undefined ? {} : { filename: rejection.filename }),
+    })));
+  }, [conversationId, releaseOwned, scope, uploader, maxImageFileBytes, maxDocumentFileBytes, fileController]);
+
+  const handlePaste = useCallback((event: ClipboardEvent<HTMLTextAreaElement>): void => {
+    if (sendingRef.current || store.getSnapshot().active_turn_id !== null) {
+      if (Array.from(event.clipboardData.items).some((item) => item.kind === "file")) event.preventDefault();
+      return;
+    }
+    // Native clipboard reads can return a new File wrapper each time. Snapshot
+    // once so intake and combineIntake validate the same source objects.
+    const sources = filesFromTransfer(event.clipboardData);
+    if (sources.length === 0) return;
+    const consume = (prepared: readonly Blob[]) => {
+      const imageResult = acceptedImageMediaTypes.length === 0
+        ? undefined : intakeFileInputImages(prepared, imageOptions());
+      const pdfResult = generalizedIntake === undefined || acceptedDocumentMediaTypes.length === 0
+        ? undefined : intakeFileInputPdfs(prepared, pdfOptions());
+      return combineIntake(prepared, imageResult, pdfResult);
+    };
+    const needsImagePreparation = (source: Blob) => source.size > maxImageFileBytes && source.type === "image/png" &&
+      acceptedImageMediaTypes.includes("image/png") && acceptedImageMediaTypes.includes("image/jpeg");
+    const needsPreparation = sources.some(needsImagePreparation);
+    if (!needsPreparation) {
+      const result = consume(sources);
+      if (result.shouldPreventDefault) event.preventDefault();
+      acceptIntake(result);
+      return;
+    }
+    // Clipboard data is only available during the event. Prevent native image
+    // insertion now and keep Send blocked until these captured bytes are ready.
+    event.preventDefault();
+    const owner = lifecycleRef.current;
+    const job = { abort: new AbortController(), release: acquireSubmissionBlock() };
+    pastePreparations.current.add(job);
+    void (async () => {
+      try {
+        const prepared: Blob[] = [];
+        let remaining = maxImageSelectionCount - ownedRef.current.filter(entry => entry.kind === "image").length;
+        for (const source of sources) {
+          job.abort.signal.throwIfAborted();
+          prepared.push(needsImagePreparation(source) && remaining-- > 0 ? await prepareClipboardImage(source, {
+            maximumBytes: maxImageFileBytes, acceptedMediaTypes: acceptedImageMediaTypes, signal: job.abort.signal,
+          }) : source);
+        }
+        if (job.abort.signal.aborted || lifecycleRef.current !== owner || store.getSnapshot().active_turn_id !== null) return;
+        acceptIntake(consume(prepared));
+      } catch {
+        if (!job.abort.signal.aborted && lifecycleRef.current === owner) setOperationErrors([{
+          source: "intake", code: "intake_failed", message: "The pasted image could not be prepared. Try attaching the original file.", retryable: false,
+        }]);
+      } finally { job.release(); pastePreparations.current.delete(job); }
+    })();
+  }, [
+    acceptIntake,
+    acceptedDocumentMediaTypes.length,
+    acceptedImageMediaTypes.length,
+    generalizedIntake,
+    imageOptions,
+    pdfOptions,
+    store,
+    acquireSubmissionBlock,
+    maxImageFileBytes,
+    maxImageSelectionCount,
+    acceptedImageMediaTypes,
+  ]);
+
+  const handleFileInputChange = useCallback((event: ChangeEvent<HTMLInputElement>): void => {
+    if (sendingRef.current || store.getSnapshot().active_turn_id !== null) return;
+    if (event.currentTarget.files === null) return;
+    const files = event.currentTarget.files;
+    const sources = filesFromList(files);
+    const imageResult = acceptedImageMediaTypes.length === 0
+      ? undefined
+      : intakeFileInputImages(sources, imageOptions());
+    const pdfResult = generalizedIntake === undefined || acceptedDocumentMediaTypes.length === 0
+      ? undefined
+      : intakeFileInputPdfs(sources, pdfOptions());
+    acceptIntake(combineIntake(sources, imageResult, pdfResult));
+  }, [
+    acceptIntake,
+    acceptedDocumentMediaTypes.length,
+    acceptedImageMediaTypes.length,
+    generalizedIntake,
+    imageOptions,
+    pdfOptions,
+    store,
+  ]);
+
+  const handleDragOver = useCallback((event: DragEvent<HTMLElement>): void => {
+    // Files are hidden during dragover; inspect the transfer types instead.
+    if (!Array.from(event.dataTransfer.types).includes("Files")) return;
+    event.preventDefault();
+    event.dataTransfer.dropEffect = "copy";
+  }, []);
+
+  const handleDrop = useCallback((event: DragEvent<HTMLElement>): void => {
+    const sources = filesFromTransfer(event.dataTransfer);
+    if (sources.length === 0) return;
+    // Even a rejected file must not navigate away from the conversation.
+    event.preventDefault();
+    if (sendingRef.current || store.getSnapshot().active_turn_id !== null) return;
+    const imageResult = acceptedImageMediaTypes.length === 0
+      ? undefined
+      : intakeFileInputImages(sources, imageOptions());
+    const pdfResult = generalizedIntake === undefined || acceptedDocumentMediaTypes.length === 0
+      ? undefined
+      : intakeFileInputPdfs(sources, pdfOptions());
+    const result = combineIntake(sources, imageResult, pdfResult);
+    acceptIntake(result);
+  }, [
+    acceptIntake,
+    acceptedDocumentMediaTypes.length,
+    acceptedImageMediaTypes.length,
+    generalizedIntake,
+    imageOptions,
+    pdfOptions,
+    store,
+  ]);
+
+  const removeAttachment = useCallback((attachmentId: string): boolean => {
+    if (fileController) return fileController.remove([attachmentId]);
+    const entry = ownedRef.current.find((candidate) => candidate.id === attachmentId);
+    if (entry === undefined) return false;
+    releaseOwned([entry]);
+    setOwned((current) => {
+      const next = current.filter((candidate) => candidate.id !== attachmentId);
+      ownedRef.current = next;
+      return next;
+    });
+    return true;
+  }, [releaseOwned, fileController]);
+
+  const retryAttachment = useCallback((attachmentId: string): boolean => {
+    if (!ownedRef.current.some((entry) => entry.id === attachmentId)) return false;
+    try {
+      return uploader.retry(attachmentId);
+    } catch {
+      return false;
+    }
+  }, [uploader]);
+
+  const cancelAttachment = useCallback((attachmentId: string): boolean => {
+    if (fileController) return fileController.remove([attachmentId]);
+    const entry = ownedRef.current.find((candidate) => candidate.id === attachmentId);
+    if (entry === undefined) return false;
+    try {
+      if (!uploader.cancel(attachmentId)) return false;
+    } catch {
+      return false;
+    }
+    releaseOwned([entry]);
+    setOwned((current) => {
+      const next = current.filter((candidate) => candidate.id !== attachmentId);
+      ownedRef.current = next;
+      return next;
+    });
+    return true;
+  }, [releaseOwned, uploader, fileController]);
+
+  const submit = useCallback(async (
+    event?: FormEvent<Element>,
+  ): Promise<ConversationRuntimeTurnResult | null> => {
+    event?.preventDefault();
+    if (!getSessionReady() || preparingSubmission.current !== null || sendingRef.current || draftController?.getSnapshot().status === "loading" ||
+        fileController && fileController.getSnapshot().status !== "saved" || store.getSnapshot().active_turn_id !== null) return null;
+    const preparations = [...submissionBlocks.current.values()];
+    if (preparations.some((prepare) => prepare === undefined)) return null;
+    if (preparations.length > 0) {
+      const items = new Map(uploader.getSnapshot().items.map((item) => [item.id, item]));
+      if (ownedRef.current.some((entry) => items.get(entry.id)?.status !== "ready")) return null;
+      const scope = lifecycleRef.current;
+      const pending = {};
+      preparingSubmission.current = pending;
+      setIsPreparingSubmission(true);
+      try {
+        for (const prepare of preparations) {
+          if (!await prepare!() || lifecycleRef.current !== scope) return null;
+        }
+      } catch {
+        // The input control owns its recoverable error and retained draft.
+        return null;
+      } finally {
+        if (preparingSubmission.current === pending) {
+          preparingSubmission.current = null;
+          setIsPreparingSubmission(false);
+        }
+      }
+    }
+    // Preparation may have changed the draft, attachments, or active turn.
+    const currentOwned = ownedRef.current;
+    const currentItems = new Map(
+      uploader.getSnapshot().items.map((item) => [item.id, item]),
+    );
+    const readyReferences = currentOwned.flatMap((entry) => {
+      const item = currentItems.get(entry.id);
+      return item?.status === "ready" ? [item.reference] : [];
+    });
+    const currentDraft = draftRef.current;
+    const submittedRevision = draftRevision.current;
+    const submittedDraftEdit = draftController?.getSnapshot().edit;
+    const submissionScope = lifecycleRef.current;
+    const isCurrent = () => lifecycleRef.current === submissionScope;
+    let accepted = false;
+    const eligible = getSessionReady() && submissionBlocks.current.size === 0 && !sendingRef.current && store.getSnapshot().active_turn_id === null &&
+      (currentDraft.trim().length > 0 || currentOwned.length > 0) &&
+      readyReferences.length === currentOwned.length;
+    if (!eligible) return null;
+    let releaseText: () => void;
+    try { releaseText = draftController?.retainText(currentDraft) ?? localTextOwner.retain(currentDraft); }
+    catch (cause) {
+      setLocalInputError(cause instanceof DraftTextCapacityError ? cause.message : "This draft could not be retained for sending.");
+      return null;
+    }
+
+    sendingRef.current = true;
+    pendingCancellation.current = { scope: submissionScope, requested: false, turnId: null };
+    setIsSending(true);
+    setOperationErrors([]);
+    const submission = Object.freeze({
+      text: currentDraft,
+      attachments: Object.freeze(readyReferences),
+    });
+    const accept = (identity?: { readonly turnId: ConversationTurnId }) => {
+      if (accepted) return;
+      accepted = true;
+      const clearsCurrentDraft = isCurrent() && draftRevision.current === submittedRevision;
+      if (submittedDraftEdit !== undefined) draftController?.accepted(submittedDraftEdit);
+      fileController?.remove(currentOwned.map(entry => entry.id));
+      if (!isCurrent()) return;
+      // Admission is authoritative before the next display poll publishes its
+      // active turn. Keep the receipt so an explicit Stop in that gap is sent.
+      if (identity && pendingCancellation.current?.scope === submissionScope) pendingCancellation.current.turnId = identity.turnId;
+      if (pendingCancellation.current?.scope === submissionScope && pendingCancellation.current.requested) {
+        pendingCancellation.current.requested = false;
+        const turnId = pendingCancellation.current.turnId ?? store.getSnapshot().active_turn_id;
+        if (turnId) void actions.cancelTurn(turnId, "user").then(result => {
+          if (result.status === "failed" || result.status === "unsupported") throw new Error("Cancellation unavailable");
+        }).catch(() => {
+          if (isCurrent()) setOperationErrors([{ source: "cancel", code: "cancel_failed",
+            message: "The active response could not be stopped.", retryable: true }]);
+        });
+      }
+      if (!fileController) releaseOwned(currentOwned, uploader);
+      const submittedIds = new Set(currentOwned.map((entry) => entry.id));
+      const nextOwned = ownedRef.current.filter((entry) => !submittedIds.has(entry.id));
+      ownedRef.current = nextOwned;
+      setOwned(nextOwned);
+      // Revision identity protects the next draft even when it has identical text.
+      if (clearsCurrentDraft) {
+        localTextOwner.clear();
+        setLocalInputError(null);
+        draftRevision.current += 1;
+        draftRef.current = "";
+        setDraftState("");
+        presence?.stopTyping("send");
+      }
+    };
+    try {
+      // Keep a device-only origin in the durable pending journal. Await saving
+      // before the first network mutation; a newer edit never inherits this send.
+      const fileIds = durableDraftReceipts ? fileController?.captureFileIds(currentOwned.map(entry => entry.id)) : undefined;
+      const textVersion = durableDraftReceipts && submittedDraftEdit !== undefined
+        ? await draftController?.captureVersion(submittedDraftEdit) : undefined;
+      const localDraft = textVersion !== undefined || fileIds?.length
+        ? { version: 1 as const, ...(textVersion === undefined ? {} : { textVersion }), ...(fileIds?.length ? { fileIds } : {}) } : undefined;
+      const outcome = await actions.sendMessage({
+        content: currentDraft.trim().length === 0 ? [] : currentDraft,
+        attachments: readyReferences.map(durableAttachment),
+        request: createRequest === undefined ? request as TRequest : createRequest(submission),
+        onAccepted: accept,
+        ...(localDraft === undefined ? {} : { localDraft }),
+      });
+      if (outcome.status === "completed" || outcome.status === "waiting_for_approval") accept();
+      if (!isCurrent()) return outcome;
+      if (outcome.status !== "completed" && outcome.status !== "waiting_for_approval") {
+        setOperationErrors([outcome.error === undefined
+          ? {
+              source: "send",
+              code: `turn_${outcome.status}`,
+              message: `The conversation turn ended with status ${outcome.status}.`,
+              retryable: outcome.status === "disconnected" || outcome.status === "interrupted",
+            }
+          : sendError(outcome.error)]);
+        return outcome;
+      }
+
+      // Compatibility for external runtime adapters that do not emit acceptance yet.
+      accept();
+      return outcome;
+    } catch {
+      if (!isCurrent()) return null;
+      setOperationErrors([{
+        source: "send",
+        code: "send_failed",
+        message: "The message could not be sent. Check your connection and try again.",
+        retryable: true,
+      }]);
+      return null;
+    } finally {
+      releaseText();
+      if (isCurrent()) {
+        sendingRef.current = false;
+        pendingCancellation.current = null;
+        setIsSending(false);
+      }
+    }
+  }, [actions, createRequest, presence, releaseOwned, request, store, uploader, draftController, fileController, durableDraftReceipts, localTextOwner, getSessionReady]);
+
+  const cancel = useCallback(async (): Promise<boolean> => {
+    try {
+      if (onCancel) await onCancel();
+      else {
+        const pending = pendingCancellation.current?.scope === lifecycleRef.current ? pendingCancellation.current : null;
+        const turnId = store.getSnapshot().active_turn_id ?? pending?.turnId;
+        if (!turnId) {
+          if (sendingRef.current && pendingCancellation.current?.scope === lifecycleRef.current) {
+            pendingCancellation.current.requested = true;
+            return true;
+          }
+          return false;
+        }
+        if (pendingCancellation.current) pendingCancellation.current.requested = false;
+        const result = await actions.cancelTurn(turnId, "user");
+        if (result.status === "failed" || result.status === "unsupported") throw new Error("Cancellation unavailable");
+      }
+      setOperationErrors((current) => current.filter((error) => error.source !== "cancel"));
+      presence?.stopTyping("explicit");
+      return true;
+    } catch {
+      setOperationErrors([{
+        source: "cancel",
+        code: "cancel_failed",
+        message: "The active response could not be stopped.",
+        retryable: true,
+      }]);
+      return false;
+    }
+  }, [onCancel, presence, store, actions]);
+
+  const handleKeyDown = useCallback((event: KeyboardEvent<HTMLTextAreaElement>): void => {
+    const nativeEvent = event.nativeEvent as globalThis.KeyboardEvent;
+    if (
+      event.defaultPrevented ||
+      enterBehavior !== "send" ||
+      event.key !== "Enter" ||
+      event.shiftKey ||
+      event.altKey ||
+      event.ctrlKey ||
+      event.metaKey ||
+      composing.current ||
+      nativeEvent.isComposing ||
+      nativeEvent.keyCode === 229
+    ) {
+      return;
+    }
+    // In send-on-Enter mode, plain Enter has one stable meaning. If a turn is
+    // already active (or the draft is otherwise ineligible), swallow it
+    // instead of unexpectedly inserting a newline. Shift+Enter remains the
+    // explicit newline gesture.
+    event.preventDefault();
+    if (event.repeat || !canSend) return;
+    void submit();
+  }, [canSend, enterBehavior, submit]);
+
+  const textareaProps = useMemo<ConversationComposerTextareaProps>(() => ({
+    value: draft,
+    onChange: (event) => updateDraft(event.currentTarget.value),
+    onPaste: handlePaste,
+    onBlur: () => presence?.stopTyping("blur"),
+    onKeyDown: handleKeyDown,
+    onCompositionStart: () => {
+      composing.current = true;
+    },
+    onCompositionEnd: () => {
+      composing.current = false;
+    },
+  }), [draft, handleKeyDown, handlePaste, presence, updateDraft]);
+  const fileInputProps = useMemo<ConversationComposerFileInputProps>(() => ({
+    accept: acceptedMediaTypes.join(","),
+    multiple: true,
+    onChange: handleFileInputChange,
+  }), [acceptedMediaTypes, handleFileInputChange]);
+  const dropProps = useMemo<ConversationComposerDropProps>(() => ({
+    onDragOver: handleDragOver,
+    onDrop: handleDrop,
+  }), [handleDragOver, handleDrop]);
+
+  return useMemo(() => Object.freeze({
+    ...(fileController ? { attachmentPersistence: { status: persistedFiles.status, error: persistedFiles.error,
+      retry: fileController.flush, reload: () => fileController.reload() } } : {}),
+    draftInputError: persistedDraft.inputError ?? (scopeChanged ? null : localInputError),
+    ...(draftController ? { draftPersistence: { status: persistedDraft.status, error: persistedDraft.error,
+      retry: draftController.flush, reload: () => draftController.reload() } } : {}),
+    draft,
+    setDraft: updateDraft,
+    acquireSubmissionBlock,
+    attachments: scopeChanged ? [] : attachments,
+    errors: scopeChanged ? [] : errors,
+    canSend: !scopeChanged && canSend,
+    isSending: !scopeChanged && isSending,
+    submit,
+    cancel,
+    stop: cancel,
+    retryAttachment,
+    cancelAttachment,
+    removeAttachment,
+    getTextareaProps: () => textareaProps,
+    getFileInputProps: () => fileInputProps,
+    getDropProps: () => dropProps,
+  }), [
+    acquireSubmissionBlock,
+    attachments,
+    canSend,
+    cancelAttachment,
+    cancel,
+    draft,
+    dropProps,
+    errors,
+    fileInputProps,
+    isSending,
+    removeAttachment,
+    retryAttachment,
+    submit,
+    textareaProps,
+    updateDraft,
+    draftController,
+    persistedDraft,
+    localInputError,
+    fileController,
+    persistedFiles,
+    scopeChanged,
+  ]);
+}

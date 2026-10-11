@@ -1,0 +1,23 @@
+name: handrail_agent_widgets
+description: Standard Handrail assistant composer for Flutter applications.
+version: 0.1.1
+publish_to: none
+repository: https://github.com/c0x65o/handrail-agent-sdk/tree/main/packages/handrail_agent_widgets
+environment:
+  sdk: ">=3.10.0 <4.0.0"
+  flutter: ">=3.38.0"
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_markdown_plus: ^1.0.12
+  markdown: ^7.3.0
+  speech_to_text: ^7.4.0
+  pasteboard: ^0.5.0
+  record: 6.2.1
+  file_picker: 12.1.1
+  flutter_webrtc: 1.5.2
+  dart_webrtc: 1.8.1
+  web: ^1.1.1
+dev_dependencies:
+  flutter_test:
+    sdk: flutter

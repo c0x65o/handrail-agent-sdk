@@ -57,7 +57,7 @@ test('real Runner + PostgreSQL: provider failure after verified effect, cold sam
   assert.equal((await cold(s)).recovery.value.status, 'terminal'); assert.equal(await attempts(s), 1);
   // Exercise the actual gateway reconciler against real PostgreSQL events.
   const { reconcileDurableConversationTurn } = await import(aiEntry ? new URL('./server/reconcile-conversation.js', aiEntry).href
-    : new URL('../node_modules/@handrail/ai-assistant/dist/server/reconcile-conversation.js', import.meta.url).href);
+    : new URL('../node_modules/handrail-agent-sdk/assistant/dist/server/reconcile-conversation.js', import.meta.url).href);
   await s.events.append({ conversationId: start.conversationId, expectedRevision: null, events: [ai.parseConversationEvent({
     version: 1, conversation_id: start.conversationId, event_id: 'admission', revision: 1,
     occurred_at: '2026-10-03T00:00:00Z', actor: { type: 'user' }, source: { type: 'runtime' },

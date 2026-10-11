@@ -4,7 +4,7 @@ import { setTimeout as delay } from 'node:timers/promises';
 import { createAgentConversationTransport } from 'handrail-agent-sdk/server/application';
 // Candidate source composition only; dependency manifests and locks stay pinned.
 const { createDurableApplicationTransport, InMemoryDurableApplicationTurnStore } = await import(
-  process.env.HANDRAIL_OBSERVER_AI_ENTRY ?? '@handrail/ai-assistant');
+  process.env.HANDRAIL_OBSERVER_AI_ENTRY ?? 'handrail-agent-sdk/assistant');
 const empty = { lastAppliedCursor: null, lastAppliedEventId: null, lastAppliedRevision: null };
 const binding = { identity: { jobId: 'synthetic-observer' }, turnId: 'turn', mutationId: 'mutation' };
 const start = { conversationId: 'conversation', conversationTurnId: 'turn', mutationId: 'mutation', idempotencyKey: 'start', request: {} };

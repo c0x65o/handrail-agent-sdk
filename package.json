@@ -1,8 +1,8 @@
 {
   "name": "handrail-agent-sdk",
-  "version": "0.2.28",
+  "version": "0.3.1",
   "private": true,
-  "description": "Headless durable agent execution powered by OpenAI Agents SDK",
+  "description": "Durable Handrail agents, authenticated application gateway, usage delivery and optional web and Flutter clients",
   "type": "module",
   "engines": {
     "node": ">=22.0.0"
@@ -26,7 +26,12 @@
     "docs/managed-capabilities.md",
     "docs/project-account-access.md",
     "examples/managed-capabilities.mts",
-    "scripts/install-browser.mjs"
+    "scripts/install-browser.mjs",
+    "docs/usage.md",
+    "docs/assistant-consolidation.md",
+    "docs/assistant-source-provenance.md",
+    "scripts/adopt.mjs",
+    "templates"
   ],
   "exports": {
     "./marketing": {
@@ -90,6 +95,138 @@
       "node": {
         "import": "./dist/server/managed-capabilities.js"
       }
+    },
+    "./assistant": {
+      "types": "./dist/assistant/index.d.ts",
+      "import": "./dist/assistant/index.js",
+      "default": "./dist/assistant/index.js"
+    },
+    "./assistant/browser": {
+      "types": "./dist/assistant/browser/index.d.ts",
+      "import": "./dist/assistant/browser/index.js",
+      "default": "./dist/assistant/browser/index.js"
+    },
+    "./assistant/client": {
+      "types": "./dist/assistant/client/index.d.ts",
+      "import": "./dist/assistant/client/index.js",
+      "default": "./dist/assistant/client/index.js"
+    },
+    "./assistant/conformance": {
+      "types": "./dist/assistant/conformance/index.d.ts",
+      "import": "./dist/assistant/conformance/index.js",
+      "default": "./dist/assistant/conformance/index.js"
+    },
+    "./assistant/react": {
+      "types": "./dist/assistant/react/index.d.ts",
+      "import": "./dist/assistant/react/index.js",
+      "default": "./dist/assistant/react/index.js"
+    },
+    "./assistant/react/headless": {
+      "types": "./dist/assistant/react-headless/index.d.ts",
+      "import": "./dist/assistant/react-headless/index.js",
+      "default": "./dist/assistant/react-headless/index.js"
+    },
+    "./assistant/react/styled": {
+      "types": "./dist/assistant/react-styled/index.d.ts",
+      "import": "./dist/assistant/react-styled/index.js",
+      "default": "./dist/assistant/react-styled/index.js"
+    },
+    "./assistant/server/managed": {
+      "types": "./dist/assistant/server/managed.d.ts",
+      "import": "./dist/assistant/server/managed.js",
+      "default": "./dist/assistant/server/managed.js"
+    },
+    "./assistant/server/application-gateway": {
+      "types": "./dist/assistant/server/application-gateway.d.ts",
+      "import": "./dist/assistant/server/application-gateway.js",
+      "default": "./dist/assistant/server/application-gateway.js"
+    },
+    "./assistant/server/application": {
+      "types": "./dist/assistant/server/application.d.ts",
+      "import": "./dist/assistant/server/application.js",
+      "default": "./dist/assistant/server/application.js"
+    },
+    "./assistant/server/assistant": {
+      "types": "./dist/assistant/server/assistant.d.ts",
+      "import": "./dist/assistant/server/assistant.js",
+      "default": "./dist/assistant/server/assistant.js"
+    },
+    "./assistant/server/trusted-server": {
+      "types": "./dist/assistant/server/trusted-server.d.ts",
+      "import": "./dist/assistant/server/trusted-server.js",
+      "default": "./dist/assistant/server/trusted-server.js"
+    },
+    "./assistant/server/assistant-context": {
+      "types": "./dist/assistant/server/assistant-context.d.ts",
+      "import": "./dist/assistant/server/assistant-context.js",
+      "default": "./dist/assistant/server/assistant-context.js"
+    },
+    "./assistant/server/usage-control": {
+      "types": "./dist/assistant/server/usage-control.d.ts",
+      "import": "./dist/assistant/server/usage-control.js",
+      "default": "./dist/assistant/server/usage-control.js"
+    },
+    "./assistant/connectors/mcp": {
+      "types": "./dist/assistant/mcp/index.d.ts",
+      "import": "./dist/assistant/mcp/index.js",
+      "default": "./dist/assistant/mcp/index.js"
+    },
+    "./assistant/adapters/spartan-aegis": {
+      "types": "./dist/assistant/adapters/spartan-aegis.d.ts",
+      "import": "./dist/assistant/adapters/spartan-aegis.js",
+      "default": "./dist/assistant/adapters/spartan-aegis.js"
+    },
+    "./assistant/adapters/mills-family": {
+      "types": "./dist/assistant/adapters/mills-family.d.ts",
+      "import": "./dist/assistant/adapters/mills-family.js",
+      "default": "./dist/assistant/adapters/mills-family.js"
+    },
+    "./assistant/persistence/postgres": {
+      "types": "./dist/assistant/postgres/index.d.ts",
+      "import": "./dist/assistant/postgres/index.js",
+      "default": "./dist/assistant/postgres/index.js"
+    },
+    "./assistant/providers/openai": {
+      "types": "./dist/assistant/providers/openai.d.ts",
+      "import": "./dist/assistant/providers/openai.js",
+      "default": "./dist/assistant/providers/openai.js"
+    },
+    "./assistant/providers/openai/transcription": {
+      "types": "./dist/assistant/providers/openai-transcription.d.ts",
+      "import": "./dist/assistant/providers/openai-transcription.js",
+      "default": "./dist/assistant/providers/openai-transcription.js"
+    },
+    "./assistant/providers/openai/realtime": {
+      "types": "./dist/assistant/providers/openai-realtime.d.ts",
+      "import": "./dist/assistant/providers/openai-realtime.js",
+      "default": "./dist/assistant/providers/openai-realtime.js"
+    },
+    "./assistant/providers/anthropic": {
+      "types": "./dist/assistant/providers/anthropic.d.ts",
+      "import": "./dist/assistant/providers/anthropic.js",
+      "default": "./dist/assistant/providers/anthropic.js"
+    },
+    "./assistant/providers/gemini": {
+      "types": "./dist/assistant/providers/gemini.d.ts",
+      "import": "./dist/assistant/providers/gemini.js",
+      "default": "./dist/assistant/providers/gemini.js"
+    },
+    "./assistant/providers/xai": {
+      "types": "./dist/assistant/providers/xai.d.ts",
+      "import": "./dist/assistant/providers/xai.js",
+      "default": "./dist/assistant/providers/xai.js"
+    },
+    "./assistant/react/markdown": {
+      "types": "./dist/assistant/react-markdown/index.d.ts",
+      "import": "./dist/assistant/react-markdown/index.js",
+      "default": "./dist/assistant/react-markdown/index.js"
+    },
+    "./server/usage": {
+      "types": "./dist/server/usage.d.ts",
+      "browser": null,
+      "node": {
+        "import": "./dist/server/usage.js"
+      }
     }
   },
   "scripts": {
@@ -103,7 +240,7 @@
     "build": "tsc -p tsconfig.json && node scripts/build-postgres-assets.mjs",
     "prepare": "npm run build && node scripts/install-browser.mjs",
     "pretest": "npm run build && npm run typecheck:acceptance && npm run build:test-postgres && npm run build:reference",
-    "test": "node --test --test-concurrency=1 --test-reporter=tap tests/contracts/job.test.mjs tests/contracts/connection.test.mjs tests/contracts/vault.test.mjs tests/contracts/browser.test.mjs tests/browser-use.test.mjs tests/packaging.test.mjs tests/git-lock.test.mjs tests/acceptance.test.mjs tests/marketing.test.mjs tests/managed-network.test.mjs tests/agent-conversation-continuation.test.mjs",
+    "test": "node --test --test-concurrency=1 --test-reporter=tap tests/contracts/job.test.mjs tests/contracts/connection.test.mjs tests/contracts/vault.test.mjs tests/contracts/browser.test.mjs tests/browser-use.test.mjs tests/packaging.test.mjs tests/git-lock.test.mjs tests/acceptance.test.mjs tests/marketing.test.mjs tests/managed-network.test.mjs tests/agent-conversation-continuation.test.mjs tests/agent-usage.test.mjs tests/consolidation.test.mjs",
     "build:test-postgres": "tsc -p tests/tsconfig.postgres.json",
     "test:postgres": "npm run build:test-postgres && node --test --test-concurrency=1 --test-reporter=tap tests/postgres.test.mjs",
     "typecheck:acceptance": "tsc -p tests/fixtures/tsconfig.acceptance.json",
@@ -132,22 +269,63 @@
     "test:observer-recovery": "npm run build && node --test --test-concurrency=1 tests/observer-recovery.test.mjs tests/observer-recovery-postgres.test.mjs",
     "install:browser": "node scripts/install-browser.mjs",
     "test:managed": "npm run build && node --test --test-concurrency=1 tests/managed-capabilities.test.mjs",
-    "test:managed-browser": "npm run build && node --test --test-concurrency=1 tests/managed-browser.test.mjs tests/managed-network.test.mjs"
+    "test:managed-browser": "npm run build && node --test --test-concurrency=1 tests/managed-browser.test.mjs tests/managed-network.test.mjs",
+    "test:assistant": "vitest run --config vitest.assistant.config.ts",
+    "typecheck:assistant": "tsc -p tsconfig.assistant.json",
+    "test:usage": "npm run build && node --test --test-concurrency=1 tests/agent-usage.test.mjs",
+    "test:adoption": "node --test tests/assistant/adopt-cli.test.mjs",
+    "test:package": "npm run build && node --test tests/assistant/package-contract.test.mjs"
   },
   "devDependencies": {
     "@types/node": "22.20.4",
     "@types/pg": "8.23.1",
     "drizzle-kit": "0.31.11",
-    "typescript": "5.9.3"
+    "typescript": "5.9.3",
+    "@types/react": "19.1.9",
+    "@types/react-dom": "19.1.7",
+    "react": "19.1.1",
+    "react-dom": "19.1.1",
+    "react-markdown": "10.1.0",
+    "remark-gfm": "4.0.1",
+    "vitest": "3.2.4",
+    "@testing-library/react": "16.3.0",
+    "jsdom": "26.1.0",
+    "fake-indexeddb": "6.2.5",
+    "@electric-sql/pglite": "0.5.4",
+    "@modelcontextprotocol/sdk": "1.30.0"
   },
   "dependencies": {
-    "@handrail/ai-assistant": "git+https://github.com/c0x65o/handrail-sdk-ai-assistant-js.git#47c4f675eb47bd86fd6c5185de8b275165430e7b",
     "@openai/agents": "0.18.0",
     "ajv": "8.20.0",
     "ajv-formats": "3.0.1",
     "drizzle-orm": "0.45.3",
     "pg": "8.23.0",
     "zod": "4.3.6",
-    "playwright-core": "1.63.0"
-  }
+    "playwright-core": "1.63.0",
+    "fflate": "0.8.3"
+  },
+  "peerDependencies": {
+    "react": ">=18",
+    "react-dom": ">=18",
+    "react-markdown": "^10.1.0",
+    "remark-gfm": "^4.0.1"
+  },
+  "peerDependenciesMeta": {
+    "react": {
+      "optional": true
+    },
+    "react-dom": {
+      "optional": true
+    },
+    "react-markdown": {
+      "optional": true
+    },
+    "remark-gfm": {
+      "optional": true
+    }
+  },
+  "bin": {
+    "handrail-agent-sdk": "./scripts/adopt.mjs"
+  },
+  "sideEffects": false
 }

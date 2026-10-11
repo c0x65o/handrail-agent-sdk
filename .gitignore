@@ -12,3 +12,9 @@ dist/
 *.tsbuildinfo
 .reference-build/
 .browser-build/
+
+.dart_tool/
+.flutter-plugins*
+build/
+coverage/
+.DS_Store

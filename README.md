@@ -1,12 +1,17 @@
 # Handrail Agent SDK
 
-Headless, durable agent execution powered by **OpenAI Agents SDK 0.18.0**.
+Durable agent execution, application gateway, usage delivery and optional web/Flutter UI, powered by **OpenAI Agents SDK 0.18.0**.
 Requires Node.js 22 or later. The host owns identity, authorization, provider
 connections, database lifecycle and private Vault/browser executors. The shared
 assistance module owns schedule/watch lifecycle and notification orchestration.
 
 - `handrail-agent-sdk`: pure job, connection, Vault and browser contracts.
 - `handrail-agent-sdk/server`: admission, leases, Stop, answers, effects and Vault boundaries.
+- `handrail-agent-sdk/server/usage`: [per-invocation model usage and durable Handrail telemetry delivery](docs/usage.md).
+- `handrail-agent-sdk/assistant` and its subpaths: conversation client, React UI, authenticated gateway, persistence and provider integrations owned by this package.
+- `packages/handrail_agent_client` and `packages/handrail_agent_widgets`: native Dart client and Flutter UI from this repository.
+
+The source consolidation is in progress. See [migration status](docs/assistant-consolidation.md) and [source provenance](docs/assistant-source-provenance.md); this does not establish published or deployed consumer adoption.
 - For turnkey browser and encrypted account access, use
   [managed capabilities](docs/managed-capabilities.md): one setup, one route, two flags.
 - Browser runtime tools and private login entry/fill adapters are described in

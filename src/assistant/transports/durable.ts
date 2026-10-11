@@ -1,0 +1,846 @@
+import { streamBatches } from "../stream-batches.js";
+import type { AiDiagnosticSink } from "../diagnostics.js";
+import { emitAiDiagnostic } from "../diagnostics.js";
+import { jsonValuesEqual } from "../json-equality.js";
+import type {
+  AuthoritativeCancelTurnResult, CancelTurnInput, ConversationTransport,
+  StartTurnInput, TransportError, TransportResult, TurnHandle, TurnObservation,
+  TurnObservationResult, TurnResumePoint,
+} from "./types.js";
+
+export const DURABLE_APPLICATION_TURN_SCHEMA_VERSION = 1 as const;
+export type DurableApplicationTurnStatus = "pending" | "running" | "waiting_for_approval" | "completed" | "cancelled" | "failed";
+
+export interface DurableApplicationTurnEvent<TEvent = unknown> {
+  readonly sequence: number;
+  readonly checkpoint: TurnResumePoint;
+  readonly event: TEvent;
+}
+export interface DurableApplicationTurnLease { readonly ownerId: string; readonly expiresAt: string }
+export interface DurableApplicationTurnCancellation {
+  readonly mutationId: string;
+  readonly idempotencyKey: string;
+  readonly fingerprint: string;
+  readonly reason: CancelTurnInput["reason"];
+  readonly requestedAt: string;
+  /** Stop acknowledged by the delegate, or proven to precede any dispatch. */
+  readonly acceptedAt?: string;
+}
+
+/** TStoredRequest may be an opaque reference instead of prompt-bearing input. */
+export interface DurableApplicationTurnRecord<TStoredRequest = unknown, TEvent = unknown> {
+  readonly schemaVersion: typeof DURABLE_APPLICATION_TURN_SCHEMA_VERSION;
+  readonly conversationId: string;
+  readonly turnId: string;
+  readonly mutationId: string;
+  readonly idempotencyKey: string;
+  readonly requestFingerprint: string;
+  /** Null only for a cancellation that atomically reserved the turn before start. */
+  readonly request: TStoredRequest | null;
+  readonly cancelledBeforeStart?: true;
+  /** Trusted gateway rejection atomically reserved this identity before execution. */
+  readonly admissionRejected?: true;
+  readonly delegateTurnId: string | null;
+  /** Written before dispatch. Undefined on older records means admission is uncertain. */
+  readonly delegateStartAttempted?: boolean;
+  readonly status: DurableApplicationTurnStatus;
+  readonly attempt: number;
+  /** Human decisions restart execution without spending crash recovery attempts. */
+  readonly approvalResumes?: number;
+  /** Authenticated mid-turn preference. Original request/fingerprint remain immutable. */
+  readonly approvalPreference?: {
+    readonly mode: "required" | "automatic";
+    readonly revision: number;
+    readonly mutationId: string;
+    readonly principalId: string;
+    readonly changedAt: string;
+  };
+  readonly events: readonly DurableApplicationTurnEvent<TEvent>[];
+  readonly terminal: TurnObservationResult | null;
+  readonly cancellation: DurableApplicationTurnCancellation | null;
+  readonly lease: DurableApplicationTurnLease | null;
+  readonly createdAt: string;
+  readonly updatedAt: string;
+}
+export interface DurableApplicationTurnDocument<TStoredRequest = unknown, TEvent = unknown> {
+  readonly version: number;
+  readonly record: DurableApplicationTurnRecord<TStoredRequest, TEvent>;
+}
+export interface DurableApplicationRecoveryPosition {
+  readonly conversationId: string;
+  readonly turnId: string;
+}
+/** Immutable-key pagination, bounded above when the scan begins. */
+export interface DurableApplicationRecoveryCursor {
+  readonly after: DurableApplicationRecoveryPosition;
+  readonly through: DurableApplicationRecoveryPosition;
+}
+export interface DurableApplicationRecoveryPage<TStoredRequest = unknown, TEvent = unknown> {
+  readonly documents: readonly DurableApplicationTurnDocument<TStoredRequest, TEvent>[];
+  readonly cursor: DurableApplicationRecoveryCursor | null;
+}
+/** Discovery never includes retained requests, frames or provider state. */
+export interface DurableApplicationRecoveryCandidate extends DurableApplicationRecoveryPosition {
+  readonly lease: DurableApplicationTurnLease | null;
+}
+export interface DurableApplicationRecoveryCandidatePage {
+  readonly candidates: readonly DurableApplicationRecoveryCandidate[];
+  readonly cursor: DurableApplicationRecoveryCursor | null;
+}
+export type DurableApplicationTurnCreateResult<TStoredRequest, TEvent> =
+  | { readonly status: "created" | "idempotent"; readonly document: DurableApplicationTurnDocument<TStoredRequest, TEvent> }
+  | { readonly status: "conflict"; readonly document: DurableApplicationTurnDocument<TStoredRequest, TEvent> | null };
+export type DurableApplicationTurnWriteResult<TStoredRequest, TEvent> =
+  | { readonly status: "updated"; readonly document: DurableApplicationTurnDocument<TStoredRequest, TEvent> }
+  | { readonly status: "conflict"; readonly document: DurableApplicationTurnDocument<TStoredRequest, TEvent> | null };
+
+export interface DurableApplicationTurnStore<TStoredRequest = unknown, TEvent = unknown> {
+  load(conversationId: string, turnId: string): Promise<DurableApplicationTurnDocument<TStoredRequest, TEvent> | null>;
+  create(record: DurableApplicationTurnRecord<TStoredRequest, TEvent>): Promise<DurableApplicationTurnCreateResult<TStoredRequest, TEvent>>;
+  compareAndSet(input: { readonly conversationId: string; readonly turnId: string; readonly expectedVersion: number;
+    readonly record: DurableApplicationTurnRecord<TStoredRequest, TEvent> }): Promise<DurableApplicationTurnWriteResult<TStoredRequest, TEvent>>;
+  /** Preferred discovery path: authorization precedes loading any retained body. */
+  scanRecoveryCandidates?(limit: number, cursor?: DurableApplicationRecoveryCursor): Promise<DurableApplicationRecoveryCandidatePage>;
+  /** Legacy recovery scan. Prefer metadata-only scanRecoveryCandidates. */
+  listRecoverable?(limit: number): Promise<readonly DurableApplicationTurnDocument<TStoredRequest, TEvent>[]>;
+  /** Page past denied or already leased rows without changing them. Each page is bounded;
+   * the cursor must advance on immutable keys and retain the initial upper bound. */
+  scanRecoverable?(limit: number, cursor?: DurableApplicationRecoveryCursor): Promise<DurableApplicationRecoveryPage<TStoredRequest, TEvent>>;
+}
+export interface DurableApplicationTurnRequestCodec<TRequest, TStoredRequest> {
+  readonly encode: (request: TRequest) => TStoredRequest | Promise<TStoredRequest>;
+  /** Abort host input lookups when preparation is cancelled or loses ownership. */
+  readonly decode: (stored: TStoredRequest, context?: { readonly signal: AbortSignal }) => TRequest | Promise<TRequest>;
+  readonly fingerprint: (request: TRequest) => string | Promise<string>;
+}
+export interface DurableApplicationTransportOptions<TEvent, TRequest, TStoredRequest> {
+  readonly delegate: ConversationTransport<TEvent, TRequest>;
+  readonly store: DurableApplicationTurnStore<TStoredRequest, TEvent>;
+  readonly requestCodec: DurableApplicationTurnRequestCodec<TRequest, TStoredRequest>;
+  readonly checkpointForEvent: (event: TEvent) => TurnResumePoint;
+  /** Consecutive eligible frames share a durable write; original frames/checkpoints remain intact. */
+  readonly batchEvent?: (event: TEvent) => boolean;
+  readonly workerId: string;
+  readonly leaseMilliseconds?: number;
+  readonly pollMilliseconds?: number;
+  /** Check the current trusted scope before claiming or dispatching retained work.
+   * A false result leaves the turn untouched for its authorized worker. */
+  readonly authorizeRecovery?: (input: { readonly conversationId: string; readonly turnId: string }) => boolean | Promise<boolean>;
+  readonly maximumAttempts?: number;
+  readonly maximumCasAttempts?: number;
+  /** Share one pool across authorization contexts to bound recovered provider
+   * executions (including retained request loading), independently of discovery. */
+  readonly recoveryWorkers?: DurableRecoveryWorkerPool;
+  readonly now?: () => number;
+  readonly diagnostics?: AiDiagnosticSink;
+  /** Published by the durable writer, even when no browser is observing the turn. */
+  readonly onTurnStatusChanged?: (status: DurableApplicationTurnStatusUpdate,
+    document: DurableApplicationTurnDocument<TStoredRequest, TEvent>) => void | Promise<void>;
+  /** Backpressured projection hook after a frame is durably saved. Projection
+   * failures are diagnostic-only; the retained frames remain recoverable. */
+  readonly onEventPersisted?: (document: DurableApplicationTurnDocument<TStoredRequest, TEvent>) => void | Promise<void>;
+  /** Releases per-worker observers on completion, failure or lease loss. */
+  readonly onWorkerStopped?: (identity: { readonly conversationId: string; readonly turnId: string }) => void | Promise<void>;
+}
+export interface DurableApplicationTurnStatusUpdate {
+  readonly conversationId: string;
+  readonly turnId: string;
+  readonly status: DurableApplicationTurnStatus;
+  readonly updatedAt: string;
+  readonly version: number;
+}
+export interface DurableApplicationTransport<TEvent, TRequest> extends ConversationTransport<TEvent, TRequest> {
+  /** Local executions, including provider/observer settlement. Used by owners
+   * to retire an idle transport without surrendering a live lease. */
+  readonly activeWorkerCount: number;
+  /** Trusted caller must first verify this turn was canonically admitted and authorized. */
+  cancelTurnBeforeStart(input: CancelTurnInput): Promise<TransportResult<AuthoritativeCancelTurnResult>>;
+  /** Trusted caller must authorize the decision and canonically admit this resumption. */
+  resumeApprovalTurn(conversationId: string, turnId: string, options?: { readonly recovery?: boolean; readonly signal?: AbortSignal }):
+    Promise<TransportResult<{ readonly status: "started" | "already_running" | "terminal" | "deferred" }>>;
+  recoverTurn(conversationId: string, turnId: string): Promise<TransportResult<{ readonly status: "started" | "already_running" | "terminal" | "deferred" }>>;
+  /** One bounded discovery batch. A scheduler can yield between pages and
+   * reauthenticate before continuing; stopping discovery never cancels a turn. */
+  recoverPendingPage(input?: { readonly limit?: number; readonly cursor?: DurableApplicationRecoveryCursor;
+    readonly signal?: AbortSignal }): Promise<{ readonly started: readonly DurableApplicationRecoveryPosition[];
+      readonly cursor: DurableApplicationRecoveryCursor | null; readonly deferred?: true }>;
+  /** Starts at most limit turns. Explicit callers scan past denied/leased rows;
+   * background schedulers should use recoverPendingPage to bound each job. */
+  recoverPending(limit?: number): Promise<readonly { readonly conversationId: string; readonly turnId: string }[]>;
+  /** Stop new local dispatch and wait for admitted workers and their observers.
+   * Draining does not cancel user intent or surrender a live provider lease. */
+  stopWorkers(): Promise<void>;
+}
+
+/** No retained waiting queue: unavailable capacity stays in durable storage. */
+export class DurableRecoveryWorkerPool {
+  #active = 0;
+  constructor(readonly maximum = 4) {
+    if (!Number.isSafeInteger(maximum) || maximum < 1 || maximum > 1_000) throw new TypeError("Recovery worker limit is invalid");
+  }
+  get available(): boolean { return this.#active < this.maximum; }
+  tryAcquire(): (() => void) | null {
+    if (!this.available) return null;
+    this.#active++; let released = false;
+    return () => { if (!released) { released = true; this.#active--; } };
+  }
+}
+
+const EMPTY_CHECKPOINT: TurnResumePoint = Object.freeze({ lastAppliedEventId: null, lastAppliedCursor: null,
+  lastAppliedRevision: null });
+function clone<T>(value: T): T { return JSON.parse(JSON.stringify(value)) as T; }
+function identifier(value: string, field: string): string {
+  if (!/^[A-Za-z0-9][A-Za-z0-9._:@/-]{0,255}$/u.test(value)) throw new TypeError(`${field} is invalid`);
+  return value;
+}
+function timestamp(value: number): string { return new Date(value).toISOString(); }
+function terminalStatus(status: DurableApplicationTurnStatus): boolean {
+  return status === "completed" || status === "cancelled" || status === "failed" || status === "waiting_for_approval";
+}
+export function durableApplicationTurnStartMatches<TStoredRequest, TEvent>(current: DurableApplicationTurnRecord<TStoredRequest, TEvent>,
+  proposed: DurableApplicationTurnRecord<TStoredRequest, TEvent>): boolean {
+  return current.conversationId === proposed.conversationId && current.turnId === proposed.turnId &&
+    current.mutationId === proposed.mutationId && current.idempotencyKey === proposed.idempotencyKey &&
+    current.requestFingerprint === proposed.requestFingerprint && jsonValuesEqual(current.request, proposed.request);
+}
+function normalizeCheckpoint(value: TurnResumePoint): TurnResumePoint {
+  const stringOrNull = (item: unknown) => item === null || typeof item === "string";
+  if (!stringOrNull(value.lastAppliedEventId) || !stringOrNull(value.lastAppliedCursor) ||
+    (value.lastAppliedRevision !== null && (!Number.isSafeInteger(value.lastAppliedRevision) || value.lastAppliedRevision < 0))) {
+    throw new TypeError("Turn resume checkpoint is invalid");
+  }
+  return Object.freeze({ ...value });
+}
+function observationStart<TStoredRequest, TEvent>(record: DurableApplicationTurnRecord<TStoredRequest, TEvent>,
+  checkpoint: TurnResumePoint): number {
+  if (checkpoint.lastAppliedEventId === null && checkpoint.lastAppliedCursor === null && checkpoint.lastAppliedRevision === null) return 0;
+  // The runtime stores the canonical conversation revision after applying each
+  // frame. That revision includes user/tool events and differs from the worker's
+  // frame sequence. Resolve a retained frame by its opaque identity/cursor; only
+  // revision-only transports use the revision to locate it.
+  const hasIdentity = checkpoint.lastAppliedEventId !== null || checkpoint.lastAppliedCursor !== null;
+  const index = record.events.findIndex((entry) => entry.checkpoint.lastAppliedEventId === checkpoint.lastAppliedEventId &&
+    entry.checkpoint.lastAppliedCursor === checkpoint.lastAppliedCursor &&
+    (hasIdentity || entry.checkpoint.lastAppliedRevision === checkpoint.lastAppliedRevision));
+  if (index < 0) throw new TypeError("Turn resume checkpoint was not found");
+  return index + 1;
+}
+function safeFailure(code: TransportError["code"], message: string, retryable: boolean): TransportResult<never> {
+  return { ok: false, error: { code, message, retryable } };
+}
+function cancellationFingerprint(input: CancelTurnInput): string {
+  return JSON.stringify({ conversationId: input.conversationId, turnId: input.turnId, reason: input.reason });
+}
+
+/** Deterministic process-local store for tests and single-process development. */
+export class InMemoryDurableApplicationTurnStore<TStoredRequest = unknown, TEvent = unknown>
+implements DurableApplicationTurnStore<TStoredRequest, TEvent> {
+  readonly #documents = new Map<string, DurableApplicationTurnDocument<TStoredRequest, TEvent>>();
+  #key(conversationId: string, turnId: string): string { return `${conversationId.length}:${conversationId}${turnId}`; }
+  async load(conversationId: string, turnId: string) {
+    const document = this.#documents.get(this.#key(conversationId, turnId)); return document ? clone(document) : null;
+  }
+  async create(record: DurableApplicationTurnRecord<TStoredRequest, TEvent>): Promise<DurableApplicationTurnCreateResult<TStoredRequest, TEvent>> {
+    const key = this.#key(record.conversationId, record.turnId), current = this.#documents.get(key);
+    if (current) return { status: durableApplicationTurnStartMatches(current.record, record) ? "idempotent" : "conflict", document: clone(current) };
+    const document = { version: 1, record: clone(record) }; this.#documents.set(key, document);
+    return { status: "created", document: clone(document) };
+  }
+  async compareAndSet(input: { readonly conversationId: string; readonly turnId: string; readonly expectedVersion: number;
+    readonly record: DurableApplicationTurnRecord<TStoredRequest, TEvent> }): Promise<DurableApplicationTurnWriteResult<TStoredRequest, TEvent>> {
+    const key = this.#key(input.conversationId, input.turnId), current = this.#documents.get(key);
+    if (!current || current.version !== input.expectedVersion) return { status: "conflict", document: current ? clone(current) : null };
+    const document = { version: current.version + 1, record: clone(input.record) }; this.#documents.set(key, document);
+    return { status: "updated", document: clone(document) };
+  }
+  async listRecoverable(limit: number) {
+    return [...this.#documents.values()].filter((item) => !terminalStatus(item.record.status)).slice(0, limit).map(clone);
+  }
+  async scanRecoveryCandidates(limit: number, cursor?: DurableApplicationRecoveryCursor): Promise<DurableApplicationRecoveryCandidatePage> {
+    if (!Number.isSafeInteger(limit) || limit < 1 || limit > 1_000) throw new TypeError("limit is invalid");
+    const compare = (a: DurableApplicationRecoveryPosition, b: DurableApplicationRecoveryPosition) =>
+      a.conversationId === b.conversationId ? (a.turnId < b.turnId ? -1 : a.turnId > b.turnId ? 1 : 0)
+        : a.conversationId < b.conversationId ? -1 : 1;
+    const pending = [...this.#documents.values()].filter(item => !terminalStatus(item.record.status))
+      .sort((a, b) => compare(a.record, b.record));
+    const last = pending.at(-1)?.record;
+    const through = cursor?.through ?? (last ? { conversationId: last.conversationId, turnId: last.turnId } : null);
+    if (!through) return { candidates: [], cursor: null };
+    const candidates = pending.filter(item => (!cursor || compare(item.record, cursor.after) > 0) &&
+      compare(item.record, through) <= 0).slice(0, limit).map(({ record }) => Object.freeze({
+        conversationId: record.conversationId, turnId: record.turnId, lease: record.lease ? Object.freeze({ ...record.lease }) : null,
+      }));
+    const tail = candidates.at(-1);
+    return Object.freeze({ candidates: Object.freeze(candidates), cursor: tail && candidates.length === limit && compare(tail, through) < 0
+      ? { after: { conversationId: tail.conversationId, turnId: tail.turnId }, through: clone(through) } : null });
+  }
+  async scanRecoverable(limit: number, cursor?: DurableApplicationRecoveryCursor): Promise<DurableApplicationRecoveryPage<TStoredRequest, TEvent>> {
+    if (!Number.isSafeInteger(limit) || limit < 1 || limit > 1_000) throw new TypeError("limit is invalid");
+    const compare = (a: DurableApplicationRecoveryPosition, b: DurableApplicationRecoveryPosition) =>
+      a.conversationId === b.conversationId ? (a.turnId < b.turnId ? -1 : a.turnId > b.turnId ? 1 : 0)
+        : a.conversationId < b.conversationId ? -1 : 1;
+    const pending = [...this.#documents.values()].filter(item => !terminalStatus(item.record.status))
+      .sort((a, b) => compare(a.record, b.record));
+    const last = pending.at(-1)?.record;
+    const through = cursor?.through ?? (last ? { conversationId: last.conversationId, turnId: last.turnId } : null);
+    if (!through) return { documents: [], cursor: null };
+    const documents = pending.filter(item => (!cursor || compare(item.record, cursor.after) > 0) &&
+      compare(item.record, through) <= 0).slice(0, limit).map(clone);
+    const tail = documents.at(-1)?.record;
+    return { documents, cursor: tail && documents.length === limit && compare(tail, through) < 0
+      ? { after: { conversationId: tail.conversationId, turnId: tail.turnId }, through: clone(through) } : null };
+  }
+}
+
+class LeaseLostError extends Error {}
+class CancellationPendingError extends Error {}
+class CancellationConflictError extends Error {}
+class PreparationCancelledError extends Error {}
+
+/** Durable idempotency, replay, cross-process cancellation and lease recovery wrapper. */
+export function createDurableApplicationTransport<TEvent, TRequest, TStoredRequest>(
+  options: DurableApplicationTransportOptions<TEvent, TRequest, TStoredRequest>,
+): DurableApplicationTransport<TEvent, TRequest> {
+  const workerId = identifier(options.workerId, "workerId"), leaseMilliseconds = options.leaseMilliseconds ?? 15_000;
+  const pollMilliseconds = options.pollMilliseconds ?? 250, maximumAttempts = options.maximumAttempts ?? 3;
+  const maximumCasAttempts = options.maximumCasAttempts ?? 12, now = options.now ?? Date.now;
+  if (!Number.isSafeInteger(leaseMilliseconds) || leaseMilliseconds < 1_000 || leaseMilliseconds > 300_000 ||
+    !Number.isSafeInteger(pollMilliseconds) || pollMilliseconds < 25 || pollMilliseconds > 30_000 ||
+    !Number.isSafeInteger(maximumAttempts) || maximumAttempts < 1 || maximumAttempts > 100 ||
+    !Number.isSafeInteger(maximumCasAttempts) || maximumCasAttempts < 1 || maximumCasAttempts > 100) {
+    throw new TypeError("Durable application transport limits are invalid");
+  }
+  const running = new Map<string, Promise<void>>();
+  let workersStopped = false;
+  const publishStatus = async (document: DurableApplicationTurnDocument<TStoredRequest, TEvent>) => {
+    if (!options.onTurnStatusChanged) return;
+    const { conversationId, turnId, status, updatedAt } = document.record;
+    try {
+      await options.onTurnStatusChanged({ conversationId, turnId, status, updatedAt, version: document.version }, document);
+    } catch (cause) {
+      emitAiDiagnostic(options.diagnostics, { domain: "activity", operation: "durable_turn_status",
+        phase: "failed", conversationId, turnId, code: "activity_update_failed", retryable: true, cause });
+    }
+  };
+  const key = (conversationId: string, turnId: string) => `${conversationId.length}:${conversationId}${turnId}`;
+  const update = async (conversationId: string, turnId: string,
+    mutate: (record: DurableApplicationTurnRecord<TStoredRequest, TEvent>) => DurableApplicationTurnRecord<TStoredRequest, TEvent> | null) => {
+    for (let attempt = 0; attempt < maximumCasAttempts; attempt += 1) {
+      const current = await options.store.load(conversationId, turnId); if (!current) return null;
+      const next = mutate(current.record); if (next === null) return current;
+      const result = await options.store.compareAndSet({ conversationId, turnId, expectedVersion: current.version, record: next });
+      if (result.status === "updated") {
+        if (current.record.status !== result.document.record.status) await publishStatus(result.document);
+        return result.document;
+      }
+    }
+    throw new Error("Durable turn state conflicted repeatedly");
+  };
+  const settle = async (conversationId: string, turnId: string, attempt: number, result: TurnObservationResult) =>
+    update(conversationId, turnId, (record) => {
+      if (terminalStatus(record.status)) return null;
+      if (record.lease?.ownerId !== workerId || record.attempt !== attempt) throw new LeaseLostError();
+      // A requested Stop is not evidence that the delegate accepted it. Keep
+      // unsuccessful delivery discoverable by the existing recovery scanner.
+      if (record.cancellation && !record.cancellation.acceptedAt &&
+        result.status !== "cancelled" && result.status !== "completed") {
+        return { ...record, status: "pending", terminal: null, lease: null, updatedAt: timestamp(now()) };
+      }
+      // Losing observation is not a terminal execution failure. Retain the
+      // admitted delegate identity/events and release only this fenced claim;
+      // authenticated recovery reuses the original idempotent admission.
+      if (result.status === "disconnected" && !record.cancellation?.acceptedAt) {
+        return { ...record, status: "pending", terminal: null, lease: null, updatedAt: timestamp(now()) };
+      }
+      const status = result.status === "completed" ? "completed" :
+        record.cancellation?.acceptedAt || result.status === "cancelled" ? "cancelled" :
+        result.status === "waiting_for_approval" ? "waiting_for_approval" : "failed";
+      const checkpoint = record.events.at(-1)?.checkpoint ?? result.checkpoint ?? EMPTY_CHECKPOINT;
+      const usage = result.status === "disconnected" ? {} : result.usageReceipt === undefined ? {} : { usageReceipt: result.usageReceipt };
+      const terminal: TurnObservationResult = status === "cancelled" ? { status: "cancelled", checkpoint, ...usage } :
+        status === "completed" ? { status: "completed", checkpoint, ...usage } :
+        result.status === "waiting_for_approval" ? { ...result, checkpoint } : { status: "failed", checkpoint,
+          error: result.status === "failed" ? result.error : { code: "unavailable",
+            message: "The durable turn worker stopped before completion.", retryable: true }, ...usage };
+      return { ...record, status, terminal, lease: null, updatedAt: timestamp(now()) };
+    });
+
+  const decodeRequest = async (conversationId: string, turnId: string,
+    claimed: DurableApplicationTurnRecord<TStoredRequest, TEvent>): Promise<TRequest> => {
+    const controller = new AbortController();
+    let stopped = false, timer: ReturnType<typeof setTimeout> | undefined, wake: (() => void) | undefined;
+    let interrupt!: (cause: unknown) => void;
+    const interrupted = new Promise<never>((_resolve, reject) => { interrupt = reject; });
+    const monitor = (async () => {
+      while (!stopped) {
+        await new Promise<void>((resolve) => { wake = resolve; timer = setTimeout(resolve, pollMilliseconds); });
+        if (stopped) return;
+        const current = await options.store.load(conversationId, turnId);
+        if (stopped) return;
+        if (!current || terminalStatus(current.record.status) || current.record.lease?.ownerId !== workerId ||
+          current.record.attempt !== claimed.attempt) throw new LeaseLostError();
+        if (current.record.cancellation) throw new PreparationCancelledError();
+        if (Date.parse(current.record.lease.expiresAt) - now() <= Math.max(pollMilliseconds * 2, leaseMilliseconds / 2)) {
+          await update(conversationId, turnId, (record) => {
+            if (stopped) return null;
+            if (terminalStatus(record.status) || record.lease?.ownerId !== workerId ||
+              record.attempt !== claimed.attempt) throw new LeaseLostError();
+            if (record.cancellation) throw new PreparationCancelledError();
+            const currentTime = now();
+            return { ...record, lease: { ownerId: workerId, expiresAt: timestamp(currentTime + leaseMilliseconds) },
+              updatedAt: timestamp(currentTime) };
+          });
+        }
+      }
+    })().catch((cause: unknown) => { interrupt(cause); controller.abort(); });
+    try {
+      return await Promise.race([
+        Promise.resolve().then(() => {
+          if (claimed.cancelledBeforeStart) throw new PreparationCancelledError();
+          // Normal codecs may themselves use null as an opaque stored value.
+          return options.requestCodec.decode(claimed.request as TStoredRequest, { signal: controller.signal });
+        }),
+        interrupted,
+      ]);
+    } finally {
+      stopped = true;
+      if (timer !== undefined) clearTimeout(timer);
+      wake?.();
+      controller.abort();
+      await monitor;
+    }
+  };
+
+  const run = async (conversationId: string, turnId: string): Promise<void> => {
+    let attempt = 0;
+    let stopped = false, timer: ReturnType<typeof setTimeout> | undefined, wake: (() => void) | undefined;
+    let observation: TurnObservation<TEvent> | undefined;
+    let monitoring: Promise<void> | undefined;
+    let cancellationDelivery: Promise<void> | undefined;
+    let interrupt!: (cause: unknown) => void;
+    const interrupted = new Promise<never>((_resolve, reject) => { interrupt = reject; });
+    void interrupted.catch(() => undefined);
+    const authorized = async () => {
+      if (options.authorizeRecovery && !await options.authorizeRecovery({ conversationId, turnId })) throw new LeaseLostError();
+    };
+    const owned = (record: DurableApplicationTurnRecord<TStoredRequest, TEvent>) => {
+      if (stopped || terminalStatus(record.status) || record.lease?.ownerId !== workerId || record.attempt !== attempt) {
+        throw new LeaseLostError();
+      }
+    };
+    const deliverCancellation = (): Promise<void> => {
+      if (cancellationDelivery) return cancellationDelivery;
+      cancellationDelivery = (async () => {
+        await authorized();
+        const current = await options.store.load(conversationId, turnId);
+        if (!current) throw new LeaseLostError();
+        owned(current.record);
+        const { cancellation, delegateTurnId, delegateStartAttempted } = current.record;
+        if (!cancellation || cancellation.acceptedAt) return;
+        if (delegateTurnId === null) {
+          // Never replay an uncertain start to discover its outcome. Only an
+          // explicitly retained pre-dispatch record proves no work was admitted.
+          if (delegateStartAttempted !== false) throw new CancellationPendingError("Delegate admission is uncertain");
+        } else {
+          const capability = options.delegate.capabilities.authoritativeCancellation;
+          if (!capability.supported) throw new CancellationPendingError("Delegate cancellation is unsupported");
+          let deadline: ReturnType<typeof setTimeout> | undefined;
+          try {
+            const result = await Promise.race([
+              capability.capability.cancelTurn({ conversationId, turnId: delegateTurnId,
+                mutationId: cancellation.mutationId, idempotencyKey: cancellation.idempotencyKey, reason: cancellation.reason }),
+              new Promise<never>((_resolve, reject) => { deadline = setTimeout(() =>
+                reject(new CancellationPendingError("Delegate cancellation acknowledgement timed out")), leaseMilliseconds); }),
+            ]);
+            if (!result.ok) throw new CancellationPendingError("Delegate cancellation was not acknowledged");
+          } finally { if (deadline !== undefined) clearTimeout(deadline); }
+        }
+        await update(conversationId, turnId, record => {
+          owned(record);
+          return { ...record, cancellation: { ...record.cancellation!, acceptedAt: timestamp(now()) }, updatedAt: timestamp(now()) };
+        });
+      })();
+      return cancellationDelivery;
+    };
+    try {
+      await authorized();
+      const claimed = await update(conversationId, turnId, (record) => {
+        if (terminalStatus(record.status)) return null;
+        const currentTime = now();
+        if (record.lease && record.lease.ownerId !== workerId && Date.parse(record.lease.expiresAt) > currentTime) return null;
+        // Delivery retries must not exhaust the execution retry budget and
+        // manufacture a terminal while the delegate still owns admitted work.
+        if (!record.cancellation && record.attempt - (record.approvalResumes ?? 0) >= maximumAttempts) {
+          const checkpoint = record.events.at(-1)?.checkpoint ?? EMPTY_CHECKPOINT;
+          return { ...record, status: "failed", lease: null, updatedAt: timestamp(currentTime), terminal: {
+            status: "failed", checkpoint, error: { code: "unavailable",
+              message: "The durable turn exhausted its recovery attempts.", retryable: false } } };
+        }
+        return { ...record, ...(record.attempt === 0 && record.delegateStartAttempted === undefined ? { delegateStartAttempted: false } : {}),
+          status: "running", attempt: record.attempt + 1,
+          lease: { ownerId: workerId, expiresAt: timestamp(currentTime + leaseMilliseconds) }, updatedAt: timestamp(currentTime) };
+      });
+      if (!claimed || terminalStatus(claimed.record.status) || claimed.record.lease?.ownerId !== workerId) return;
+      attempt = claimed.record.attempt;
+      // Keep ownership during slow admission and Stop delivery too, not just
+      // while events are being observed. A replaced claim can never settle.
+      monitoring = (async () => {
+        while (!stopped) {
+          await new Promise<void>(resolve => { wake = resolve; timer = setTimeout(resolve, pollMilliseconds); });
+          if (stopped) return;
+          await update(conversationId, turnId, record => {
+            owned(record);
+            if (Date.parse(record.lease!.expiresAt) - now() > Math.max(pollMilliseconds * 2, leaseMilliseconds / 2)) return null;
+            return { ...record, lease: { ownerId: workerId, expiresAt: timestamp(now() + leaseMilliseconds) }, updatedAt: timestamp(now()) };
+          });
+          if (observation) {
+            const current = await options.store.load(conversationId, turnId);
+            if (current?.record.cancellation) void deliverCancellation().catch(interrupt);
+          }
+        }
+      })();
+      void monitoring.catch(() => undefined);
+      const execute = async () => {
+        if (claimed.record.cancellation) {
+          await deliverCancellation();
+          await settle(conversationId, turnId, attempt, { status: "cancelled", checkpoint: EMPTY_CHECKPOINT }); return;
+        }
+        const request = await decodeRequest(conversationId, turnId, claimed.record);
+        await authorized();
+        // This CAS is the last pre-admission boundary. Stop winning it prevents
+        // start; Stop after it must wait for the actual delegate handle.
+        const ready = await update(conversationId, turnId, record => {
+          owned(record);
+          if (record.cancellation) return null;
+          return { ...record, delegateStartAttempted: true,
+            lease: { ownerId: workerId, expiresAt: timestamp(now() + leaseMilliseconds) }, updatedAt: timestamp(now()) };
+        });
+        if (!ready) throw new LeaseLostError();
+        owned(ready.record);
+        if (ready.record.cancellation) {
+          await deliverCancellation();
+          await settle(conversationId, turnId, attempt, { status: "cancelled", checkpoint: EMPTY_CHECKPOINT }); return;
+        }
+        emitAiDiagnostic(options.diagnostics, { domain: "gateway", operation: "durable_turn", phase: "started",
+          conversationId, turnId, attempt });
+        const started = await options.delegate.startTurn({ conversationId,
+          conversationTurnId: turnId as StartTurnInput<TRequest>["conversationTurnId"], mutationId: claimed.record.mutationId,
+          idempotencyKey: claimed.record.idempotencyKey, request }, Object.freeze({
+          durableExecution: Object.freeze({ conversationId, turnId, attempt }),
+        }));
+        if (!started.ok) { await settle(conversationId, turnId, attempt, { status: "failed", checkpoint: EMPTY_CHECKPOINT,
+          error: started.error }); return; }
+        observation = started.value.observation;
+        if (stopped) { observation.disconnect(); throw new LeaseLostError(); }
+        await update(conversationId, turnId, record => {
+          owned(record);
+          return { ...record, delegateTurnId: started.value.turnId, updatedAt: timestamp(now()) };
+        });
+        for await (const batch of streamBatches(observation.events, options.batchEvent ?? (() => false))) {
+          const items = batch.map(event => ({ checkpoint: normalizeCheckpoint(options.checkpointForEvent(event)), event: clone(event) }));
+          const persisted = await update(conversationId, turnId, record => {
+            owned(record);
+            return { ...record, events: [...record.events, ...items.map((item, index) => ({ ...item, sequence: record.events.length + index + 1 }))],
+              updatedAt: timestamp(now()) };
+          });
+          if (persisted && options.onEventPersisted) {
+            try { await options.onEventPersisted(persisted); }
+            catch (cause) { emitAiDiagnostic(options.diagnostics, { domain: "persistence", operation: "live_conversation_projection",
+              phase: "failed", conversationId, turnId, code: "projection_failed", retryable: true, cause }); }
+          }
+        }
+        const result = await observation.result;
+        // The stream can end before the polling monitor sees Stop (especially
+        // an approval wait). Delivery is joined before settlement in that case.
+        const latest = await options.store.load(conversationId, turnId);
+        if (latest?.record.cancellation && result.status !== "completed" && result.status !== "cancelled") await deliverCancellation();
+        await settle(conversationId, turnId, attempt, result);
+        emitAiDiagnostic(options.diagnostics, { domain: "gateway", operation: "durable_turn",
+          phase: result.status === "completed" || result.status === "waiting_for_approval" ? "succeeded" : result.status === "cancelled" ? "cancelled" : "failed",
+          conversationId, turnId, attempt,
+          ...(result.status === "disconnected" ? { code: "observation_disconnected", retryable: true } : {}),
+          ...(result.status === "failed" ? { code: result.error.code, retryable: result.error.retryable } : {}) });
+      };
+      await Promise.race([execute(), monitoring, interrupted]);
+    } catch (cause) {
+      if (cause instanceof PreparationCancelledError) {
+        try {
+          await deliverCancellation();
+          await settle(conversationId, turnId, attempt, { status: "cancelled", checkpoint: EMPTY_CHECKPOINT });
+        } catch { /* uncertain admission remains recoverable below */ }
+      } else if (!(cause instanceof LeaseLostError)) {
+        emitAiDiagnostic(options.diagnostics, { domain: "gateway", operation: "durable_turn", phase: "failed",
+          conversationId, turnId, code: cause instanceof CancellationPendingError ? "cancellation_pending" : "worker_failed", retryable: true, cause });
+        try { await settle(conversationId, turnId, attempt, { status: "failed", checkpoint: EMPTY_CHECKPOINT,
+          error: { code: "unavailable", message: "The durable turn worker failed.", retryable: true } }); } catch { /* lease replaced */ }
+      }
+    } finally {
+      stopped = true; if (timer !== undefined) clearTimeout(timer); wake?.();
+      observation?.disconnect();
+      await monitoring?.catch(() => undefined);
+      // Includes authorization loss and decode cancellation of an older admitted
+      // turn. Keep the Stop, release only this fenced claim, and let the existing
+      // authorized recovery loop retry without decoding or starting work.
+      if (attempt) await update(conversationId, turnId, record => {
+        if (record.lease?.ownerId !== workerId || record.attempt !== attempt || !record.cancellation) return null;
+        return { ...record, status: "pending", terminal: null, lease: null, updatedAt: timestamp(now()) };
+      }).catch(() => undefined);
+    }
+  };
+  const kick = (conversationId: string, turnId: string, release?: () => void): boolean => {
+    const operationKey = key(conversationId, turnId);
+    if (workersStopped || running.has(operationKey)) { release?.(); return false; }
+    const operation = run(conversationId, turnId).finally(async () => {
+      try { await options.onWorkerStopped?.({ conversationId, turnId }); }
+      catch (cause) { emitAiDiagnostic(options.diagnostics, { domain: "persistence", operation: "live_conversation_projection",
+        phase: "failed", conversationId, turnId, code: "projection_cleanup_failed", retryable: true, cause }); }
+      finally { running.delete(operationKey); release?.(); }
+    }); running.set(operationKey, operation);
+    void operation.catch(() => undefined); return true;
+  };
+  const observe = async (document: DurableApplicationTurnDocument<TStoredRequest, TEvent>, resumeFrom: TurnResumePoint): Promise<TurnObservation<TEvent>> => {
+    let index = observationStart(document.record, normalizeCheckpoint(resumeFrom)), disconnected = false, checkpoint = resumeFrom;
+    let resolveResult!: (result: TurnObservationResult) => void;
+    const result = new Promise<TurnObservationResult>((resolve) => { resolveResult = resolve; });
+    const events = (async function* () {
+      for (;;) {
+        if (disconnected) { resolveResult({ status: "disconnected", checkpoint }); return; }
+        const current = await options.store.load(document.record.conversationId, document.record.turnId);
+        if (!current) { resolveResult({ status: "failed", checkpoint, error: {
+          code: "not_found", message: "The durable turn no longer exists.", retryable: false } }); return; }
+        while (index < current.record.events.length) { const next = current.record.events[index++]!;
+          checkpoint = next.checkpoint; yield clone(next.event); }
+        if (current.record.terminal) { resolveResult(clone(current.record.terminal)); return; }
+        // A settled nonterminal attempt has no live observer worker. Close this
+        // client observation too; never fabricate a canonical terminal fact.
+        if (current.record.status === "pending" && current.record.attempt > 0 && !current.record.lease) {
+          resolveResult({ status: "disconnected", checkpoint }); return;
+        }
+        await new Promise<void>((resolve) => setTimeout(resolve, pollMilliseconds));
+      }
+    })();
+    return { events, result, disconnect() { disconnected = true; } };
+  };
+  const recoverTurn = async (conversationId: string, turnId: string, signal?: AbortSignal): ReturnType<DurableApplicationTransport<TEvent, TRequest>["recoverTurn"]> => {
+    let release: (() => void) | undefined;
+    try {
+      if (workersStopped) return safeFailure("unavailable", "The durable worker is draining.", true);
+      identifier(conversationId, "conversationId"); identifier(turnId, "turnId");
+      if (running.has(key(conversationId, turnId))) return { ok: true, value: { status: "already_running" } };
+      if (options.authorizeRecovery && !await options.authorizeRecovery({ conversationId, turnId })) {
+        return safeFailure("not_found", "The durable turn was not found.", false);
+      }
+      signal?.throwIfAborted();
+      if (options.recoveryWorkers) {
+        release = options.recoveryWorkers.tryAcquire() ?? undefined;
+        if (!release) return { ok: true, value: { status: "deferred" } };
+      }
+      const current = await options.store.load(conversationId, turnId);
+      signal?.throwIfAborted();
+      if (!current) return safeFailure("not_found", "The durable turn was not found.", false);
+      if (terminalStatus(current.record.status)) return { ok: true, value: { status: "terminal" } };
+      const liveLease = current.record.lease && Date.parse(current.record.lease.expiresAt) > now();
+      if (liveLease && current.record.lease!.ownerId !== workerId) return { ok: true, value: { status: "already_running" } };
+      const started = kick(conversationId, turnId, release); release = undefined;
+      return { ok: true, value: { status: started ? "started" : "already_running" } };
+    } catch { return safeFailure("unavailable", "The durable turn could not be recovered.", true); }
+    finally { release?.(); }
+  };
+  const transport: DurableApplicationTransport<TEvent, TRequest> = {
+    ...(options.delegate.readCompletedOutput ? { readCompletedOutput: async (input: { conversationId: string; turnId: string }) => {
+      if (options.authorizeRecovery && !await options.authorizeRecovery(input)) return null;
+      const document = await options.store.load(input.conversationId, input.turnId);
+      if (document?.record.status !== "completed" || document.record.terminal?.status !== "completed" || document.record.lease !== null) return null;
+      return options.delegate.readCompletedOutput!(input);
+    } } : {}),
+    get activeWorkerCount() { return running.size; },
+    async cancelTurnBeforeStart(input) {
+      try {
+        const conversationId = identifier(input.conversationId, "conversationId");
+        const turnId = identifier(input.turnId, "turnId");
+        const mutationId = identifier(input.mutationId, "mutationId");
+        const idempotencyKey = identifier(input.idempotencyKey, "idempotencyKey");
+        const fingerprint = cancellationFingerprint(input);
+        const requestedAt = timestamp(now());
+        const result = await options.store.create({ schemaVersion: DURABLE_APPLICATION_TURN_SCHEMA_VERSION,
+          conversationId, turnId, mutationId, idempotencyKey, requestFingerprint: fingerprint,
+          request: null, cancelledBeforeStart: true, delegateTurnId: null, status: "cancelled", attempt: 0,
+          events: [], terminal: { status: "cancelled", checkpoint: EMPTY_CHECKPOINT },
+          cancellation: { mutationId, idempotencyKey, fingerprint, reason: input.reason, requestedAt },
+          lease: null, createdAt: requestedAt, updatedAt: requestedAt });
+        if (result.status !== "conflict") {
+          await publishStatus(result.document);
+          return { ok: true, value: { status: "already_terminal" } };
+        }
+        // Start won the same atomic create. It may already be running, so use
+        // ordinary cancellation and let its worker publish terminal state.
+        const cancellation = transport.capabilities.authoritativeCancellation;
+        if (cancellation.supported) return cancellation.capability.cancelTurn(input);
+        return safeFailure("unavailable", "Cancellation is unavailable.", true);
+      } catch { return safeFailure("unavailable", "The durable cancellation could not be recorded.", true); }
+    },
+    capabilities: { ...options.delegate.capabilities, authoritativeCancellation: { supported: true, capability: {
+      async cancelTurn(input: CancelTurnInput): Promise<TransportResult<AuthoritativeCancelTurnResult>> {
+        try {
+          identifier(input.conversationId, "conversationId"); identifier(input.turnId, "turnId");
+          identifier(input.mutationId, "mutationId"); identifier(input.idempotencyKey, "idempotencyKey");
+          if (options.authorizeRecovery && !await options.authorizeRecovery(input)) return safeFailure("not_found", "The durable turn was not found.", false);
+          const fingerprint = cancellationFingerprint(input);
+          const current = await update(input.conversationId, input.turnId, record => {
+            // A failed observer/worker is not proof that its admitted delegate
+            // stopped. A newly authorized Stop must still reach that work.
+            const failedAdmission = record.status === "failed" &&
+              (record.delegateTurnId !== null || record.delegateStartAttempted === true);
+            if (terminalStatus(record.status) && record.status !== "waiting_for_approval" && !failedAdmission) return null;
+            if (record.cancellation) {
+              if (record.cancellation.idempotencyKey !== input.idempotencyKey || record.cancellation.fingerprint !== fingerprint) {
+                throw new CancellationConflictError();
+              }
+              return null;
+            }
+            return { ...record, status: terminalStatus(record.status) ? "pending" : record.status, terminal: null,
+              cancellation: { mutationId: input.mutationId, idempotencyKey: input.idempotencyKey, fingerprint,
+                reason: input.reason, requestedAt: timestamp(now()) }, updatedAt: timestamp(now()) };
+          });
+          if (!current) return safeFailure("not_found", "The durable turn was not found.", false);
+          if (terminalStatus(current.record.status)) return { ok: true, value: { status: "already_terminal" } };
+          // Stop may arrive during a worker's terminal callback/cleanup. Queue
+          // the same local kick after cleanup so it cannot be lost in running.
+          const previous = running.get(key(input.conversationId, input.turnId));
+          if (previous) void previous.then(() => kick(input.conversationId, input.turnId)).catch(() => undefined);
+          else kick(input.conversationId, input.turnId);
+          return { ok: true, value: { status: "cancellation_requested" } };
+        } catch (cause) {
+          return cause instanceof CancellationConflictError
+            ? safeFailure("conflict", "The cancellation conflicts with the retained request.", false)
+            : safeFailure("unavailable", "The durable cancellation could not be recorded.", true);
+        }
+      },
+    } } },
+    async startTurn(input: StartTurnInput<TRequest>): Promise<TransportResult<TurnHandle<TEvent>>> {
+      try {
+        if (workersStopped) return safeFailure("unavailable", "The durable worker is draining.", true);
+        const conversationId = identifier(input.conversationId, "conversationId");
+        const turnId = identifier(input.conversationTurnId, "conversationTurnId");
+        const storedRequest = await options.requestCodec.encode(input.request);
+        const requestFingerprint = identifier(await options.requestCodec.fingerprint(input.request), "requestFingerprint");
+        const currentTime = now();
+        const created = await options.store.create({ schemaVersion: DURABLE_APPLICATION_TURN_SCHEMA_VERSION,
+          conversationId, turnId, mutationId: identifier(input.mutationId, "mutationId"),
+          idempotencyKey: identifier(input.idempotencyKey, "idempotencyKey"), requestFingerprint,
+          request: clone(storedRequest), delegateTurnId: null, delegateStartAttempted: false, status: "pending", attempt: 0, events: [], terminal: null,
+          cancellation: null, lease: null, createdAt: timestamp(currentTime), updatedAt: timestamp(currentTime) });
+        if (created.status === "conflict") {
+          const retained = created.document;
+          if (retained?.record.cancelledBeforeStart === true && retained.record.status === "cancelled" &&
+            retained.record.terminal?.status === "cancelled") {
+            return { ok: true, value: { conversationId, turnId, mutationId: input.mutationId,
+              observation: await observe(retained, EMPTY_CHECKPOINT) } };
+          }
+          return safeFailure("conflict", "The turn start conflicts with retained identity.", false);
+        }
+        if (created.status === "created") await publishStatus(created.document);
+        kick(conversationId, turnId);
+        return { ok: true, value: { conversationId, turnId, mutationId: input.mutationId,
+          observation: await observe(created.document, EMPTY_CHECKPOINT) } };
+      } catch (cause) { return safeFailure(cause instanceof TypeError ? "invalid_request" : "unavailable",
+        cause instanceof TypeError ? cause.message : "The durable turn could not be started.", !(cause instanceof TypeError)); }
+    },
+    async resumeTurn(input) {
+      try {
+        const current = await options.store.load(identifier(input.conversationId, "conversationId"), identifier(input.turnId, "turnId"));
+        if (!current) return safeFailure("not_found", "The durable turn was not found.", false);
+        observationStart(current.record, normalizeCheckpoint(input.resumeFrom));
+        if (!terminalStatus(current.record.status)) kick(input.conversationId, input.turnId);
+        return { ok: true, value: await observe(current, input.resumeFrom) };
+      } catch (cause) { return safeFailure(cause instanceof TypeError ? "invalid_request" : "unavailable",
+        cause instanceof TypeError ? cause.message : "The durable turn could not be resumed.", !(cause instanceof TypeError)); }
+    },
+    async resumeApprovalTurn(conversationId, turnId, recovery) {
+      let release: (() => void) | undefined;
+      try {
+        if (workersStopped) return safeFailure("unavailable", "The durable worker is draining.", true);
+        identifier(conversationId, "conversationId"); identifier(turnId, "turnId");
+        if (options.authorizeRecovery && !await options.authorizeRecovery({ conversationId, turnId })) {
+          return safeFailure("not_found", "The durable turn was not found.", false);
+        }
+        recovery?.signal?.throwIfAborted();
+        if (recovery?.recovery && options.recoveryWorkers) {
+          release = options.recoveryWorkers.tryAcquire() ?? undefined;
+          if (!release) return { ok: true, value: { status: "deferred" } };
+        }
+        const resumed = await update(conversationId, turnId, record => {
+          recovery?.signal?.throwIfAborted();
+          if (record.status !== "waiting_for_approval" || record.cancellation !== null) return null;
+          return { ...record, status: "pending", terminal: null, lease: null,
+            approvalResumes: (record.approvalResumes ?? 0) + 1, updatedAt: timestamp(now()) };
+        });
+        if (!resumed) return safeFailure("not_found", "The durable turn was not found.", false);
+        recovery?.signal?.throwIfAborted();
+        if (terminalStatus(resumed.record.status)) return { ok: true, value: { status: "terminal" } };
+        // A decision can arrive during the worker's settlement callback. Let
+        // that claim finish before starting the next monotonically fenced claim.
+        const previous = running.get(key(conversationId, turnId));
+        const permit = release; release = undefined;
+        if (previous) void previous.then(() => kick(conversationId, turnId, permit)).catch(() => permit?.());
+        else kick(conversationId, turnId, permit);
+        return { ok: true, value: { status: "started" } };
+      } catch { return safeFailure("unavailable", "Approved work could not be resumed.", true); }
+      finally { release?.(); }
+    },
+    recoverTurn,
+    async recoverPendingPage(input = {}) {
+      const limit = input.limit ?? 25, cursor = input.cursor, signal = input.signal;
+      if (!Number.isSafeInteger(limit) || limit < 1 || limit > 1_000) throw new TypeError("Recovery limit is invalid");
+      signal?.throwIfAborted();
+      if (workersStopped) throw new Error("The durable worker is draining");
+      if (options.recoveryWorkers && !options.recoveryWorkers.available) {
+        return { started: [], cursor: cursor ?? null, deferred: true };
+      }
+      const page: DurableApplicationRecoveryCandidatePage = options.store.scanRecoveryCandidates
+        ? await options.store.scanRecoveryCandidates(limit, cursor)
+        : await (async () => {
+          const legacy = options.store.scanRecoverable ? await options.store.scanRecoverable(limit, cursor)
+            : { documents: await options.store.listRecoverable?.(limit) ?? [], cursor: null };
+          return { candidates: legacy.documents.map(({ record }) => ({ conversationId: record.conversationId,
+            turnId: record.turnId, lease: record.lease })), cursor: legacy.cursor };
+        })();
+      signal?.throwIfAborted();
+      if (page.candidates.length > limit || page.cursor && (page.candidates.length === 0 || JSON.stringify(page.cursor) === JSON.stringify(cursor))) {
+        throw new TypeError("Recovery scan exceeded its bound or did not advance");
+      }
+      const started: DurableApplicationRecoveryPosition[] = [];
+      for (const candidate of page.candidates) {
+        signal?.throwIfAborted();
+        // A metadata hint can skip a known live worker, but never grants a claim.
+        // recoverTurn reauthorizes and rereads before the durable claim CAS.
+        if (candidate.lease && candidate.lease.ownerId !== workerId && Date.parse(candidate.lease.expiresAt) > now()) continue;
+        const result = await recoverTurn(candidate.conversationId, candidate.turnId, signal);
+        signal?.throwIfAborted();
+        if (result.ok && result.value.status === "deferred") {
+          // Repeat the input page, never skip an unclaimed identity. Already
+          // running/terminal rows are cheap to skip on the next attempt.
+          return { started: Object.freeze(started), cursor: cursor ?? null, deferred: true };
+        }
+        if (result.ok && result.value.status === "started") started.push({ conversationId: candidate.conversationId, turnId: candidate.turnId });
+      }
+      return Object.freeze({ started: Object.freeze(started), cursor: page.cursor });
+    },
+    async recoverPending(limit = 100) {
+      if (!Number.isSafeInteger(limit) || limit < 1 || limit > 1_000) throw new TypeError("Recovery limit is invalid");
+      const started: DurableApplicationRecoveryPosition[] = [];
+      let cursor: DurableApplicationRecoveryCursor | undefined;
+      do {
+        const page = await transport.recoverPendingPage({ limit: limit - started.length, ...(cursor ? { cursor } : {}) });
+        started.push(...page.started); cursor = page.cursor ?? undefined;
+        if (page.deferred) break;
+      } while (cursor !== undefined && started.length < limit);
+      return Object.freeze(started);
+    },
+    async stopWorkers() {
+      workersStopped = true;
+      await Promise.all(running.values());
+    },
+  };
+  return Object.freeze(transport);
+}

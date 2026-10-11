@@ -513,7 +513,8 @@ export function createAgentRuntime(deps: {
         state = result.state;
         const u = result.runContext.usage;
         const usage = { requests: u.requests, inputTokens: u.inputTokens, outputTokens: u.outputTokens, totalTokens: u.totalTokens };
-        record = { ...record!, state: result.state.toString(), usage, resolution: undefined };
+        const { resolution: _resolved, ...completedCheckpoint } = record!;
+        record = { ...completedCheckpoint, state: result.state.toString(), usage };
         if (result.interruptions.length) {
           await save();
           emit({ kind: 'checkpoint' });

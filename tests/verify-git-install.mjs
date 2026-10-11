@@ -5,7 +5,7 @@ import { resolve, join, dirname } from 'node:path';
 import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
 import { spawnSync } from 'node:child_process';
-import { publicSdkGitSpec, assertSdkGitLock, publicAssistantGitSpec, assertAssistantGitLock } from './helpers/git-consumer-contract.mjs';
+import { publicSdkGitSpec, assertSdkGitLock, assertNoAssistantDependency } from './helpers/git-consumer-contract.mjs';
 
 const sha = process.argv[2];
 assert.match(sha ?? '', /^[a-f0-9]{40}$/, 'FULL_GIT_SHA_REQUIRED');
@@ -17,7 +17,6 @@ const baseline = flags.includes('--baseline'); // Distribution-only check for pr
 assert.ok(!(reproduce && baseline) && !(candidate && (baseline || reproduce)), 'INCOMPATIBLE_OPTIONS');
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const candidateManifest = JSON.parse(await readFile(join(root, 'package.json'), 'utf8'));
-const assistantSpec = publicAssistantGitSpec(candidateManifest.dependencies['@handrail/ai-assistant']);
 // Outside the repository: no accidental fallback to its node_modules or types.
 const work = await mkdtemp(join(tmpdir(), 'handrail-git-consumer-'));
 const spec = reproduce ? `git+https://github.com/c0x65o/handrail-agent-sdk.git#${sha}` : publicSdkGitSpec(sha);
@@ -48,9 +47,9 @@ for (const profile of profiles) {
       // that would retain its old nested Assistant identity. Install the exact
       // candidate dependencies normally, then build the labelled Agent source.
       ...candidate ? candidateManifest.dependencies : {},
-      ...baseline ? {} : { '@handrail/ai-assistant': assistantSpec, pg: '8.23.0', openai: '7.25.0', '@openai/agents': '0.18.0', zod: '4.3.6' },
+      ...baseline ? {} : { pg: '8.23.0', openai: '7.25.0', '@openai/agents': '0.18.0', zod: '4.3.6' },
       ...profile.provider ? { '@openai/agents': '0.18.0', zod: '4.3.6' } : {} },
-    devDependencies: { typescript: '5.9.3', ...profile.types ? { '@types/node': profile.types, '@types/pg': '8.23.1' } : {} } };
+    devDependencies: { ...candidate ? candidateManifest.devDependencies : {}, react: '19.1.1', 'react-dom': '19.1.1', 'react-markdown': '10.1.0', 'remark-gfm': '4.0.1', typescript: '5.9.3', ...profile.types ? { '@types/node': profile.types, '@types/pg': '8.23.1' } : {} } };
   await save(join(dir, 'package.json'), manifest);
   const install = run('npm', ['install', '--include=dev', '--no-audit', '--no-fund', '--foreground-scripts', '--loglevel=http'], dir,
     { npm_config_cache: join(dir, 'install-cache') });
@@ -60,7 +59,7 @@ for (const profile of profiles) {
   const originalResolved = lock.packages['node_modules/handrail-agent-sdk']?.resolved ?? null;
   if (!reproduce) {
     if (!candidate) assertSdkGitLock(manifest, lock, sha);
-    if (!baseline) assertAssistantGitLock(lock, assistantSpec);
+    if (!baseline) assertNoAssistantDependency(lock);
     const before = await readFile(lockPath, 'utf8');
     // npm ci removes node_modules itself. An empty cache forces a new download
     // and normal Git prepare/build. No SSH protocol or credential helper exists.
@@ -72,7 +71,7 @@ for (const profile of profiles) {
     if (!candidate) assertSdkGitLock(manifest, lock, sha);
     const installedLock = await json(join(dir, 'node_modules/.package-lock.json'));
     if (!candidate) assert.equal(installedLock.packages['node_modules/handrail-agent-sdk'].resolved, spec, 'INSTALLED_LOCK_NOT_HTTPS');
-    if (!baseline) assertAssistantGitLock(installedLock, assistantSpec);
+    if (!baseline) assertNoAssistantDependency(installedLock);
   }
   if (candidate) {
     // SOURCE QUALIFICATION ONLY, never a release/install substitute. Dependencies
@@ -137,8 +136,8 @@ for (const profile of profiles) {
       assert.ok(exported['handrail-agent-sdk/server'].includes('createJobAdmission'));
       ${baseline ? '' : "assert.ok(exported['handrail-agent-sdk/server/agents'].includes('createAgentRuntime'));"}
       ${baseline ? '' : `assert.equal(
-        createRequire(import.meta.resolve('handrail-agent-sdk/server/agents')).resolve('@handrail/ai-assistant'),
-        createRequire(process.cwd() + '/package.json').resolve('@handrail/ai-assistant'),
+        createRequire(import.meta.resolve('handrail-agent-sdk/server/agents')).resolve('handrail-agent-sdk/assistant'),
+        createRequire(process.cwd() + '/package.json').resolve('handrail-agent-sdk/assistant'),
         'ASSISTANT_RUNTIME_IDENTITY_MISMATCH');`}
       console.log(JSON.stringify(exported, null, 2));
     `], dir);
@@ -153,7 +152,7 @@ for (const profile of profiles) {
     candidateSourceOverlay: candidate, candidateVersion: candidate ? candidateManifest.version : null,
     node: process.version, npm: run('npm', ['--version'], dir).stdout.trim(),
     manifest, originalResolved, sdkLock: lock.packages['node_modules/handrail-agent-sdk'] ?? null,
-    assistantLocks: Object.fromEntries(Object.entries(lock.packages).filter(([path]) => path.endsWith('node_modules/@handrail/ai-assistant'))), versions,
+    legacyAssistantDependency: false, versions,
     typecheckExit: compile.status, status: reproduce ? 'failures-reproduced' : 'passed', fixture: dir };
   await save(join(dir, 'result.json'), report); results.push(report);
 }

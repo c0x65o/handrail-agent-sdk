@@ -9,8 +9,8 @@ import { createNotificationDelivery } from 'handrail-agent-sdk/server/assistance
 import { createHandrailFeedbackObserver, createHandrailFeedbackEffectAdapter } from 'handrail-agent-sdk/server/handrail-feedback';
 import { createAgentConversationTransport, createAgentCheckpointReader } from 'handrail-agent-sdk/server/application';
 import { createApplicationAgentTools } from 'handrail-agent-sdk/server/application-tools';
-import type { ConversationTransport, StreamEvent, ChatRequest } from '@handrail/ai-assistant';
-import type { AttachmentDownloadClientOptions } from '@handrail/ai-assistant/client';
+import type { ConversationTransport, StreamEvent, ChatRequest } from 'handrail-agent-sdk/assistant';
+import type { AttachmentDownloadClientOptions } from 'handrail-agent-sdk/assistant/client';
 
 // Exercise the installed declaration flagged by Assistant's repository surface
 // check without weakening strict consumer compilation or invoking fetch.

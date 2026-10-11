@@ -4,8 +4,8 @@ import { createAgentConversationTransport, createAgentCheckpointReader } from 'h
 import { services, identity } from '../installed/host.mjs';
 export { identity };
 export const aiEntry = process.env.HANDRAIL_OBSERVER_AI_ENTRY;
-export const ai = await import(aiEntry ?? '@handrail/ai-assistant');
-const postgres = await import(aiEntry ? new URL('./postgres/index.js', aiEntry).href : '@handrail/ai-assistant/persistence/postgres');
+export const ai = await import(aiEntry ?? 'handrail-agent-sdk/assistant');
+const postgres = await import(aiEntry ? new URL('./postgres/index.js', aiEntry).href : 'handrail-agent-sdk/assistant/persistence/postgres');
 export const empty = { lastAppliedCursor: null, lastAppliedEventId: null, lastAppliedRevision: null };
 export const start = { conversationId: 'observer-conversation', conversationTurnId: 'observer-turn', mutationId: 'observer-mutation', idempotencyKey: 'observer-start', request: { inputRef: 'saved-input' } };
 const fact = { id: 'fixture', source: 'server_derived', trust: 'authoritative' };
