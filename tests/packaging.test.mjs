@@ -204,3 +204,10 @@ test('public PostgreSQL factories are inert and their implementation never impor
   for(const name of ['index','job-admission','job-journal','job-lease','job-answer','job-cancellation','effects','agent-state-store','migrate'])
     visit(`${root}dist/server/postgres/${name}.js`);
 });
+
+
+test('managed capabilities import through the server-only public entrypoint without starting resources', () => {
+  assert.deepEqual(JSON.parse(runNode(['--input-type=module', '--eval', `
+    console.log(JSON.stringify(Object.keys(await import('handrail-agent-sdk/server/capabilities'))));
+  `])), ['createManagedAgentCapabilities']);
+});

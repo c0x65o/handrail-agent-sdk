@@ -1,6 +1,6 @@
 {
   "name": "handrail-agent-sdk",
-  "version": "0.2.25",
+  "version": "0.2.26",
   "private": true,
   "description": "Headless durable agent execution powered by OpenAI Agents SDK",
   "type": "module",
@@ -22,7 +22,10 @@
     "docs/browser-vault-integration.md",
     "examples/continuous-conversation.mts",
     "examples/marketing-onboarding.mts",
-    "docs/marketing-onboarding.md"
+    "docs/marketing-onboarding.md",
+    "docs/managed-capabilities.md",
+    "examples/managed-capabilities.mts",
+    "scripts/install-browser.mjs"
   ],
   "exports": {
     "./marketing": {
@@ -79,6 +82,13 @@
     "./server/conversation": {
       "types": "./dist/server/conversation.d.ts",
       "import": "./dist/server/conversation.js"
+    },
+    "./server/capabilities": {
+      "types": "./dist/server/managed-capabilities.d.ts",
+      "browser": null,
+      "node": {
+        "import": "./dist/server/managed-capabilities.js"
+      }
     }
   },
   "scripts": {
@@ -90,9 +100,9 @@
     "test:browser": "npm run build:test-browser && node --test --test-concurrency=1 --test-reporter=tap tests/browser.test.mjs",
     "test:browser-boundary": "npm run build:test-browser && node --test --test-concurrency=1 --test-reporter=tap tests/browser-boundary.test.mjs",
     "build": "tsc -p tsconfig.json && node scripts/build-postgres-assets.mjs",
-    "prepare": "npm run build",
+    "prepare": "npm run build && node scripts/install-browser.mjs",
     "pretest": "npm run build && npm run typecheck:acceptance && npm run build:test-postgres && npm run build:reference",
-    "test": "node --test --test-concurrency=1 --test-reporter=tap tests/contracts/job.test.mjs tests/contracts/connection.test.mjs tests/contracts/vault.test.mjs tests/contracts/browser.test.mjs tests/browser-use.test.mjs tests/packaging.test.mjs tests/git-lock.test.mjs tests/acceptance.test.mjs tests/marketing.test.mjs",
+    "test": "node --test --test-concurrency=1 --test-reporter=tap tests/contracts/job.test.mjs tests/contracts/connection.test.mjs tests/contracts/vault.test.mjs tests/contracts/browser.test.mjs tests/browser-use.test.mjs tests/packaging.test.mjs tests/git-lock.test.mjs tests/acceptance.test.mjs tests/marketing.test.mjs tests/managed-network.test.mjs",
     "build:test-postgres": "tsc -p tests/tsconfig.postgres.json",
     "test:postgres": "npm run build:test-postgres && node --test --test-concurrency=1 --test-reporter=tap tests/postgres.test.mjs",
     "typecheck:acceptance": "tsc -p tests/fixtures/tsconfig.acceptance.json",
@@ -118,13 +128,15 @@
     "test:agents": "npm run build && npm run build:reference && npm run build:test-postgres && node --test --test-concurrency=1 --test-reporter=tap tests/agent-runtime.test.mjs tests/browser-agent-runtime.test.mjs",
     "test:assistance": "npm run build && npm run build:reference && npm run build:test-postgres && node --test --test-concurrency=1 --test-reporter=tap tests/assistance.test.mjs tests/agent-transport.test.mjs",
     "test:conversation": "npm run build && node --test --test-concurrency=1 tests/fixtures/installed/conversation.test.mjs",
-    "test:observer-recovery": "npm run build && node --test --test-concurrency=1 tests/observer-recovery.test.mjs tests/observer-recovery-postgres.test.mjs"
+    "test:observer-recovery": "npm run build && node --test --test-concurrency=1 tests/observer-recovery.test.mjs tests/observer-recovery-postgres.test.mjs",
+    "install:browser": "node scripts/install-browser.mjs",
+    "test:managed": "npm run build && node --test --test-concurrency=1 tests/managed-capabilities.test.mjs",
+    "test:managed-browser": "npm run build && node --test --test-concurrency=1 tests/managed-browser.test.mjs tests/managed-network.test.mjs"
   },
   "devDependencies": {
     "@types/node": "22.20.4",
     "@types/pg": "8.23.1",
     "drizzle-kit": "0.31.11",
-    "playwright-core": "1.63.0",
     "typescript": "5.9.3"
   },
   "dependencies": {
@@ -134,6 +146,7 @@
     "ajv-formats": "3.0.1",
     "drizzle-orm": "0.45.3",
     "pg": "8.23.0",
-    "zod": "4.3.6"
+    "zod": "4.3.6",
+    "playwright-core": "1.63.0"
   }
 }

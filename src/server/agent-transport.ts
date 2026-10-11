@@ -141,6 +141,8 @@ export function createAgentCheckpointReader(deps: {
     const traceId = binding.identity.origin.correlationRef;
     const envelope = { protocol_version: 'handrail.ai-runtime.v1' as const, request_id: requestId, trace_id: traceId };
     const frames: StreamEvent[] = [{ ...envelope, sequence: 0, type: 'response.started', attribution: await deps.attribution(binding) }];
+    for (const notice of state?.interactionNotices ?? [])
+      frames.push({ ...envelope, sequence: frames.length, type: 'response.text.delta', delta: `${notice}\n\n` });
     if (snapshot.state === 'succeeded') {
       if (state?.output === undefined) throw Error('missing_verified_output');
       frames.push({ ...envelope, sequence: frames.length, type: 'response.text.delta', delta: state.output });
@@ -148,9 +150,9 @@ export function createAgentCheckpointReader(deps: {
         usage: { input_tokens: state.usage.inputTokens, output_tokens: state.usage.outputTokens, total_tokens: state.usage.totalTokens } });
       frames.push({ ...envelope, sequence: frames.length, type: 'response.completed', outcome: 'stop' });
     } else if (snapshot.state === 'cancelled') {
-      frames.push({ ...envelope, sequence: 1, type: 'response.cancelled', reason: snapshot.cancellation.reason });
+      frames.push({ ...envelope, sequence: frames.length, type: 'response.cancelled', reason: snapshot.cancellation.reason });
     } else if (snapshot.state === 'failed') {
-      frames.push({ ...envelope, sequence: 1, type: 'response.error', error: { category: 'internal', code: 'internal_error',
+      frames.push({ ...envelope, sequence: frames.length, type: 'response.error', error: { category: 'internal', code: 'internal_error',
         message: 'Assistant execution failed.', retryable: false } });
     }
     const prefix = `${requestId}:`;
@@ -158,7 +160,16 @@ export function createAgentCheckpointReader(deps: {
     if (after.lastAppliedCursor !== null) {
       if (!after.lastAppliedCursor.startsWith(prefix)) throw Error('invalid_agent_cursor');
       cursor = Number(after.lastAppliedCursor.slice(prefix.length));
-      if (!Number.isSafeInteger(cursor) || cursor < 0 || cursor >= frames.length) throw Error('invalid_agent_cursor');
+      if (!Number.isSafeInteger(cursor) || cursor < 0) throw Error('invalid_agent_cursor');
+      // Cancelled/failed jobs deliberately withhold private checkpoints. Retain
+      // the caller's cursor when previously emitted secure notices disappear.
+      if (!state && cursor >= frames.length - 1 && (snapshot.state === 'cancelled' || snapshot.state === 'failed')) {
+        const result: TurnObservationResult = snapshot.state === 'cancelled'
+          ? { status: 'cancelled', checkpoint: after }
+          : { status: 'failed', checkpoint: after, error: { ...failure().error, retryable: false } };
+        return { events: [], checkpoint: after, result };
+      }
+      if (cursor >= frames.length) throw Error('invalid_agent_cursor');
     }
     const checkpoint: TurnResumePoint = { lastAppliedCursor: `${prefix}${frames.length - 1}`,
       lastAppliedEventId: `${prefix}${frames.length - 1}`, lastAppliedRevision: frames.length - 1 };

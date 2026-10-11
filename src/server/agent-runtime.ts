@@ -57,6 +57,8 @@ export interface AgentCheckpoint {
   readonly resolution?: AgentResolution;
   readonly usage?: AgentUsage;
   readonly output?: string;
+  /** SDK-authored nonsecret interaction links, retained for stable projection. */
+  readonly interactionNotices?: readonly string[];
 }
 export type AgentCommit = { readonly kind: 'checkpoint' }
   | { readonly kind: 'waiting'; readonly requirement: JobRequirement }
@@ -112,6 +114,12 @@ interface AgentToolBase {
   readonly parameters: ZodObject | AgentJsonSchemaParameters;
 }
 export type AgentRuntimeTool = AgentToolBase & (
+  | { readonly kind: 'managed';
+      /** SDK-owned integration. Executes under runtime authority and the job
+       * lease; its implementation must use the existing durable effect ledger. */
+      readonly execute: (call: AgentCall, fence: JobLeaseFence, signal: AbortSignal) => Promise<{
+        readonly output: string; readonly wait?: JobRequirement; readonly notice?: string; readonly reconciliation?: boolean;
+      }> }
   | { readonly kind: 'read'; readonly execute: (call: AgentCall, signal: AbortSignal) => Promise<AgentToolOutput> }
   | { readonly kind: 'effect';
       /** Bind validated references to an existing effect/Vault adapter. No IO. */
@@ -357,7 +365,21 @@ export function createAgentRuntime(deps: {
                 if (limits.maxToolCalls !== null && new Set([...Object.keys(record!.results), ...executingRefs]).size >= limits.maxToolCalls) throw new Halt('limit_exceeded');
                 executingRefs.add(call.effectRef);
                 let output: AgentToolOutput;
-                if (def.kind === 'browser') {
+                if (def.kind === 'managed') {
+                  const result = await def.execute(call, fence!, toolSignal);
+                  await check();
+                  if (result.reconciliation) throw new Reconcile(call);
+                  output = result.output;
+                  if (result.wait) {
+                    if (typeof output !== 'string' || size(output) > limits.maxOutputBytes) throw new Halt('limit_exceeded');
+                    record = { ...record!, results: { ...record!.results, [call.effectRef]: { binding, output } } };
+                    if (result.notice) {
+                      if (size(result.notice) > limits.maxOutputBytes) throw new Halt('limit_exceeded');
+                      record = { ...record, interactionNotices: [...(record.interactionNotices ?? []), result.notice] };
+                    }
+                    throw new BrowserHandoff(result.wait);
+                  }
+                } else if (def.kind === 'browser') {
                   const request = await def.bind(call);
                   if (!sameLeaseValue(request.identity, identity) || request.effect.effectRef !== call.effectRef)
                     throw new StoreFailure('effect_conflict');
