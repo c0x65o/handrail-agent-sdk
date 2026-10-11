@@ -6,18 +6,18 @@ export function portalPage(input: { label: string; url: string; csrf: string; ki
        <form method="post" action="${escape(input.path)}"><input type="hidden" name="csrf" value="${csrf}">
        <label>Username or membership number<input name="username" autocomplete="username" required maxlength="512"></label>
        <label>Password<input name="password" type="password" autocomplete="current-password" required maxlength="4096"></label>
-       <label>Additional website origins, if needed for sign-in<input name="origins" placeholder="https://accounts.example.com" maxlength="2048"></label>
+       <label>Additional sign-in websites (optional)<input name="origins" placeholder="https://accounts.example.com" maxlength="2048"></label>
        <label class="check"><input type="checkbox" name="consent" value="yes" required> Save this login and allow the assistant to use this account on the listed websites for the next 30 days.</label>
        <button>Save securely and continue</button></form>`
-    : `<h1>Continue ${label} sign-in</h1><p>Website: <strong>${site}</strong></p><p>You control this browser while this page is open. Click the image, then enter text below or use the keyboard buttons. Verification codes stay out of chat.</p>
+    : `<h1>Help finish ${label} sign-in</h1><p>Website: <strong>${site}</strong></p><p>You control this browser while this page is open. Click the image, then enter text below or use the keyboard buttons. Verification codes stay out of chat.</p>
        <p id="status" role="status">Loading browser…</p><img id="screen" alt="Your private browser session" width="1100" height="760">
        <form id="entry"><label>Text for the selected field<input id="private" type="password" autocomplete="off" maxlength="4096"></label><button>Type privately</button></form>
        <button data-key="Tab">Tab</button> <button data-key="Enter">Enter</button> <button data-key="Backspace">Backspace</button> <button id="refresh">Refresh view</button>
-       <p><button id="finish">I'm done — return control to the assistant</button></p>
+       <p><button id="finish">Continue my task</button></p>
        <script nonce="${escape(input.nonce)}">
        const endpoint=${JSON.stringify(input.path)}, csrf=${JSON.stringify(input.csrf)};
        const screen=document.getElementById('screen'), status=document.getElementById('status');let busy=false;
-       async function send(action,extra={}){if(busy)return;busy=true;status.textContent='Working…';try{const r=await fetch(endpoint,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({csrf,action,...extra})});const v=await r.json();if(!r.ok)throw Error();if(v.image)screen.src='data:image/jpeg;base64,'+v.image;status.textContent=v.status==='ready'?'Control returned. You can close this page.':v.status==='reopen_required'?'This browser session ended. Click “I’m done” so the assistant can reopen the account.':'You are in control.';}catch{status.textContent='This session is unavailable. Return to your conversation.';}finally{busy=false;}}
+       async function send(action,extra={}){if(busy)return;busy=true;status.textContent='Working…';try{const r=await fetch(endpoint,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({csrf,action,...extra})});const v=await r.json();if(!r.ok)throw Error();if(v.image)screen.src='data:image/jpeg;base64,'+v.image;status.textContent=v.status==='ready'?'Your assistant is continuing the task. You can return to your conversation.':v.status==='reopen_required'?'This browser session ended. Click “Continue my task” so the assistant can reopen the account.':'You are in control.';}catch{status.textContent='This session is unavailable. Return to your conversation.';}finally{busy=false;}}
        screen.addEventListener('click',e=>{const r=screen.getBoundingClientRect();send('click',{x:Math.floor((e.clientX-r.left)*1100/r.width),y:Math.floor((e.clientY-r.top)*760/r.height)});});
        document.getElementById('entry').addEventListener('submit',e=>{e.preventDefault();const field=document.getElementById('private'),value=field.value;field.value='';send('type',{value});});
        document.querySelectorAll('[data-key]').forEach(b=>b.onclick=()=>send('key',{value:b.dataset.key}));

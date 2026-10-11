@@ -177,8 +177,16 @@ export function createAgentCheckpointReader(deps: {
     if (snapshot.state === 'succeeded') result = { status: 'completed', checkpoint };
     if (snapshot.state === 'cancelled') result = { status: 'cancelled', checkpoint };
     if (snapshot.state === 'failed') result = { status: 'failed', checkpoint, error: { ...failure().error, retryable: false } };
-    if (snapshot.state === 'waiting') result = { status: 'waiting_for_approval', checkpoint,
-      pendingToolCallIds: await deps.pendingToolCallIds(binding, snapshot.requirement.requirementRef) };
+    if (snapshot.state === 'waiting') {
+      const pending = await deps.pendingToolCallIds(binding, snapshot.requirement.requirementRef);
+      // Managed secure-entry/help waits have no native proposal. Preserve the
+      // real requirement identity so the chat protocol can represent the pause.
+      const managed = /^managed:[a-f0-9]{64}$/.test(snapshot.requirement.requirementRef);
+      result = { status: 'waiting_for_approval', checkpoint,
+        pendingToolCallIds: pending.length || !managed ? pending : [snapshot.requirement.requirementRef] };
+    }
     return { events: frames.slice(cursor + 1), checkpoint, ...(result ? { result } : {}) };
   };
 }
+
+export { createAgentConversationContinuation } from './agent-conversation-continuation.js';

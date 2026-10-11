@@ -3,6 +3,7 @@
 `handrail-agent-sdk/server/capabilities` supplies the browser, encrypted credential
 and session storage, private login form, human browser control page, account tools,
 and durable pause/resume. Applications do not implement those adapters or screens.
+The [project integration contract](project-account-access.md) covers canonical chat continuation, web/mobile adoption, and deployment validation.
 This is the default integration for new account-access features; the lower-level
 [browser/vault adapters](browser-vault-integration.md) remain available for custom backends.
 
@@ -67,9 +68,13 @@ in chat. The user explicitly approves the login website and any additional origi
 and grants account use for 30 days. Account access is scoped to the full authenticated
 SDK scope; household sharing requires the application's intentional scope policy.
 
-MFA, CAPTCHA, and unsupported login forms use the SDK's private screenshot-and-input
+Ordinary password fields return `ready` with `loginAvailable: true`; the agent
+tries private login fill before asking for help. Visible challenge widgets or
+one-time-code fields return `verification_required`. A mention of CAPTCHA in
+page copy is not a blocker. This DOM controller does not solve visual CAPTCHAs;
+when automated verification is unsupported, MFA, CAPTCHA, and unsupported login forms use the SDK's private screenshot-and-input
 page. While a handoff is active, persisted account control prevents other workers
-from running agent actions on that account. Click “I'm done” to return control.
+from running agent actions on that account. Click “Continue my task” to return control.
 Browser sessions are process-local: route live browser work and handoff requests
 to the same worker for uninterrupted control. After worker loss or idle expiry,
 return control and let the assistant reopen from encrypted saved storage. Secure

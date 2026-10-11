@@ -13,7 +13,7 @@ export interface PrivateAccount {
 }
 type Session = { browser: Browser; context: BrowserContext; page: Page; close(): Promise<void>;
   generation: string; lastUsed: number; human: boolean; elements: Map<string, { handle: ElementHandle<HTMLElement | SVGElement>; label: string; document: string }> };
-export interface BrowserView { status: 'ready' | 'human_required'; text: string; elements: Array<{ ref: string; role: string; label: string }> }
+export interface BrowserView { status: 'ready' | 'verification_required'; loginAvailable: boolean; text: string; elements: Array<{ ref: string; role: string; label: string }> }
 
 /** SDK-owned Chromium controller. Only private authenticated portal routes may
  * call screenshot/human. Agent output passes through the bounded text filter. */
@@ -118,7 +118,11 @@ export function managedBrowser(options: { executablePath?: string; maxSessions?:
     });
     const retained = new Set([...s.elements.values()].map(e => e.handle));
     await Promise.all(handles.filter(h => !retained.has(h)).map(h => h.dispose()));
-    return { status: raw.password || /captcha|verification code|one.time code|verify your identity/i.test(raw.text) ? 'human_required' : 'ready', text: scrub(raw.text), elements };
+    // A login form is an agent action, not a human blocker. Verification is a
+    // separate signal; incidental mentions in page copy do not prove a challenge.
+    const verification = await s.page.locator('input[autocomplete="one-time-code"], iframe[src*="recaptcha"], iframe[src*="hcaptcha"], iframe[src*="challenges.cloudflare.com"], [data-sitekey]').evaluateAll(nodes =>
+      nodes.some(node => (node as HTMLElement).offsetWidth > 0 && (node as HTMLElement).offsetHeight > 0));
+    return { status: verification ? 'verification_required' : 'ready', loginAvailable: raw.password, text: scrub(raw.text), elements };
   }
   async function fill(s: Session, account: PrivateAccount) {
     if (!allowed(s.page, account)) throw Error('BROWSER_ORIGIN_CHANGED');

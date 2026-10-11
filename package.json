@@ -1,6 +1,6 @@
 {
   "name": "handrail-agent-sdk",
-  "version": "0.2.26",
+  "version": "0.2.27",
   "private": true,
   "description": "Headless durable agent execution powered by OpenAI Agents SDK",
   "type": "module",
@@ -24,6 +24,7 @@
     "examples/marketing-onboarding.mts",
     "docs/marketing-onboarding.md",
     "docs/managed-capabilities.md",
+    "docs/project-account-access.md",
     "examples/managed-capabilities.mts",
     "scripts/install-browser.mjs"
   ],
@@ -102,7 +103,7 @@
     "build": "tsc -p tsconfig.json && node scripts/build-postgres-assets.mjs",
     "prepare": "npm run build && node scripts/install-browser.mjs",
     "pretest": "npm run build && npm run typecheck:acceptance && npm run build:test-postgres && npm run build:reference",
-    "test": "node --test --test-concurrency=1 --test-reporter=tap tests/contracts/job.test.mjs tests/contracts/connection.test.mjs tests/contracts/vault.test.mjs tests/contracts/browser.test.mjs tests/browser-use.test.mjs tests/packaging.test.mjs tests/git-lock.test.mjs tests/acceptance.test.mjs tests/marketing.test.mjs tests/managed-network.test.mjs",
+    "test": "node --test --test-concurrency=1 --test-reporter=tap tests/contracts/job.test.mjs tests/contracts/connection.test.mjs tests/contracts/vault.test.mjs tests/contracts/browser.test.mjs tests/browser-use.test.mjs tests/packaging.test.mjs tests/git-lock.test.mjs tests/acceptance.test.mjs tests/marketing.test.mjs tests/managed-network.test.mjs tests/agent-conversation-continuation.test.mjs",
     "build:test-postgres": "tsc -p tests/tsconfig.postgres.json",
     "test:postgres": "npm run build:test-postgres && node --test --test-concurrency=1 --test-reporter=tap tests/postgres.test.mjs",
     "typecheck:acceptance": "tsc -p tests/fixtures/tsconfig.acceptance.json",

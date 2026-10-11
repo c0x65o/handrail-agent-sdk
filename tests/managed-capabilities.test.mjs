@@ -73,6 +73,7 @@ test('one SDK setup supplies form, encrypted custody, visible link, native answe
   const before = await reader({ identity, turnId: 'turn', mutationId: 'mutation' }, empty);
   assert.ok(before.events.some(e => e.type === 'response.text.delta' && e.delta.includes(entry.secureUrl)));
   assert.equal(before.result.status, 'waiting_for_approval');
+  assert.deepEqual(before.result.pendingToolCallIds, [`managed:${new URL(entry.secureUrl).pathname.split('/').at(-1)}`]);
   const response = await submit(s, entry, password); assert.equal(response.status, 200);
   await settled(s);
   const after = await reader({ identity, turnId: 'turn', mutationId: 'mutation' }, before.checkpoint);

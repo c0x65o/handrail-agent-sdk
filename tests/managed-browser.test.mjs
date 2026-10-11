@@ -17,6 +17,8 @@ test('SDK browser fills private login, isolates accounts, persists session, and 
       const context = await newContext(options), newPage = context.newPage.bind(context);
       context.newPage = async () => {
         await context.route('https://airline.example.com/**', async route => {
+          if (route.request().url().endsWith('/verification')) return route.fulfill({ contentType: 'text/html', body: '<h1>Verify sign-in</h1><input autocomplete="one-time-code">' });
+          if (route.request().url().endsWith('/help')) return route.fulfill({ contentType: 'text/html', body: '<h1>Help</h1><p>Contact us if a CAPTCHA or verification code fails.</p>' });
           if (route.request().url().endsWith('/points')) {
             const cookie = route.request().headers().cookie ?? '';
             return route.fulfill({ contentType: 'text/html', body: cookie.includes('session=')
@@ -36,7 +38,7 @@ test('SDK browser fills private login, isolates accounts, persists session, and 
   const account = { label: 'Family member', url: 'https://airline.example.com/login', origins: ['https://airline.example.com'], username: 'test-user', password, approved: true, revoked: false, expiresAt: Date.now() + 60000 };
   const signal = new AbortController().signal, current = async () => true;
   let opened = await engine.act('first', account, 'open', undefined, signal, current);
-  assert.equal(opened.status, 'human_required');
+  assert.equal(opened.status, 'ready'); assert.equal(opened.loginAvailable, true);
   const filled = await engine.act('first', account, 'fill_login', undefined, signal, current);
   assert.equal(JSON.stringify(filled).includes(password), false); assert.equal(JSON.stringify(filled).includes(password.slice(0, 10)), false); assert.equal(JSON.stringify(filled).includes('test-user'), false);
   const login = filled.elements.find(e => e.label === 'Sign in'); assert.ok(login);
@@ -58,6 +60,10 @@ test('SDK browser fills private login, isolates accounts, persists session, and 
   assert.equal((await engine.act('first', account, 'inspect', undefined, signal, current)).status, 'reopen_required');
   const restored = await engine.act('first', account, 'open', 'https://airline.example.com/points', signal, current);
   assert.match(restored.text, /12,345 points/);
+  const help = await engine.act('first', account, 'open', 'https://airline.example.com/help', signal, current);
+  assert.equal(help.status, 'ready'); assert.equal(help.loginAvailable, false);
+  const verification = await engine.act('first', account, 'open', 'https://airline.example.com/verification', signal, current);
+  assert.equal(verification.status, 'verification_required');
   await assert.rejects(engine.act('first', account, 'open', 'https://other.example.com', signal, current));
   await assert.rejects(engine.act('first', account, 'inspect', undefined, signal, async () => false));
 });
