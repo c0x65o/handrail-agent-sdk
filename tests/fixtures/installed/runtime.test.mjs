@@ -401,11 +401,58 @@ test('process shutdown aborts model transport and fresh runtime recovers same jo
   const next=await services(s.harness.schema,s.key);t.after(()=>next.close());
   assert.equal(ok(await next.runtime.wake(identity)),'succeeded');
 });
-test('invalid tool schema cannot mutate and repeated provider failure is bounded', async t => {
-  const s=await setup(t,{scenario:'invalid',limits:{maxDispatches:1}});
+test('repeated provider failure is bounded when the host configures a dispatch limit', async t => {
+  const s=await setup(t,{modelHooks:{before:async()=>{throw Error('Fixture provider unavailable');}},limits:{maxDispatches:1}});
   assert.equal(ok(await s.runtime.wake(identity)),'retryable');
   assert.equal(ok(await s.runtime.wake(identity)),'failed');
   assert.equal((await s.client.query(`SELECT * FROM ${s.harness.table('synthetic_provider')}`)).rowCount,0);
+});
+
+for (const approvals of ['none', 'host']) for (const [label, argumentsText] of [
+  ['missing required property', '{}'],
+  ['wrong type', '{"itemRef":42}'],
+  ['unknown property', '{"itemRef":"synthetic-item","extra":true}'],
+  ['malformed JSON', '{'],
+]) test(`${approvals}: ${label} returns a correction result without dispatch, including after recovery`, async t => {
+  const {createApplicationAgentTools}=await import('handrail-agent-sdk/server/application-tools');
+  let rejectSeen=0,interrupt=true,decisions=0,authorityChecks=0;
+  const rejections=[];
+  const model={async getResponse(){throw Error('Stream required');},async *getStreamedResponse(request){
+    const results=(Array.isArray(request.input)?request.input:[]).filter(item=>item.type==='function_call_result');
+    if(results.length){
+      const rejected=results[0].output;
+      const text=typeof rejected==='string'?rejected:Array.isArray(rejected)?rejected.map(item=>item.text??'').join(''):rejected.text;
+      rejections.push(text);
+      rejectSeen++;
+      if(interrupt)throw Error('Fixture provider interruption after rejection');
+    }
+    yield {type:'response_done',response:{id:`correction-${results.length}`,output:results.length===0
+      ?[{type:'function_call',callId:'invalid-call',name:'reserve',arguments:argumentsText}]
+      :results.length===1
+        ?[{type:'function_call',callId:'corrected-call',name:'reserve',arguments:'{"itemRef":"synthetic-item"}'}]
+        :[{type:'message',role:'assistant',status:'completed',content:[{type:'output_text',text:'Corrected and completed.'}]}],
+      usage:{requests:1,inputTokens:10,outputTokens:5,totalTokens:15}}};
+  }};
+  const options={approvals,model,transformTools:tools=>tools.map(def=>def.name==='reserve'?createApplicationAgentTools({
+    definitions:[{name:def.name,description:def.description,input_schema:{type:'object',properties:{itemRef:{const:'synthetic-item'}},required:['itemRef'],additionalProperties:false}}],
+    isReadOnly:()=>false,read:async()=>assert.fail('No read'),bind:def.bind,result:async()=>'{"reserved":true}',
+  })[0]:def),host:{decide:async()=>{decisions++;return 'approve';},withToolAuthority:async(_call,run)=>{authorityChecks++;return run();}}};
+  const s=await setup(t,options);
+  assert.equal(ok(await s.runtime.wake(identity)),'retryable');
+  assert.equal(rejectSeen,1);
+  if(label==='malformed JSON') assert.match(rejections[0],/^An error occurred while parsing tool arguments\. Please try again with valid JSON\./);
+  else assert.deepEqual(rejections.map(text=>JSON.parse(text)),[{error:'invalid_arguments',dispatched:false}]);
+  assert.equal(decisions,0);assert.equal(authorityChecks,0);
+  assert.equal((await s.client.query(`SELECT * FROM ${s.harness.table('synthetic_provider')}`)).rowCount,0);
+  interrupt=false;
+  const recovered=await services(s.harness.schema,s.key,options);t.after(()=>recovered.close());
+  assert.equal(ok(await recovered.runtime.wake(identity)),'succeeded');
+  assert.ok(rejections.every(text=>text===rejections[0]));
+  assert.equal(decisions,approvals==='none'?0:1);
+  assert.equal(authorityChecks,1);
+  assert.deepEqual((await s.client.query(`SELECT attempts FROM ${s.harness.table('synthetic_provider')}`)).rows,[{attempts:1}]);
+  assert.equal(ok(await recovered.runtime.wake(identity)),'succeeded');
+  assert.equal(authorityChecks,1);
 });
 test('lost lease during a pending read prevents tool result and terminal writes', async t => {
   let entered,release;const started=new Promise(r=>entered=r),hold=new Promise(r=>release=r);

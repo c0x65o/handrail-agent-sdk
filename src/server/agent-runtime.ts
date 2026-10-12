@@ -480,7 +480,16 @@ export function createAgentRuntime(deps: {
             if (!def) throw Error('tool_changed');
             const raw = interruption.rawItem;
             if (raw.type !== 'function_call') throw Error('unsupported_tool');
-            const input = def.parameters.parse(JSON.parse(raw.arguments));
+            let input: Record<string, unknown>;
+            try { input = def.parameters.parse(JSON.parse(raw.arguments)); }
+            catch {
+              // Invalid model arguments have no effect to authorize or recover.
+              // Return a stable correction result through the saved call rather
+              // than stranding the job on the same invalid interruption. Keep
+              // schema details and thrown values out of the model response.
+              state.reject(interruption, { message: '{"error":"invalid_arguments","dispatched":false}' });
+              continue;
+            }
             const call = callFor(def.name, raw.callId, input);
             // The upstream interruption persists call identity before IO. It
             // is not a human approval request when the host opts out of them.

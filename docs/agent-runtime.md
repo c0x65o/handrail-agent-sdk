@@ -185,7 +185,8 @@ Pass the trusted application's complete `ToolDefinition[]` to
 `createApplicationAgentTools` from `handrail-agent-sdk/server/application-tools`,
 then pass its result directly to `createAgentRuntime`. Names, descriptions and
 JSON Schemas are preserved. The SDK uses upstream raw JSON Schema tools with
-`strict: false` and `needsApproval: true`. Optional members stay optional;
+`strict: false` and `needsApproval: true`. With `approvals: 'none'`, this
+checkpoint does not request human approval. Optional members stay optional;
 explicit null is accepted only where the original schema allows it. This is
 the documented [non-strict function tool representation](https://openai.github.io/openai-agents-js/guides/tools/),
 not strict Structured Outputs with nullable placeholders.
@@ -197,9 +198,16 @@ original schema once and validates both the durable interruption before
 additional fields, or replaces null with absence. Thus `patch: {label: null}`
 and `patch: {}` remain different calls and have different effect bindings.
 Additional properties follow the application's schema (retained if allowed,
-rejected if forbidden). Invalid arguments cannot reach application IO; malformed
-JSON may become an upstream tool error that the model can correct. Other schema
-failures leave the durable run retryable under the existing dispatch bounds.
+rejected if forbidden). Invalid arguments cannot reach application IO or
+`host.decide`. Schema-invalid calls receive the stable
+result `{"error":"invalid_arguments","dispatched":false}` so the model can
+correct it. Recovery retains the call identity and repeats only this zero-effect
+validation until the model continues; a corrected call still passes ordinary
+host authority and effect handling. The error result includes no thrown values
+or schema internals. Malformed JSON receives the upstream parser's correction
+message before the durable interruption, also without application IO.
+Authority, lease, provider and uncertain-effect failures
+retain their existing recovery behavior.
 
 Supported object-root schemas use JSON Schema 2020-12 (default, or explicit
 `https://json-schema.org/draft/2020-12/schema`), 2019-09
