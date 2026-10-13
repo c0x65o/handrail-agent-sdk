@@ -48,7 +48,7 @@ async function setup(t, mode = 'sanitized') {
       snapshot: { identity, revision: 1, state: 'queued', effects: [] } } }));
   return { ...s, harness, counts: () => ({ dispatches, projections }) };
 }
-test('browser tool runs through the real Runner and PostgreSQL effect ledger', async t => {
+test('browser tool runs through the hosted runtime and PostgreSQL effect ledger', async t => {
   const s = await setup(t);
   assert.equal(ok(await s.runtime.wake(identity)), 'succeeded');
   assert.deepEqual(s.counts(), { dispatches: 1, projections: 1 });

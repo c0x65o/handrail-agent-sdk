@@ -15,14 +15,14 @@ export function createHeadlessWorker(ports: Omit<Dependencies, 'definitionRef' |
       parameters: z.object({ quantity: z.number().int().min(1).max(100), price: z.number().min(0).max(10000) }).strict(),
       execute: async call => String(Number(call.input.quantity) * Number(call.input.price)),
     }],
-    limits: { maxTurns: 8, maxDispatches: 5, maxToolCalls: 16, maxContextBytes: 24000,
+    limits: { maxDispatches: 5, maxToolCalls: 16, maxContextBytes: 24000,
       maxStateBytes: 65536, maxOutputBytes: 4096, maxElapsedMs: 60000, leaseTtlMs: 15000, pollMs: 2000 },
   });
 }
 
 // Optional private filling composition. The model sees only a permitted-use
 // reference. Existing Vault custody, destination/lease checks and reconciliation
-// remain in createVaultUse; no password, SSN, card or token enters RunState.
+// remain in createVaultUse; no password, SSN, card or token enters model input.
 export function privateFillTool(
   vault: Pick<ReturnType<typeof createVaultUse>, 'execute'>,
   resolveApprovedGrant: (call: AgentCall) => Promise<VaultOperation>,

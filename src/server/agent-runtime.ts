@@ -1,10 +1,19 @@
 import { createHash } from 'node:crypto';
 import { Buffer } from 'node:buffer';
+import { setTimeout as delay } from 'node:timers/promises';
 import { createToolExecutionQueue } from './tool-execution-queue.js';
 import { canonicalAgentJson } from './agent-state-binding.js';
-import { Agent, Runner, RunState, setSensitiveDataLoggingEnabled, tool, protocol } from '@openai/agents';
-import type { AgentInputItem, Model, ToolInputParameters, ToolOptions, ToolCallOutputContent } from '@openai/agents';
-import type { ZodObject } from 'zod';
+import { setSensitiveDataLoggingEnabled, protocol } from '@openai/agents';
+import { attachHostedFile, type HostedFileReceipt, type HostedFileSource } from './hosted-files.js';
+import { createHostedSessionClient } from './hosted-session.js';
+import type { HostedSessionBinding, HostedTurnBinding } from './hosted-session.js';
+import { HOSTED_NATIVE_TOOLS, HOSTED_NATIVE_INSTRUCTIONS } from './hosted-runtime-ports.js';
+import { readHostedCheckpointImport } from './hosted-checkpoint-import.js';
+import type { AgentHostedHarness } from './hosted-runtime-ports.js';
+export type { AgentHostedHarness } from './hosted-runtime-ports.js';
+import type { AgentSessionInputMessageParam, AgentFunctionCallOutputParam } from 'openai/resources/beta/agents/agents';
+import type { AgentInputItem, ToolCallOutputContent } from '@openai/agents';
+import { z, type ZodObject } from 'zod';
 import type { AgentJsonSchemaParameters } from './agent-tool-schema.js';
 export type { AgentJsonSchemaParameters } from './agent-tool-schema.js';
 import { validateJobCommand } from '../contracts/job.js';
@@ -34,6 +43,7 @@ export interface AgentResolution {
   readonly input?: string;
 }
 export interface AgentUsage {
+  /** Completed hosted root turns, not an inferred count of internal model calls. */
   readonly requests: number;
   readonly inputTokens: number;
   readonly outputTokens: number;
@@ -53,8 +63,11 @@ export interface AgentCheckpoint {
   readonly dispatches: number;
   readonly input: AgentInput;
   readonly state?: string;
+  readonly hosted?: { readonly session: HostedSessionBinding; readonly turn: HostedTurnBinding; readonly input: AgentSessionInputMessageParam[] };
   readonly results: Readonly<Record<string, { readonly binding: string; readonly output: AgentToolOutput }>>;
+  readonly files?: Readonly<Record<string, HostedFileReceipt>>;
   readonly resolution?: AgentResolution;
+  readonly resolutionInputCall?: { readonly receiptRef: string; readonly callId: string };
   readonly usage?: AgentUsage;
   readonly output?: string;
   /** SDK-authored nonsecret interaction links, retained for stable projection. */
@@ -91,9 +104,6 @@ export interface AgentRuntimeHost extends JobLeaseHost {
    * Execution still goes through withToolAuthority. Omit only for a catalog
    * already scoped by the trusted host when constructing this runtime. */
   visibleTools?(identity: JobIdentity, names: readonly string[]): Promise<readonly string[]>;
-  /** Resolve/reauthorize opaque attachments just before each model request.
-   * Returned provider URLs/bytes are transient, not the durable input. */
-  prepareModelInput?(identity: JobIdentity, input: AgentInputItem[], signal: AbortSignal): Promise<AgentInputItem[]>;
   /** Current policy for the exact call; approval receipts are never model supplied.
    * Verify resolution against this call, original wait and current grant. */
   decide?(call: AgentCall, resolution?: AgentResolution): Promise<'approve' | 'reject' | JobRequirement>;
@@ -146,7 +156,6 @@ export type AgentRuntimeTool = AgentToolBase & (
 );
 export interface AgentRuntimeLimits {
   /** null disables the corresponding execution cutoff. Storage/IO bounds remain. */
-  readonly maxTurns: number | null;
   readonly maxDispatches: number | null;
   readonly maxToolCalls: number | null;
   readonly maxContextBytes: number;
@@ -177,22 +186,34 @@ const size = (v: unknown) => Buffer.byteLength(JSON.stringify(v), 'utf8');
 const copy = <T>(v: T): T => structuredClone(v);
 const digest = (v: unknown) => createHash('sha256').update(canonicalAgentJson(v)).digest('hex');
 
+
+async function hostedToolOutput(output: AgentToolOutput, file: (part: Extract<ToolCallOutputContent, { type: 'file' }>, index: number) => Promise<string>): Promise<AgentFunctionCallOutputParam> {
+  if (typeof output === 'string') return output;
+  return Promise.all(output.map(async (part, index) => {
+    if (part.type === 'text') return { type: 'input_text' as const, text: part.text };
+    if (part.type === 'image' && typeof part.image === 'string') return { type: 'input_image' as const, image_url: part.image };
+    if (part.type === 'image' && typeof part.image === 'object' && 'data' in part.image) {
+      const data = typeof part.image.data === 'string' ? part.image.data : Buffer.from(part.image.data).toString('base64');
+      return { type: 'input_image' as const, image_url: `data:${part.image.mediaType};base64,${data}` };
+    }
+    if (part.type === 'file') return { type: 'input_text' as const, text: await file(part, index) };
+    throw Error('unsupported_hosted_tool_content');
+  }));
+}
+
 /** OpenAI owns all model/tool orchestration. The surrounding dispatch loop only
- * checkpoints SDK interruptions and applies host decisions. No legacy engine.
- * All local tools interrupt BEFORE execution, so a crash cannot invent a new
- * mutation identity. Hosted tools/handoffs are deliberately not accepted here. */
+ * persists provider session/turn identities and applies native host decisions.
+ * The provider saves function-call identity BEFORE local IO. Existing effects
+ * and authorization remain authoritative; no application-run model loop remains. */
 export function createAgentRuntime(deps: {
   readonly definitionRef: string;
   readonly instructions: string;
-  readonly model: Model;
-  /** Explicit host-approved sampling only. Omitted for models that reject it.
-   * Never copy legacy request.generation wholesale into this boundary. */
-  readonly sampling?: { readonly temperature?: number; readonly topP?: number };
+  readonly harness: AgentHostedHarness;
   /** Human/application approval is optional. Account and tool authority checks
    * still run for every call in either mode. Defaults to host decisions. */
   readonly approvals?: 'host' | 'none';
   /** Independent reads may overlap. Effects remain exclusive and ordered.
-   * Defaults to one; values above one enable upstream parallel tool requests. */
+   * Defaults to one; the provider may request a batch, and this bounds its local reads. */
   readonly readConcurrency?: number;
   readonly tools: readonly AgentRuntimeTool[];
   readonly host: AgentRuntimeHost;
@@ -209,9 +230,8 @@ export function createAgentRuntime(deps: {
   const approvals = deps.approvals ?? 'host';
   if (!['host', 'none'].includes(approvals) || (approvals === 'host' && typeof deps.host.decide !== 'function'))
     throw Error('AGENT_APPROVAL_CONFIG_INVALID');
-  if (deps.sampling && Object.values(deps.sampling).some(v => v !== undefined && (typeof v !== 'number' || !Number.isFinite(v)))) throw Error('AGENT_SAMPLING_INVALID');
   const readConcurrency = deps.readConcurrency ?? 1;
-  const optionalCutoffs = new Set(['maxTurns', 'maxDispatches', 'maxToolCalls', 'maxElapsedMs']);
+  const optionalCutoffs = new Set(['maxDispatches', 'maxToolCalls', 'maxElapsedMs']);
   if (Object.entries(limits).some(([key, v]) => !(v === null && optionalCutoffs.has(key)) && (!Number.isSafeInteger(v) || v! <= 0))
     || !Number.isSafeInteger(readConcurrency) || readConcurrency < 1
     || limits.maxStateBytes > 65_536 || limits.pollMs * 3 >= limits.leaseTtlMs
@@ -221,6 +241,7 @@ export function createAgentRuntime(deps: {
   setSensitiveDataLoggingEnabled(false);
   let stopped = false;
   const active = new Set<AbortController>();
+  const activeJobs = new Map<string, AbortController>();
   const pending = new Set<Promise<unknown>>();
   const emit = (e: AgentRuntimeEvent) => { try { deps.observe?.(e); } catch { /* observation is not authority */ } };
   async function load(identity: JobIdentity) {
@@ -268,13 +289,13 @@ export function createAgentRuntime(deps: {
       fence = unwrap(await deps.lease.claim(identity, limits.leaseTtlMs));
       if (!fence) return { ok: true, value: 'busy' };
       active.add(controller);
+      activeJobs.set(identity.jobId, controller);
       if (limits.maxElapsedMs !== null) timer = setTimeout(() => {
         preparationExpired = preparing;
         controller.abort();
       }, limits.maxElapsedMs);
       // A missing attachment/invalid saved input is an execution failure, not
-      // an indefinitely running job. Keep this classification outside Runner:
-      // upstream may wrap errors thrown by its model-input filter.
+      // an indefinitely running job. Classify preparation before provider input.
       const prepare = async <T>(run: () => Promise<T>): Promise<T> => {
         preparing = true;
         try { return await abortable(Promise.resolve().then(run), controller.signal); }
@@ -298,13 +319,14 @@ export function createAgentRuntime(deps: {
       if (snapshot.state === 'queued') unwrap(await deps.lease.append({ kind: 'started', previousRevision: snapshot.revision,
         snapshot: { identity, revision: snapshot.revision + 1, effects: snapshot.effects, state: 'running' } }, fence));
       record = await authorized(identity, a => deps.states.load(identity, a));
-      if (record && record.definitionRef !== deps.definitionRef) throw new StoreFailure('invalid_checkpoint');
+      if (record && record.definitionRef !== deps.definitionRef && !(record.state && !record.hosted)) throw new StoreFailure('invalid_checkpoint');
       record ??= { version: 0, definitionRef: deps.definitionRef, dispatches: 0,
         input: await prepare(() => deps.host.input(copy(identity))), results: {} };
       save = async (change = { kind: 'checkpoint' }) => {
         await check();
         const control = deps.states.checkpointQuotaBytes === undefined ? record
-          : { ...record, input: undefined, state: undefined, results: undefined, output: undefined };
+          : { ...record, input: undefined, state: undefined, results: undefined, output: undefined,
+            hosted: record?.hosted ? { ...record.hosted, input: undefined } : undefined };
         if (size(control) > limits.maxStateBytes || size(record) > (deps.states.checkpointQuotaBytes ?? limits.maxStateBytes)) throw new Halt('limit_exceeded');
         const next = { ...record!, version: record!.version + 1 };
         await authorized(identity, authority => deps.states.commit(identity, record!.version, next, change,
@@ -332,28 +354,11 @@ export function createAgentRuntime(deps: {
         identity: copy(identity), toolName: name, callId, input,
         effectRef: `agent:${digest([identity, callId, name])}`,
       });
-      const visible = deps.host.visibleTools ? await deps.host.visibleTools(copy(identity), deps.tools.map(t => t.name)) : deps.tools.map(t => t.name);
-      const tools = deps.tools.filter(t => visible.includes(t.name));
-      const agent = new Agent({ name: deps.definitionRef, instructions: deps.instructions, model: deps.model,
-        modelSettings: { ...(deps.sampling?.temperature === undefined ? {} : { temperature: deps.sampling.temperature }),
-          ...(deps.sampling?.topP === undefined ? {} : { topP: deps.sampling.topP }), parallelToolCalls: readConcurrency > 1, store: false, retry: { maxRetries: 0 } },
-        tools: tools.map(def => tool<ToolInputParameters>({ name: def.name, description: def.description,
-          ...('jsonSchema' in def.parameters
-            // Upstream 0.18 types require additionalProperties:true for a
-            // non-strict schema, although its implementation passes any JSON
-            // Schema unchanged. Narrow only that upstream declaration mismatch;
-            // never change the application's additionalProperties constraint.
-            ? { strict: false as const, parameters: def.parameters.jsonSchema as
-                NonNullable<Extract<ToolOptions<ToolInputParameters>, { strict: false }>['parameters']> }
-            : { parameters: def.parameters }),
-          needsApproval: true, errorFunction: null,
-          execute: async (input: unknown, _context, details) => executions.run(def.kind === 'read', async () => {
+      const execute = (def: AgentRuntimeTool, input: Record<string, unknown>, callId: string) => executions.run(def.kind === 'read', async () => {
             try {
               if (fatal) throw fatal;
               await check();
-              if (!details?.toolCall?.callId) throw Error('missing_call');
-              const validated = 'jsonSchema' in def.parameters ? def.parameters.parse(input) : input;
-              const call = callFor(def.name, details.toolCall.callId, validated as Record<string, unknown>);
+              const call = callFor(def.name, callId, input);
               const binding = digest([call.toolName, call.input]);
               return await deps.host.withToolAuthority(call, async () => {
                 await check();
@@ -444,102 +449,139 @@ export function createAgentRuntime(deps: {
                 return output;
               });
             } catch (error) { fatal ??= error; toolController.abort(); throw Error('AGENT_TOOL_HALTED'); }
-          }),
-        })),
       });
-      const runner = new Runner({ tracingDisabled: true, traceIncludeSensitiveData: false,
-        toolExecution: { maxFunctionToolConcurrency: readConcurrency }, toolNameCollisionPolicy: 'error',
-        toolErrorFormatter: () => 'Tool request rejected.',
-        callModelInputFilter: async ({ modelData }) => {
-          await check();
-          if (size(modelData) > limits.maxContextBytes) throw new Halt('limit_exceeded');
-          const prepared = deps.host.prepareModelInput
-            ? { ...modelData, input: await prepare(() => deps.host.prepareModelInput!(copy(identity), copy(modelData.input), controller.signal)) }
-            : modelData;
-          await check();
-          if (size(prepared) > limits.maxContextBytes) throw new Halt('limit_exceeded');
-          return prepared;
+      if (record.state && !record.hosted) {
+        let imported: ReturnType<typeof readHostedCheckpointImport>;
+        try { imported = readHostedCheckpointImport(record.state); }
+        catch { throw new StoreFailure('invalid_checkpoint'); }
+        if (imported.output !== undefined) {
+          const { state: _state, ...original } = record;
+          record = { ...original, definitionRef: deps.definitionRef, output: imported.output };
+          await save();
+          return await commitOutput();
+        }
+        for (const pending of imported.pending) {
+          const visible = deps.host.visibleTools ? await deps.host.visibleTools(copy(identity), deps.tools.map(t => t.name)) : deps.tools.map(t => t.name);
+          const def = deps.tools.find(t => t.name === pending.name && visible.includes(t.name));
+          if (!def) throw new StoreFailure('not_authorized');
+          let input: Record<string, unknown>;
+          let output: AgentToolOutput;
+          try { input = def.parameters.parse(JSON.parse(pending.arguments)); }
+          catch {
+            imported.history.push({ type: 'function_call_result', status: 'completed', callId: pending.callId, name: pending.name,
+              output: '{"error":"invalid_arguments","dispatched":false}' });
+            continue;
+          }
+          const call = callFor(def.name, pending.callId, input);
+          const decision = approvals === 'none' ? 'approve' : await deps.host.decide!(call, record.resolution);
+          if (decision !== 'approve' && decision !== 'reject') throw new BrowserHandoff(decision);
+          output = decision === 'reject' ? 'Host declined this action.' : await execute(def, input, pending.callId);
+          imported.history.push(protocol.ModelItem.parse({ type: 'function_call_result', status: 'completed', callId: pending.callId, name: pending.name,
+            output: typeof output === 'string' ? output : output.map(({ type, ...part }) => ({ ...part, type: `input_${type}` })) }));
+        }
+        if (record.resolution?.input) imported.history.push({ role: 'user', content: record.resolution.input });
+        const { state: _state, ...original } = record;
+        record = { ...original, definitionRef: deps.definitionRef, input: imported.history };
+        await save();
+      }
+      const driver = createHostedSessionClient({ client: deps.harness.client, model: deps.harness.model,
+        instructions: HOSTED_NATIVE_INSTRUCTIONS, tools: HOSTED_NATIVE_TOOLS,
+        ...(deps.harness.browser === undefined ? {} : { browser: deps.harness.browser }) });
+      const session = await deps.harness.session(copy(identity), (scope, key) => ({ ...driver.binding(scope, key), bootstrapJobId: identity.jobId }));
+      await driver.connect({ binding: session.binding, signal: controller.signal,
+        authorize: async () => { await check(); await load(identity); }, save: binding => session.save(binding) });
+      if (!record.hosted) {
+        const input = await prepare(() => deps.harness.input(copy(identity), copy(record!.input), controller.signal,
+          { bootstrap: session.binding.bootstrapJobId === identity.jobId }));
+        if (size(input) > limits.maxContextBytes) throw new Halt('limit_exceeded');
+        record = { ...record, hosted: { session: session.binding, turn: { submissionKey: `handrail:${digest(identity)}` },
+          input: [{ role: 'user', content: [{ type: 'input_text', text: `Current application instructions:\n${deps.instructions}` }] }, ...input] } };
+        await save();
+      }
+      if (record.hosted!.session.sessionId !== session.binding.sessionId) throw new StoreFailure('invalid_checkpoint');
+      const result = await driver.run({ session: session.binding, turn: record.hosted!.turn, input: record.hosted!.input,
+        signal: controller.signal, authorize: async () => { await check(); await load(identity); },
+        save: async turn => { record = { ...record!, hosted: { ...record!.hosted!, turn } }; await save!(); },
+        item: item => deps.harness.item(copy(identity), item),
+        event: async event => {
+          emit({ kind: 'model_progress' });
+          if (event.type === 'agent.session.turn.output_text.delta') {
+            try { deps.host.textDelta?.(copy(identity), event.delta); } catch { /* observer close is not Stop */ }
+          }
+        },
+        parallelRead: action => {
+          if (action.type !== 'function_call' || action.name !== 'handrail_call_tool') return false;
+          const envelope = z.object({ name: z.string(), arguments_json: z.string() }).strict().safeParse(action.arguments);
+          return envelope.success && deps.tools.some(tool => tool.name === envelope.data.name && tool.kind === 'read');
+        },
+        action: async action => {
+          if (action.type !== 'function_call') {
+            const decision = await deps.harness.action(copy(identity), action);
+            if ('requirement' in decision) {
+              if (size(decision.notice) > limits.maxOutputBytes) throw new Halt('limit_exceeded');
+              record = { ...record!, interactionNotices: [...new Set([...(record!.interactionNotices ?? []), decision.notice])] };
+              throw new BrowserHandoff(decision.requirement);
+            }
+            if ('requirementRef' in decision) throw new BrowserHandoff(decision);
+            return decision;
+          }
+          const response = (output: AgentFunctionCallOutputParam) => ({ type: 'agent.session.input.tool_result' as const,
+            call_id: action.call_id, turn_id: action.turn_id, success: true, output });
+          const current = deps.host.visibleTools ? await deps.host.visibleTools(copy(identity), deps.tools.map(t => t.name)) : deps.tools.map(t => t.name);
+          if (action.name === 'handrail_list_tools') return response(JSON.stringify(deps.tools.filter(t => current.includes(t.name))
+            .map(t => ({ name: t.name, description: t.description, parameters: 'jsonSchema' in t.parameters ? t.parameters.jsonSchema : z.toJSONSchema(t.parameters) }))));
+          if (action.name !== 'handrail_call_tool') return response('{"error":"unknown_tool","dispatched":false}');
+          const envelope = z.object({ name: z.string(), arguments_json: z.string() }).strict().safeParse(action.arguments);
+          if (!envelope.success) return response('{"error":"invalid_arguments","dispatched":false}');
+          const def = deps.tools.find(t => t.name === envelope.data.name && current.includes(t.name));
+          if (!def) return response('{"error":"tool_unavailable","dispatched":false}');
+          let input: Record<string, unknown>;
+          try { input = def.parameters.parse(JSON.parse(envelope.data.arguments_json)); }
+          catch { return response('{"error":"invalid_arguments","dispatched":false}'); }
+          const call = callFor(def.name, action.call_id, input);
+          const decision = approvals === 'none' ? 'approve' : await deps.host.decide!(call, record!.resolution);
+          if (decision === 'reject') return response('Host declined this action.');
+          if (decision !== 'approve') throw new BrowserHandoff(decision);
+          let output = await execute(def, input, action.call_id);
+          if (record!.resolution?.input && record!.resolutionInputCall?.receiptRef !== record!.resolution.receiptRef) {
+            // The original provider call is still waiting. Return the verified
+            // answer with that call's result, saving it before transport IO so a
+            // restart cannot drop it or append it to a later unrelated call.
+            output = JSON.stringify({ tool_result: output, owner_input: record!.resolution.input });
+            record = { ...record!, resolutionInputCall: { receiptRef: record!.resolution.receiptRef, callId: action.call_id },
+              results: { ...record!.results, [call.effectRef]: { binding: digest([call.toolName, call.input]), output } } };
+            await save!();
+          }
+          // Preserve multimodal native results through the hosted function protocol.
+          return response(await hostedToolOutput(output, async (part, index) => {
+            let source: HostedFileSource;
+            if (typeof part.file === 'object' && 'data' in part.file) source = {
+              data: typeof part.file.data === 'string' ? Buffer.from(part.file.data, 'base64') : part.file.data, filename: part.file.filename };
+            else if (typeof part.file === 'object' && 'id' in part.file) source = { fileId: part.file.id, filename: part.file.filename ?? 'attachment' };
+            else if (deps.harness.resolveFile) source = await deps.harness.resolveFile(copy(identity), part, controller.signal);
+            else throw Error('HOSTED_FILE_RESOLVER_REQUIRED');
+            const key = digest([action.call_id, index]);
+            const receipt = await attachHostedFile(deps.harness.client, { session: session.binding, source,
+              ...(record!.files?.[key] ? { receipt: record!.files[key] } : {}), signal: controller.signal,
+              authorize: async () => { await check(); await load(identity); },
+              save: next => serializeCheckpoint(async () => { record = { ...record!, files: { ...record!.files, [key]: next } }; await save!(); }),
+            });
+            return JSON.stringify({ type: 'environment_file', path: receipt.path, filename: source.filename, size_bytes: receipt.sizeBytes });
+          }));
         },
       });
-      let state: RunState<unknown, typeof agent> | undefined = record.state ? await RunState.fromString(agent, record.state) : undefined;
-      state?.clearTrace();
-      if (state && record.resolution?.input) {
-        state.addInput(record.resolution.input);
-        // Save the staged input and clear it atomically, before any model call.
-        record = { ...record, state: state.toString(), resolution: { receiptRef: record.resolution.receiptRef } };
-        await save();
-      }
-      const invoke = (input: AgentInput | RunState<unknown, typeof agent>) => runner.run(agent, input, {
-        stream: true, maxTurns: limits.maxTurns, signal: controller.signal,
-      });
-      for (;;) {
-        await check();
-        if (state) {
-          for (const interruption of state.getInterruptions()) {
-            const def = tools.find(t => t.name === interruption.name);
-            if (!def) throw Error('tool_changed');
-            const raw = interruption.rawItem;
-            if (raw.type !== 'function_call') throw Error('unsupported_tool');
-            let input: Record<string, unknown>;
-            try { input = def.parameters.parse(JSON.parse(raw.arguments)); }
-            catch {
-              // Invalid model arguments have no effect to authorize or recover.
-              // Return a stable correction result through the saved call rather
-              // than stranding the job on the same invalid interruption. Keep
-              // schema details and thrown values out of the model response.
-              state.reject(interruption, { message: '{"error":"invalid_arguments","dispatched":false}' });
-              continue;
-            }
-            const call = callFor(def.name, raw.callId, input);
-            // The upstream interruption persists call identity before IO. It
-            // is not a human approval request when the host opts out of them.
-            const decision = approvals === 'none' ? 'approve' : await deps.host.decide!(call, record!.resolution);
-            if (decision === 'approve') state.approve(interruption);
-            else if (decision === 'reject') state.reject(interruption, { message: 'Host declined this action.' });
-            else {
-              // Keep the UNAPPROVED persisted state: decisions are reauthorized on wake.
-              await save({ kind: 'waiting', requirement: decision });
-              emit({ kind: 'waiting' });
-              return { ok: true, value: 'waiting' };
-            }
-          }
-        }
-        const result: Awaited<ReturnType<typeof invoke>> = await abortable(invoke(state ?? record!.input), controller.signal);
-        await abortable((async () => {
-          for await (const event of result) {
-            if (event.type === 'raw_model_stream_event') {
-              emit({ kind: 'model_progress' });
-              if (event.data.type === 'output_text_delta') {
-                await check();
-                try { deps.host.textDelta?.(copy(identity), event.data.delta); } catch { /* observation close is not Stop */ }
-              }
-            }
-          }
-          await result.completed;
-        })(), controller.signal);
-        if (result.error) throw Error('provider_failed');
-        await check();
-        state = result.state;
-        const u = result.runContext.usage;
-        const usage = { requests: u.requests, inputTokens: u.inputTokens, outputTokens: u.outputTokens, totalTokens: u.totalTokens };
-        const { resolution: _resolved, ...completedCheckpoint } = record!;
-        record = { ...completedCheckpoint, state: result.state.toString(), usage };
-        if (result.interruptions.length) {
-          await save();
-          emit({ kind: 'checkpoint' });
-          emit({ kind: 'usage', usage });
-          continue;
-        }
-        if (typeof result.finalOutput !== 'string') throw Error('missing_output');
-        if (size(result.finalOutput) > limits.maxOutputBytes) throw new Halt('limit_exceeded');
-        record = { ...record, output: result.finalOutput };
-        // Encrypted state owns the completed model answer before the separate
-        // host output transaction. Only its verified receipt marks success.
-        await save();
-        return await commitOutput();
-      }
+      if (result.status === 'waiting') throw Error('missing_host_requirement');
+      await deps.harness.usage(copy(identity), result.turn);
+      if (result.turn.status !== 'completed') { await save({ kind: 'failed' }); return { ok: true, value: 'failed' }; }
+      if (size(result.outputText) > limits.maxOutputBytes) throw new Halt('limit_exceeded');
+      record = { ...record, output: result.outputText,
+        ...(result.turn.usage ? { usage: { requests: 1, inputTokens: result.turn.usage.input_tokens,
+          outputTokens: result.turn.usage.output_tokens, totalTokens: result.turn.usage.total_tokens } } : {}) };
+      await save();
+      return await commitOutput();
+
     } catch (caught) {
-      // Runner may reject before sibling tools settle. Drain queued calls before
+      // Provider observation may fail before tools settle. Drain queued calls before
       // changing job state or releasing the execution lease. Fatal checks stop
       // queued calls; active reads retain cancellation through their signal.
       toolController.abort();
@@ -592,6 +634,7 @@ export function createAgentRuntime(deps: {
       controller.abort(); clearTimeout(timer); clearTimeout(heartbeat);
       await renewal;
       active.delete(controller);
+      if (activeJobs.get(identity.jobId) === controller) activeJobs.delete(identity.jobId);
       if (fence) await deps.lease.release(fence);
     }
   }
@@ -602,6 +645,36 @@ export function createAgentRuntime(deps: {
   }
   return {
     wake,
+    /** Stop the original remote turn before native job cancellation revokes its
+     * execution authority. Acceptance alone is not a stopped job. Shutdown uses
+     * stop() instead and deliberately leaves the provider turn recoverable. */
+    async cancelProvider(input: JobIdentity, signal: AbortSignal): Promise<void> {
+      const identity = copy(input);
+      await load(identity);
+      activeJobs.get(identity.jobId)?.abort();
+      const checkpoint = await authorized(identity, authority => deps.states.load(identity, authority));
+      if (!checkpoint?.hosted) return;
+      const { session, turn } = checkpoint.hosted;
+      const driver = createHostedSessionClient({ client: deps.harness.client, model: deps.harness.model,
+        instructions: HOSTED_NATIVE_INSTRUCTIONS, tools: HOSTED_NATIVE_TOOLS,
+        ...(deps.harness.browser === undefined ? {} : { browser: deps.harness.browser }) });
+      await driver.cancel(session, turn, async () => { await load(identity); }, signal);
+      if (!session.sessionId || !turn.submissionAttempted) return;
+      const provider = deps.harness.client.beta.agents.sessions;
+      for (;;) {
+        signal.throwIfAborted();
+        await load(identity);
+        const saved = turn.turnId
+          ? await provider.turns.retrieve(turn.turnId, { session_id: session.sessionId }, { signal, maxRetries: 0 })
+          : (await provider.turns.list(session.sessionId, { order: 'desc', limit: 1 }, { signal, maxRetries: 0 })).data[0];
+        if (!saved || saved.id === turn.baseline) return;
+        if (['completed', 'failed', 'cancelled'].includes(saved.status)) {
+          await deps.harness.usage(copy(identity), saved);
+          return;
+        }
+        await delay(limits.pollMs, undefined, { signal });
+      }
+    },
     /** Trusted-server projection seam. Never expose raw checkpoint custody to
      * clients; filter results through the application's conversation policy. */
     async inspect(identity: JobIdentity): Promise<JobStoreResult<{ snapshot: JobSnapshot; checkpoint: AgentCheckpoint | null }>> {

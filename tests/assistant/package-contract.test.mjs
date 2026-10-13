@@ -500,7 +500,7 @@ test("dry pack contains only intended package assets", () => {
     assert.doesNotMatch(filePath, /(?:^|\/)\.dart_tool\//u);
     assert.doesNotMatch(filePath, /^flutter\/|\.dart$/u);
     assert.doesNotMatch(filePath, /^(?:src|test)\//u);
-    if (filePath.startsWith("scripts/")) assert.ok(["scripts/adopt.mjs", "scripts/install-browser.mjs"].includes(filePath));
+    if (filePath.startsWith("scripts/")) assert.ok(["scripts/adopt.mjs"].includes(filePath));
     assert.doesNotMatch(
       filePath,
       /\.(?:css|less|sass|scss|eot|otf|ttf|woff2?)$/u,

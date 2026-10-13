@@ -15,7 +15,7 @@ type RuntimeOptions = Parameters<typeof createConversationAgentRuntime>[0];
 type ExecutorOptions = Parameters<typeof createDelegatedWorkAdapter>[0];
 export interface ContinuousHostPorts {
   pool: Pool; schema: string; keys: AgentStateKeys;
-  model: RuntimeOptions['model']; definitionRef: string; instructions: string;
+  harness: RuntimeOptions['harness']; definitionRef: string; instructions: string;
   tools: RuntimeOptions['tools']; limits: RuntimeOptions['limits'];
   approvals?: RuntimeOptions['approvals'];
   readConcurrency?: RuntimeOptions['readConcurrency'];
@@ -36,7 +36,7 @@ export function composeContinuousHost(ports: ContinuousHostPorts) {
   const delegated=createDelegatedWorkAdapter({conversation,resolve:ports.resolveWork,executor:ports.executor});
   const effects=createEffects(ports.effectHost,stores.effects,delegated);
   const lease=createJobLease(ports.host,stores.lease);
-  const runtime=createConversationAgentRuntime({definitionRef:ports.definitionRef,instructions:ports.instructions,model:ports.model,
+  const runtime=createConversationAgentRuntime({definitionRef:ports.definitionRef,instructions:ports.instructions,harness:ports.harness,
     tools:ports.tools,approvals:ports.approvals,readConcurrency:ports.readConcurrency,host:ports.host,turn:ports.turn,conversation,admission:stores.admission,journal:stores.journal,
     lease,effects,states:stores.states,limits:ports.limits});
   return {conversation,runtime,admission:createJobAdmission(ports.host,stores.admission),

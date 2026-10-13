@@ -57,5 +57,5 @@ const factories = { createAssistance, createAssistanceWorker, resolveScheduleTim
   createAgentCheckpointReader, createApplicationAgentTools };
 // @ts-expect-error Durable identity cannot be replaced by a string.
 await runtime.wake('job-id');
-// @ts-expect-error A Model is not an authorized host.
-createAgentRuntime({ ...options, host: options.model });
+// @ts-expect-error A hosted harness is not an authorized host.
+createAgentRuntime({ ...options, host: options.harness });

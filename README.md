@@ -27,9 +27,9 @@ The source consolidation is in progress. See [migration status](docs/assistant-c
 - `handrail-agent-sdk/server/assistance/notifications`: delivery through the existing effect ledger.
 - `handrail-agent-sdk/server/handrail-feedback`: canonical reporter/MCP v2 submission and verified-readiness observation.
 
-The runtime uses OpenAI Agent, Runner, tools, streaming and serialized RunState.
+The runtime uses OpenAI-hosted Agents API sessions, native function tools and event streaming.
 It checkpoints tool calls before execution, reauthorizes each call, and uses the
-existing effect ledger for mutation reconciliation. RunState and terminal text
+existing effect ledger for mutation reconciliation. Provider session bindings, checkpoints and terminal text
 stay in private storage; public events contain references only. Importing a
 package entrypoint starts no worker or provider request.
 
@@ -85,7 +85,7 @@ node tests/verify-git-install.mjs FULL_40_CHARACTER_DELIVERED_SHA
 
 This checks two strict consumer type setups, fresh-cache HTTPS lock reinstall,
 and an external installed-only runtime suite with disposable PostgreSQL, actual
-Agents Runner and mocked model/provider boundaries. No repository helper, SQL or
+hosted transport and mocked external provider boundaries. No repository helper, SQL or
 reference build is available to that suite. It requires the local PostgreSQL 15 test binaries. The
 [consumer correction evidence](docs/evidence/consumer-compatibility/README.md)
 separates published-SHA verification from the pending delivery revision.

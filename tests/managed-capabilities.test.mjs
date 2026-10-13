@@ -17,8 +17,9 @@ function model(handoff) {
     const outputs = input.filter(i => i.type === 'function_call_result');
     const output = outputs.length === 0 ? { type: 'function_call', callId: 'connect', name: 'agent_connect_account',
       arguments: JSON.stringify({ label: 'Family member', url: 'https://airline.example.com/login' }) }
-      : handoff && outputs.length === 1 ? { type: 'function_call', callId: 'handoff', name: 'agent_browser_handoff',
-        arguments: JSON.stringify({ accountRef: JSON.parse(typeof outputs[0].output === 'string' ? outputs[0].output : Array.isArray(outputs[0].output) ? outputs[0].output[0].text : outputs[0].output.text).accountRef }) }
+      : handoff && !request.authCompleted ? { type: 'computer_use_approval_request', request_id: 'hosted-auth', request: {
+        type: 'browser_authentication', credential_origin: 'https://airline.example.com', reason: 'Complete verification',
+        fields: [{ id: 'code', label: 'Verification code', type: 'password', required: true }], options: [] } }
       : { type: 'message', role: 'assistant', status: 'completed', content: [{ type: 'output_text', text: 'The login is saved.' }] };
     yield { type: 'response_started' };
     yield { type: 'response_done', response: { id: `response-${outputs.length}`, output: [output], usage: { requests: 1, inputTokens: 1, outputTokens: 1, totalTokens: 2 } } };
@@ -130,26 +131,28 @@ test('revoked application authority prevents saving a previously issued credenti
   assert.equal((await managedStore(s.harness.pool, s.harness.schema, s.keys).list(identity.host, 'account:')).length, 0);
 });
 
-test('human-control claim persists across restart and a lost browser can return control to the same task', async t => {
+test('hosted private sign-in survives restart and completes the same original provider request', async t => {
   const s = await setup(t, { vault: true, browser: true }, true), entry = await start(s);
   assert.equal((await submit(s, entry, 'test-only-password')).status, 200);
-  let handoff;
+  let link;
   for (let n = 0; n < 100; n++) {
     const state = ok(await s.states.load(identity, s.authority()));
-    const results = Object.values(state.results).map(r => JSON.parse(r.output));
-    handoff = results.find(r => r.secureUrl && r.secureUrl !== entry.secureUrl);
-    if (handoff && ok(await s.journal.load(identity)).state === 'waiting') break;
+    const notice = state.interactionNotices.find(n => n.includes('private browser step'));
+    link = notice && /\]\((https:[^)]+)\)/.exec(notice)?.[1];
+    if (link && ok(await s.journal.load(identity)).state === 'waiting') break;
     await new Promise(r => setTimeout(r, 25));
   }
-  assert.ok(handoff);
-  const store = managedStore(s.harness.pool, s.harness.schema, s.keys);
-  assert.ok((await store.get(identity.host, `account:${handoff.accountRef}`)).value.humanControl);
+  assert.ok(link);
   await s.restart();
-  const page = await s.request(handoff.secureUrl); assert.equal(page.status, 200);
-  const csrf = /csrf="([a-f0-9]+)"/.exec(await page.text())?.[1]; assert.ok(csrf);
-  const send = action => s.request(handoff.secureUrl, { method: 'POST', headers: { origin, 'content-type': 'application/json' }, body: JSON.stringify({ action, csrf }) });
-  assert.equal((await (await send('view')).json()).status, 'reopen_required');
-  assert.equal((await (await send('finish')).json()).status, 'ready');
+  const page = await s.request(link); assert.equal(page.status, 200);
+  const html=await page.text(), csrf=/name="csrf" value="([a-f0-9]+)"/.exec(html)?.[1];assert.ok(csrf);
+  const code=randomBytes(16).toString('hex');
+  assert.equal((await s.request(link, {method:'POST',headers:{origin,'content-type':'application/x-www-form-urlencoded'},
+    body:new URLSearchParams({csrf,action:'submit',field_0:code})})).status,200);
   await settled(s);
-  assert.equal((await store.get(identity.host, `account:${handoff.accountRef}`)).value.humanControl, undefined);
+  const checkpoint=ok(await s.states.load(identity,s.authority()));
+  assert.equal(JSON.stringify([checkpoint,s.provider.requests]).includes(code),false);
+  const stored=(await s.harness.pool.query(`SELECT * FROM ${s.harness.table('managed_capability_records')}`)).rows;
+  assert.equal(JSON.stringify(stored).includes(code),false);
+  assert.equal((await s.harness.pool.query(`SELECT * FROM ${s.harness.table('jobs')}`)).rowCount,1);
 });

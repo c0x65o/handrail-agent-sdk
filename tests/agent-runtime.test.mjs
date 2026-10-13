@@ -19,7 +19,7 @@ async function setup(t,options = {}) {
     event: { kind: 'submitted', previousRevision: 0, snapshot: { identity, revision: 1, state: 'queued', effects: [] } } }));
   return { ...s, harness, client, key };
 }
-test('Runner Vault tool composes real custody/grants/effects and never exposes the private token', async t => {
+test('Hosted runtime Vault tool composes real custody/grants/effects and never exposes the private token', async t => {
   const { createSecretKey }=await import('node:crypto');
   const { z }=await import('zod');
   const { createVaultUse }=await import('../.reference-build/src/server/vault-use.js');

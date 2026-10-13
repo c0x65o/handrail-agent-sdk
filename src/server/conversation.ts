@@ -365,7 +365,7 @@ export function createDelegatedWorkAdapter(deps: {
   return { dispatch: (r,s) => invoke('dispatch',r,s), reconcile: (r,s) => invoke('reconcile',r,s) };
 }
 
-/** Shared trusted-server composition. Turns use the existing durable Runner,
+/** Shared trusted-server composition. Turns use the hosted session runtime,
  * leases, approvals, effects and shutdown behavior. The host binds each admitted
  * job to a canonical conversation head; corrections invalidate stale input. */
 export function createConversationAgentRuntime(deps: Omit<Parameters<typeof createAgentRuntime>[0], 'host'> & {
@@ -383,9 +383,6 @@ export function createConversationAgentRuntime(deps: Omit<Parameters<typeof crea
       const binding = await turn(identity), context = await deps.conversation.context(binding.scope);
       if (context.head !== binding.head) throw Error('CONVERSATION_REVISION_CONFLICT');
       return context.items;
-    },
-    prepareModelInput: async (identity, input, signal) => {
-      return deps.host.prepareModelInput ? deps.host.prepareModelInput(identity,input,signal) : input;
     },
     output: async (identity, text) => {
       const binding = await turn(identity), id = `reply:${digest(identity)}`;

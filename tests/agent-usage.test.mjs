@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createUsageTrackedAgentModel, projectAgentProviderUsage,
+import { createUsageTrackedAgentModel, projectAgentProviderUsage, createHostedTurnUsageReceipt,
   createAIRuntimeUsageClient, createAIRuntimeUsageReceiptSink } from 'handrail-agent-sdk/server/usage';
 
 const attribution = Object.fromEntries(['organization', 'project', 'service_environment', 'known_user', 'session', 'automation']
@@ -109,4 +109,15 @@ test('delivery can restart after an uncertain gateway response and retries the s
   const restarted = createAIRuntimeUsageReceiptSink(client, outbox);
   await restarted.flush(); assert.equal(entries.size, 0); assert.equal(accepted.size, 1);
   assert.deepEqual(sent[0], sent.at(-1)); assert.equal(f.calls.length, 1);
+});
+
+test('hosted turn usage has stable recovery identity and preserves provider quantities',()=>{
+ const turn={id:'remote-turn',session_id:'remote-session',subagent_id:null,status:'completed',completed_at:1800000000,usage:rawUsage};
+ const receipt=createHostedTurnUsageReceipt({turn,sessionId:'remote-session',scope});
+ assert.deepEqual(createHostedTurnUsageReceipt({turn:structuredClone(turn),sessionId:'remote-session',scope}),receipt);
+ assert.deepEqual(receipt.tokens.total_tokens,{status:'reported',value:20});
+ assert.deepEqual(receipt.tokens.cached_input_tokens,{status:'reported',value:0});
+ assert.deepEqual(createHostedTurnUsageReceipt({turn:{...turn,usage:null},sessionId:'remote-session',scope}).tokens.total_tokens,{status:'unavailable'});
+ assert.throws(()=>createHostedTurnUsageReceipt({turn,sessionId:'other-session',scope}),/TURN_INVALID/);
+ assert.throws(()=>createHostedTurnUsageReceipt({turn:{...turn,status:'waiting'},sessionId:'remote-session',scope}),/TURN_INVALID/);
 });

@@ -1,3 +1,4 @@
+import { hostedBoundary } from './hosted.mjs';
 import { createSecretKey, randomUUID } from 'node:crypto';
 import pg from 'pg';
 import { isDeepStrictEqual } from 'node:util';
@@ -11,14 +12,14 @@ export const identity = { jobId: 'agent-job', originTaskRef: 'original-task', re
   native: { requestRef: 'native-request', rootTaskRef: 'native-root' },
   origin: { channelRef: 'web', routeRef: 'owner-task', correlationRef: 'original-correlation' } };
 const defaultIdentity = identity;
-export const limits = { maxTurns: 12, maxDispatches: 5, maxToolCalls: 12, maxContextBytes: 24_000,
+export const limits = { maxDispatches: 5, maxToolCalls: 12, maxContextBytes: 24_000,
   maxStateBytes: 65_536, maxOutputBytes: 4096, maxElapsedMs: 5000, leaseTtlMs: 1200, pollMs: 200 };
 const equal = isDeepStrictEqual;
 export const requirement = kind => ({ kind, requirementRef: `wait-${kind}`, revision: 1, actor: { kind: 'user', actorRef: 'actor' } });
 const message = text => ({ type: 'message', role: 'assistant', status: 'completed', content: [{ type: 'output_text', text }] });
 const call = (name, n, input = {}) => ({ type: 'function_call', callId: `call-${n}`, name, arguments: JSON.stringify(input) });
-/** Simulates ONLY the external model boundary. Real Agent, Runner, tool schema
- * parsing, approval, RunState and streaming are used by every test. */
+/** Scripted behavior of the external hosted fixture; native runtime, tool
+ * schema parsing, authority, effects and persistence are real. */
 export function modelBoundary(scenario = 'inventory', hooks = {}) {
   let requests = 0;
   return { get requests() { return requests; },
@@ -110,8 +111,10 @@ export async function services(schema, keyHex, options = {}) {
   if (options.reserve) tools[2] = options.reserve;
   if (options.readEffectResult) tools[2] = { ...tools[2], readResult: options.readEffectResult };
   const model = options.model ?? modelBoundary(options.scenario,options.modelHooks);
+  const runtimeTools=options.transformTools?.(tools) ?? options.tools ?? tools;
+  const harness=await hostedBoundary({pool,schema,identity,model,host,tools:runtimeTools});
   const runtime = (options.runtimeFactory ?? sdk.createAgentRuntime)({ definitionRef: 'fixture-agent-v1', instructions: 'Use only the synthetic tools. Recover from read errors.',
-    model, sampling: options.sampling, approvals: options.approvals, readConcurrency: options.readConcurrency, tools: options.transformTools?.(tools) ?? options.tools ?? tools, host, admission, journal, lease, states, effects, limits: {...limits,...options.limits}, observe: e => { events.push(e); options.observe?.(e); } });
+    harness, approvals: options.approvals, readConcurrency: options.readConcurrency, tools: runtimeTools, host, admission, journal, lease, states, effects, limits: {...limits,...options.limits}, observe: e => { events.push(e); options.observe?.(e); } });
   return { identity, tools, runtime, pool, journal, admission, lease, states, effects, authority, host, state, events, calls, model,
     cancel: sdk.createJobCancellation(host,stores.cancellation),
     answer: sdk.createJobAnswer(host,stores.answer),

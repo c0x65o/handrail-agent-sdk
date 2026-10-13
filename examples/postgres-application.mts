@@ -30,9 +30,9 @@ export async function migrate(pool: Pool, schema: string) {
 
 export function composeApplication(ports: {
   pool: Pool; schema: string; keys: AgentStateKeys;
-  // E.g. await new OpenAIProvider({openAIClient: approvedClient,useResponses:true})
-  // .getModel(configuredModel). Host retains client lifecycle, metering and model.
-  model: RuntimeOptions['model']; sampling?: RuntimeOptions['sampling'];
+  // OpenAI-hosted harness plus current conversation authority, durable provider
+  // binding, artifact delivery and metering ports.
+  harness: RuntimeOptions['harness'];
   definitionRef: string; instructions: string; limits: RuntimeOptions['limits'];
   host: AgentRuntimeHost & JobAdmissionHost & JobLeaseHost & JobCancellationHost & JobAnswerHost;
   effectHost: Parameters<typeof createEffects>[0];
@@ -66,7 +66,7 @@ export function composeApplication(ports: {
   const cancel = createJobCancellation(ports.host, stores.cancellation);
   const answer = createJobAnswer(ports.host, stores.answer);
   const runtime = createAgentRuntime({definitionRef: ports.definitionRef, instructions: ports.instructions,
-    model: ports.model, sampling: ports.sampling, tools: createApplicationAgentTools(ports.tools),
+    harness: ports.harness, tools: createApplicationAgentTools(ports.tools),
     host: ports.host, admission: stores.admission, journal: stores.journal, lease, effects,
     states: stores.states, limits: ports.limits, observe: ports.observe});
   const read = createAgentCheckpointReader({runtime, attribution: ports.turns.attribution,
@@ -79,6 +79,7 @@ export function composeApplication(ports: {
         const inspected = await runtime.inspect(binding.identity);
         if (!inspected.ok) throw Error('turn_unavailable');
         if (['succeeded','failed','cancelled'].includes(inspected.value.snapshot.state)) return 'already_terminal';
+        await runtime.cancelProvider(binding.identity, new AbortController().signal);
         const result = await cancel.stop({command:'cancel',identity:binding.identity,
           expectedRevision:inspected.value.snapshot.revision,reason:'explicit_stop'},actor);
         if (!result.ok) throw Error('stop_unavailable');

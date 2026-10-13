@@ -1,5 +1,6 @@
 import { createHash, randomUUID } from 'node:crypto';
 import type { Model } from '@openai/agents';
+import type { Turn } from 'openai/resources/beta/agents/sessions/turns/turns';
 import type { AuthoritativeAttribution } from '../assistant/protocol.js';
 import { parseNormalizedUsageReceipt, type NormalizedTokenUsage,
   type NormalizedUsageQuantity, type UsageReceiptTerminalStatus } from '../assistant/usage.js';
@@ -48,6 +49,30 @@ export function projectAgentProviderUsage(raw: Readonly<Record<string, unknown>>
     reasoning_tokens: quantity(object(raw?.output_tokens_details ?? raw?.completion_tokens_details).reasoning_tokens),
     total_tokens: quantity(raw?.total_tokens),
   };
+}
+
+/** Meter the provider's saved root turn, not SSE deltas or session cumulative
+ * totals. Persist this receipt with the turn checkpoint before outbox delivery;
+ * recovery must reuse that frozen receipt because provider usage may settle
+ * later. A missing usage value stays unavailable rather than becoming zero. */
+export function createHostedTurnUsageReceipt(options: { turn: Turn; sessionId: string; scope: AgentUsageScope }) {
+  const { turn, scope } = options;
+  if (turn.session_id !== options.sessionId || turn.subagent_id !== null
+    || !['completed', 'failed', 'cancelled'].includes(turn.status)) throw new Error('HOSTED_USAGE_TURN_INVALID');
+  const identity = createHash('sha256').update(JSON.stringify([
+    scope.attribution, scope.conversationId, scope.turnId, scope.providerId, scope.modelId, options.sessionId, turn.id,
+  ])).digest('hex');
+  return parseNormalizedUsageReceipt({
+    version: 1, usage_receipt_id: `hosted-agent:${identity}`,
+    ...(turn.completed_at === null ? {} : { occurred_at: new Date(turn.completed_at * 1000).toISOString() }),
+    conversation_id: scope.conversationId, turn_id: scope.turnId,
+    logical_request_id: scope.logicalRequestId, trace_id: scope.traceId,
+    attempt: { id: turn.id, index: 0 }, continuation: { id: turn.id, index: 0 },
+    provider_id: scope.providerId, model_id: scope.modelId, attribution: scope.attribution,
+    source: 'provider', terminal_status: turn.status,
+    tokens: projectAgentProviderUsage(turn.usage ? { ...turn.usage } : undefined),
+    provider_cost: { status: 'unavailable' },
+  });
 }
 
 /** Capture before exposing model completion, then let the existing durable
