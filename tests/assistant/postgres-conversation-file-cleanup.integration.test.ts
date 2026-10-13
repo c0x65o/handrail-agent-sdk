@@ -1,6 +1,6 @@
 import { PGlite } from "@electric-sql/pglite";
 import { afterAll, beforeAll, expect, it, vi } from "vitest";
-import { deletePostgresConversationHistory, enqueuePostgresConversationFileCleanup, drainPostgresConversationFileCleanup,
+import { clearPostgresConversation, deletePostgresConversationHistory, enqueuePostgresConversationFileCleanup, drainPostgresConversationFileCleanup,
   startPostgresConversationFileCleanupWorker, PostgresAiPersistence, type PostgresSqlClient } from "../../src/assistant/postgres/index.js";
 import type { ConversationId } from "../../src/assistant/index.js";
 const database = new PGlite();
@@ -56,6 +56,27 @@ it("deduplicates immutable targets, drains only its service partition and remove
   expect((await record(other.jobId))?.status).toBe("pending");
   await enqueuePostgresConversationFileCleanup(input);
   expect((await drainPostgresConversationFileCleanup({ client, scopeId: "success", parseTarget, deleteFile, now })).completed).toBe(0);
+  expect(deleteFile).toHaveBeenCalledTimes(1);
+});
+
+it("accepts detached resources only under the exact tenant's authorized clear event", async () => {
+  const conversationId = 'clear-cleanup' as ConversationId;
+  const input = {client, tenantId:'tenant', scopeId:'clear', conversationId, jobId:'old-session', target:{key:'chat/old-session',tenantId:'tenant'},clearedRevision:1,now:time};
+  await expect(enqueuePostgresConversationFileCleanup(input)).rejects.toThrow('sealed conversation');
+  await expect(client.transaction(async tx => {
+    await clearPostgresConversation({client:tx,tenantId:'tenant',conversationId});
+    await enqueuePostgresConversationFileCleanup({...input,client:tx});
+    throw Error('Roll back clear');
+  })).rejects.toThrow('Roll back clear');
+  expect(await record(input.jobId)).toBeUndefined();
+  await client.transaction(async tx => {
+    await clearPostgresConversation({client:tx,tenantId:'tenant',conversationId});
+    await enqueuePostgresConversationFileCleanup({...input,client:tx});
+  });
+  await expect(enqueuePostgresConversationFileCleanup({...input,tenantId:'foreign'})).rejects.toThrow('sealed conversation');
+  await expect(enqueuePostgresConversationFileCleanup({...input,clearedRevision:2})).rejects.toThrow('sealed conversation');
+  const deleteFile=vi.fn(async()=>undefined);
+  expect((await drainPostgresConversationFileCleanup({client,scopeId:'clear',parseTarget,deleteFile,now})).completed).toBe(1);
   expect(deleteFile).toHaveBeenCalledTimes(1);
 });
 

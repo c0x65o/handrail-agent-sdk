@@ -27,13 +27,21 @@ function fingerprint(conversationId: string, target: JsonObject): string {
 export async function enqueuePostgresConversationFileCleanup(input: {
   readonly client: PostgresSqlClient; readonly tenantId: string; readonly scopeId: string;
   readonly conversationId: string; readonly jobId: string; readonly target: JsonObject; readonly now?: Date;
+  /** Clear keeps the conversation writable. Only detached resources belonging
+   * to an earlier generation may be queued under its exact committed reset. */
+  readonly clearedRevision?: number;
 }): Promise<void> {
   const tenantId = identity(input.tenantId), scopeId = identity(input.scopeId);
   const conversationId = identity(input.conversationId), jobId = identity(input.jobId);
   const target = JSON.parse(JSON.stringify(input.target)) as JsonObject;
   if (!target || typeof target !== "object" || Array.isArray(target)) throw new TypeError("Invalid file cleanup target.");
   const now = (input.now ?? new Date()).toISOString();
-  const fence = await input.client.query("SELECT 1 FROM handrail_ai_documents WHERE tenant_id=$1 AND kind='conversation_deleted' AND scope_id=$2 AND record_id='deleted' AND payload->>'schemaVersion'='1'", [tenantId, conversationId]);
+  if (input.clearedRevision !== undefined && (!Number.isSafeInteger(input.clearedRevision) || input.clearedRevision < 1)) {
+    throw new TypeError("Invalid conversation clear revision.");
+  }
+  const fence = input.clearedRevision === undefined
+    ? await input.client.query("SELECT 1 FROM handrail_ai_documents WHERE tenant_id=$1 AND kind='conversation_deleted' AND scope_id=$2 AND record_id='deleted' AND payload->>'schemaVersion'='1'", [tenantId, conversationId])
+    : await input.client.query("SELECT 1 FROM handrail_ai_events WHERE tenant_id=$1 AND conversation_id=$2 AND revision=$3 AND payload->'payload'->>'type'='conversation.cleared'", [tenantId, conversationId, input.clearedRevision]);
   if (!fence.rows.length) throw new Error("File cleanup requires an authorized, sealed conversation.");
   const hash = fingerprint(conversationId, target);
   const record: PendingCleanup = { schemaVersion: 1, status: "pending", fingerprint: hash, conversationId, target, attempts: 0, nextAttemptAt: now };
