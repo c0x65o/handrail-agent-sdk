@@ -1,4 +1,4 @@
-import { createHash } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 /** A durable fake of the external hosted service. Scripted inference fixtures
  * run only inside this fake provider; production has no application-run loop. */
 export async function hostedBoundary({ pool, schema, identity, model, host, tools }) {
@@ -46,6 +46,11 @@ export async function hostedBoundary({ pool, schema, identity, model, host, tool
               const visible=host.visibleTools?await host.visibleTools(identity,tools.map(t=>t.name)):tools.map(t=>t.name);
               for await(const event of model.getStreamedResponse({input:value.history,signal,tools:tools.filter(t=>visible.includes(t.name)),authCompleted:value.authCompleted})) {
                 if(signal.aborted)throw Error('provider observer aborted');
+                if(event.type==='output_text_delta') {
+                  yield {type:'agent.session.turn.output_text.delta',event_id:randomUUID(),session_id:sessionId,
+                    turn_id:turnId,item_id:'fixture-text',output_index:0,content_index:0,delta:event.delta};
+                  continue;
+                }
                 if(event.type!=='response_done')continue;
                 value=await read();if(value.turn.status==='cancelled')break;
                 const output=event.response.output;

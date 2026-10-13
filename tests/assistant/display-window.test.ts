@@ -165,3 +165,15 @@ it("uses one bounded anchor request to restore a saved position and clears stale
   await window.refresh(); expect(ids(window)).toEqual(["message-18", "message-19", "message-20"]);
   window.dispose();
 });
+
+it('skips an already consumed authoritative revision without replacing the retained records', async () => {
+  const {window,reader}=fixture(); await window.select('a');
+  const records=window.getSnapshot().records;
+  await window.refresh(100); await window.refresh(100);
+  expect(reader.changes).not.toHaveBeenCalled();
+  expect(window.getSnapshot().records).toBe(records);
+  await window.refresh(101);
+  expect(reader.changes).toHaveBeenCalledOnce();
+  expect(window.getSnapshot().records).toBe(records);
+  window.dispose();
+});

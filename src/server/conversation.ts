@@ -370,6 +370,8 @@ export function createDelegatedWorkAdapter(deps: {
  * job to a canonical conversation head; corrections invalidate stale input. */
 export function createConversationAgentRuntime(deps: Omit<Parameters<typeof createAgentRuntime>[0], 'host'> & {
   host: Omit<Parameters<typeof createAgentRuntime>[0]['host'], 'input'>;
+  /** Compose managed private input with the same canonical conversation ports. */
+  createRuntime?: typeof createAgentRuntime;
   conversation: ReturnType<typeof createConversation>;
   turn(identity: JobIdentity): Promise<{ scope: ConversationScope; head: number }>;
 }) {
@@ -378,7 +380,7 @@ export function createConversationAgentRuntime(deps: Omit<Parameters<typeof crea
     if (binding.scope.tenantRef !== identity.host.tenantRef || binding.scope.userRef !== identity.host.userRef) throw Error('CONVERSATION_SCOPE_CONFLICT');
     return binding;
   };
-  return createAgentRuntime({ ...deps, host: { ...deps.host,
+  return (deps.createRuntime ?? createAgentRuntime)({ ...deps, host: { ...deps.host,
     input: async identity => {
       const binding = await turn(identity), context = await deps.conversation.context(binding.scope);
       if (context.head !== binding.head) throw Error('CONVERSATION_REVISION_CONFLICT');

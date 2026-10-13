@@ -202,7 +202,7 @@ it("rejects malformed draft origins before any journal or network mutation", asy
   expect(f.pendingStore.retain).not.toHaveBeenCalled(); expect(f.resources.appendMutations).not.toHaveBeenCalled();
 });
 
-it("opens only the newest message page, bounds history while scrolling, and evicts inactive bodies", async () => {
+it("opens only the newest message page, bounds history while scrolling, and retains the bounded inactive view", async () => {
   const f = fixture(200); await f.session.initialize();
   expect(f.session.getSnapshot().window.records.map(row => row.id)).toEqual(Array.from({ length: 30 }, (_, i) => `message-${171 + i}`));
   expect(f.reader.page).toHaveBeenCalledTimes(2); // one message page and one related-entity page
@@ -213,7 +213,8 @@ it("opens only the newest message page, bounds history while scrolling, and evic
   expect(f.session.getSnapshot().window.records).toEqual(before);
   expect(f.session.getSnapshot().window.hasNewer).toBe(true);
   await f.session.window.jumpToLatest(); expect(f.session.getSnapshot().window.records.at(-1)?.id).toBe("message-201");
-  await f.session.setActive(false); expect(f.session.getSnapshot().window.records).toEqual([]);
+  const retained = f.session.getSnapshot().window.records;
+  await f.session.setActive(false); expect(f.session.getSnapshot().window.records).toBe(retained);
   vi.mocked(f.reader.page).mockClear(); await f.session.refresh(); expect(f.reader.page).not.toHaveBeenCalled();
   await f.session.setActive(true); expect(f.session.getSnapshot().window.records).toHaveLength(30);
   expect(f.transport.resumeTurn).not.toHaveBeenCalled(); expect(f.resources.appendMutations).not.toHaveBeenCalled();
@@ -753,4 +754,20 @@ it.each([true, false])("prepares against controls read after the send intent, no
   held.resolve(stale); await poll; await result;
   expect(f.session.getSnapshot().control?.canonicalRevision).toBe(2);
   expect(f.resources.appendMutations).not.toHaveBeenCalled();
+});
+
+it('backs off idle conversation reads while keeping admitted work on the fast cadence', async () => {
+  vi.useFakeTimers();
+  const f=fixture(1); await f.session.initialize();
+  await f.session.refresh();
+  vi.mocked(f.reader.control).mockClear();vi.mocked(f.reader.changes).mockClear();
+  await vi.advanceTimersByTimeAsync(1900);
+  expect(f.reader.control).not.toHaveBeenCalled();
+  await vi.advanceTimersByTimeAsync(200);
+  expect(f.reader.control).toHaveBeenCalledOnce();
+  expect(f.reader.changes).not.toHaveBeenCalled();
+  f.setTurn({turnId:'running',revision:2,status:'running',remoteMayStillBeRunning:true,error:null});
+  await f.session.refresh(); vi.mocked(f.reader.control).mockClear();
+  await vi.advanceTimersByTimeAsync(110);
+  expect(f.reader.control).toHaveBeenCalledOnce();
 });

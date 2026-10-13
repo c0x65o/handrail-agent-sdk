@@ -1,3 +1,4 @@
+export { retainHostedArtifacts } from './hosted-artifacts.js';
 import { createHash } from 'node:crypto';
 import { canonicalAgentJson } from './agent-state-binding.js';
 export { attachHostedFile, type HostedFileReceipt, type HostedFileSource } from './hosted-files.js';

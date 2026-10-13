@@ -24,6 +24,13 @@ export interface ManagedAgentCapabilitiesOptions {
   /** Existing authenticated application session -> complete current SDK scope.
    * Never derive this scope from request parameters, the link, or a model. */
   readonly authenticate: (request: Request) => Promise<Scope | null>;
+  /** Rebind the original persisted job after process recovery or observer cleanup.
+   * Called only after authentication and matching encrypted interaction scope.
+   * Register through this service's createRuntime; do not submit a new job. */
+  readonly restoreRuntime?: (identity: JobIdentity) => Promise<void>;
+  /** Let the host's canonical scheduler observe the saved answer. The answer is
+   * already durable; retries must retain the original job/conversation identity. */
+  readonly onAnswered?: (identity: JobIdentity) => Promise<void>;
   readonly features?: { readonly vault?: boolean; readonly browser?: boolean };
 }
 type RuntimeOptions = Parameters<typeof createAgentRuntime>[0];
@@ -53,6 +60,7 @@ export function createManagedAgentCapabilities(options: ManagedAgentCapabilities
   const registrations: Array<{ runtime: ReturnType<typeof createAgentRuntime>; host: RuntimeOptions['host']; definitionRef: string }> = [];
   const jobs = new Map<string, { runtime: ReturnType<typeof createAgentRuntime>; host: RuntimeOptions['host'] }>();
   const pending = new Set<Promise<unknown>>();
+  const restoring = new Map<string, Promise<void>>();
   let closed = false;
   const requirement = (i: Interaction): JobRequirement => ({ kind: i.kind === 'credentials' || i.action?.request.type === 'browser_authentication' ? 'secure_input' : 'approval',
     requirementRef: `managed:${i.ref}`, revision: 1, actor: { kind: 'user', actorRef: i.identity.host.userRef } });
@@ -64,6 +72,20 @@ export function createManagedAgentCapabilities(options: ManagedAgentCapabilities
       if (!a || !equal(a.host, identity.host)) continue;
       const inspected = await candidate.runtime.inspect(identity);
       if (inspected.ok && inspected.value.checkpoint?.definitionRef === candidate.definitionRef) { jobs.set(identity.jobId, candidate); break; }
+    }
+    if (!jobs.has(identity.jobId) && options.restoreRuntime) {
+      let restore = restoring.get(identity.jobId);
+      if (!restore) {
+        restore = options.restoreRuntime(structuredClone(identity));
+        restoring.set(identity.jobId, restore);
+      }
+      try { await restore; } finally { if (restoring.get(identity.jobId) === restore) restoring.delete(identity.jobId); }
+      for (const candidate of registrations) {
+        const a = await candidate.host.authorize(identity).catch(() => null);
+        if (!a || !equal(a.host, identity.host)) continue;
+        const inspected = await candidate.runtime.inspect(identity);
+        if (inspected.ok && inspected.value.checkpoint?.definitionRef === candidate.definitionRef) { jobs.set(identity.jobId, candidate); break; }
+      }
     }
     const bound = jobs.get(identity.jobId);
     if (!bound) throw Error('CAPABILITY_RUNTIME_UNAVAILABLE');
@@ -228,6 +250,10 @@ export function createManagedAgentCapabilities(options: ManagedAgentCapabilities
         expiresAt: i.expiresAt, resolverRef: i.identity.host.userRef }));
       unwrap(await answers.complete({ identity: i.identity, requirementRef: requirement(i).requirementRef, requirementRevision: 1,
         resolverRef: i.identity.host.userRef, deliveryKey: `managed:${i.ref}`, status: 'verified', responseRef: `managed-answer:${i.ref}` }));
+    }
+    if (options.onAnswered) {
+      await options.onAnswered(structuredClone(i.identity));
+      return;
     }
     const registered = jobs.get(i.identity.jobId);
     if (registered) {

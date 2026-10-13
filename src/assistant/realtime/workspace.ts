@@ -81,6 +81,8 @@ export class RealtimeWorkspaceMonitor {
   #timer: ReturnType<typeof setInterval> | null = null;
   #generation = 0;
   #disposed = false;
+  #started = false;
+  #idleDelay = 0;
   constructor(options: RealtimeWorkspaceMonitorOptions) {
     this.#options = { ...options };
     this.#interval = options.intervalMilliseconds ?? 3000;
@@ -108,8 +110,9 @@ export class RealtimeWorkspaceMonitor {
     if (!this.#disposed) await this.refresh();
   }
   start(): void {
-    if (this.#disposed || this.#timer !== null) return;
-    void this.refresh(); this.#timer = setInterval(() => { void this.refresh(); }, this.#interval);
+    if (this.#disposed || this.#started) return;
+    this.#started = true;
+    void this.refresh();
   }
   async #request<T>(operation: (signal: AbortSignal) => Promise<T>, parent: AbortSignal): Promise<T> {
     const controller = new AbortController();
@@ -137,6 +140,7 @@ export class RealtimeWorkspaceMonitor {
   refresh = (): Promise<void> => {
     if (this.#disposed) return Promise.resolve();
     if (this.#reading) return this.#reading;
+    if (this.#timer !== null) clearTimeout(this.#timer); this.#timer = null;
     const generation = this.#generation, controller = new AbortController(); this.#abort = controller;
     this.#reading = Promise.resolve().then(async () => {
       if (this.#disposed || generation !== this.#generation) return;
@@ -171,17 +175,26 @@ export class RealtimeWorkspaceMonitor {
           if (!next || next.counts.total < old.counts.total || next.counts.completed < old.counts.completed || next.counts.failed < old.counts.failed ||
             statuses.indexOf(next.status) < statuses.indexOf(old.status)) throw new TypeError("Voice workspace evidence regressed.");
         }
-        this.#emit({ calls: [...calls.values()], loading: false, synchronized: true, error: null });
+        const next = [...calls.values()];
+        const busy = next.some(call => call.status !== "ended" || call.counts.running > 0 || (call.counts.waitingForApproval ?? 0) > 0);
+        this.#idleDelay = busy ? 0 : this.#idleDelay && JSON.stringify(next) === JSON.stringify(before.calls)
+          ? Math.min(60000, this.#idleDelay * 2) : 15000;
+        this.#emit({ calls: next, loading: false, synchronized: true, error: null });
       } catch {
+        this.#idleDelay = Math.min(60000, Math.max(15000, this.#idleDelay * 2));
         if (!this.#disposed && generation === this.#generation) this.#emit({ ...before, loading: false, error: "Could not refresh voice activity. Retrying…" });
       }
-    }).finally(() => { this.#reading = null; if (this.#abort === controller) this.#abort = null; });
+    }).finally(() => {
+      this.#reading = null; if (this.#abort === controller) this.#abort = null;
+      if (this.#started && !this.#disposed)
+        this.#timer = setTimeout(() => { this.#timer = null; void this.refresh(); }, Math.max(this.#interval, this.#idleDelay));
+    });
     return this.#reading;
   };
   dispose(): void {
     if (this.#disposed) return;
     this.#disposed = true; this.#generation++; this.#abort?.abort();
-    if (this.#timer !== null) clearInterval(this.#timer);
+    if (this.#timer !== null) clearTimeout(this.#timer);
     this.#listeners.clear();
   }
 }

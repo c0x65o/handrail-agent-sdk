@@ -6,13 +6,13 @@ type Timings = Pick<HandrailAiClientBootstrapOptions<unknown, unknown, unknown>,
   "activityPollingMilliseconds" | "synchronizationPollingMilliseconds" | "idleSynchronizationPollingMilliseconds">;
 const clients: Awaited<ReturnType<typeof createHandrailAiClient>>[] = [];
 afterEach(async () => { for (const client of clients.splice(0)) await client.dispose(); vi.useRealTimers(); });
-async function fixture(timings: Timings = {}) {
-  const gateway = pollingGateway();
+async function fixture(timings: Timings = {}, running = false) {
+  const gateway = pollingGateway(); gateway.setRunning(running);
   const client = await createHandrailAiClient({ baseUrl: "https://fixture.test/assistant", fetch: gateway.fetch, ...timings,
     restoreActiveTurns: false, conversations: { mode: "multiple", clientId: "test" as never, authorize: () => "allow" } });
   clients.push(client);
-  await client.workspace!.open({ conversationId: "chat" as never, authorizationContext: {} });
-  return { client, gateway };
+  const runtime = await client.workspace!.open({ conversationId: "chat" as never, authorizationContext: {} });
+  return { client, gateway, runtime };
 }
 
 it.each([
@@ -21,34 +21,36 @@ it.each([
     activityPollingMilliseconds: 7000 }, active: 3000, idle: 9000, activity: 7000 },
 ])("honors successful visible/hidden/running polling and defaults: $timings", async ({ timings, active, idle, activity }) => {
   vi.useFakeTimers();
-  const { client, gateway } = await fixture(timings);
-  // Settle initial display selection/related reads, then sample a full regular interval.
+  const { client, gateway, runtime } = await fixture(timings, true);
   await vi.advanceTimersByTimeAsync(active);
   const controls = gateway.count("control"), changes = gateway.count("changes");
   await vi.advanceTimersByTimeAsync(active - 1);
   expect(gateway.count("control")).toBe(controls);
   await vi.advanceTimersByTimeAsync(1);
   expect(gateway.count("control")).toBe(controls + 1);
-  expect(gateway.count("changes")).toBe(changes + 1);
+  // An unchanged authoritative revision does not refetch display records.
+  expect(gateway.count("changes")).toBe(changes);
+  gateway.setRunning(false);
+  await runtime.synchronize!();
   client.workspace!.setVisible(false);
   await vi.advanceTimersByTimeAsync(0);
   const hiddenControls = gateway.count("control"), hiddenChanges = gateway.count("changes");
   await vi.advanceTimersByTimeAsync(idle - 1);
   expect(gateway.count("control")).toBe(hiddenControls);
-  await vi.advanceTimersByTimeAsync(1);
-  expect(gateway.count("control")).toBe(hiddenControls + 1);
+  await vi.advanceTimersByTimeAsync(idle * 3 + 1);
+  expect(gateway.count("control")).toBeGreaterThan(hiddenControls);
   expect(gateway.count("changes")).toBe(hiddenChanges);
-  // Even hidden, an active turn selects the regular interval after the next read.
+  // A newly observed active turn restores the configured fast cadence while hidden.
   gateway.setRunning(true);
-  await vi.advanceTimersByTimeAsync(idle);
+  await runtime.synchronize!();
   const runningControls = gateway.count("control");
   await vi.advanceTimersByTimeAsync(active - 1);
   expect(gateway.count("control")).toBe(runningControls);
   await vi.advanceTimersByTimeAsync(1);
   expect(gateway.count("control")).toBe(runningControls + 1);
   const activityReads = gateway.reads.filter(read => read.operation === "activity");
-  expect(activityReads.length).toBeGreaterThan(2);
-  expect(activityReads.slice(1).every((read, index) => read.at - activityReads[index]!.at === activity)).toBe(true);
+  expect(activityReads.length).toBeGreaterThan(1);
+  expect(activityReads.slice(1).every((read, index) => read.at - activityReads[index]!.at >= activity)).toBe(true);
   await client.dispose();
   const stopped = gateway.reads.length;
   await vi.advanceTimersByTimeAsync(30000);
@@ -59,14 +61,26 @@ it("retains the Retry-After minimum above configured activity and display interv
   vi.useFakeTimers();
   const { gateway } = await fixture({ activityPollingMilliseconds: 500, synchronizationPollingMilliseconds: 500,
     idleSynchronizationPollingMilliseconds: 1000 });
-  await vi.advanceTimersByTimeAsync(500);
   gateway.throttle.add("control"); gateway.throttle.add("activity");
-  await vi.advanceTimersByTimeAsync(500);
-  const controls = gateway.count("control"), activity = gateway.count("activity");
-  await vi.advanceTimersByTimeAsync(19999);
-  expect(gateway.count("control")).toBe(controls); expect(gateway.count("activity")).toBe(activity);
-  await vi.advanceTimersByTimeAsync(1);
-  expect(gateway.count("control")).toBe(controls + 1); expect(gateway.count("activity")).toBe(activity + 1);
+  // Idle backoff means the two readers need not fire together. Capture each
+  // throttled read, then prove its own subsequent read respects Retry-After.
+  const starts = new Map<string, number>();
+  for (let tick = 0; tick < 1000 && starts.size < 2; tick++) {
+    await vi.advanceTimersByTimeAsync(100);
+    for (const operation of ["control", "activity"]) {
+      if (!gateway.throttle.has(operation) && !starts.has(operation)) {
+        starts.set(operation, gateway.reads.findLast(read => read.operation === operation)!.at);
+      }
+    }
+  }
+  expect(starts.size).toBe(2);
+  await vi.advanceTimersByTimeAsync(60000);
+  for (const [operation, at] of starts) {
+    const next = gateway.reads.find(read => read.operation === operation && read.at > at);
+    expect(next).toBeDefined();
+    expect(next!.at - at).toBeGreaterThanOrEqual(20000);
+  }
+
 });
 
 it.each(["activityPollingMilliseconds", "synchronizationPollingMilliseconds", "idleSynchronizationPollingMilliseconds"] as const)(

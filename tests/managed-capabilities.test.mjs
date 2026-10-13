@@ -25,12 +25,14 @@ function model(handoff) {
     yield { type: 'response_done', response: { id: `response-${outputs.length}`, output: [output], usage: { requests: 1, inputTokens: 1, outputTokens: 1, totalTokens: 2 } } };
   } };
 }
-async function setup(t, flags = { vault: true, browser: false }, handoff = false) {
+async function setup(t, flags = { vault: true, browser: false }, handoff = false, hooks = {}) {
   const harness = await createPostgresHarness(); t.after(() => harness.cleanup()); await migrations(t, harness);
   const key = createSecretKey(randomBytes(32)), keys = { current: async () => ({ ref: 'test-key', key }), resolve: async () => key };
   let signedIn = true, scope = identity.host;
   const create = () => createManagedAgentCapabilities({ database: harness.pool, schema: harness.schema, keys, baseUrl, features: flags,
-    authenticate: async () => signedIn ? scope : null });
+    authenticate: async () => signedIn ? scope : null,
+    restoreRuntime: hooks.lazy ? async original => { assert.deepEqual(original,identity); capabilities.createRuntime(deps); } : undefined,
+    onAnswered: hooks.onAnswered });
   let capabilities = create(), deps;
   t.after(() => capabilities.close());
   const provider = model(handoff);
@@ -43,6 +45,7 @@ async function setup(t, flags = { vault: true, browser: false }, handoff = false
   return { ...s, harness, keys, provider, request, get capabilities() { return capabilities; },
     auth: (value, next = scope) => { signedIn = value; scope = next; },
     async restart() { await capabilities.close(); capabilities = create();
+      if(hooks.lazy)return;
       capabilities.createRuntime({ ...deps, host: { ...deps.host, authorize: async () => { throw Error('OTHER_USER'); } } });
       s.runtime = capabilities.createRuntime(deps); return s.runtime; },
   };
@@ -154,5 +157,23 @@ test('hosted private sign-in survives restart and completes the same original pr
   assert.equal(JSON.stringify([checkpoint,s.provider.requests]).includes(code),false);
   const stored=(await s.harness.pool.query(`SELECT * FROM ${s.harness.table('managed_capability_records')}`)).rows;
   assert.equal(JSON.stringify(stored).includes(code),false);
+  assert.equal((await s.harness.pool.query(`SELECT * FROM ${s.harness.table('jobs')}`)).rowCount,1);
+});
+
+
+test('private entry restores the original job lazily and hands its saved answer to the native scheduler', async t => {
+  let notified = 0;
+  const s = await setup(t, undefined, false, {lazy:true,onAnswered:async original=>{assert.deepEqual(original,identity);notified++;}});
+  const entry = await start(s);
+  await s.restart();
+  s.auth(false);
+  assert.equal((await s.request(entry.secureUrl)).status,403);
+  s.auth(true);
+  assert.equal((await s.request(entry.secureUrl)).status,200);
+  assert.equal((await submit(s,entry,'synthetic-password')).status,200);
+  assert.equal(notified,1);
+  const waiting=ok(await s.journal.load(identity));
+  assert.equal(waiting.state,'waiting');assert.ok(waiting.answer?.responseRef);
+  assert.equal(s.provider.requests.length,1,'private form does not bypass the host scheduler');
   assert.equal((await s.harness.pool.query(`SELECT * FROM ${s.harness.table('jobs')}`)).rowCount,1);
 });

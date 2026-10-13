@@ -163,7 +163,7 @@ it("negotiates bounded history in the standard React preset with no snapshot, sa
   } finally { await client.dispose(); }
 });
 
-it("negotiates multiple conversations lazily and drops the previous chat body when switching", async () => {
+it("negotiates conversations lazily and retains only bounded account-owned views when switching", async () => {
   const f = gateway(); const client = await createHandrailAiClient({ baseUrl: "https://app.test/ai", fetch: f.fetcher, capabilities,
     conversations: { mode: "multiple", clientId: "client" as never, authorize: () => "allow" } });
   try {
@@ -175,7 +175,7 @@ it("negotiates multiple conversations lazily and drops the previous chat body wh
     await act(async () => { b = await client.workspace!.open({ authorizationContext: {}, conversationId: "b" as never }); });
     view.rerender(<ConversationProvider runtime={b}><StyledChatPreset/></ConversationProvider>);
     expect(screen.queryByText("a saved 200")).toBeNull(); await screen.findByText("b saved 200");
-    await waitFor(() => expect(a.getSnapshot().messages).toEqual([]));
+    expect(a.getSnapshot().messages).toHaveLength(30);
     expect(a.displaySession?.getSnapshot().related).toEqual([]);
     expect(client.workspace!.getSnapshot().selectedConversationId).toBe("b");
     expect(f.requests.filter(request => request.operation === "page" && !request.input.view)).toHaveLength(2);
@@ -185,7 +185,7 @@ it("negotiates multiple conversations lazily and drops the previous chat body wh
       await runtime.synchronize!();
     }
     await waitFor(() => expect(client.workspace!.getSnapshot().threads).toHaveLength(4));
-    expect(client.workspace!.getSnapshot().threads.filter(thread => thread.runtime.getSnapshot().messages.length)).toHaveLength(1);
+    expect(client.workspace!.getSnapshot().threads.every(thread => thread.runtime.getSnapshot().messages.length <= 30)).toBe(true);
     expect(client.registry!.getSnapshot().liveCount).toBe(4);
   } finally { await client.dispose(); }
 });

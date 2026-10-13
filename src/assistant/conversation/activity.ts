@@ -413,6 +413,7 @@ export class PollingConversationActivity implements ConversationActivityReadable
   #liveController: AbortController | null = null;
   #pollLiveUpdates: Set<string> | null = null;
   readonly #backoff = new ReadBackoff();
+  #idleDelay = 0;
 
   constructor(options: PollingConversationActivityOptions) {
     const interval = options.intervalMilliseconds ?? 5_000;
@@ -431,6 +432,13 @@ export class PollingConversationActivity implements ConversationActivityReadable
   accept(record: ConversationActivityRecord): void {
     this.#pollLiveUpdates?.add(String(record.conversationId));
     this.#store.upsert(record);
+    if (record.turnStatus === "running") {
+      this.#idleDelay = 0;
+      if (this.#timer !== null) {
+        clearTimeout(this.#timer);
+        this.#timer = setTimeout(() => { this.#timer = null; void this.refresh(); }, Math.max(this.#intervalMilliseconds, this.#backoff.remaining));
+      }
+    }
   }
   start(): void {
     if (this.#timer === null && this.#controller === null) void this.refresh();
@@ -441,8 +449,7 @@ export class PollingConversationActivity implements ConversationActivityReadable
         try {
           for await (const record of this.#subscribe!(controller.signal)) {
             if (controller.signal.aborted) break;
-            this.#pollLiveUpdates?.add(String(record.conversationId));
-            this.#store.upsert(record);
+            this.accept(record);
           }
         } catch (cause) {
           if (!controller.signal.aborted) emitAiDiagnostic(this.#diagnostics, {
@@ -469,10 +476,14 @@ export class PollingConversationActivity implements ConversationActivityReadable
       if (controller.signal.aborted) return;
       this.#backoff.succeeded();
       // Events received while this request was pending are newer than its snapshot.
+      const previous = this.#store.getSnapshot();
       this.#store.replace([
         ...records.filter((record) => !liveUpdates.has(String(record.conversationId))),
         ...this.#store.getSnapshot().filter((record) => liveUpdates.has(String(record.conversationId))),
       ]);
+      const next = this.#store.getSnapshot();
+      this.#idleDelay = next.some(record => record.turnStatus === "running") ? 0
+        : next === previous && this.#idleDelay ? Math.min(60000, this.#idleDelay * 2) : 15000;
     } catch (cause) {
       if (!controller.signal.aborted) this.#backoff.failed(cause);
       if (!controller.signal.aborted) emitAiDiagnostic(this.#diagnostics, {
@@ -485,7 +496,7 @@ export class PollingConversationActivity implements ConversationActivityReadable
       if (this.#pollLiveUpdates === liveUpdates) this.#pollLiveUpdates = null;
       if (!controller.signal.aborted && !this.#backoff.terminal) this.#timer = setTimeout(() => {
         this.#timer = null; void this.refresh();
-      }, Math.max(this.#intervalMilliseconds, this.#backoff.remaining));
+      }, Math.max(this.#intervalMilliseconds, this.#idleDelay, this.#backoff.remaining));
     }
   }
   stop(): void {

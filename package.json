@@ -1,6 +1,6 @@
 {
   "name": "handrail-agent-sdk",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "private": true,
   "description": "Durable Handrail agents, authenticated application gateway, usage delivery and optional web and Flutter clients",
   "type": "module",
@@ -284,7 +284,7 @@
     "test:adoption": "node --test tests/assistant/adopt-cli.test.mjs",
     "test:package": "npm run build && node --test tests/assistant/package-contract.test.mjs",
     "test:setup": "npm run build && node --test --test-concurrency=1 tests/setup.test.mjs",
-    "test:hosted": "npm run build && node --test --test-concurrency=1 tests/hosted-session.test.mjs tests/hosted-conversation.test.mjs tests/hosted-runtime.test.mjs tests/hosted-checkpoint-import.test.mjs tests/hosted-approval.test.mjs tests/hosted-session-http.test.mjs tests/hosted-files.test.mjs"
+    "test:hosted": "npm run build && node --test --test-concurrency=1 tests/hosted-session.test.mjs tests/hosted-conversation.test.mjs tests/hosted-runtime.test.mjs tests/hosted-checkpoint-import.test.mjs tests/hosted-approval.test.mjs tests/hosted-session-http.test.mjs tests/hosted-files.test.mjs tests/hosted-artifacts.test.mjs"
   },
   "devDependencies": {
     "@types/node": "22.20.4",

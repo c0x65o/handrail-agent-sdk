@@ -80,6 +80,14 @@ export class ConversationDisplayWindow {
   }
   private current(signal: AbortSignal) { return !this.disposed && this.selection.signal === signal && !signal.aborted; }
 
+  /** Stop hidden-window reads without discarding its bounded account-owned view. */
+  suspend(): void {
+    if (this.disposed) return;
+    this.selection.abort(); this.selection = new AbortController(); this.pending = null;
+    this.pendingOperation = null; this.queuedLatest = null;
+    if (this.state.loading !== null) this.publish({ loading: null });
+  }
+
   select(conversationId: string | null, anchor?: ConversationDisplayPageInput["anchor"]): Promise<void> {
     if (this.disposed) return Promise.reject(new Error("Display window is disposed"));
     if (conversationId !== null && (!conversationId || conversationId.length > 512)) return Promise.reject(new TypeError("Invalid conversation"));
@@ -103,7 +111,10 @@ export class ConversationDisplayWindow {
     }).finally(() => { if (this.queuedLatest === work) this.queuedLatest = null; });
     this.queuedLatest = work; return work;
   };
-  refresh = (): Promise<void> => this.read(this.state.status === "ready" ? "changes" : "initial");
+  /** Skip consumed revisions; errors and pagination still drain through the reader. */
+  refresh = (revision?: number): Promise<void> => this.state.status === "ready" && !this.state.error && this.changesCursor === null &&
+    revision !== undefined && revision <= this.changesAfter
+    ? Promise.resolve() : this.read(this.state.status === "ready" ? "changes" : "initial");
   retry = (): Promise<void> => this.read(this.state.error?.operation ?? (this.state.status === "ready" ? "changes" : "initial"));
 
   private read(operation: DisplayWindowOperation): Promise<void> {
@@ -130,7 +141,7 @@ export class ConversationDisplayWindow {
           const ids = new Set(this.state.records.map(record => record.id));
           const records = this.state.records.map(record => {
             const next = byId.get(record.id);
-            return next && next.revision >= record.revision ? next : record;
+            return next && next.revision > record.revision ? next : record;
           }).filter(record => !record.deleted);
           const changed = records.length !== this.state.records.length || records.some((record, index) => record !== this.state.records[index]);
           const outside = [...byId.values()].some(record => !record.deleted && !ids.has(record.id));
@@ -138,7 +149,7 @@ export class ConversationDisplayWindow {
           this.options.onChanges?.(page);
           this.changesCursor = page.nextCursor;
           if (page.nextCursor === null) this.changesAfter = page.throughRevision;
-          this.publish({ records: trimmed.records, retainedBytes: trimmed.bytes, revision: page.revision,
+          this.publish({ records: changed || trimmed.trimmed ? trimmed.records : this.state.records, retainedBytes: trimmed.bytes, revision: page.revision,
             activeTurnId: page.activeTurnId, hasNewer: this.state.hasNewer || outside || trimmed.trimmed,
             version: this.state.version + (changed || trimmed.trimmed ? 1 : 0), change: "changes" });
         } else {

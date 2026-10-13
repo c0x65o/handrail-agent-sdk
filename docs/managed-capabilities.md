@@ -29,6 +29,20 @@ link, request parameters or a model. Use the same database, schema and encryptio
 keys as the runtime. Preserve the public request URL and body without logging it.
 Do not put transcript capture middleware on this private route.
 
+For applications that dispose of turn observers, configure `restoreRuntime(identity)`
+to re-register the original job through this service's `createRuntime`. It runs only
+after the request is authenticated and its encrypted interaction matches the complete
+scope. Re-read native job authority when restoring; do not admit a replacement job.
+The same hook restores links after an application process restart.
+
+Configure `onAnswered(identity)` when the application owns canonical turn scheduling.
+The SDK saves the verified answer first, then calls this hook instead of starting
+provider work outside that scheduler. Retain the original job and conversation;
+repeated private-form submissions may repeat the notification and must be idempotent.
+Without that hook, the registered runtime resumes the same original job directly.
+`createConversationAgentRuntime` accepts `createRuntime: access.createRuntime` to
+compose private browser steps with canonical transcript custody.
+
 Current host authority, exact job identity and the original pending provider
 request are checked on every use. Forms require same-origin POST and CSRF checks.
 Private values are encrypted at rest and submitted directly to OpenAI’s registered

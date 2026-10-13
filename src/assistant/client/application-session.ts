@@ -143,6 +143,7 @@ export class ApplicationConversationSession<TRequest = unknown> {
   private wake: ReturnType<typeof setTimeout> | undefined;
   private refreshDemand = 0;
   private lastRefreshStarted = -Infinity;
+  private idleReads = 0;
   private readonly readBackoff = new ReadBackoff();
   private readonly startBackoff = new ReadBackoff();
   private followingLatest = true;
@@ -185,9 +186,11 @@ export class ApplicationConversationSession<TRequest = unknown> {
   private publish(patch: Partial<ApplicationConversationSessionSnapshot> = {}) {
     if (this.lifetime.signal.aborted) return;
     if (this.outgoing && this.window.getSnapshot().records.some(record => record.id === this.outgoing!.message.message_id)) this.outgoing = null;
-    this.state = Object.freeze({ ...this.state, outgoingMessage: this.followingLatest ? this.outgoing : null, control: this.control, window: this.window.getSnapshot(),
+    const next = { ...this.state, outgoingMessage: this.followingLatest ? this.outgoing : null, control: this.control, window: this.window.getSnapshot(),
       related: this.related, hasMoreRelated: this.relatedCursor !== null || this.relatedGroup + 1 < this.relatedGroups.length,
-      relatedTruncated: this.relatedTruncated, ...patch });
+      relatedTruncated: this.relatedTruncated, ...patch };
+    if ((Object.keys(next) as (keyof ApplicationConversationSessionSnapshot)[]).every(key => next[key] === this.state[key])) return;
+    this.state = Object.freeze(next);
     for (const listener of this.listeners) { try { listener(); } catch { /* Observers do not own admission or reads. */ } }
   }
   async initialize(): Promise<void> {
@@ -207,14 +210,20 @@ export class ApplicationConversationSession<TRequest = unknown> {
     } catch (cause) { const error = normalize(cause); this.publish({ error }); throw error; }
     finally { this.schedulePoll(); }
   }
+  private needsFastPoll() {
+    return !this.control || this.control.status !== "ready" || this.control.activeTurn !== null ||
+      this.control.hasPendingApprovals === true || this.control.latestTurn?.remoteMayStillBeRunning ||
+      this.state.error !== null || this.active && this.window.getSnapshot().status !== "ready" ||
+      this.state.submitting || this.state.hasPendingSubmission || this.preparingSend;
+  }
   private schedulePoll() {
     clearTimeout(this.poll);
     if (this.lifetime.signal.aborted || this.readBackoff.terminal || this.state.error && !this.state.error.retryable) return;
     this.poll = setTimeout(() => {
       // Choose the next cadence after this read has observed the current turn.
       // A second zero-delay wake both delays this poll and uses stale state.
-      void this.refresh().catch(() => undefined).finally(() => this.schedulePoll());
-    }, Math.max(this.readBackoff.remaining, this.active || this.control?.activeTurn ? this.pollMilliseconds : this.idlePollMilliseconds));
+      void this.refresh().catch(() => undefined);
+    }, Math.max(this.readBackoff.remaining, this.needsFastPoll() ? this.pollMilliseconds : Math.min(300000, this.idlePollMilliseconds * 2 ** Math.min(this.idleReads, 2))));
   }
   private scheduleRefresh() {
     this.refreshDemand++;
@@ -326,13 +335,14 @@ export class ApplicationConversationSession<TRequest = unknown> {
     if (this.active === active) return;
     this.active = active;
     this.displayLifetime.abort(); this.displayLifetime = new AbortController();
-    this.clearRelated();
+    // Suspend reads while retaining the bounded account-owned display.
+    this.relatedKey = "";
     if (!active) {
       // A display invalidation queued while visible must not keep the old
       // foreground cadence after the panel closes. Durable running work keeps
       // its regular poll and its independent stream/terminal observation.
       if (!this.control?.activeTurn) { clearTimeout(this.wake); this.wake = undefined; }
-      await this.window.select(null); this.publish();
+      this.window.suspend(); this.publish();
     }
     else { await this.pending?.catch(() => undefined); await this.refresh(); }
     this.schedulePoll();
@@ -340,14 +350,14 @@ export class ApplicationConversationSession<TRequest = unknown> {
   refresh(): Promise<void> {
     this.assertOpen();
     if (this.pending) return this.pending;
-    if (this.readBackoff.remaining) return Promise.resolve();
+    if (this.readBackoff.remaining) { this.schedulePoll(); return Promise.resolve(); }
     clearTimeout(this.wake); this.wake = undefined;
     this.lastRefreshStarted = Date.now();
     const demand = this.refreshDemand;
     const readGeneration = this.readBackoff.generation;
     const signal = AbortSignal.any([this.lifetime.signal, this.displayLifetime.signal]);
     const work = Promise.resolve().then(async () => {
-      this.publish({ loading: true });
+      if (!this.control) this.publish({ loading: true });
       try {
         const control = await this.options.reader.control({ conversationId: this.options.conversationId }, signal);
         if (signal.aborted) return;
@@ -357,18 +367,24 @@ export class ApplicationConversationSession<TRequest = unknown> {
           throw new ApplicationConversationSessionError("history_preparing", "Preparing saved conversation…", true);
         }
         if (this.control && control.revision < this.control.revision) throw new ApplicationConversationSessionError("stale_control", "Conversation controls are temporarily behind.", true);
-        const previous = this.control; this.control = control;
-        if (previous?.generation !== control.generation) { this.clearRelated(); }
+        const previous = this.control;
+        const unchanged = previous !== null && JSON.stringify(previous) === JSON.stringify(control);
+        this.control = unchanged ? previous : control;
+        this.idleReads = unchanged && !this.needsFastPoll() ? this.idleReads + 1 : 0;
+        if (previous?.generation !== control.generation) {
+          this.clearRelated();
+          if (!this.active) await this.window.select(null);
+        }
         if (this.active) {
           await this.restorePosition(signal); if (signal.aborted) return;
-          if (this.window.getSnapshot().conversationId !== this.options.conversationId || previous?.generation !== control.generation) {
+          if (this.window.getSnapshot().conversationId !== this.options.conversationId || this.window.getSnapshot().generation !== control.generation) {
             const saved = this.position;
             const anchor = saved && !saved.following && saved.generation === control.generation
               ? { messageId: saved.messageId, generation: saved.generation, direction: "newer" as const, inclusive: true } : undefined;
             if (!anchor) this.followingLatest = true;
             await this.window.select(this.options.conversationId, anchor);
           }
-          else await this.window.refresh();
+          else await this.window.refresh(control.revision);
           if (signal.aborted) return;
           if (this.followingLatest && this.window.getSnapshot().hasNewer && !this.window.getSnapshot().error) await this.window.jumpToLatest();
           if (signal.aborted) return;
@@ -401,6 +417,8 @@ export class ApplicationConversationSession<TRequest = unknown> {
     }).finally(() => {
       if (this.pending === work) this.pending = null;
       if (this.refreshDemand !== demand) this.scheduleRefresh();
+      if (this.readBackoff.terminal) { clearTimeout(this.wake); this.wake = undefined; }
+      this.schedulePoll();
     });
     this.pending = work; return work;
   }

@@ -1,3 +1,4 @@
+import { createAgentRuntime } from 'handrail-agent-sdk/server/agents';
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { randomBytes, createHash } from 'node:crypto';
@@ -206,13 +207,14 @@ test('compaction racing a correction cannot replace newer context; overfull pins
 
 test('reply committed before job checkpoint failure recovers its original receipt without a second canonical reply',async t=>{
   const {h,key,c}=await setup(t);const head=await c.append(scope,entry('turn','Quick question'));
-  let fail=true,verified=0;
+  let fail=true,verified=0,composed=0;
   const s=await services(h.schema,key,{tools:[],model:replyModel(),host:{output:async(_id,text)=>{verified++;return {text,receiptRef:'original-output-receipt'};}},runtimeFactory:deps=>createConversationAgentRuntime({...deps,
+    createRuntime:options=>{composed++;return createAgentRuntime(options);},
     states:{...deps.states,commit:async(...args)=>{if(args[3].kind==='succeeded'&&fail){fail=false;return {ok:false,code:'unavailable'};}return deps.states.commit(...args);}},
     conversation:c,turn:async()=>({scope,head})})});t.after(()=>s.close());
   ok(await s.admission.admit({namespaceRef:'fixture',grantRevision:1,operation:{operationRef:'agent-task',inputRefs:{}},event:{kind:'submitted',previousRevision:0,snapshot:{identity,revision:1,state:'queued',effects:[]}}}));
   assert.equal((await s.runtime.wake(identity)).ok,false);
-  assert.equal(ok(await s.runtime.wake(identity)),'succeeded');assert.equal(verified,1);
+  assert.equal(ok(await s.runtime.wake(identity)),'succeeded');assert.equal(verified,1);assert.equal(composed,1);
   const replies=(await c.read(scope)).entries.filter(e=>e.entry.receiptRef);assert.equal(replies.length,1);assert.equal(replies[0].entry.receiptRef,'original-output-receipt');
 });
 

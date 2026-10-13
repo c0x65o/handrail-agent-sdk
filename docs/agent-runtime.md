@@ -144,3 +144,13 @@ fixture uses the same public SDK boundaries with a durable fake hosted provider.
 Live account/provider tests must separately prove browser work, original artifact
 delivery, retained context, interruption recovery, Stop and cleanup. A source test
 or a version bump does not establish deployed consumer behavior.
+
+Completed-turn artifacts can be retained with `retainHostedArtifacts` from
+`server/hosted`. Supply the saved provider session binding, original terminal turn,
+current native authority, the application's attachment byte capacity, and an
+idempotent sink keyed by provider artifact ID. The helper reads only that turn's
+published outputs, checks session/environment ownership and exact byte size, and
+computes SHA-256 before calling the sink. Retain these outputs before publishing
+application success or deleting the provider session. The final artifact list also
+recovers outputs when a live screenshot event was missed; an environment path by
+itself is not delivery to the originating conversation.

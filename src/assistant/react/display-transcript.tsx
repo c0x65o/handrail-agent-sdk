@@ -123,7 +123,7 @@ export function ConversationDisplayTranscript({ controller, conversationId, posi
   }, [controller, conversationId]);
   const capture = () => {
     const element = viewport.current;
-    if (!element || !conversationId || !state.records.length) return;
+    if (!element || !element.clientHeight || state.status !== "ready" || !conversationId || !state.records.length) return;
     const top = element.getBoundingClientRect().top;
     const items = Array.from(element.querySelectorAll<HTMLElement>("[data-display-message]"));
     const first = items.find(item => item.getBoundingClientRect().bottom > top) ?? items[0];
@@ -141,6 +141,8 @@ export function ConversationDisplayTranscript({ controller, conversationId, posi
       following.current = anchor.current?.following ?? true;
       setAway(!following.current);
     }
+    // Loading/hidden views have no authoritative reading geometry.
+    if (state.status !== "ready" || !element.clientHeight) return;
     const windowChanged = previousVersion.current !== state.version;
     if (!windowChanged && previousContentVersion.current === contentVersion && previousActivityRequest.current === currentActivityRequest) return;
     if (anchor.current && anchor.current.generation !== state.generation) {
@@ -221,6 +223,7 @@ export function ConversationDisplayTranscript({ controller, conversationId, posi
       if (frame !== undefined) return;
       frame = view.requestAnimationFrame(() => {
         frame = undefined;
+        if (state.status !== "ready" || !element.clientHeight) return;
         if (following.current && !state.hasNewer) element.scrollTop = element.scrollHeight;
         else if (anchor.current && anchor.current.generation === state.generation) {
           const item = Array.from(element.querySelectorAll<HTMLElement>("[data-display-message]"))
@@ -235,7 +238,7 @@ export function ConversationDisplayTranscript({ controller, conversationId, posi
     // Activity cards can expand independently of their neighboring messages.
     for (const item of Array.from(element.children)) observer.observe(item, { box: "border-box" });
     return () => { observer.disconnect(); if (frame !== undefined) view.cancelAnimationFrame(frame); };
-  }, [controller, conversationId, state.version, state.generation, state.hasNewer, contentVersion]);
+  }, [controller, conversationId, state.status, state.version, state.generation, state.hasNewer, contentVersion]);
   return <div className="hr-chat__transcript-wrap">
     <div {...props} ref={viewport} role={props.role ?? "log"} tabIndex={props.tabIndex ?? 0}
       style={{ ...props.style, overflowAnchor: "none" }}
