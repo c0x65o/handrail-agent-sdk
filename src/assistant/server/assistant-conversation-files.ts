@@ -143,6 +143,11 @@ export function createAssistantConversationFiles(options: AssistantConversationF
       await authorizeConversation(conversationId);
       return result;
     },
+    /** Native provider artifact custody using the same protected download and
+     * conversation deletion lifecycle as other retained files. */
+    async retainGenerated(conversationId: string, input: ConversationFileInput & { readonly idempotencyKey: string }) {
+      return storage(conversationId).retainGenerated(conversationId, input);
+    },
     async download(conversationId: string, attachmentId: string) { return read(conversationId, attachmentId); },
     async resolveSaved(conversationId: string, saved: Readonly<ConversationAttachmentReference>) {
       const captured = { ...saved };

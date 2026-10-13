@@ -185,3 +185,19 @@ it("captures original bytes and references before authorization awaits and reche
   } });
   await expect(revoked.download("conversation", reference.attachment_id)).rejects.toMatchObject({ code: "forbidden" });
 });
+
+it("retains original generated artifacts across restart and expiry without inventing user messages", async () => {
+  const f = fixture();
+  const input = { idempotencyKey: "hosted:sess:turn:artifact", fileName: "screenshot.png", mediaType: "image/png", data: bytes };
+  const ref = await f.files.retainGenerated("conversation", input);
+  f.expire(); await f.cleanup();
+  const recovered = createAssistantConversationFiles(f.options);
+  expect(await recovered.retainGenerated("conversation", input)).toEqual(ref);
+  expect((await recovered.download("conversation", ref.attachment_id)).file.data).toEqual(bytes);
+  expect((await counts(f.options.tenantId)).events).toBe(0);
+  await expect(recovered.retainGenerated("conversation", { ...input, fileName: "changed.png" })).rejects.toThrow();
+  await expect(recovered.download("other", ref.attachment_id)).rejects.toThrow();
+  f.revoke();
+  await expect(recovered.download("conversation", ref.attachment_id)).rejects.toThrow();
+  await expect(recovered.retainGenerated("conversation", input)).rejects.toThrow();
+});

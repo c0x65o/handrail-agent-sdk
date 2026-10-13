@@ -133,7 +133,7 @@ export function createConversationFileStorage(options: ConversationFileStorageOp
     attachment_id: file.attachmentId, content_ref: file.contentRef,
     media_type: file.mediaType as AttachmentReference["media_type"], byte_size: file.byteSize, filename: file.fileName,
   });
-  const retain = (conversationId: string, attachmentId: string, contentRef: string, input: ConversationFileInput, staged: StagedAttachmentRecord) => {
+  const retain = (conversationId: string, attachmentId: string, contentRef: string, input: ConversationFileInput, staged?: StagedAttachmentRecord) => {
     const file = validate(input);
     const scopeId = savedScope(conversationId);
     const value: RetainedConversationFile = { schemaVersion: 1, principalId, conversationId, attachmentId, contentRef,
@@ -142,7 +142,7 @@ export function createConversationFileStorage(options: ConversationFileStorageOp
     return persistence.client.transaction(async client => {
       // Match deletion's lock order: conversation, then blobs/references.
       await assertPostgresConversationWritable(client, tenantId, conversationId);
-      await lockPostgresAttachmentBlob(client, tenantId, staged.blobKey);
+      await lockPostgresAttachmentBlob(client, tenantId, staged?.blobKey ?? value.blobKey);
       await client.query("SELECT pg_advisory_xact_lock(hashtextextended($1, 0))",
         [JSON.stringify([options.identity?.lockNamespace ?? "assistant-file", tenantId, scopeId, attachmentId])]);
       const transaction = new PostgresAiPersistence(client);
@@ -151,13 +151,16 @@ export function createConversationFileStorage(options: ConversationFileStorageOp
         if (Object.keys(value).some(key => existing[key as keyof RetainedConversationFile] !== value[key as keyof RetainedConversationFile])) throw invalid();
         return existing;
       }
-      const current = await transaction.getDocument<StagedAttachmentRecord>(tenantId, "attachment", uploadScope, staged.contentRef);
-      if (!current || current.value.consumedAt || JSON.stringify(current.value) !== JSON.stringify(staged)) throw unavailable();
-      if (Date.parse(current.value.expiresAt) <= clock()) throw new AttachmentStagingError("expired");
+      const current = staged ? await transaction.getDocument<StagedAttachmentRecord>(tenantId, "attachment", uploadScope, staged.contentRef) : null;
+      if (staged) {
+        if (!current || current.value.consumedAt || JSON.stringify(current.value) !== JSON.stringify(staged)) throw unavailable();
+        if (Date.parse(current.value.expiresAt) <= clock()) throw new AttachmentStagingError("expired");
+      }
       await new PostgresAttachmentBlobStore(transaction, tenantId).put({
         key: value.blobKey, bytes: file.data, mediaType: file.mediaType, expiresAt: "infinity" });
       await transaction.compareAndSetDocument({ tenantId, kind: "attachment", scopeId,
         recordId: attachmentId, expectedVersion: null, value });
+      if (current && staged) {
       await transaction.compareAndSetDocument({ ...current, expectedVersion: current.version,
         value: { ...current.value, consumedAt: new Date(clock()).toISOString(), retainedConversationId: conversationId } });
       // Consumption and retained bytes commit together. Keep other SDK/business
@@ -166,6 +169,7 @@ export function createConversationFileStorage(options: ConversationFileStorageOp
         AND NOT EXISTS (SELECT 1 FROM handrail_ai_documents WHERE tenant_id=$1 AND kind='attachment'
           AND payload->>'blobKey'=$2 AND NOT (scope_id=$3 AND record_id=$4))`,
       [tenantId, staged.blobKey, uploadScope, staged.contentRef]);
+      }
       return value;
     });
   };
@@ -206,6 +210,17 @@ export function createConversationFileStorage(options: ConversationFileStorageOp
           ownerScopeId: uploadScope, conversationId: uploadScope, idempotencyKey, fingerprint,
           mediaType: file.mediaType, filename: file.fileName, bytes: file.data });
       });
+    },
+    /** Trusted server output, keyed by the original provider artifact identity.
+     * Retained directly; it is not an upload or a user-authored message. */
+    async retainGenerated(conversationId: string, input: ConversationFileInput & { readonly idempotencyKey: string }): Promise<AttachmentReference> {
+      if (!/^[A-Za-z0-9][A-Za-z0-9._:@/-]{0,255}$/u.test(input.idempotencyKey)) throw invalid();
+      const file = validate(input);
+      await authorize(conversationId);
+      const id = digest(JSON.stringify([principalId, conversationId, "generated", input.idempotencyKey]));
+      const retained = await retain(conversationId, `att_generated_${id}`, `ref_generated_${id}`, file);
+      await authorize(conversationId);
+      return reference(retained);
     },
     async materialize(conversationId: string, references: readonly AttachmentReference[]): Promise<readonly ConversationFileInput[]> {
       await authorize(conversationId);

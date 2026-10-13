@@ -66,3 +66,5 @@ These are SDK checks. Handrail and Mills installed-consumer adoption and live
 originating-conversation delivery remain required before the overall goal is done.
 
 Full assistant regression: 2,669 tests passed initially; four old cadence/view-clearing assertions failed. Updated the assertions for bounded retained views and idle backoff, preserving active polling and per-reader Retry-After checks. Both affected files then passed all 13 tests. No production source changes were needed after the full run. Installed-consumer fixture typecheck passed. Logs: `/tmp/handrail-sdk-041-assistant-tests.log`, `/tmp/handrail-sdk-041-final-recheck.log`, `/tmp/handrail-sdk-041-fixture-types.log`.
+
+Consumer integration addition (0.4.2): retained generated provider artifacts use existing conversation file custody, authenticated downloads and conversation deletion. Stable original artifact keys reject changed content and survive staging expiry/restart. Focused file suites passed 21/21, including cross-conversation denial, revoked access, no invented user transcript events and byte-exact download; TypeScript build passed.
