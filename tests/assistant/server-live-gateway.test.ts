@@ -24,7 +24,7 @@ const attribution: AuthoritativeAttribution = {
   automation: { id: null, source: "server_derived", trust: "authoritative" },
 };
 
-it("runs the negotiated JS session through the protected gateway and PostgreSQL projection without client canonical hydration", async () => {
+it.each([false,true])("runs the negotiated JS session through the protected gateway without client canonical hydration; host files: %s", async hostFiles => {
   const db = new PGlite();
   let pollingQueries: { statement: string; values: readonly unknown[] }[] | undefined;
   const adapt = (connection: Pick<PGlite, "query">): PostgresSqlClient => {
@@ -51,9 +51,10 @@ it("runs the negotiated JS session through the protected gateway and PostgreSQL 
   });
   const assistant = await createHandrailAssistant({ id: "bounded", authorize: () => context, persistence, recoverPendingOnContext: false,
     automaticTitles: false, attachmentUpload: false, attachmentDownloads: false,
+    ...(hostFiles ? {attachmentRetention:"conversation" as const,attachmentAdmission:"host" as const} : {}),
     provider: { metadata: { provider_id: "test", model_id: "test", capabilities: {
       streaming: true, text: true, tool_calls: true, parallel_tool_calls: false, reasoning: false,
-      document_input: { supported: false }, provider_context: { supported: false, reason: "provider_not_supported" },
+      document_input: { supported: true,capability:{supported_mime_types:["application/pdf"],max_document_count:2,max_document_bytes:1024,requires_host_resolution:true} }, provider_context: { supported: false, reason: "provider_not_supported" },
       context_window_tokens: null, max_output_tokens: null,
     } }, createTransport: () => createApplicationTurnTransport({ execute }) },
   });
@@ -72,7 +73,9 @@ it("runs the negotiated JS session through the protected gateway and PostgreSQL 
     await client.conversation!.synchronize!();
     const accepted = vi.fn();
     const sending = client.conversation!.sendMessage({ content: "Question", onAccepted: accepted,
-      request: { protocol_version: AI_RUNTIME_PROTOCOL_VERSION, messages: [{ role: "user", content: [{ type: "text", text: "Question" }] }],
+      ...(hostFiles ? {attachments:[{kind:"document" as const,attachment_id:"att_native" as never,media_type:"application/pdf",size_bytes:4,filename:"native.pdf"}]} : {}),
+      request: { protocol_version: AI_RUNTIME_PROTOCOL_VERSION, messages: [{ role: "user", content: [{ type: "text", text: "Question" },
+        ...(hostFiles ? [{type:"document" as const,attachment:{attachment_id:"att_native",content_ref:"ref_native",media_type:"application/pdf",byte_size:4,filename:"native.pdf"}}] : [])] }],
         continuation_of: null, tools: [], tool_results: [], generation: { max_output_tokens: 100, temperature: 0 }, correlation_hints: {} } });
     await vi.waitFor(() => expect(client.conversation!.getSnapshot().messages.at(-1)?.content).toEqual([{ type: "text", text: "Live bounded reply" }]), { timeout: 5000 });
     expect(client.conversation!.getSnapshot().active_turn_id).not.toBeNull(); expect(accepted).toHaveBeenCalledOnce();
@@ -94,6 +97,8 @@ it("runs the negotiated JS session through the protected gateway and PostgreSQL 
     try { expect(replay.state.messages).toHaveLength(2); expect(replay.state.turns).toHaveLength(1); expect(replay.state.turns[0]!.status).toBe("completed"); }
     finally { replay.store.destroy(); }
     expect(execute).toHaveBeenCalledOnce();
+    if(hostFiles) expect(client.conversation!.getSnapshot().messages[0]!.attachments).toEqual(expect.arrayContaining([
+      expect.objectContaining({attachment_id:"att_native",filename:"native.pdf"})]));
     expect(reads.some(read => /snapshot|resume/u.test(read.path) || read.operation === "load_snapshot" || read.operation === "read_since")).toBe(false);
     expect(reads.filter(read => read.bytes > 0).length).toBeGreaterThan(0);
     expect(Math.max(...reads.map(read => read.bytes))).toBeLessThan(65536 + 1024);

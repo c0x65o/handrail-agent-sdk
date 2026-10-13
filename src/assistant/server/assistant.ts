@@ -186,6 +186,10 @@ export interface CreateHandrailAssistantOptions<TContext extends HandrailAssista
    * retains files with admitted user messages. Temporary preserves legacy TTL.
    * Existing storage is never adopted or rewritten when this option changes. */
   readonly attachmentRetention?: "conversation" | "temporary";
+  /** Who validates and retains incoming canonical attachment references. Hosts
+   * with an existing authorized upload/source store can keep that authority
+   * while using SDK retention/downloads for generated artifacts. Default sdk. */
+  readonly attachmentAdmission?: "sdk" | "host";
   /** Idle expiry for new SDK-managed uploads. Defaults to one bounded service
    * worker; false is for hosts that schedule the SDK cleanup explicitly. */
   readonly attachmentCleanup?: false | { readonly intervalMs?: number; readonly batchSize?: number };
@@ -377,7 +381,7 @@ export async function createHandrailAssistant<TContext extends HandrailAssistant
   }) ?? bundleFor(context).approvals;
   const providerScopeFor = (context: TContext): HandrailAssistantProviderScope<TContext> => {
     const bundle = bundleFor(context), conversationFiles = filesFor(context);
-    return { context, persistence: conversationFiles ? { ...bundle, events: conversationFiles.events } : bundle,
+    return { context, persistence: conversationFiles && options.attachmentAdmission !== "host" ? { ...bundle, events: conversationFiles.events } : bundle,
       ...(conversationFiles ? { conversationFiles } : {}), authorizeConversation: async conversationId => {
         await catalogFor(context).get({ authorizationContext: context, conversationId: conversationId as never });
       } };
@@ -974,7 +978,7 @@ export async function createHandrailAssistant<TContext extends HandrailAssistant
     adapterFor: (context) => createDurableApplicationConversationSync({
       authorizationContext: context,
       principalId: context.principalId,
-      eventStore: filesFor(context)?.events ?? bundleFor(context).events,
+      eventStore: options.attachmentAdmission === "host" ? bundleFor(context).events : filesFor(context)?.events ?? bundleFor(context).events,
       turnStore: bundleFor(context).durableTurns as never,
       authorizeConversation: async (conversationId) => {
         try { await ownsConversation(context, conversationId); }
