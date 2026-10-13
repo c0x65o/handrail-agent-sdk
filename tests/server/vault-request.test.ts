@@ -163,7 +163,7 @@ acceptance('expiry during DNS preparation prevents transmission of the resolved 
 
 acceptance('address policy rejects private, metadata, multicast, mapped IPv6, noncanonical and mixed DNS answers before connect', async t => {
   const s = await setup(t); let connects = 0;
-  const recipe = { ...s.recipe, fixture: undefined };
+  const { fixture: _fixture, ...recipe } = s.recipe;
   for (const addresses of [['127.0.0.1'], ['10.0.0.1'], ['172.16.0.1'], ['192.168.1.1'], ['169.254.169.254'], ['100.100.100.200'],
     ['0.0.0.0'], ['224.0.0.1'], ['198.18.0.1'], ['192.0.0.1'], ['168.63.129.16'], ['::1'], ['::ffff:127.0.0.1'], ['0177.0.0.1'], ['8.8.8.8', '10.0.0.1'], []]) {
     const client: VaultHttpClient = { resolve: async () => addresses, withConnection: async () => { connects++; throw Error('UNEXPECTED_CONNECT'); } };
@@ -226,7 +226,8 @@ acceptance('timeout while resolving never starts a late connection; request byte
 });
 
 acceptance('public HTTPS policy pins a canonical routable address and rejects a changed socket peer before sending', async t => {
-  const s = await setup(t), recipe = { ...s.recipe, fixture: undefined }; let sends = 0, connected = 0;
+  const s = await setup(t); let sends = 0, connected = 0;
+  const { fixture: _fixture, ...recipe } = s.recipe;
   const client: VaultHttpClient = { resolve: async hostname => { assert.equal(hostname, 'fixture.invalid'); return ['8.8.8.8']; },
     async withConnection(endpoint, address, _signal, run) {
       connected++; assert.equal(endpoint, recipe.destination.endpoint); assert.equal(address, '8.8.8.8');

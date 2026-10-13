@@ -117,6 +117,24 @@ test('full catalog read/effects preserve omissions, explicit null and nested def
   assert.equal(await s.effectCount(), 5);
 });
 
+async function assertInvalidArgumentsCorrection(t, call, options) {
+  const results = [];
+  const s = await setup(t, [call], { ...options, onRequest: request => {
+    for (const item of Array.isArray(request.input) ? request.input : []) {
+      if (item.type !== 'function_call_result') continue;
+      const output = item.output;
+      results.push(typeof output === 'string' ? output : Array.isArray(output)
+        ? output.map(part => part.text ?? '').join('') : output.text);
+    }
+  } });
+  // Invalid arguments return a safe correction result to the model, which can
+  // finish the turn without approving or dispatching the rejected call.
+  assert.equal(ok(await s.runtime.wake(identity)), 'succeeded');
+  assert.deepEqual(results.map(text => JSON.parse(text)), [{ error: 'invalid_arguments', dispatched: false }]);
+  assert.deepEqual(s.decisions, []); assert.deepEqual(s.authorized, []); assert.deepEqual(s.seen, []);
+  assert.equal(await s.effectCount(), 0);
+}
+
 test('invalid catalog arguments never reach approval, authorized IO or effects', async t => {
   const invalid = [
     ['calendar_update_event', { ...calendar, patch: {} }],
@@ -143,10 +161,7 @@ test('invalid catalog arguments never reach approval, authorized IO or effects',
   // Each invalid input travels through a fresh Runner job using the actual
   // unmodified schema extracted from the full catalog.
   for (const [name, input] of invalid) await t.test(`${name} ${JSON.stringify(input).slice(0,100)}`, async t => {
-    const s = await setup(t, [{ name, input }], { definitions: catalog.definitions.filter(d => d.name === name) });
-    assert.equal(ok(await s.runtime.wake(identity)), 'retryable');
-    assert.deepEqual(s.decisions, []); assert.deepEqual(s.authorized, []); assert.deepEqual(s.seen, []);
-    assert.equal(await s.effectCount(), 0);
+    await assertInvalidArgumentsCorrection(t, { name, input }, { definitions: catalog.definitions.filter(d => d.name === name) });
   });
   await t.test('malformed JSON', async t => {
     const s = await setup(t, [{ name: 'assistance_list', raw: '{' }], { definitions: catalog.definitions.filter(d => d.name === 'assistance_list') });
@@ -245,10 +260,8 @@ test('non-Mills laboratory schema executes refs, allOf, oneOf, arrays and open p
 });
 
 test('invalid non-Mills allOf/oneOf input never reaches the effect boundary', async t => {
-  const s = await setup(t, [{ name: laboratory.name, input: { samples: [1], target: true, patch: { gain: 0 } } }],
+  await assertInvalidArgumentsCorrection(t, { name: laboratory.name, input: { samples: [1], target: true, patch: { gain: 0 } } },
     { definitions: [laboratory], readNames: [] });
-  assert.equal(ok(await s.runtime.wake(identity)), 'retryable');
-  assert.equal(s.decisions.length, 0); assert.equal(s.seen.length, 0); assert.equal(await s.effectCount(), 0);
 });
 
 test('unsupported schema semantics fail construction; schema and input cannot be silently mutated', () => {
