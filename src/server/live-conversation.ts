@@ -3,7 +3,7 @@ import { isDeepStrictEqual } from 'node:util';
 import { PostgresAiPersistence, PostgresConversationEventStore, type PostgresSqlClient } from '../assistant/postgres/index.js';
 import { ConversationEventStoreConflictError } from '../assistant/conversation/event-store.js';
 import { replayConversation } from '../assistant/conversation/replay.js';
-import type { ConversationId, ConversationClientId } from '../assistant/conversation/events.js';
+import {parseConversationEvent,type ConversationId,type ConversationClientId} from '../assistant/conversation/events.js';
 import { prepareApplicationConversationSubmission, type ApplicationConversationSubmission } from '../assistant/client/session-submission.js';
 import type { ChatRequest } from '../assistant/protocol.js';
 
@@ -12,7 +12,9 @@ interface Entry {
   sequence: number; key: string; content: string; request: ChatRequest; generation: string;
   origin: Readonly<Record<string,string>>;
   submission?: ApplicationConversationSubmission<ChatRequest>;
-  status: 'queued' | 'admitted' | 'started' | 'handed_off' | 'completed' | 'cancelled';
+  status: 'queued' | 'admitted' | 'started' | 'handed_off' | 'completed' | 'cancelled' | 'steering' | 'steered';
+  activeInput?: {jobRef:string;turnId:string;receipt?:{turnId:string;messageId:string}};
+  deferredFor?: string;
 }
 const hash = (value: unknown) => createHash('sha256').update(JSON.stringify(value)).digest('hex');
 
@@ -96,8 +98,9 @@ export class PostgresLiveConversationQueue {
       try {
         if(replay.state.replay_error)throw new Error('Saved conversation replay failed');
         let entry=row.value;
-        const turn=entry.submission && replay.state.turns.find(turn=>turn.turn_id===entry.submission!.start.conversationTurnId);
-        const released=entry.status==='started' && turn?.status==='waiting_for_approval' &&
+        const turnId=entry.submission?.start.conversationTurnId??entry.activeInput?.turnId;
+        const turn=turnId?replay.state.turns.find(turn=>turn.turn_id===turnId):undefined;
+        const released=['started','steered'].includes(entry.status) && turn?.status==='waiting_for_approval' &&
           !turn.remote_may_still_be_running && replay.state.active_turn_id!==turn.turn_id;
         if(entry.generation!==generation || released || turn && ['completed','cancelled','failed'].includes(turn.status)) {
           // Release ingress ordering, never resolve or cancel the native approval.
@@ -107,6 +110,7 @@ export class PostgresLiveConversationQueue {
           return {pending:entry.sequence<head.value.next};
         }
         if(!entry.submission) {
+          if(entry.activeInput)return {pending:true};
           if(replay.state.active_turn_id!==null)return {pending:true};
           const submission=prepareApplicationConversationSubmission({conversationId:this.options.conversationId as ConversationId,
             clientId:`live-${hash(this.options.principalId).slice(0,20)}` as ConversationClientId,
@@ -138,6 +142,77 @@ export class PostgresLiveConversationQueue {
     }
     return {pending:prepared.pending};
   }
+  /** The existing hosted worker consumes current speech in its original turn.
+   * The queue is the durable canonical admission; the user message is projected
+   * once provider receipt is confirmed. Deferral never duplicates that message.
+   * Host policy is structured (for example native speaker/privacy scope), not
+   * inferred from speech. The caller must hold the exact native job authority. */
+  activeInputs(turnId:string,jobRef:string,accept:(origin:Readonly<Record<string,string>>)=>boolean) {
+    if(!turnId||!jobRef)throw new TypeError('Active voice input identity required');
+    const next=()=>this.#transaction(async(p,generation)=>{
+      const replay=await replayConversation({eventStore:new PostgresConversationEventStore(p,this.options.tenantId),
+        conversationId:this.options.conversationId as ConversationId,checkpointPolicy:false});
+      try {
+        if(replay.state.replay_error)throw new Error('Saved conversation replay failed');
+        if(replay.state.active_turn_id!==turnId)return null;
+        const head=await this.#get<Head>(p,'head');
+        if(!head)return null;
+        for(let sequence=head.value.completed+1;sequence<=head.value.next;sequence++) {
+          const id=this.#id(sequence),row=await this.#get<Entry>(p,id);
+          if(!row)throw new Error('Saved voice queue entry unavailable');
+          const entry=row.value;
+          if(entry.generation!==generation)return null;
+          if(entry.submission?.start.conversationTurnId===turnId || entry.status==='steered')continue;
+          if(entry.activeInput?.jobRef===jobRef && entry.activeInput.turnId===turnId && entry.status==='steering')
+            return {key:id,messages:[{role:'user' as const,content:[{type:'input_text' as const,text:entry.content}]}]};
+          if(entry.status!=='queued'||entry.activeInput||entry.deferredFor===jobRef||!accept(entry.origin))return null;
+          await this.#put(p,id,row.version,{...entry,status:'steering',activeInput:{jobRef,turnId}} satisfies Entry);
+          return {key:id,messages:[{role:'user' as const,content:[{type:'input_text' as const,text:entry.content}]}]};
+        }
+        return null;
+      }finally{replay.store.destroy();}
+    });
+    const update=(key:string,receipt?:{turnId:string;messageId:string})=>this.#transaction(async(p,generation)=>{
+      const row=await this.#get<Entry>(p,key),entry=row?.value;
+      if(!row||!entry||entry.generation!==generation)throw new Error('Saved voice input is no longer current');
+      if(!receipt&&entry.deferredFor===jobRef&&entry.status==='queued')return;
+      if(entry.activeInput?.jobRef!==jobRef||entry.activeInput.turnId!==turnId)throw new Error('Active voice input identity changed');
+      if(receipt) {
+        if(entry.activeInput.receipt) {
+          if(!isDeepStrictEqual(entry.activeInput.receipt,receipt))throw new Error('Active voice receipt changed');
+          return;
+        }
+        if(entry.status!=='steering'||!receipt.messageId||!receipt.turnId)throw new Error('Active voice receipt unavailable');
+        const events=new PostgresConversationEventStore(p,this.options.tenantId);
+        const revision=await events.getLatestRevision(this.options.conversationId as ConversationId);
+        const id=hash([this.prefix,key]);
+        await events.append({conversationId:this.options.conversationId as ConversationId,expectedRevision:revision,
+          events:[parseConversationEvent({version:1,event_id:`live-input-${id}`,conversation_id:this.options.conversationId,
+            revision:(revision??0)+1,occurred_at:this.options.now?.()??new Date().toISOString(),
+            actor:{type:'user'},source:{type:'client',client_id:`live-${hash(this.options.principalId).slice(0,20)}`},
+            metadata:{live_input:{turn_id:turnId,call_id:entry.origin.callId??null}},
+            payload:{type:'message.created',message_id:`live-message-${id}`,role:'user',content:[{type:'text',text:entry.content}]}})]});
+        await this.#put(p,key,row.version,{...entry,status:'steered',activeInput:{...entry.activeInput,receipt}} satisfies Entry);
+      } else {
+        if(entry.status!=='steering'||entry.activeInput.receipt)throw new Error('Received voice input cannot be deferred');
+        const {activeInput:_active,...rest}=entry;
+        await this.#put(p,key,row.version,{...rest,status:'queued',deferredFor:jobRef} satisfies Entry);
+      }
+    });
+    return {next,received:(key:string,receipt:{turnId:string;messageId:string})=>update(key,receipt),defer:(key:string)=>update(key)};
+  }
+  /** All native speech attached to this work, including corrections received
+   * during execution. Hosts use these records for call activity provenance. */
+  async inputOrigins(turnId:string):Promise<Readonly<Record<string,string>>[]> {
+    return this.#transaction(async(p,generation)=>{
+      const rows=await p.client.query<{payload:Entry}>(`SELECT payload FROM handrail_ai_documents
+        WHERE tenant_id=$1 AND kind='checkpoint' AND scope_id=$2 AND record_id LIKE $3`,
+      [this.options.tenantId,this.scopeId,`${this.prefix}input:%`]);
+      return rows.rows.map(row=>row.payload).filter(entry=>entry.generation===generation&&
+        (entry.submission?.start.conversationTurnId===turnId||entry.activeInput?.turnId===turnId&&entry.activeInput.receipt))
+        .map(entry=>entry.origin);
+    });
+  }
   /** Native hosts consult this binding when building tool/privacy policy. A
    * browser or model metadata claim cannot create this trusted queue record. */
   async turnOrigin(turnId: string): Promise<{origin:Readonly<Record<string,string>>;submission:ApplicationConversationSubmission<ChatRequest>} | null> {
@@ -154,13 +229,15 @@ export class PostgresLiveConversationQueue {
       const row=await this.#get<Entry>(p,id);
       if(!row)throw new Error('Saved voice request unavailable');
       if(row.value.generation!==generation || row.value.status==='cancelled')return {status:'cancelled'};
-      if(!row.value.submission)return {status:'queued'};
+      const turnId=row.value.submission?.start.conversationTurnId??row.value.activeInput?.turnId;
+      if(!turnId)return {status:'queued'};
       const replay=await replayConversation({eventStore:new PostgresConversationEventStore(p,this.options.tenantId),
         conversationId:this.options.conversationId as ConversationId,checkpointPolicy:false});
       try {
         if(replay.state.replay_error)throw new Error('Saved conversation replay failed');
-        const turn=replay.state.turns.find(turn=>turn.turn_id===row.value.submission!.start.conversationTurnId);
+        const turn=replay.state.turns.find(turn=>turn.turn_id===turnId);
         if(!turn)throw new Error('Saved voice turn unavailable');
+        if(row.value.status==='steering'&&!['completed','cancelled','failed'].includes(turn.status))return {status:'queued'};
         const text=replay.state.messages.filter(m=>turn.output_message_ids.includes(m.message_id))
           .flatMap(m=>m.content.map(part=>part.text)).join('\n');
         return {status:turn.status==='completed'?'succeeded':turn.status,text};

@@ -85,8 +85,29 @@ For hosts using the SDK's application conversation gateway,
 native transaction authorization, a clear-generation identifier, a prepared
 `ChatRequest`, and a callback that starts the exact retained submission through
 the existing authenticated gateway. Queue admission and canonical event
-publication are transactional. Active text turns are preserved; queued speech
-waits for them to settle. Retry uses the saved mutation/turn/start IDs.
+publication are transactional. Active text turns are preserved. Bind the existing
+hosted worker's `AgentHostedHarness.activeInputs` to the queue's
+`activeInputs(canonicalTurnId, nativeJobId, acceptOrigin)` to deliver new speech
+while that work runs. The host authenticates the exact job and selects compatible
+speaker/privacy origins from native state. Without that binding, speech remains
+queued until the active turn settles. Retry uses retained identities.
+
+The worker journals each input before provider IO and waits for its exact saved
+user-item receipt. HTTP acceptance stays pending until that receipt exists.
+`received` publishes one canonical user message and retains the original native
+turn; `inputOrigins` exposes all attached voice origins for activity projection.
+`defer` keeps the original input queued if the provider turn already finished or
+has a pending action. Native approvals are never answered by steering. The SDK
+does not classify speech or add another model loop: it sends new input to the
+existing OpenAI session. If completion races input, the same worker follows the
+receipted successor provider turn and accounts for both turns' usage. Results
+before the latest received input are not presented as its final answer.
+
+Hosts must supply idempotent claim/receipt/defer callbacks and keep canonical
+job authority stable through them. A cancelled job must not leave its claimed
+input runnable under another job. Cancellation observes the exact pending input
+without sending unsent work; an unresolved provider receipt remains unconfirmed.
+Audio End remains independent of these native work controls.
 
 The host schedules `drain()` independently of audio and wakes pending queues
 on fresh authenticated traffic after restart. `pendingConversations()` discovers

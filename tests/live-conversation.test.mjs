@@ -94,3 +94,57 @@ test('approval releases voice ingress without settling the original request',asy
  assert.equal((await q.read(next)).status,'queued');
  assert.deepEqual((await q.turnOrigin(original.start.conversationTurnId)).submission,original);
 });
+
+test('active speech attaches once to the original canonical work and survives worker reconstruction',async t=>{
+ const f=await fixture(t),q=f.queue();await q.enqueue(f.input('original'));await q.drain();
+ const original=f.starts[0],turnId=original.start.conversationTurnId;
+ const id=await q.enqueue({...f.input('correction'),origin:{channel:'voice',callId:'second',speakerContext:'authenticated_user'}});
+ const active=q.activeInputs(turnId,'native-job',origin=>origin.speakerContext==='authenticated_user');
+ const pending=await active.next();assert.equal(pending.key,id);assert.equal(pending.messages[0].content[0].text,'correction');
+ assert.deepEqual(await f.queue().activeInputs(turnId,'native-job',()=>true).next(),pending);
+ await q.drain();assert.equal(f.starts.length,1,'active input must not start a second canonical worker');
+ const receipt={turnId:'provider-turn',messageId:'provider-message'};
+ await active.received(id,receipt);await active.received(id,receipt);
+ assert.equal(await active.next(),null);
+ const messages=(await f.events.read({conversationId:f.conversationId,limit:100})).entries
+  .filter(row=>row.event.payload.type==='message.created');
+ assert.equal(messages.length,2);assert.equal(messages[1].event.payload.content[0].text,'correction');
+ assert.deepEqual((await q.inputOrigins(turnId)).map(origin=>origin.callId).sort(),['original','second']);
+ await assert.rejects(active.received(id,{...receipt,messageId:'wrong'}),/receipt changed/);
+ await f.complete(original);await q.drain();await q.drain();
+ assert.equal((await q.read(id)).status,'succeeded');assert.equal(f.starts.length,1);
+ assert.deepEqual(await q.drain(),{pending:false});
+});
+
+test('deferring active input keeps a single ordinary queued message and never reclaims for that job',async t=>{
+ const f=await fixture(t),q=f.queue();await q.enqueue(f.input('original'));await q.drain();const original=f.starts[0];
+ const id=await q.enqueue(f.input('late'));
+ const active=q.activeInputs(original.start.conversationTurnId,'native-job',()=>true);
+ await active.next();await active.defer(id);await active.defer(id);assert.equal(await active.next(),null);
+ await f.complete(original);await q.drain();await q.drain();
+ assert.equal(f.starts.length,2);assert.equal(f.starts[1].start.request.content,'late');
+ const messages=(await f.events.read({conversationId:f.conversationId,limit:100})).entries.filter(row=>row.event.payload.type==='message.created');
+ assert.equal(messages.length,2);
+});
+
+test('active input respects native privacy selection, revocation and clear generation',async t=>{
+ const f=await fixture(t),q=f.queue();await q.enqueue(f.input('original'));await q.drain();const turnId=f.starts[0].start.conversationTurnId;
+ const id=await q.enqueue(f.input('shared-room'));
+ assert.equal(await q.activeInputs(turnId,'native-job',origin=>origin.speakerContext==='authenticated_user').next(),null);
+ const active=q.activeInputs(turnId,'native-job',()=>true);await active.next();f.clear();
+ await assert.rejects(active.received(id,{turnId:'provider',messageId:'message'}),/no longer current/);
+ f.deny();await assert.rejects(active.next(),/denied/);
+});
+
+test('Stop settles an unsent claimed input with its original work and never starts it afterward',async t=>{
+ const f=await fixture(t),q=f.queue();await q.enqueue(f.input('original'));await q.drain();
+ const original=f.starts[0],turnId=original.start.conversationTurnId,id=await q.enqueue(f.input('correction'));
+ await q.activeInputs(turnId,'native-job',()=>true).next();
+ const revision=(await f.events.getLatestRevision(f.conversationId))+1;
+ await f.events.append({conversationId:f.conversationId,expectedRevision:revision-1,events:[parseConversationEvent({
+   version:1,event_id:randomUUID(),conversation_id:f.conversationId,revision,occurred_at:new Date().toISOString(),
+   actor:{type:'user'},source:{type:'runtime'},payload:{type:'turn.cancelled',turn_id:turnId,reason:'user'}})]});
+ await q.drain();await q.drain();
+ assert.equal((await q.read(id)).status,'cancelled');assert.equal(f.starts.length,1);
+ assert.deepEqual(await q.drain(),{pending:false});
+});

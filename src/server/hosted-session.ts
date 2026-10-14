@@ -1,7 +1,9 @@
 export {readHostedScreenshot,type HostedScreenshot} from './hosted-screenshot.js';
+export {prepareHostedInput,submitHostedInput,type HostedInputBinding} from './hosted-input.js';
 export { retainHostedArtifacts } from './hosted-artifacts.js';
 import { createHash } from 'node:crypto';
 import { canonicalAgentJson } from './agent-state-binding.js';
+import { submitHostedInput, type HostedInputBinding } from './hosted-input.js';
 export { attachHostedFile, type HostedFileReceipt, type HostedFileSource } from './hosted-files.js';
 export { createHostedConversationStore } from './hosted-conversation.js';
 import type OpenAI from 'openai';
@@ -30,6 +32,16 @@ export interface HostedTurnBinding {
   baseline?: string | null;
   submissionAttempted?: boolean;
   turnId?: string;
+  /** Same native job, additional provider turn only when input races completion. */
+  priorTurnIds?: string[];
+  lastInputMessageId?: string;
+}
+export interface HostedActiveInputPorts {
+  pollMs: number;
+  next(turn: HostedTurnBinding): Promise<{ binding: HostedInputBinding; messages: AgentSessionInputMessageParam[] } | null>;
+  save(binding: HostedInputBinding): Promise<void>;
+  received(binding: HostedInputBinding): Promise<void>;
+  defer(binding: HostedInputBinding, reason: 'turn_finished' | 'requires_action'): Promise<void>;
 }
 export class HostedSessionError extends Error {
   constructor(readonly code: 'creation_uncertain' | 'binding_conflict' | 'session_failed' |
@@ -125,7 +137,8 @@ export function createHostedSessionClient(options: {
       parallelRead?(action: HostedAction): boolean;
       event?(event: AgentSessionEvent): Promise<void>;
       item?(item: AgentSessionItem): Promise<void>;
-    }): Promise<{ status: 'waiting' } | { status: 'terminal'; turn: Turn; items: AgentSessionItem[]; outputText: string }> {
+      activeInput?: HostedActiveInputPorts;
+    }): Promise<{ status: 'waiting' } | { status: 'terminal'; turn: Turn; priorTurns: Turn[]; items: AgentSessionItem[]; outputText: string }> {
       const sessionId = ports.session.sessionId;
       if (!sessionId || !ports.turn.submissionKey) throw new HostedSessionError('binding_conflict');
       await ports.authorize();
@@ -137,6 +150,35 @@ export function createHostedSessionClient(options: {
       const stream = await sessions.events.stream(sessionId, requestOptions(ports.signal));
       const save = async (next: HostedTurnBinding) => { await ports.save(next); turn = next; };
       const latest = async () => (await sessions.turns.list(sessionId, { limit: 1, order: 'desc' }, requestOptions(ports.signal))).data[0];
+      let pendingInput = false;
+      let lastInputPoll = 0;
+      const pollInput = async (force = false) => {
+        if (!ports.activeInput || !turn.turnId) return;
+        if (!force && Date.now() - lastInputPoll < ports.activeInput.pollMs) return;
+        lastInputPoll = Date.now();
+        const input = await ports.activeInput.next(structuredClone(turn));
+        pendingInput = Boolean(input);
+        if (!input) return;
+        const outcome = await submitHostedInput({client:options.client,session:ports.session,...input,
+          signal:ports.signal,authorize:ports.authorize,save:ports.activeInput.save});
+        if (outcome.status === 'pending') return;
+        if (outcome.status === 'not_submitted') {
+          await ports.activeInput.defer(input.binding,outcome.reason);
+        } else {
+          const priorTurnIds = [...(turn.priorTurnIds ?? [])];
+          if (turn.turnId !== outcome.turnId) {
+            const previous = await sessions.turns.retrieve(turn.turnId!,{session_id:sessionId},requestOptions(ports.signal));
+            if (!terminal(previous) || priorTurnIds.includes(outcome.turnId)) throw new HostedSessionError('concurrent_turn');
+            if (!priorTurnIds.includes(previous.id)) priorTurnIds.push(previous.id);
+          }
+          await save({...turn,turnId:outcome.turnId,priorTurnIds,lastInputMessageId:outcome.messageId});
+          await ports.activeInput.received({...input.binding,attempted:true,accepted:true,
+            receipt:{turnId:outcome.turnId,messageId:outcome.messageId}});
+          // The input receipt says where it landed, not whether its answer is done.
+          awaitLiveTerminal = false;
+        }
+        pendingInput = false;
+      };
       const result = async (saved: Turn) => {
         const items: AgentSessionItem[] = [];
         for await (const item of sessions.turns.items.list(saved.id, { session_id: sessionId, order: 'asc', limit: 100 }, requestOptions(ports.signal))) {
@@ -144,13 +186,22 @@ export function createHostedSessionClient(options: {
           await ports.item?.(item);
           items.push(item);
         }
-        const outputText = items.filter(item => item.type === 'message' && item.role === 'assistant' && item.phase !== 'commentary')
+        const after = turn.lastInputMessageId ? items.findIndex(item => item.id === turn.lastInputMessageId) : -1;
+        if (turn.lastInputMessageId && after < 0) throw new HostedSessionError('submission_uncertain');
+        const outputText = items.slice(after + 1).filter(item => item.type === 'message' && item.role === 'assistant' && item.phase !== 'commentary')
           .flatMap(item => item.type === 'message' ? item.content.filter(part => part.type === 'output_text') : [])
           .map(part => part.type === 'output_text' ? part.text : '').join('\n');
-        return { status: 'terminal' as const, turn: saved, items, outputText };
+        const priorTurns: Turn[] = [];
+        for (const id of turn.priorTurnIds ?? []) {
+          const prior = await sessions.turns.retrieve(id,{session_id:sessionId},requestOptions(ports.signal));
+          if (!terminal(prior)) throw new HostedSessionError('concurrent_turn');
+          priorTurns.push(prior);
+        }
+        return { status: 'terminal' as const, turn: saved, priorTurns, items, outputText };
       };
       const reconcile = async (): Promise<Awaited<ReturnType<typeof result>> | { status: 'waiting' } | undefined> => {
         await ports.authorize();
+        await pollInput(true);
         const session = await sessions.retrieve(sessionId, requestOptions(ports.signal));
         verify(session, ports.session);
         if (session.status === 'failed') throw new HostedSessionError('session_failed');
@@ -159,7 +210,7 @@ export function createHostedSessionClient(options: {
           : await latest();
         if (current && current.id !== turn.baseline) {
           if (!turn.turnId) await save({ ...turn, turnId: current.id });
-          if (terminal(current)) return awaitLiveTerminal ? undefined : result(current);
+          if (terminal(current)) return awaitLiveTerminal || pendingInput ? undefined : result(current);
         }
         const respond = async (action: HostedAction, response: HostedActionResult) => {
           const matches = action.type === 'function_call'
@@ -219,9 +270,27 @@ export function createHostedSessionClient(options: {
           await sessions.events.create(sessionId, { 'Idempotency-Key': turn.submissionKey,
             events: [{ type: 'agent.session.input.message', input: ports.input }] }, requestOptions(ports.signal));
         }
-        for await (const event of stream) {
+        const iterator = stream[Symbol.asyncIterator]();
+        let next: Promise<IteratorResult<AgentSessionEvent>> | undefined;
+        for (;;) {
+          next ??= iterator.next();
+          const tick = Symbol('active-input-poll');
+          let timer: ReturnType<typeof setTimeout> | undefined;
+          const incoming = ports.activeInput ? await Promise.race([next,new Promise<typeof tick>(resolve=>{
+            timer=setTimeout(()=>resolve(tick),Math.max(1,ports.activeInput!.pollMs));
+          })]).finally(()=>clearTimeout(timer)) : await next;
+          if (incoming === tick) {const outcome=await reconcile();if(outcome)return outcome;continue;}
+          if (incoming.done) break;
+          next = undefined;
+          const event = incoming.value;
           await ports.authorize();
+          if ('turn_id' in event && event.turn_id && turn.priorTurnIds?.includes(event.turn_id)) {
+            if (event.type === 'agent.session.turn.item.done') await ports.item?.(event.item);
+            continue;
+          }
+          if (ports.activeInput) await pollInput();
           if ('turn' in event && event.turn.subagent_id === null && event.turn.id !== turn.baseline) {
+            if (turn.priorTurnIds?.includes(event.turn.id)) continue;
             if (turn.turnId && event.turn.id !== turn.turnId) throw new HostedSessionError('concurrent_turn');
             if (!turn.turnId) await save({ ...turn, turnId: event.turn.id });
           }

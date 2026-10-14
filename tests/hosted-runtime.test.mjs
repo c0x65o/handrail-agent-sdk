@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { z } from 'zod';
 import { createAgentRuntime } from '../dist/server/agent-runtime.js';
+import {prepareHostedInput} from '../dist/server/hosted-input.js';
 const identity={jobId:'job',originTaskRef:'task',requestKey:'key',instructionRevision:1,
  host:{tenantRef:'tenant',userRef:'user',projectRef:'project',accountRef:'account',environmentRef:'dev',purposeRef:'test'},
  native:{requestRef:'request',rootTaskRef:'root'},origin:{channelRef:'test',routeRef:'route',correlationRef:'trace'}};
@@ -38,7 +39,7 @@ function fixture(){
  effects:{execute:async request=>{executions++;assert.equal(request.idempotencyRef,request.effectRef);return success({outcome:'verified',receiptRef:'external'});}},
  tools:[{kind:'effect',name:'reserve',description:'Reserve',parameters:z.object({item:z.string()}).strict(),bind:async call=>({identity,effectRef:call.effectRef,idempotencyRef:call.effectRef})}],
  limits:{maxDispatches:null,maxToolCalls:null,maxElapsedMs:null,maxContextBytes:100000,maxStateBytes:65536,maxOutputBytes:100000,leaseTtlMs:30000,pollMs:1000}};
- return {runtime:()=>createAgentRuntime(options),get checkpoint(){return checkpoint;},get snapshot(){return snapshot;},get providerTurn(){return turn;},get executions(){return executions;},get messages(){return messages;},get outputs(){return outputs;},
+ return {options,sessions,runtime:()=>createAgentRuntime(options),set checkpoint(v){checkpoint=v;},get checkpoint(){return checkpoint;},get snapshot(){return snapshot;},get providerTurn(){return turn;},get executions(){return executions;},get messages(){return messages;},get outputs(){return outputs;},
  set denied(v){denied=v;},set approved(v){approved=v;},set outputFailure(v){outputFailure=v;},set toolResultFailure(v){toolResultFailure=v;}};
 }
 test('hosted harness completes native effect through admitted runtime',async()=>{
@@ -75,4 +76,34 @@ test('a separate provider Stop does not let the observer commit failure before n
  observer=f.runtime();assert.deepEqual(await observer.wake(identity),success('stopped'));
  assert.equal(f.snapshot.state,'running','native Stop must still be allowed to commit cancellation');
  assert.equal(f.messages,1);assert.equal(f.executions,1);assert.equal(f.outputs,0);await observer.stop();
+});
+
+for(const accepted of [false,true])test(`Stop reconciles pending active input without resubmitting it (saved receipt: ${accepted})`,async()=>{
+ const f=fixture();f.approved=false;let r=f.runtime();await r.wake(identity);await r.stop();
+ const original=f.providerTurn;
+ const messages=[{role:'user',content:[{type:'input_text',text:'Please correct the active request.'}]}];
+ const binding=prepareHostedInput({sessionId:'remote-session',originalTurnId:original.id,submissionKey:'correction',messages});
+ const crypto=await import('node:crypto');
+ const {canonicalAgentJson}=await import('../dist/server/agent-state-binding.js');
+ const marker='Saved input reference: '+crypto.createHash('sha256').update(canonicalAgentJson([binding.sessionId,binding.originalTurnId,binding.submissionKey,binding.payloadDigest])).digest('hex');
+ f.checkpoint={...f.checkpoint,hostedActiveInput:{key:'native-correction',messages,binding:{...binding,attempted:true,accepted:true}}};
+ const successor={id:'successor',status:'in_progress',subagent_id:null};
+ if(accepted)original.status='completed';
+ f.sessions.items={list:()=>({async *[Symbol.asyncIterator](){if(accepted)yield {id:'correction-item',turn_id:successor.id,type:'message',role:'user',content:[{type:'input_text',text:marker}]};}})};
+ f.sessions.turns.retrieve=async id=>id===successor.id?successor:original;
+ f.sessions.turns.list=async()=>({data:[accepted?successor:original]});
+ const captured=[],usage=[],events=[];
+ f.options.harness.activeInputs={next:async()=>null,received:async(id,key,receipt)=>captured.push({id,key,receipt}),defer:async()=>{throw Error('Stop cannot requeue speech');}};
+ f.options.harness.usage=async(_id,turn)=>usage.push(turn.id);
+ f.sessions.events.create=async(_id,body)=>{events.push(...body.events);assert.ok(body.events.every(e=>e.type==='agent.session.input.cancel'));(accepted?successor:original).status='cancelled';};
+ r=f.runtime();
+ if(accepted){
+   await r.cancelProvider(identity,new AbortController().signal);
+   assert.deepEqual(captured,[{id:identity,key:'native-correction',receipt:{turnId:'successor',messageId:'correction-item'}}]);
+   assert.deepEqual(usage,[original.id,'successor']);
+ }else{
+   await assert.rejects(r.cancelProvider(identity,new AbortController().signal),error=>error.code==='submission_uncertain');
+   assert.equal(captured.length,0);assert.equal(usage.length,0);
+ }
+ assert.equal(events.length,1);assert.notEqual(f.snapshot.state,'cancelled');await r.stop();
 });

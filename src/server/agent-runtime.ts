@@ -6,6 +6,7 @@ import { canonicalAgentJson } from './agent-state-binding.js';
 import { setSensitiveDataLoggingEnabled, protocol } from '@openai/agents';
 import { attachHostedFile, type HostedFileReceipt, type HostedFileSource } from './hosted-files.js';
 import { createHostedSessionClient, HostedSessionError } from './hosted-session.js';
+import { prepareHostedInput, submitHostedInput, type HostedInputBinding } from './hosted-input.js';
 import { APIError } from 'openai';
 import type { HostedSessionBinding, HostedTurnBinding } from './hosted-session.js';
 import { HOSTED_NATIVE_TOOLS, HOSTED_NATIVE_INSTRUCTIONS } from './hosted-runtime-ports.js';
@@ -65,6 +66,7 @@ export interface AgentCheckpoint {
   readonly input: AgentInput;
   readonly state?: string;
   readonly hosted?: { readonly session: HostedSessionBinding; readonly turn: HostedTurnBinding; readonly input: AgentSessionInputMessageParam[] };
+  readonly hostedActiveInput?: {readonly key:string;readonly binding:HostedInputBinding;readonly messages:AgentSessionInputMessageParam[]};
   readonly results: Readonly<Record<string, { readonly binding: string; readonly output: AgentToolOutput }>>;
   readonly files?: Readonly<Record<string, HostedFileReceipt>>;
   readonly resolution?: AgentResolution;
@@ -548,12 +550,48 @@ export function createAgentRuntime(deps: {
         await save();
       }
       if (record.hosted!.session.sessionId !== session.binding.sessionId) throw new StoreFailure('invalid_checkpoint');
+      if (record.hostedActiveInput && !deps.harness.activeInputs) throw new StoreFailure('invalid_checkpoint');
       const result = await driver.run({ session: session.binding, turn: record.hosted!.turn, input: record.hosted!.input,
         signal: controller.signal, authorize: async () => { await check(); await load(identity); },
-        save: async turn => { record = { ...record!, hosted: { ...record!.hosted!, turn } }; await save!(); },
+        save: turn => serializeCheckpoint(async () => { record = { ...record!, hosted: { ...record!.hosted!, turn } }; await save!(); }),
+        ...(deps.harness.activeInputs ? {activeInput:{
+          pollMs:limits.pollMs,
+          next:async (turn:HostedTurnBinding) => {
+            await check();
+            if (record!.hostedActiveInput) return copy(record!.hostedActiveInput);
+            const next = await deps.harness.activeInputs!.next(copy(identity));
+            if (!next) return null;
+            if (!turn.turnId || !session.binding.sessionId || size(next.messages)>limits.maxContextBytes) throw new StoreFailure('invalid_checkpoint');
+            const pending={...copy(next),binding:prepareHostedInput({sessionId:session.binding.sessionId,
+              originalTurnId:turn.turnId,submissionKey:`handrail-input:${digest([identity,next.key])}`,messages:next.messages})};
+            await serializeCheckpoint(async()=>{record={...record!,hostedActiveInput:pending};await save!();});
+            return copy(pending);
+          },
+          save: (binding:HostedInputBinding) => serializeCheckpoint(async()=>{
+            const pending=record!.hostedActiveInput;
+            if(!pending || pending.binding.submissionKey!==binding.submissionKey)throw new StoreFailure('invalid_checkpoint');
+            record={...record!,hostedActiveInput:{...pending,binding}};await save!();
+          }),
+          received:async (binding:HostedInputBinding) => {
+            const pending=record!.hostedActiveInput;
+            if(!pending || !binding.receipt || pending.binding.submissionKey!==binding.submissionKey)throw new StoreFailure('invalid_checkpoint');
+            await check();
+            await deps.harness.activeInputs!.received(copy(identity),pending.key,copy(binding.receipt));
+            await serializeCheckpoint(async()=>{const {hostedActiveInput:_input,...retained}=record!;record=retained;await save!();});
+          },
+          defer:async (binding:HostedInputBinding, reason:'turn_finished'|'requires_action') => {
+            const pending=record!.hostedActiveInput;
+            if(!pending || pending.binding.attempted || pending.binding.submissionKey!==binding.submissionKey)throw new StoreFailure('invalid_checkpoint');
+            await check();
+            await deps.harness.activeInputs!.defer(copy(identity),pending.key,reason);
+            await serializeCheckpoint(async()=>{const {hostedActiveInput:_input,...retained}=record!;record=retained;await save!();});
+          },
+        }} : {}),
         item: item => {
-          const sessionId=session.binding.sessionId,turnId=record!.hosted!.turn.turnId;
-          if(!sessionId||!turnId||item.type==='computer_use_call'&&item.turn_id!==turnId)throw new StoreFailure('identity_mismatch');
+          const sessionId=session.binding.sessionId;
+          const turnId='turn_id' in item ? item.turn_id : record!.hosted!.turn.turnId;
+          const owned=[record!.hosted!.turn.turnId,...(record!.hosted!.turn.priorTurnIds??[])];
+          if(!sessionId||!turnId||!owned.includes(turnId))throw new StoreFailure('identity_mismatch');
           return deps.harness.item(copy(identity),item,{sessionId,turnId});
         },
         event: async event => {
@@ -624,7 +662,7 @@ export function createAgentRuntime(deps: {
         },
       });
       if (result.status === 'waiting') throw Error('missing_host_requirement');
-      await deps.harness.usage(copy(identity), result.turn);
+      for (const turn of [...result.priorTurns,result.turn]) await deps.harness.usage(copy(identity),turn);
       // A separate Stop handler may cancel the provider while this observer
       // still owns the execution lease. Leave the native job cancellable: its
       // authenticated Stop transaction owns the explicit_stop actor and fence.
@@ -632,9 +670,11 @@ export function createAgentRuntime(deps: {
       if (result.turn.status === 'cancelled') return { ok: true, value: 'stopped' };
       if (result.turn.status !== 'completed') { await save({ kind: 'failed' }); return { ok: true, value: 'failed' }; }
       if (size(result.outputText) > limits.maxOutputBytes) throw new Halt('limit_exceeded');
+      const measured=[...result.priorTurns,result.turn].filter(turn=>turn.usage);
       record = { ...record, output: result.outputText,
-        ...(result.turn.usage ? { usage: { requests: 1, inputTokens: result.turn.usage.input_tokens,
-          outputTokens: result.turn.usage.output_tokens, totalTokens: result.turn.usage.total_tokens } } : {}) };
+        ...(measured.length ? {usage:measured.reduce((total,turn)=>({requests:total.requests+1,
+          inputTokens:total.inputTokens+turn.usage!.input_tokens,outputTokens:total.outputTokens+turn.usage!.output_tokens,
+          totalTokens:total.totalTokens+turn.usage!.total_tokens}),{requests:0,inputTokens:0,outputTokens:0,totalTokens:0})} : {}) };
       await save();
       return await commitOutput();
 
@@ -716,11 +756,27 @@ export function createAgentRuntime(deps: {
       activeJobs.get(identity.jobId)?.abort();
       const checkpoint = await authorized(identity, authority => deps.states.load(identity, authority));
       if (!checkpoint?.hosted) return;
-      const { session, turn } = checkpoint.hosted;
+      const { session } = checkpoint.hosted;
+      let turn=checkpoint.hosted.turn;
       const driver = createHostedSessionClient({ client: deps.harness.client, model: deps.harness.model,
         instructions: HOSTED_NATIVE_INSTRUCTIONS, tools: HOSTED_NATIVE_TOOLS,
         ...(deps.harness.browser === undefined ? {} : { browser: deps.harness.browser }) });
+      let inputUnconfirmed=false;
+      if(checkpoint.hostedActiveInput?.binding.attempted) {
+        const pending=checkpoint.hostedActiveInput;
+        const receipt=await submitHostedInput({client:deps.harness.client,session,binding:pending.binding,messages:pending.messages,
+          signal,observeOnly:true,authorize:async()=>{await load(identity);},save:async()=>{}});
+        if(receipt.status==='received') {
+          if(!deps.harness.activeInputs)throw new StoreFailure('invalid_checkpoint');
+          // Stop can win before the observer projects the accepted input. Keep
+          // that canonical receipt even when cancellation settles this job.
+          await deps.harness.activeInputs.received(copy(identity),pending.key,{turnId:receipt.turnId,messageId:receipt.messageId});
+          turn={...turn,turnId:receipt.turnId,priorTurnIds:[...new Set([...(turn.priorTurnIds??[]),
+            ...(turn.turnId&&turn.turnId!==receipt.turnId?[turn.turnId]:[])])]};
+        } else inputUnconfirmed=true;
+      }
       await driver.cancel(session, turn, async () => { await load(identity); }, signal);
+      if(inputUnconfirmed)throw new HostedSessionError('submission_uncertain');
       if (!session.sessionId || !turn.submissionAttempted) return;
       const provider = deps.harness.client.beta.agents.sessions;
       for (;;) {
@@ -731,6 +787,11 @@ export function createAgentRuntime(deps: {
           : (await provider.turns.list(session.sessionId, { order: 'desc', limit: 1 }, { signal, maxRetries: 0 })).data[0];
         if (!saved || saved.id === turn.baseline) return;
         if (['completed', 'failed', 'cancelled'].includes(saved.status)) {
+          for(const id of turn.priorTurnIds??[]) {
+            const prior=await provider.turns.retrieve(id,{session_id:session.sessionId},{signal,maxRetries:0});
+            if(!['completed','failed','cancelled'].includes(prior.status))throw new HostedSessionError('concurrent_turn');
+            await deps.harness.usage(copy(identity),prior);
+          }
           await deps.harness.usage(copy(identity), saved);
           return;
         }

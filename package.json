@@ -1,6 +1,6 @@
 {
   "name": "handrail-agent-sdk",
-  "version": "0.4.22",
+  "version": "0.4.23",
   "private": true,
   "description": "Durable Handrail agents, authenticated application gateway, usage delivery and optional web and Flutter clients",
   "type": "module",
@@ -258,7 +258,7 @@
     "build": "tsc -p tsconfig.json && node scripts/build-postgres-assets.mjs",
     "prepare": "npm run build",
     "pretest": "npm run build && npm run typecheck:acceptance && npm run build:test-postgres && npm run build:reference",
-    "test": "node --test --test-concurrency=1 --test-reporter=tap tests/contracts/job.test.mjs tests/contracts/connection.test.mjs tests/contracts/vault.test.mjs tests/contracts/browser.test.mjs tests/browser-use.test.mjs tests/packaging.test.mjs tests/git-lock.test.mjs tests/acceptance.test.mjs tests/marketing.test.mjs tests/managed-network.test.mjs tests/agent-conversation-continuation.test.mjs tests/agent-usage.test.mjs tests/consolidation.test.mjs tests/hosted-session.test.mjs tests/hosted-conversation.test.mjs tests/hosted-runtime.test.mjs tests/hosted-checkpoint-import.test.mjs tests/hosted-approval.test.mjs tests/hosted-session-http.test.mjs tests/hosted-files.test.mjs",
+    "test": "node --test --test-concurrency=1 --test-reporter=tap tests/contracts/job.test.mjs tests/contracts/connection.test.mjs tests/contracts/vault.test.mjs tests/contracts/browser.test.mjs tests/browser-use.test.mjs tests/packaging.test.mjs tests/git-lock.test.mjs tests/acceptance.test.mjs tests/marketing.test.mjs tests/managed-network.test.mjs tests/agent-conversation-continuation.test.mjs tests/agent-usage.test.mjs tests/consolidation.test.mjs tests/hosted-session.test.mjs tests/hosted-input.test.mjs tests/hosted-active-input.test.mjs tests/hosted-conversation.test.mjs tests/hosted-runtime.test.mjs tests/hosted-checkpoint-import.test.mjs tests/hosted-approval.test.mjs tests/hosted-session-http.test.mjs tests/hosted-files.test.mjs",
     "build:test-postgres": "tsc -p tests/tsconfig.postgres.json",
     "test:postgres": "npm run build:test-postgres && node --test --test-concurrency=1 --test-reporter=tap tests/postgres.test.mjs",
     "typecheck:acceptance": "tsc -p tests/fixtures/tsconfig.acceptance.json",
@@ -292,7 +292,7 @@
     "test:adoption": "node --test tests/assistant/adopt-cli.test.mjs",
     "test:package": "npm run build && node --test tests/assistant/package-contract.test.mjs",
     "test:setup": "npm run build && node --test --test-concurrency=1 tests/setup.test.mjs",
-    "test:hosted": "npm run build && node --test --test-concurrency=1 tests/hosted-session.test.mjs tests/hosted-screenshot.test.mjs tests/hosted-conversation.test.mjs tests/hosted-runtime.test.mjs tests/hosted-checkpoint-import.test.mjs tests/hosted-approval.test.mjs tests/hosted-session-http.test.mjs tests/hosted-files.test.mjs tests/hosted-artifacts.test.mjs tests/managed-portal-browser.test.mjs",
+    "test:hosted": "npm run build && node --test --test-concurrency=1 tests/hosted-session.test.mjs tests/hosted-input.test.mjs tests/hosted-active-input.test.mjs tests/hosted-screenshot.test.mjs tests/hosted-conversation.test.mjs tests/hosted-runtime.test.mjs tests/hosted-checkpoint-import.test.mjs tests/hosted-approval.test.mjs tests/hosted-session-http.test.mjs tests/hosted-files.test.mjs tests/hosted-artifacts.test.mjs tests/managed-portal-browser.test.mjs",
     "test:live": "npm run build && node --test --test-concurrency=1 tests/live-session.test.mjs tests/live-transport.test.mjs tests/live-browser.test.mjs",
     "test:live-queue": "npm run build && node --test --test-concurrency=1 tests/live-conversation.test.mjs"
   },

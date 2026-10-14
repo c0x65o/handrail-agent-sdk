@@ -31,6 +31,15 @@ export interface AgentHostedHarness {
   item(identity: JobIdentity, item: AgentSessionItem, origin: {sessionId:string;turnId:string}): Promise<void>;
   /** Capture the saved provider turn with a stable receipt before host success. */
   usage(identity: JobIdentity, turn: Turn): Promise<void>;
+  /** Native inbox input claimed by this exact active job. Claim and canonical
+   * transcript capture are atomic under current conversation authority. The
+   * host excludes incompatible privacy contexts and leaves approvals intact.
+   * No classifier or second execution loop belongs in this binding. */
+  activeInputs?: {
+    next(identity: JobIdentity): Promise<{key:string;messages:AgentSessionInputMessageParam[]} | null>;
+    received(identity: JobIdentity, key: string, receipt: {turnId:string;messageId:string}): Promise<void>;
+    defer(identity: JobIdentity, key: string, reason: 'turn_finished' | 'requires_action'): Promise<void>;
+  };
 }
 
 // One stable catalog/execute contract keeps existing provider sessions usable
