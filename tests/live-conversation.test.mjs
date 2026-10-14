@@ -42,6 +42,7 @@ test('durable voice queue preserves original identity through uncertain admissio
  f.failStart(true);await assert.rejects(a.drain(),/uncertain start/);
  const original=f.starts[0];f.failStart(false);await f.queue().drain();
  assert.deepEqual(f.starts[1],original);
+ await a.drain();assert.equal(f.starts.length,2,'acknowledged start is not repeated while work runs');
  assert.equal((await f.events.read({conversationId:f.conversationId,limit:20})).entries.length,2);
  assert.deepEqual((await a.turnOrigin(original.start.conversationTurnId)).origin,f.input('first').origin);
  await f.complete(original);assert.equal((await a.read(id)).status,'succeeded');

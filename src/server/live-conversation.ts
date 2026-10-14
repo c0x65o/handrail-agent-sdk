@@ -113,11 +113,19 @@ export class PostgresLiveConversationQueue {
           await this.#put(p,id,row.version,entry);
           await this.#put(p,`turn:${submission.start.conversationTurnId}`,null,{sequence:entry.sequence});
         }
-        return {pending:true,submission:entry.submission!};
+        return entry.status==='started'?{pending:true}:{pending:true,submission:entry.submission!,id};
       } finally {replay.store.destroy();}
     });
     if(!prepared)return {pending:false};
-    if('submission' in prepared)await this.options.start(prepared.submission);
+    if('submission' in prepared && prepared.submission && prepared.id) {
+      const id=prepared.id;
+      await this.options.start(prepared.submission);
+      await this.#transaction(async(p)=>{
+        const row=await this.#get<Entry>(p,id);
+        if(!row || !isDeepStrictEqual(row.value.submission,prepared.submission))throw new Error('Saved voice start receipt changed');
+        if(row.value.status==='admitted')await this.#put(p,id,row.version,{...row.value,status:'started'});
+      });
+    }
     return {pending:prepared.pending};
   }
   /** Native hosts consult this binding when building tool/privacy policy. A
