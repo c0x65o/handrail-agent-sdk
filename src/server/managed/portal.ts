@@ -12,7 +12,10 @@ export function portalPage(input: { label: string; url: string; csrf: string; ki
     <style nonce="${escape(input.nonce)}">body{font:17px system-ui;color:#202820;background:#f7f8f4;margin:32px auto;padding:20px;max-width:1100px}form{max-width:560px}label{display:block;margin:18px 0}input{display:block;box-sizing:border-box;width:100%;padding:12px;margin-top:6px;font:inherit;border:1px solid #899688;border-radius:6px}.check input{display:inline;width:auto;margin-right:10px}button{font:inherit;background:#24543b;color:white;padding:12px 18px;border:0;border-radius:6px;cursor:pointer}img{max-width:100%;height:auto;border:1px solid #899688}</style></head><body>${content}</body></html>`;
 }
 export function portalHeaders(nonce: string) {
-  return { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store', 'Referrer-Policy': 'no-referrer',
+  // Chromium makes a navigation POST's Origin opaque under no-referrer.
+  // Send only the public origin: keep private paths out of Referer while
+  // preserving the exact Origin required by the authenticated CSRF boundary.
+  return { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store', 'Referrer-Policy': 'strict-origin',
     'X-Content-Type-Options': 'nosniff', 'X-Frame-Options': 'DENY',
     'Content-Security-Policy': `default-src 'none'; script-src 'nonce-${nonce}'; style-src 'nonce-${nonce}'; img-src data:; connect-src 'self'; form-action 'self'; frame-ancestors 'none'; base-uri 'none'` };
 }

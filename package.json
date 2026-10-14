@@ -1,6 +1,6 @@
 {
   "name": "handrail-agent-sdk",
-  "version": "0.4.4",
+  "version": "0.4.5",
   "private": true,
   "description": "Durable Handrail agents, authenticated application gateway, usage delivery and optional web and Flutter clients",
   "type": "module",
@@ -277,14 +277,14 @@
     "test:assistance": "npm run build && npm run build:reference && npm run build:test-postgres && node --test --test-concurrency=1 --test-reporter=tap tests/assistance.test.mjs tests/agent-transport.test.mjs",
     "test:conversation": "npm run build && node --test --test-concurrency=1 tests/fixtures/installed/conversation.test.mjs",
     "test:observer-recovery": "npm run build && node --test --test-concurrency=1 tests/observer-recovery.test.mjs tests/observer-recovery-postgres.test.mjs",
-    "test:managed": "npm run build && node --test --test-concurrency=1 tests/managed-capabilities.test.mjs",
+    "test:managed": "npm run build && node --test --test-concurrency=1 tests/managed-capabilities.test.mjs tests/managed-portal-browser.test.mjs",
     "test:assistant": "vitest run --config vitest.assistant.config.ts",
     "typecheck:assistant": "tsc -p tsconfig.assistant.json",
     "test:usage": "npm run build && node --test --test-concurrency=1 tests/agent-usage.test.mjs",
     "test:adoption": "node --test tests/assistant/adopt-cli.test.mjs",
     "test:package": "npm run build && node --test tests/assistant/package-contract.test.mjs",
     "test:setup": "npm run build && node --test --test-concurrency=1 tests/setup.test.mjs",
-    "test:hosted": "npm run build && node --test --test-concurrency=1 tests/hosted-session.test.mjs tests/hosted-conversation.test.mjs tests/hosted-runtime.test.mjs tests/hosted-checkpoint-import.test.mjs tests/hosted-approval.test.mjs tests/hosted-session-http.test.mjs tests/hosted-files.test.mjs tests/hosted-artifacts.test.mjs"
+    "test:hosted": "npm run build && node --test --test-concurrency=1 tests/hosted-session.test.mjs tests/hosted-conversation.test.mjs tests/hosted-runtime.test.mjs tests/hosted-checkpoint-import.test.mjs tests/hosted-approval.test.mjs tests/hosted-session-http.test.mjs tests/hosted-files.test.mjs tests/hosted-artifacts.test.mjs tests/managed-portal-browser.test.mjs"
   },
   "devDependencies": {
     "@types/node": "22.20.4",
