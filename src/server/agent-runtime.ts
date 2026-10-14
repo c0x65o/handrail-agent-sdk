@@ -555,7 +555,8 @@ export function createAgentRuntime(deps: {
         signal: controller.signal, authorize: async () => { await check(); await load(identity); },
         save: turn => serializeCheckpoint(async () => { record = { ...record!, hosted: { ...record!.hosted!, turn } }; await save!(); }),
         ...(deps.harness.activeInputs ? {activeInput:{
-          pollMs:limits.pollMs,
+          // Spoken corrections must not inherit a slow native recovery cadence.
+          pollMs:Math.min(limits.pollMs,500),
           next:async (turn:HostedTurnBinding) => {
             await check();
             if (record!.hostedActiveInput) return copy(record!.hostedActiveInput);

@@ -142,3 +142,5 @@ creation rejection is reported as `LiveTransportError.creationOutcome ===
 provider identity (`PostgresRealtimeCallStore.confirmCreationRejected`, using the
 original worker). Timeouts, interrupted requests and missing receipts remain
 uncertain. This does not authorize repeating the same call identity.
+
+Active hosted input is observed at least every 500 ms while its worker is listening, even when the host uses a slower recovery polling interval. Provider acknowledgements and currently executing native actions still determine when the correction can take effect.
