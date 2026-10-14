@@ -35,7 +35,7 @@ async function setup(t, flags = { vault: true, browser: false }, handoff = false
     onAnswered: hooks.onAnswered });
   let capabilities = create(), deps;
   t.after(() => capabilities.close());
-  const provider = model(handoff);
+  const provider = hooks.model || model(handoff);
   const s = await services(harness.schema, randomBytes(32).toString('hex'), { model: provider,
     runtimeFactory: options => { deps = options; return capabilities.createRuntime(options); } });
   t.after(() => s.close());
@@ -90,6 +90,42 @@ test('one SDK setup supplies form, encrypted custody, visible link, native answe
   const accounts = await managedStore(s.harness.pool, s.harness.schema, s.keys).list(identity.host, 'account:');
   assert.equal(accounts.length, 1); assert.equal(accounts[0].value.password === password, true);
   assert.equal((await s.harness.pool.query(`SELECT * FROM ${s.harness.table('jobs')}`)).rowCount, 1);
+});
+
+test('authenticated conversation website answers preserve the original wait and refuse changed decisions and actors',async t=>{
+  const provider={async *getStreamedResponse({authCompleted}){
+    yield {type:'response_done',response:{output:authCompleted?
+      [{type:'message',role:'assistant',status:'completed',content:[{type:'output_text',text:'Continued original task.'}]}]:
+      [{type:'computer_use_approval_request',request_id:'website-original',request:{type:'browser_origin_access',origin:'https://example.com',reason:'Read the page'}}],
+      usage:{inputTokens:1,outputTokens:1,totalTokens:2}}};
+  }};
+  const s=await setup(t,{vault:true,browser:true},false,{model:provider});
+  assert.equal(ok(await s.runtime.wake(identity)),'waiting');
+  const requirementRef=ok(await s.journal.load(identity)).requirement.requirementRef;
+  const input={requirementRef,decision:'approve',sourceRef:'original-owner-reply'};
+  ok(await s.runtime.resume(identity));assert.equal(ok(await s.runtime.wake(identity)),'waiting');
+  assert.deepEqual(await s.capabilities.readBrowserOriginAccess(identity,identity.host,requirementRef),
+    {requirementRef,origin:'https://example.com',answered:false});
+  await assert.rejects(s.capabilities.answerBrowserOriginAccess(identity,{...identity.host,userRef:'another-owner'},input),/AUTHORITY/);
+  await assert.rejects(s.capabilities.answerBrowserOriginAccess(identity,identity.host,{...input,requirementRef:'managed:another'}),/WAIT_CHANGED/);
+  await assert.rejects(s.capabilities.answerBrowserOriginAccess(identity,identity.host,{...input,decision:'guess'}),/DECISION/);
+  const runtime=await s.restart();
+  assert.equal((await s.capabilities.answerBrowserOriginAccess(identity,identity.host,input)).status,'saved');
+  assert.equal(ok(await s.journal.load(identity)).state,'waiting','the host scheduler owns continuation');
+  await s.capabilities.answerBrowserOriginAccess(identity,identity.host,input);
+  await assert.rejects(s.capabilities.answerBrowserOriginAccess(identity,identity.host,{...input,decision:'deny'}),/CONFLICT/);
+  ok(await runtime.resume(identity));assert.equal(ok(await runtime.wake(identity)),'succeeded');
+  await assert.rejects(s.capabilities.answerBrowserOriginAccess(identity,identity.host,input),/WAIT_CHANGED/);
+  assert.equal((await s.harness.pool.query(`SELECT * FROM ${s.harness.table('jobs')}`)).rowCount,1);
+});
+
+test('conversation website answers cannot complete a private credential form',async t=>{
+  const s=await setup(t,{vault:true,browser:true});await start(s);
+  ok(await s.runtime.resume(identity));assert.equal(ok(await s.runtime.wake(identity)),'waiting');
+  const requirementRef=ok(await s.journal.load(identity)).requirement.requirementRef;
+  await assert.rejects(s.capabilities.readBrowserOriginAccess(identity,identity.host,requirementRef),/AUTHORITY|WAIT_CHANGED/);
+  await assert.rejects(s.capabilities.answerBrowserOriginAccess(identity,identity.host,{requirementRef,decision:'approve',sourceRef:'owner-reply'}),/AUTHORITY|WAIT_CHANGED/);
+  assert.equal(ok(await s.journal.load(identity)).state,'waiting');
 });
 test('secure entry survives a service restart before the user submits it', async t => {
   const s = await setup(t), entry = await start(s);

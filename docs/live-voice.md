@@ -96,3 +96,12 @@ returns trusted host-authored voice context for policy, never model metadata.
 Queue records use the canonical conversation scope and are covered by its
 existing permanent-deletion path. A changed clear-generation cancels old queued
 speech. A host must enforce original start-request equality for a queued turn.
+
+Saved voice ingress releases its ordering slot when a canonical turn is waiting
+for approval and has released active execution. The original approval and result
+remain on that turn; a follow-up never approves it. A rolled-back canonical
+revision conflict retries from the new head, preserving the original input key.
+`PostgresRealtimeToolActivityStore.projectCanonical` lets an authorized host
+project native tool receipts after audio termination. Verify the saved turn's
+voice origin and event provenance before projecting; these display records never
+authorize or repeat tool execution and do not establish playback.

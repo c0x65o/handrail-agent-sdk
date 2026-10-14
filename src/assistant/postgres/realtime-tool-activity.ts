@@ -112,6 +112,30 @@ export class PostgresRealtimeToolActivityStore {
     }
     throw new PostgresPersistenceConflictError();
   }
+  /** Project an already authorized canonical tool record for display. The host
+   * must verify the saved turn-to-call binding and native event provenance.
+   * Unlike record(), this does not admit tool execution under a live lease:
+   * saved conversation work may begin and finish after the audio has ended. */
+  async projectCanonical(input: RealtimeToolActivityRecord): Promise<RealtimeToolActivityRecord> {
+    const next=validate(input,input.toolCallId);
+    return this.calls.withConversationLock(this.callId,async calls=>{
+      if(!await calls.get(this.callId))throw new DurableRealtimeCallConflictError();
+      const saved=await calls.persistence.getDocument<RealtimeToolActivityRecord>(calls.tenantId,
+        'realtime_tool_activity',this.#scope,next.toolCallId);
+      const previous=saved?validate(saved.value,next.toolCallId):null;
+      if(previous && (previous.name!==next.name || previous.startedAt!==next.startedAt))throw new DurableRealtimeCallConflictError();
+      // Concurrent readers can finish an older replay after a newer one.
+      if(previous && (previous.updatedAt>next.updatedAt || previous.status==='completed' || previous.status==='failed')) {
+        if(previous.updatedAt<=next.updatedAt && (next.status==='completed'||next.status==='failed') && previous.status!==next.status)
+          throw new DurableRealtimeCallConflictError();
+        return previous;
+      }
+      if(previous && previous.updatedAt===next.updatedAt && previous.status===next.status)return previous;
+      await calls.persistence.compareAndSetDocument({tenantId:calls.tenantId,kind:'realtime_tool_activity',scopeId:this.#scope,
+        recordId:next.toolCallId,expectedVersion:saved?.version??null,value:next});
+      return Object.freeze(next);
+    });
+  }
   async summary(): Promise<RealtimeToolActivitySummary> {
     if (!await this.calls.get(this.callId)) throw new DurableRealtimeCallConflictError();
     const result = await this.calls.persistence.client.query<{ total: string; running: string; completed: string; failed: string; waiting: string }>(

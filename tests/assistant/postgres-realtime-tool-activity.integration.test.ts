@@ -81,6 +81,14 @@ it("retains bounded voice tool activity across reloads, duplicate callbacks and 
     const foreign = new PostgresRealtimeToolActivityStore(new PostgresRealtimeCallStore(persistence, "environment", "other-owner"), "voice");
     await expect(foreign.summary()).rejects.toBeInstanceOf(DurableRealtimeCallConflictError);
     await expect(foreign.list()).rejects.toBeInstanceOf(DurableRealtimeCallConflictError);
+    const canonical={schemaVersion:1 as const,toolCallId:'canonical-after-end',name:'products_list',
+      status:'completed' as const,startedAt:1100,updatedAt:1200};
+    await activity().projectCanonical(canonical);
+    expect((await activity().readState()).unread).toBe(true);
+    await activity().projectCanonical({...canonical,status:'running',updatedAt:1100});
+    expect(await activity().get(canonical.toolCallId)).toEqual(canonical);
+    await expect(activity().projectCanonical({...canonical,status:'failed'})).rejects.toBeInstanceOf(DurableRealtimeCallConflictError);
+    await expect(foreign.projectCanonical(canonical)).rejects.toBeInstanceOf(DurableRealtimeCallConflictError);
     await calls().admit({ callId: "other-call", conversationId: "conversation", workerId: "worker", fingerprint: "settings" });
     expect(await new PostgresRealtimeToolActivityStore(calls(), "other-call").summary())
       .toEqual({ total: 0, running: 0, completed: 0, failed: 0 });

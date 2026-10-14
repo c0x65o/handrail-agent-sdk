@@ -232,6 +232,12 @@ export function createManagedAgentCapabilities(options: ManagedAgentCapabilities
         const id = snapshot.value.requirement.requirementRef.slice(8);
         const saved = await store.get<Interaction>(identity.host, `interaction:${id}`);
         if (saved?.value.completed) await complete(saved.value, false);
+        else {
+          // An unanswered private step is an ordinary wait, not a rejected
+          // attempt to resume execution. Recheck authority before leaving it.
+          await authorizeJob(identity);
+          return {ok: true as const, value: undefined};
+        }
       }
       return resume(identity);
     };
@@ -286,6 +292,48 @@ export function createManagedAgentCapabilities(options: ManagedAgentCapabilities
       const work = (async () => { const result = await registered.runtime.resume(i.identity); if (result.ok) await registered.runtime.wake(i.identity); })().catch(() => {});
       pending.add(work); void work.finally(() => pending.delete(work));
     }
+  }
+  /** A trusted host may collect a nonsecret website decision through another
+   * authenticated surface (for example an explicit reply to its notification).
+   * This never exposes or accepts authentication fields. The host supplies the
+   * authenticated scope, not a model-selected actor or a bearer link. */
+  async function browserOriginAccess(identity: JobIdentity, actor: Scope, requirementRef: string) {
+    if (!flags.browser || !equal(identity.host, actor)) throw Error('CAPABILITY_AUTHORITY_LOST');
+    const current = await authorizeJob(identity);
+    if (current.state !== 'waiting' || current.requirement.kind !== 'approval'
+      || current.requirement.requirementRef !== requirementRef) throw Error('CAPABILITY_WAIT_CHANGED');
+    const id = requirementRef.slice('managed:'.length);
+    if (!requirementRef.startsWith('managed:')) throw Error('CAPABILITY_WAIT_CHANGED');
+    const saved = await store.get<Interaction>(actor, `interaction:${id}`);
+    if (!saved || JSON.stringify(saved.value.identity) !== JSON.stringify(identity)
+      || saved.value.kind !== 'hosted' || saved.value.action?.request.type !== 'browser_origin_access')
+      throw Error('CAPABILITY_WAIT_CHANGED');
+    return saved;
+  }
+  async function readBrowserOriginAccess(identity: JobIdentity, actor: Scope, requirementRef: string) {
+    const {value} = await browserOriginAccess(identity, actor, requirementRef);
+    return {requirementRef, origin: value.action!.request.type === 'browser_origin_access' ? value.action!.request.origin : '',
+      answered: value.completed};
+  }
+  async function answerBrowserOriginAccess(identity: JobIdentity, actor: Scope, input: {
+    requirementRef: string; decision: 'approve' | 'deny' | 'cancel'; sourceRef: string;
+  }) {
+    if (!input.sourceRef?.trim()) throw Error('CAPABILITY_REPLY_SOURCE_REQUIRED');
+    const initial = await browserOriginAccess(identity, actor, input.requirementRef);
+    const answered = await store.lock(actor, `account:${initial.value.accountRef}`, async () => {
+      const fresh = await browserOriginAccess(identity, actor, input.requirementRef);
+      const response = hostedApprovalResponse(fresh.value.action!, {decision: input.decision});
+      if (fresh.value.completed) {
+        if (JSON.stringify(fresh.value.response) !== JSON.stringify(response)) throw Error('CAPABILITY_CONFLICT');
+        return fresh.value;
+      }
+      const value = {...fresh.value, completed: true, response, replySourceRef: input.sourceRef};
+      await authorizeJob(identity);
+      await store.put(actor, `interaction:${value.ref}`, value, fresh.version);
+      return value;
+    });
+    await complete(answered, false);
+    return {requirementRef: input.requirementRef, decision: input.decision, status: 'saved' as const};
   }
   async function handleRequest(request: Request): Promise<Response> {
     // Fixed nonsecret stages make production failures diagnosable without
@@ -395,7 +443,7 @@ export function createManagedAgentCapabilities(options: ManagedAgentCapabilities
       return response;
     } catch (error) { return error instanceof AnswerDeliveryError ? safeError(error.stage) : fail(); }
   }
-  return { createRuntime, handleRequest,
+  return { createRuntime, handleRequest, readBrowserOriginAccess, answerBrowserOriginAccess,
     /** For applications with an explicit tool allowlist. Current host authority
      * still governs every call; enabling a feature never bypasses it. */
     toolNames: Object.freeze([

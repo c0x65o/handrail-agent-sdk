@@ -77,3 +77,20 @@ test('queue recovery discovery is scoped to the retained tenant and principal',a
  assert.deepEqual(await PostgresLiveConversationQueue.pendingConversations(f.options.persistence,f.options.tenantId,randomUUID()),[]);
  assert.deepEqual(await PostgresLiveConversationQueue.pendingConversations(f.options.persistence,randomUUID(),f.options.principalId),[]);
 });
+
+
+test('approval releases voice ingress without settling the original request',async t=>{
+ const f=await fixture(t),q=f.queue();const first=await q.enqueue(f.input('needs approval'));
+ await q.drain();const original=f.starts[0];
+ const revision=(await f.events.getLatestRevision(f.conversationId))+1;
+ await f.events.append({conversationId:f.conversationId,expectedRevision:revision-1,events:[parseConversationEvent({
+  version:1,event_id:randomUUID(),conversation_id:f.conversationId,revision,occurred_at:new Date().toISOString(),
+  actor:{type:'assistant'},source:{type:'runtime'},payload:{type:'turn.status_changed',turn_id:original.start.conversationTurnId,status:'waiting_for_approval'}})]});
+ const next=await q.enqueue(f.input('followup'));
+ await q.drain();await q.drain();
+ assert.equal(f.starts.length,2);
+ assert.equal(f.starts[1].start.request.content,'followup');
+ assert.equal((await q.read(first)).status,'waiting_for_approval');
+ assert.equal((await q.read(next)).status,'queued');
+ assert.deepEqual((await q.turnOrigin(original.start.conversationTurnId)).submission,original);
+});

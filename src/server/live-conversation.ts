@@ -1,6 +1,7 @@
 import { createHash } from 'node:crypto';
 import { isDeepStrictEqual } from 'node:util';
 import { PostgresAiPersistence, PostgresConversationEventStore, type PostgresSqlClient } from '../assistant/postgres/index.js';
+import { ConversationEventStoreConflictError } from '../assistant/conversation/event-store.js';
 import { replayConversation } from '../assistant/conversation/replay.js';
 import type { ConversationId, ConversationClientId } from '../assistant/conversation/events.js';
 import { prepareApplicationConversationSubmission, type ApplicationConversationSubmission } from '../assistant/client/session-submission.js';
@@ -11,7 +12,7 @@ interface Entry {
   sequence: number; key: string; content: string; request: ChatRequest; generation: string;
   origin: Readonly<Record<string,string>>;
   submission?: ApplicationConversationSubmission<ChatRequest>;
-  status: 'queued' | 'admitted' | 'started' | 'completed' | 'cancelled';
+  status: 'queued' | 'admitted' | 'started' | 'handed_off' | 'completed' | 'cancelled';
 }
 const hash = (value: unknown) => createHash('sha256').update(JSON.stringify(value)).digest('hex');
 
@@ -93,10 +94,14 @@ export class PostgresLiveConversationQueue {
       const events=new PostgresConversationEventStore(p,this.options.tenantId);
       const replay=await replayConversation({eventStore:events,conversationId:this.options.conversationId as ConversationId,checkpointPolicy:false});
       try {
+        if(replay.state.replay_error)throw new Error('Saved conversation replay failed');
         let entry=row.value;
         const turn=entry.submission && replay.state.turns.find(turn=>turn.turn_id===entry.submission!.start.conversationTurnId);
-        if(entry.generation!==generation || turn && ['completed','cancelled','failed'].includes(turn.status)) {
-          entry={...entry,status:entry.generation!==generation?'cancelled':'completed'};
+        const released=entry.status==='started' && turn?.status==='waiting_for_approval' &&
+          !turn.remote_may_still_be_running && replay.state.active_turn_id!==turn.turn_id;
+        if(entry.generation!==generation || released || turn && ['completed','cancelled','failed'].includes(turn.status)) {
+          // Release ingress ordering, never resolve or cancel the native approval.
+          entry={...entry,status:entry.generation!==generation?'cancelled':released?'handed_off':'completed'};
           await this.#put(p,id,row.version,entry);
           await this.#put(p,'head',head.version,{...head.value,completed:entry.sequence});
           return {pending:entry.sequence<head.value.next};
@@ -115,6 +120,11 @@ export class PostgresLiveConversationQueue {
         }
         return entry.status==='started'?{pending:true}:{pending:true,submission:entry.submission!,id};
       } finally {replay.store.destroy();}
+    }).catch(error=>{
+      // This append was rolled back before publication. Re-read the new head on
+      // the next step; uncertain starts and identity conflicts must propagate.
+      if(error instanceof ConversationEventStoreConflictError && error.code==='revision_conflict')return {pending:true};
+      throw error;
     });
     if(!prepared)return {pending:false};
     if('submission' in prepared && prepared.submission && prepared.id) {
@@ -148,6 +158,7 @@ export class PostgresLiveConversationQueue {
       const replay=await replayConversation({eventStore:new PostgresConversationEventStore(p,this.options.tenantId),
         conversationId:this.options.conversationId as ConversationId,checkpointPolicy:false});
       try {
+        if(replay.state.replay_error)throw new Error('Saved conversation replay failed');
         const turn=replay.state.turns.find(turn=>turn.turn_id===row.value.submission!.start.conversationTurnId);
         if(!turn)throw new Error('Saved voice turn unavailable');
         const text=replay.state.messages.filter(m=>turn.output_message_ids.includes(m.message_id))
