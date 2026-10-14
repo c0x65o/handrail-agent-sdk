@@ -105,7 +105,10 @@ test('expired private form reopens after recovery without reviving stale submiss
   await store.put(identity.host, key, { ...saved.value, expiresAt: Date.now() - 1 }, saved.version);
   await s.restart();
   assert.equal((await submit(s, entry, 'test-only-password')).status, 403);
-  s.auth(false); assert.equal((await s.request(entry.secureUrl)).status, 403);
+  s.auth(false);
+  const anonymous = await s.request(entry.secureUrl);
+  assert.equal(anonymous.status, 403);
+  assert.equal(anonymous.headers.get('x-handrail-agent-input-error'), 'authentication');
   s.auth(true, { ...identity.host, userRef: 'another' });
   assert.equal((await s.request(entry.secureUrl)).status, 403);
   assert.equal((await store.get(identity.host, key)).version, saved.version + 1);
@@ -128,7 +131,9 @@ test('expired form cannot renew after Stop or revoked native authority', async t
   const saved = await store.get(identity.host, key);
   await store.put(identity.host, key, { ...saved.value, expiresAt: Date.now() - 1 }, saved.version);
   s.state.denied = true;
-  assert.equal((await s.request(entry.secureUrl)).status, 403);
+  const revoked = await s.request(entry.secureUrl);
+  assert.equal(revoked.status, 403);
+  assert.equal(revoked.headers.get('x-handrail-agent-input-error'), 'job_authority');
   s.state.denied = false;
   const job = ok(await s.journal.load(identity));
   ok(await s.cancel.stop({ command: 'cancel', identity, expectedRevision: job.revision, reason: 'explicit_stop' }, identity.host.userRef));

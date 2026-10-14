@@ -41,7 +41,7 @@ interface Interaction { identity: JobIdentity; ref: string; accountRef: string; 
 interface Operation { call: AgentCall; phase: 'prepared' | 'started' | 'complete'; result?: ManagedResult }
 const equal = (a: Scope, b: Scope) => canonicalScope(a) === canonicalScope(b);
 const ref = z.string().uuid();
-const safeError = () => new Response('Account access is unavailable. Return to your conversation.', { status: 403, headers: { 'Cache-Control': 'no-store' } });
+const safeError = (stage = 'request') => new Response('Account access is unavailable. Return to your conversation.', { status: 403, headers: { 'Cache-Control': 'no-store', 'X-Handrail-Agent-Input-Error': stage } });
 const json = (value: unknown) => new Response(JSON.stringify(value), { headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } });
 const unwrap = <T>(r: { ok: true; value: T } | { ok: false; code: string }): T => { if (!r.ok) throw Error('CAPABILITY_UNAVAILABLE'); return r.value; };
 
@@ -262,26 +262,36 @@ export function createManagedAgentCapabilities(options: ManagedAgentCapabilities
     }
   }
   async function handleRequest(request: Request): Promise<Response> {
+    // Fixed nonsecret stages make production failures diagnosable without
+    // exposing URLs, provider payloads, credentials, CSRF, or exception text.
+    let stage = 'request';
+    const fail = () => safeError(stage);
     try {
       if (closed || (!flags.vault && !flags.browser)) return new Response('Not found', { status: 404 });
       const url = new URL(request.url), prefix = `${base.pathname}/`;
       if (url.origin !== base.origin || !url.pathname.startsWith(prefix) || url.search || !/^[a-f0-9]{64}$/.test(url.pathname.slice(prefix.length))) return new Response('Not found', { status: 404 });
       if (!['GET', 'POST'].includes(request.method)) return new Response('Method not allowed', { status: 405 });
+      stage = 'authentication';
       const scope = await options.authenticate(request);
       if (!scope || !validateJobCommand({ command: 'inspect', identity: { jobId: 'scope-check', originTaskRef: 'scope-check', requestKey: 'scope-check', instructionRevision: 1,
-        host: scope, native: { requestRef: 'scope-check' }, origin: { channelRef: 'scope-check', routeRef: 'scope-check', correlationRef: 'scope-check' } } }).ok) return safeError();
+        host: scope, native: { requestRef: 'scope-check' }, origin: { channelRef: 'scope-check', routeRef: 'scope-check', correlationRef: 'scope-check' } } }).ok) return fail();
+      stage = 'interaction';
       const id = url.pathname.slice(prefix.length), key = `interaction:${id}`, found = await store.get<Interaction>(scope, key);
-      if (!found || !equal(found.value.identity.host, scope)) return safeError();
-      if (found.value.kind !== 'credentials' && found.value.kind !== 'hosted') return safeError();
+      if (!found || !equal(found.value.identity.host, scope)) return fail();
+      if (found.value.kind !== 'credentials' && found.value.kind !== 'hosted') return fail();
       let i = found.value;
+      stage = 'job_authority';
       const current = await authorizeJob(i.identity);
       if (i.completed) {
+        stage = 'answer_delivery';
         if (current.state === 'waiting' && current.requirement.requirementRef === requirement(i).requirementRef) await complete(i);
         return new Response('Access saved. You can return to your conversation.', { headers: portalHeaders('completed') });
       }
-      if (current.state !== 'waiting' || current.requirement.requirementRef !== requirement(i).requirementRef) return safeError();
-      if (i.kind === 'hosted' ? !flags.browser : !flags.vault) return safeError();
+      if (current.state !== 'waiting' || current.requirement.requirementRef !== requirement(i).requirementRef) return fail();
+      stage = 'feature';
+      if (i.kind === 'hosted' ? !flags.browser : !flags.vault) return fail();
       if (request.method === 'GET') {
+        stage = 'form_renewal';
         // The form lifetime is not a deadline for the original task. A current
         // authenticated owner may reopen its still-pending step after a restart
         // or delay. Rotate the CSRF token; never revive an expired submission.
@@ -295,6 +305,7 @@ export function createManagedAgentCapabilities(options: ManagedAgentCapabilities
           await store.put(scope, key, renewed, fresh.version);
           return renewed;
         });
+        stage = 'form_render';
         const nonce = randomBytes(18).toString('base64');
         const accounts = flags.vault && i.action?.request.type === 'browser_authentication' && i.action.request.credential_origin
           ? (await store.list<PrivateAccount>(scope, 'account:')).filter(a => a.value.approved && !a.value.revoked && a.value.expiresAt > Date.now()
@@ -302,45 +313,47 @@ export function createManagedAgentCapabilities(options: ManagedAgentCapabilities
             .map(a => ({ ref: a.id.slice(8), label: a.value.label })) : [];
         return new Response(i.kind === 'hosted' && i.action ? hostedApprovalPage({ action: i.action, csrf: i.csrf, path: url.pathname, nonce, accounts }) : portalPage({ ...i, kind: 'credentials', path: url.pathname, nonce }), { headers: portalHeaders(nonce) });
       }
-      if (i.expiresAt <= Date.now()) return safeError();
-      if (request.headers.get('origin') !== base.origin || request.headers.get('sec-fetch-site') === 'cross-site') return safeError();
-      if (Number(request.headers.get('content-length') ?? 0) > 16384) return safeError();
-      const reader = request.body?.getReader(); if (!reader) return safeError();
+      stage = 'submission';
+      if (i.expiresAt <= Date.now()) return fail();
+      if (request.headers.get('origin') !== base.origin || request.headers.get('sec-fetch-site') === 'cross-site') return fail();
+      if (Number(request.headers.get('content-length') ?? 0) > 16384) return fail();
+      const reader = request.body?.getReader(); if (!reader) return fail();
       const chunks: Uint8Array[] = []; let length = 0;
-      while (true) { const r = await reader.read(); if (r.done) break; length += r.value.length; if (length > 16384) { await reader.cancel(); return safeError(); } chunks.push(r.value); }
+      while (true) { const r = await reader.read(); if (r.done) break; length += r.value.length; if (length > 16384) { await reader.cancel(); return fail(); } chunks.push(r.value); }
       const text = Buffer.concat(chunks).toString('utf8');
       const form = request.headers.get('content-type')?.startsWith('application/json') ? JSON.parse(text) : Object.fromEntries(new URLSearchParams(text));
-      if (typeof form.csrf !== 'string' || form.csrf.length !== i.csrf.length || !timingSafeEqual(Buffer.from(form.csrf), Buffer.from(i.csrf))) return safeError();
+      if (typeof form.csrf !== 'string' || form.csrf.length !== i.csrf.length || !timingSafeEqual(Buffer.from(form.csrf), Buffer.from(i.csrf))) return fail();
       let completed = false;
+      stage = 'submission_commit';
       const response = await store.lock(scope, `account:${i.accountRef}`, async () => {
         const active = await authorizeJob(i.identity);
-        if (active.state !== 'waiting' || active.requirement.requirementRef !== requirement(i).requirementRef || i.expiresAt <= Date.now()) return safeError();
+        if (active.state !== 'waiting' || active.requirement.requirementRef !== requirement(i).requirementRef || i.expiresAt <= Date.now()) return fail();
         const fresh = await store.get<Interaction>(scope, key);
         if (!fresh || fresh.value.completed) return json({ status: 'ready' });
-        if (fresh.value.expiresAt <= Date.now() || fresh.value.csrf !== i.csrf) return safeError();
+        if (fresh.value.expiresAt <= Date.now() || fresh.value.csrf !== i.csrf) return fail();
         if (i.kind === 'credentials') {
           if (form.consent !== 'yes' || typeof form.username !== 'string' || !form.username || form.username.length > 512
-            || typeof form.password !== 'string' || !form.password || form.password.length > 4096 || typeof form.origins !== 'string') return safeError();
+            || typeof form.password !== 'string' || !form.password || form.password.length > 4096 || typeof form.origins !== 'string') return fail();
           const origins = [...new Set([website(i.url).origin, ...form.origins.split(/[\s,]+/).filter(Boolean).map((s: string) => {
             const u = website(s); if (u.origin !== s) throw Error('ORIGIN_INVALID'); return u.origin;
           })])];
-          if (origins.length > 12) return safeError();
+          if (origins.length > 12) return fail();
           const account: PrivateAccount = { label: i.label, url: i.url, origins, username: form.username, password: form.password,
             approved: true, revoked: false, expiresAt: Date.now() + 30 * 86400000 };
           const old = await store.get<PrivateAccount>(scope, `account:${i.accountRef}`);
           await store.put(scope, `account:${i.accountRef}`, account, old?.version ?? 0);
         } else {
-          if (!i.action) return safeError();
+          if (!i.action) return fail();
           if (form.action === 'submit' && i.action.request.type === 'browser_authentication' && form.accountRef) {
-            if (!flags.vault || typeof form.accountRef !== 'string') return safeError();
+            if (!flags.vault || typeof form.accountRef !== 'string') return fail();
             const account = await store.get<PrivateAccount>(scope, `account:${form.accountRef}`);
             if (!account || !account.value.approved || account.value.revoked || account.value.expiresAt <= Date.now()
-              || !i.action.request.credential_origin || !account.value.origins.includes(i.action.request.credential_origin)) return safeError();
+              || !i.action.request.credential_origin || !account.value.origins.includes(i.action.request.credential_origin)) return fail();
             i.accountRef = form.accountRef;
             for (let n = 0; n < i.action.request.fields.length; n++) {
               const source = form[`source_${n}`];
               if (source === 'username' || source === 'password') form[`field_${n}`] = source === 'username' ? account.value.username : account.value.password;
-              else if (source) return safeError();
+              else if (source) return fail();
             }
           }
           i.response = hostedApprovalResponse(i.action, form);
@@ -351,9 +364,10 @@ export function createManagedAgentCapabilities(options: ManagedAgentCapabilities
         return new Response('Your response was saved securely. The assistant can continue. You can close this page.', { headers: portalHeaders('complete') });
       });
       // Release the account lock before waking a model that may use the account.
+      stage = 'answer_delivery';
       if (completed) await complete(i);
       return response;
-    } catch { return safeError(); }
+    } catch { return fail(); }
   }
   return { createRuntime, handleRequest,
     /** For applications with an explicit tool allowlist. Current host authority

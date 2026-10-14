@@ -87,3 +87,5 @@ Validation includes real disposable PostgreSQL secure-entry/restart tests, scope
 access and Stop rejection, provider request rendering, and the hosted transport’s
 recovery tests. Production delivery still requires testing the installed consumer,
 its authentication, original conversation, artifact storage and cancellation path.
+
+Private input failures include `X-Handrail-Agent-Input-Error`, a fixed stage label (authentication, interaction lookup, current job authority, form renewal/rendering, submission, or answer delivery). The header contains no exception text, private URL, provider payload or submitted values. Use it to distinguish the failing boundary without exposing form data.
