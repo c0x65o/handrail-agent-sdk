@@ -53,6 +53,13 @@ existing conversation writer for the entire admitted operation.
 
 ## Continuity and recovery
 
+The durable application observer never ends an admitted or uncertain execution
+because its connections have failed repeatedly. Its attempt limit applies only
+to preparation proven not to have dispatched a delegate. Reconnect uses the
+original identity until the provider settles or Stop is acknowledged. Runtime
+errors expose fixed hosted error classifications and HTTP status only; private
+provider bodies, browser content and tool arguments stay out of diagnostics.
+
 Before session creation, save a creation intent with a unique metadata key. An
 uncertain create is recovered by matching that exact metadata; never create a
 replacement because an observer disconnected. Every admitted input has a durable

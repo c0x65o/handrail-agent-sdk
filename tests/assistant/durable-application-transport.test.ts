@@ -417,3 +417,28 @@ it("recovers a disconnected non-Agent application executor without forging a ter
     expect(seen).toEqual([1, 2].map(attempt => ({ conversationId: input.conversationId, turnId: input.conversationTurnId, attempt })));
   } finally { await fresh.stopWorkers(); }
 });
+
+
+it("retains one admitted identity across more observer losses than the preparation retry limit", async () => {
+  const store = new InMemoryDurableApplicationTurnStore<Request, Event>();
+  const inner = delegate([], { status: "disconnected", checkpoint: checkpoint(null) });
+  for (let index = 0; index < 8; index++) {
+    const worker = durable(store, inner.transport, `restart-${index}`);
+    const result = await worker.startTurn(input);
+    if (!result.ok) throw Error(result.error.message);
+    await collect(result.value.observation.events);
+    expect((await result.value.observation.result).status).toBe("disconnected");
+    await vi.waitFor(() => expect(worker.activeWorkerCount).toBe(0));
+    expect((await store.load(input.conversationId,input.conversationTurnId))?.record)
+      .toMatchObject({status:"pending",terminal:null,delegateTurnId:"provider-turn-1",attempt:index+1});
+    await worker.stopWorkers();
+  }
+  const finishing = durable(store, delegate([{id:"done",text:"original result"}]).transport, "final-observer");
+  try {
+    const result = await finishing.startTurn(input);
+    if (!result.ok) throw Error(result.error.message);
+    expect(await collect(result.value.observation.events)).toEqual([{id:"done",text:"original result"}]);
+    expect((await result.value.observation.result).status).toBe("completed");
+    for(const [request] of inner.startTurn.mock.calls) expect(request).toEqual(input);
+  } finally { await finishing.stopWorkers(); }
+});

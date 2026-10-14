@@ -63,3 +63,15 @@ test('Hosted runtime Vault tool composes real custody/grants/effects and never e
   const events=(await s.client.query(`SELECT event FROM ${s.harness.table('job_events')}`)).rows;
   assert.ok(!JSON.stringify([state,events,s.events]).includes(privateToken));
 });
+
+
+test('provider diagnostics classify hosted failures without logging private provider bodies', async t => {
+  const {APIError}=await import('openai');
+  const privateBody='private-account-and-browser-data';
+  const model={async *getStreamedResponse(){throw new APIError(429,{message:privateBody},privateBody,new Headers());}};
+  const f=await setup(t,{model});
+  assert.equal(ok(await f.runtime.wake(identity)),'retryable');
+  assert.ok(f.events.some(event=>event.kind==='error'&&event.code==='provider_request_failed'&&event.providerStatus===429));
+  assert.ok(!JSON.stringify(f.events).includes(privateBody));
+  assert.equal(ok(await f.journal.load(identity)).state,'running');
+});

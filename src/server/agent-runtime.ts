@@ -5,7 +5,8 @@ import { createToolExecutionQueue } from './tool-execution-queue.js';
 import { canonicalAgentJson } from './agent-state-binding.js';
 import { setSensitiveDataLoggingEnabled, protocol } from '@openai/agents';
 import { attachHostedFile, type HostedFileReceipt, type HostedFileSource } from './hosted-files.js';
-import { createHostedSessionClient } from './hosted-session.js';
+import { createHostedSessionClient, HostedSessionError } from './hosted-session.js';
+import { APIError } from 'openai';
 import type { HostedSessionBinding, HostedTurnBinding } from './hosted-session.js';
 import { HOSTED_NATIVE_TOOLS, HOSTED_NATIVE_INSTRUCTIONS } from './hosted-runtime-ports.js';
 import { readHostedCheckpointImport } from './hosted-checkpoint-import.js';
@@ -166,7 +167,8 @@ export interface AgentRuntimeLimits {
   readonly pollMs: number;
 }
 export type AgentRuntimeEvent = { readonly kind: 'model_progress' | 'tool_completed' | 'checkpoint' | 'waiting' | 'succeeded' }
-  | { readonly kind: 'error'; readonly code: 'execution_failed' | 'preparation_failed' | 'limit_exceeded' | 'stopped' | 'lease_lost' | 'not_authorized' | 'invalid_checkpoint' }
+  | { readonly kind: 'error'; readonly code: 'execution_failed' | 'preparation_failed' | 'limit_exceeded' | 'stopped' | 'lease_lost' | 'not_authorized' | 'invalid_checkpoint'
+      | `hosted_${HostedSessionError['code']}` | 'provider_request_failed'; readonly providerStatus?: number }
   | { readonly kind: 'usage'; readonly usage: AgentUsage };
 export type AgentOutcome = 'succeeded' | 'failed' | 'waiting' | 'cancelled' | 'busy' | 'stopped' | 'retryable';
 class Halt extends Error { constructor(readonly code: 'limit_exceeded' | 'stopped') { super(code); } }
@@ -625,8 +627,12 @@ export function createAgentRuntime(deps: {
       }
       const code = error instanceof StoreFailure && ['lease_lost', 'not_authorized', 'invalid_checkpoint'].includes(error.code)
         ? error.code as 'lease_lost' | 'not_authorized' | 'invalid_checkpoint'
-        : error instanceof Halt ? error.code : 'execution_failed';
-      emit({ kind: 'error', code });
+        : error instanceof Halt ? error.code
+        : error instanceof HostedSessionError ? `hosted_${error.code}` as const
+        : error instanceof APIError ? 'provider_request_failed' : 'execution_failed';
+      // Only a fixed SDK classification and HTTP status leave private custody.
+      // Provider messages, bodies, headers and tool arguments may contain secrets.
+      emit({ kind: 'error', code, ...(error instanceof APIError && error.status !== undefined ? { providerStatus: error.status } : {}) });
       if (error instanceof StoreFailure) return { ok: false, code: error.code };
       if (!fence) return { ok: false, code: 'not_authorized' };
       return { ok: true, value: controller.signal.aborted || stopped ? 'stopped' : 'retryable' };

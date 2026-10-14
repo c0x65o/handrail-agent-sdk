@@ -126,6 +126,9 @@ export interface DurableApplicationTransportOptions<TEvent, TRequest, TStoredReq
   /** Check the current trusted scope before claiming or dispatching retained work.
    * A false result leaves the turn untouched for its authorized worker. */
   readonly authorizeRecovery?: (input: { readonly conversationId: string; readonly turnId: string }) => boolean | Promise<boolean>;
+  /** Bounds only preparation retries proven not to have dispatched a delegate.
+   * An admitted or uncertain original execution remains recoverable until its
+   * own terminal result or acknowledged Stop; disconnection cannot end it. */
   readonly maximumAttempts?: number;
   readonly maximumCasAttempts?: number;
   /** Share one pool across authorization contexts to bound recovered provider
@@ -470,7 +473,8 @@ export function createDurableApplicationTransport<TEvent, TRequest, TStoredReque
         if (record.lease && record.lease.ownerId !== workerId && Date.parse(record.lease.expiresAt) > currentTime) return null;
         // Delivery retries must not exhaust the execution retry budget and
         // manufacture a terminal while the delegate still owns admitted work.
-        if (!record.cancellation && record.attempt - (record.approvalResumes ?? 0) >= maximumAttempts) {
+        if (!record.cancellation && record.delegateStartAttempted === false &&
+          record.attempt - (record.approvalResumes ?? 0) >= maximumAttempts) {
           const checkpoint = record.events.at(-1)?.checkpoint ?? EMPTY_CHECKPOINT;
           return { ...record, status: "failed", lease: null, updatedAt: timestamp(currentTime), terminal: {
             status: "failed", checkpoint, error: { code: "unavailable",
