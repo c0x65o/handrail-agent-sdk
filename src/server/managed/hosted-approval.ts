@@ -3,6 +3,21 @@ import type { HostedAction, HostedActionResult } from '../hosted-session.js';
 type Approval = Extract<HostedAction, { type: 'computer_use_approval_request' }>;
 const escape = (s: string) => s.replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]!));
 
+/** Nonsecret conversation notice. Authentication details and the provider's
+ * full reason stay on the authenticated form, never in a transport notice. */
+export function hostedApprovalNotice(action: Approval, link: string): string {
+  const request = action.request;
+  const value = request.type === 'browser_origin_access' ? request.origin : request.credential_origin;
+  let website = 'the requested website';
+  try {
+    const url = new URL(value ?? '');
+    if (['https:', 'http:'].includes(url.protocol) && !url.username && !url.password) website = url.origin;
+  } catch { /* The private form retains the exact provider request. */ }
+  if (request.type === 'browser_origin_access')
+    return `The cloud browser needs your approval to open ${website}. [Review website access](${link}). After you allow access, I’ll continue your original request and return the result here.`;
+  return `The website ${website} needs you to complete sign-in. [Complete sign-in privately](${link}). I’ll continue your original request afterward. Do not send passwords or verification codes in chat.`;
+}
+
 /** Values flow from the authenticated private portal directly to the registered
  * provider control, never into the model input, tool log or conversation. */
 export function hostedApprovalResponse(action: Approval, form: Record<string, unknown>): HostedActionResult {

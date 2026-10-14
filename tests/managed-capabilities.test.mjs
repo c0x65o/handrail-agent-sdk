@@ -217,7 +217,7 @@ test('hosted private sign-in survives restart and completes the same original pr
   let link;
   for (let n = 0; n < 100; n++) {
     const state = ok(await s.states.load(identity, s.authority()));
-    const notice = state.interactionNotices.find(n => n.includes('private browser step'));
+    const notice = state.interactionNotices.find(n => n.includes('Complete sign-in privately'));
     link = notice && /\]\((https:[^)]+)\)/.exec(notice)?.[1];
     if (link && ok(await s.journal.load(identity)).state === 'waiting') break;
     await new Promise(r => setTimeout(r, 25));

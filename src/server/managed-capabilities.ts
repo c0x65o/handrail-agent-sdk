@@ -10,7 +10,7 @@ import { createEffectStore, createJobAnswerStore, createJobJournal, migrateAgent
 import type { AgentStateKeys } from './postgres/keys.js';
 import { managedStore, canonicalScope, type Scope } from './managed/store.js';
 import type { HostedAction, HostedActionResult } from './hosted-session.js';
-import { hostedApprovalPage, hostedApprovalResponse } from './managed/hosted-approval.js';
+import { hostedApprovalNotice, hostedApprovalPage, hostedApprovalResponse } from './managed/hosted-approval.js';
 interface PrivateAccount { label: string; url: string; origins: string[]; username: string; password: string; approved: boolean; revoked: boolean; expiresAt: number }
 import { website } from './managed/network.js';
 import { portalPage, portalHeaders } from './managed/portal.js';
@@ -201,7 +201,7 @@ export function createManagedAgentCapabilities(options: ManagedAgentCapabilities
           url: action.request.type === 'browser_origin_access' ? action.request.origin : action.request.credential_origin ?? '',
           kind: 'hosted', action, csrf: randomBytes(32).toString('hex'), expiresAt: Date.now() + 900_000, completed: false };
         if (!old) await store.put(identity.host, `interaction:${id}`, i, 0);
-        return { requirement: requirement(i), notice: `[Complete the private browser step](${base.href}/${id}). Your task will continue after you respond. Do not send passwords or verification codes in chat.` };
+        return { requirement: requirement(i), notice: hostedApprovalNotice(action, `${base.href}/${id}`) };
       },
     }, limits: { ...deps.limits, leaseTtlMs: Math.max(deps.limits.leaseTtlMs, 90_000) },
       tools: [...deps.tools, ...managed], host: { ...deps.host,

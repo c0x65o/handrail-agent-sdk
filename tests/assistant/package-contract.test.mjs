@@ -110,7 +110,7 @@ test("declares OpenAI as an explicit opt-in provider boundary", () => {
     import: "./dist/assistant/providers/openai.js",
     default: "./dist/assistant/providers/openai.js",
   });
-  assert.equal(packageJson.dependencies.openai, undefined);
+  assert.match(packageJson.dependencies.openai, /^\d+\.\d+\.\d+$/u);
 });
 
 test("declares OpenAI voice features as dedicated opt-in provider boundaries", () => {
@@ -124,7 +124,7 @@ test("declares OpenAI voice features as dedicated opt-in provider boundaries", (
     import: "./dist/assistant/providers/openai-realtime.js",
     default: "./dist/assistant/providers/openai-realtime.js",
   });
-  assert.equal(packageJson.dependencies.openai, undefined);
+  assert.match(packageJson.dependencies.openai, /^\d+\.\d+\.\d+$/u);
   assert.equal(packageJson.devDependencies.openai, undefined);
   assert.equal(packageJson.peerDependencies.openai, undefined);
   assert.equal(packageJson.optionalDependencies?.openai, undefined);
@@ -155,7 +155,7 @@ test("declares xAI as an explicit opt-in provider boundary", () => {
     import: "./dist/assistant/providers/xai.js",
     default: "./dist/assistant/providers/xai.js",
   });
-  assert.equal(packageJson.dependencies.openai, undefined);
+  assert.doesNotMatch(readFileSync(path.join(packageRoot, "dist/assistant/providers/xai.js"), "utf8"), /from ["']openai["']/u);
   assert.equal(packageJson.dependencies.xai, undefined);
   assert.equal(packageJson.dependencies["@xai-org/xai-sdk"], undefined);
 });
@@ -339,6 +339,9 @@ test("exports WebRTC voice control only from the browser entry", async () => {
   assert.equal(core.BROWSER_REALTIME_VOICE_LIMITS, undefined);
   assert.equal(typeof browser.createBrowserRealtimeVoiceController, "function");
   assert.equal(typeof browser.BROWSER_REALTIME_VOICE_LIMITS, "object");
+  assert.equal(typeof browser.BrowserLiveCall, "function");
+  assert.equal(core.BrowserLiveCall, undefined);
+  assert.equal(browser.createLiveTransportConnector, undefined);
   assert.equal(browser.OpenAI, undefined);
   assert.equal(browser.React, undefined);
 });
@@ -507,4 +510,15 @@ test("dry pack contains only intended package assets", () => {
     );
     assert.match(filePath, /^(?:dist\/|docs\/|examples\/|scripts\/(?:adopt|install-browser)\.mjs$|templates\/standard-react-node\/|LICENSE$|README\.md$|package\.json$)/u);
   }
+});
+
+
+test("GPT-Live transport resolves only through the server boundary", async () => {
+  const live = await import("handrail-agent-sdk/server/live");
+  assert.equal(typeof live.createLiveSessionService, "function");
+  assert.equal(typeof live.createLiveTransportConnector, "function");
+  const browser = spawnSync(process.execPath, ["--conditions=browser", "--input-type=module", "--eval",
+    "await import('handrail-agent-sdk/server/live')"], { cwd: packageRoot, encoding: "utf8" });
+  assert.notEqual(browser.status, 0);
+  assert.match(browser.stderr, /ERR_PACKAGE_PATH_NOT_EXPORTED/);
 });
