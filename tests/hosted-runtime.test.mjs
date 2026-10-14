@@ -38,7 +38,7 @@ function fixture(){
  effects:{execute:async request=>{executions++;assert.equal(request.idempotencyRef,request.effectRef);return success({outcome:'verified',receiptRef:'external'});}},
  tools:[{kind:'effect',name:'reserve',description:'Reserve',parameters:z.object({item:z.string()}).strict(),bind:async call=>({identity,effectRef:call.effectRef,idempotencyRef:call.effectRef})}],
  limits:{maxDispatches:null,maxToolCalls:null,maxElapsedMs:null,maxContextBytes:100000,maxStateBytes:65536,maxOutputBytes:100000,leaseTtlMs:30000,pollMs:1000}};
- return {runtime:()=>createAgentRuntime(options),get checkpoint(){return checkpoint;},get providerTurn(){return turn;},get executions(){return executions;},get messages(){return messages;},get outputs(){return outputs;},
+ return {runtime:()=>createAgentRuntime(options),get checkpoint(){return checkpoint;},get snapshot(){return snapshot;},get providerTurn(){return turn;},get executions(){return executions;},get messages(){return messages;},get outputs(){return outputs;},
  set denied(v){denied=v;},set approved(v){approved=v;},set outputFailure(v){outputFailure=v;},set toolResultFailure(v){toolResultFailure=v;}};
 }
 test('hosted harness completes native effect through admitted runtime',async()=>{
@@ -65,4 +65,14 @@ test('revoked scope prevents provider creation and all tool work',async()=>{
 test('native Stop waits for the original hosted turn to settle before native cancellation',async()=>{
  const f=fixture();f.approved=false;const r=f.runtime();assert.deepEqual(await r.wake(identity),success('waiting'));
  await r.cancelProvider(identity,new AbortController().signal);assert.equal(f.providerTurn.status,'cancelled');assert.equal(f.executions,0);await r.stop();
+});
+
+test('a separate provider Stop does not let the observer commit failure before native cancellation',async()=>{
+ const f=fixture();f.toolResultFailure=true;
+ let observer=f.runtime();assert.deepEqual(await observer.wake(identity),success('retryable'));await observer.stop();
+ const stopHandler=f.runtime();await stopHandler.cancelProvider(identity,new AbortController().signal);
+ assert.equal(f.providerTurn.status,'cancelled');await stopHandler.stop();
+ observer=f.runtime();assert.deepEqual(await observer.wake(identity),success('stopped'));
+ assert.equal(f.snapshot.state,'running','native Stop must still be allowed to commit cancellation');
+ assert.equal(f.messages,1);assert.equal(f.executions,1);assert.equal(f.outputs,0);await observer.stop();
 });

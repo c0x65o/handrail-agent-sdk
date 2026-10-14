@@ -623,6 +623,11 @@ export function createAgentRuntime(deps: {
       });
       if (result.status === 'waiting') throw Error('missing_host_requirement');
       await deps.harness.usage(copy(identity), result.turn);
+      // A separate Stop handler may cancel the provider while this observer
+      // still owns the execution lease. Leave the native job cancellable: its
+      // authenticated Stop transaction owns the explicit_stop actor and fence.
+      // Committing failure here would win the race and erase that outcome.
+      if (result.turn.status === 'cancelled') return { ok: true, value: 'stopped' };
       if (result.turn.status !== 'completed') { await save({ kind: 'failed' }); return { ok: true, value: 'failed' }; }
       if (size(result.outputText) > limits.maxOutputBytes) throw new Halt('limit_exceeded');
       record = { ...record, output: result.outputText,

@@ -176,3 +176,5 @@ When the original remote turn completes, the runtime reconciles outstanding
 native effects from that turn's original calls. Only immutable verified native
 receipts can settle the job journal. This reconciliation never dispatches an
 unperformed action after the provider stopped waiting for it.
+
+When a separate Stop handler cancels the original provider turn, an observing runtime returns `stopped` and releases its lease without committing `failed`. The authenticated native Stop transaction retains responsibility for recording `explicit_stop` and its actor. Applications must finish that native cancellation after `cancelProvider` settles; provider cancellation acceptance alone is not a completed Stop.
