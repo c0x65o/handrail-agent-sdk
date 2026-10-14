@@ -168,3 +168,16 @@ null` in provider updates; it never invents an OpenAI delegation ID. Provider
 delegations and buffered speech share one serialized admission path and speech
 watermark, including uncertain-write fencing. A later provider event cannot
 repeat the same input. See OpenAI's [transcript processing guidance](https://developers.openai.com/api/docs/guides/live-delegation#react-to-transcript-fragments).
+# Retained speech in later text turns
+
+Live may answer without delegating work. Persist its captions and supply an
+authorized read-only history projection to later text turns as well as calls.
+`createLiveHistoryReader` from `server/live` wraps a host's current authorization,
+paged storage reader and retrieval-tool descriptor. Its `context()` supplies
+historical data; `read()` serves the same pages to the host's read-only tool.
+Neither operation creates work, modifies canonical text cursors or treats an
+assistant's spoken answer as user authorization. Hosts must exclude cleared and
+foreign conversations, redact as required, validate opaque cursors and omit
+private history in shared-room contexts. Keep older and truncated speech
+retrievable through that same authorized reader.
+

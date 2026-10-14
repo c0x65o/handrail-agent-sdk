@@ -1,4 +1,6 @@
 export { PostgresLiveConversationQueue } from './live-conversation.js';
+export { createLiveHistoryReader, LIVE_HISTORY_MEANING } from './live-history.js';
+export type { LiveHistoryFragment, LiveHistoryPage } from './live-history.js';
 import { randomUUID } from 'node:crypto';
 import { LIVE_MODEL, LiveTransportError, type LiveTransport, type LiveTransportInput, type LiveServerEvent,
   type LiveHistoryItem } from './live-transport.js';
