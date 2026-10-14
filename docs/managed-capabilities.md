@@ -45,6 +45,11 @@ compose private browser steps with canonical transcript custody.
 
 Current host authority, exact job identity and the original pending provider
 request are checked on every use. Forms require same-origin POST and CSRF checks.
+If a form expires while its original task still awaits that same response, the
+authenticated owner can reopen the same link. The SDK rechecks current authority
+and rotates the expired form token; old submissions remain invalid. Reopening
+does not approve access, start provider work, or replace the task/session. Stopped
+tasks and revoked access cannot renew a form.
 Private values are encrypted at rest and submitted directly to OpenAI’s registered
 browser controls; they do not enter chat, model input or tool output. Untrusted
 provider field labels, explanations and origins are escaped when rendered.

@@ -97,6 +97,44 @@ test('secure entry survives a service restart before the user submits it', async
   assert.equal((await submit(s, entry, randomBytes(32).toString('hex'))).status, 200);
   await settled(s); await runtime.stop();
 });
+test('expired private form reopens after recovery without reviving stale submissions or replacing the task', async t => {
+  const s = await setup(t), entry = await start(s);
+  const store = managedStore(s.harness.pool, s.harness.schema, s.keys);
+  const key = `interaction:${new URL(entry.secureUrl).pathname.split('/').at(-1)}`;
+  const saved = await store.get(identity.host, key);
+  await store.put(identity.host, key, { ...saved.value, expiresAt: Date.now() - 1 }, saved.version);
+  await s.restart();
+  assert.equal((await submit(s, entry, 'test-only-password')).status, 403);
+  s.auth(false); assert.equal((await s.request(entry.secureUrl)).status, 403);
+  s.auth(true, { ...identity.host, userRef: 'another' });
+  assert.equal((await s.request(entry.secureUrl)).status, 403);
+  assert.equal((await store.get(identity.host, key)).version, saved.version + 1);
+  s.auth(true, identity.host);
+  const page = await s.request(entry.secureUrl); assert.equal(page.status, 200);
+  const csrf = /name="csrf" value="([a-f0-9]+)"/.exec(await page.text())?.[1];
+  assert.ok(csrf); assert.notEqual(csrf, entry.csrf);
+  assert.equal((await submit(s, entry, 'test-only-password')).status, 403);
+  assert.equal(ok(await s.journal.load(identity)).state, 'waiting');
+  assert.equal(s.provider.requests.length, 1, 'reopening does not execute work or grant approval');
+  assert.equal((await submit(s, { ...entry, csrf }, 'test-only-password')).status, 200);
+  await settled(s);
+  assert.equal((await s.harness.pool.query(`SELECT * FROM ${s.harness.table('jobs')}`)).rowCount, 1);
+});
+
+test('expired form cannot renew after Stop or revoked native authority', async t => {
+  const s = await setup(t), entry = await start(s);
+  const store = managedStore(s.harness.pool, s.harness.schema, s.keys);
+  const key = `interaction:${new URL(entry.secureUrl).pathname.split('/').at(-1)}`;
+  const saved = await store.get(identity.host, key);
+  await store.put(identity.host, key, { ...saved.value, expiresAt: Date.now() - 1 }, saved.version);
+  s.state.denied = true;
+  assert.equal((await s.request(entry.secureUrl)).status, 403);
+  s.state.denied = false;
+  const job = ok(await s.journal.load(identity));
+  ok(await s.cancel.stop({ command: 'cancel', identity, expectedRevision: job.revision, reason: 'explicit_stop' }, identity.host.userRef));
+  assert.equal((await s.request(entry.secureUrl)).status, 403);
+  assert.equal((await store.get(identity.host, key)).version, saved.version + 1);
+});
 test('portal rejects wrong user, unauthenticated links, cross-site posts, invalid CSRF and unapproved destinations', async t => {
   const s = await setup(t), entry = await start(s);
   s.auth(false); assert.equal((await s.request(entry.secureUrl)).status, 403);
@@ -146,6 +184,10 @@ test('hosted private sign-in survives restart and completes the same original pr
     await new Promise(r => setTimeout(r, 25));
   }
   assert.ok(link);
+  const store = managedStore(s.harness.pool, s.harness.schema, s.keys);
+  const key = `interaction:${new URL(link).pathname.split('/').at(-1)}`;
+  const saved = await store.get(identity.host, key);
+  await store.put(identity.host, key, { ...saved.value, expiresAt: Date.now() - 1 }, saved.version);
   await s.restart();
   const page = await s.request(link); assert.equal(page.status, 200);
   const html=await page.text(), csrf=/name="csrf" value="([a-f0-9]+)"/.exec(html)?.[1];assert.ok(csrf);
