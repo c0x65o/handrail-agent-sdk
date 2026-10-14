@@ -117,3 +117,15 @@ test('model selection updates idle original session; browser policy cannot silen
  const disabled=createHostedSessionClient({client:{beta:{agents:{sessions:f.sessions}}},model:'updated-model',instructions:'test',browser:false});
  await assert.rejects(disabled.connect({binding:f.binding,signal:f.signal,authorize:f.authorize,save:async()=>{}}),{code:'binding_conflict'});
 });
+
+test('fast terminal polling cannot discard a queued live screenshot',async()=>{
+ const f=fixture();await f.connect();const retained=[];
+ f.sessions.events.stream=async()=>({controller:{abort(){}},async *[Symbol.asyncIterator](){
+   yield {type:'agent.session.requires_action',session:f.savedSession};
+   yield {type:'agent.session.turn.item.done',item:{id:'screen',type:'computer_use_call',turn_id:'turn_1',status:'completed',output:{image_url:'data:image/png;base64,c2NyZWVu'}}};
+   yield {type:'agent.session.turn.completed',turn:{id:'turn_1',subagent_id:null,status:'completed'}};
+ }});
+ const result=await f.adapter.run({session:f.binding,turn:{submissionKey:'fast'},input:[],signal:f.signal,authorize:f.authorize,
+   save:async()=>{},action:async()=>null,item:async item=>retained.push(item.id)});
+ assert.equal(result.status,'terminal');assert.deepEqual(retained,['screen','answer']);assert.equal(f.messages,1);
+});

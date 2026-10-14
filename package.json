@@ -1,6 +1,6 @@
 {
   "name": "handrail-agent-sdk",
-  "version": "0.4.7",
+  "version": "0.4.8",
   "private": true,
   "description": "Durable Handrail agents, authenticated application gateway, usage delivery and optional web and Flutter clients",
   "type": "module",

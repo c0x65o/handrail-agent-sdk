@@ -130,6 +130,10 @@ export function createHostedSessionClient(options: {
       if (!sessionId || !ports.turn.submissionKey) throw new HostedSessionError('binding_conflict');
       await ports.authorize();
       let turn = structuredClone(ports.turn);
+      // A live submission can finish before its queued screenshot events are read.
+      // Consume its terminal event before projecting completion; recovery of an
+      // already-finished turn still uses saved history without waiting for replay.
+      let awaitLiveTerminal = false;
       const stream = await sessions.events.stream(sessionId, requestOptions(ports.signal));
       const save = async (next: HostedTurnBinding) => { await ports.save(next); turn = next; };
       const latest = async () => (await sessions.turns.list(sessionId, { limit: 1, order: 'desc' }, requestOptions(ports.signal))).data[0];
@@ -155,7 +159,7 @@ export function createHostedSessionClient(options: {
           : await latest();
         if (current && current.id !== turn.baseline) {
           if (!turn.turnId) await save({ ...turn, turnId: current.id });
-          if (terminal(current)) return result(current);
+          if (terminal(current)) return awaitLiveTerminal ? undefined : result(current);
         }
         const respond = async (action: HostedAction, response: HostedActionResult) => {
           const matches = action.type === 'function_call'
@@ -164,6 +168,7 @@ export function createHostedSessionClient(options: {
               && response.request_id === action.request_id && response.response.type === action.request.type;
           if (!matches) throw new HostedSessionError('invalid_action_result');
           await ports.authorize();
+          awaitLiveTerminal = true;
           await sessions.events.create(sessionId, { events: [response],
             'Idempotency-Key': hash([turn.submissionKey, response]) }, requestOptions(ports.signal));
         };
@@ -200,6 +205,7 @@ export function createHostedSessionClient(options: {
         if (!turn.submissionAttempted) {
           await save({ ...turn, submissionAttempted: true });
           await ports.authorize();
+          awaitLiveTerminal = true;
           await sessions.events.create(sessionId, { 'Idempotency-Key': turn.submissionKey,
             events: [{ type: 'agent.session.input.message', input: ports.input }] }, requestOptions(ports.signal));
         }
@@ -209,6 +215,7 @@ export function createHostedSessionClient(options: {
         if (recovered) return recovered;
         if (!turn.turnId) {
           await ports.authorize();
+          awaitLiveTerminal = true;
           await sessions.events.create(sessionId, { 'Idempotency-Key': turn.submissionKey,
             events: [{ type: 'agent.session.input.message', input: ports.input }] }, requestOptions(ports.signal));
         }
@@ -222,6 +229,8 @@ export function createHostedSessionClient(options: {
           // omit them. Host item storage must upsert by item id, retaining bytes.
           if (event.type === 'agent.session.turn.item.done') await ports.item?.(event.item);
           await ports.event?.(event);
+          if ((event.type === 'agent.session.turn.completed' || event.type === 'agent.session.turn.failed'
+            || event.type === 'agent.session.turn.cancelled') && event.turn.id === turn.turnId) awaitLiveTerminal = false;
           if (event.type === 'agent.session.requires_action' || event.type === 'agent.session.turn.completed'
             || event.type === 'agent.session.turn.failed' || event.type === 'agent.session.turn.cancelled'
             || event.type === 'agent.session.failed') {
@@ -229,6 +238,7 @@ export function createHostedSessionClient(options: {
             if (outcome) return outcome;
           }
         }
+        awaitLiveTerminal = false;
         const outcome = await reconcile();
         if (outcome) return outcome;
         throw new HostedSessionError('stream_disconnected');
