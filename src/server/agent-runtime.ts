@@ -335,8 +335,53 @@ export function createAgentRuntime(deps: {
           { authority, fence: fence!, now: () => deps.host.now() }));
         record = next; persisted = next;
       };
+      const reconcileTerminalEffects = async () => {
+        const current = await load(identity);
+        const unknown = current.effects.filter(effect => effect.outcome === 'unknown');
+        if (!unknown.length) return;
+        const hosted = record?.hosted;
+        if (!hosted?.session.sessionId || !hosted.turn.turnId) throw new StoreFailure('effect_conflict');
+        // A remote function can time out while native approval is pending. Its
+        // terminal answer is not evidence that the native effect settled. Read
+        // the original provider call and reconcile its exact durable binding;
+        // NEVER dispatch the action after the provider stopped waiting for it.
+        const calls: AgentCall[] = [];
+        for await (const item of deps.harness.client.beta.agents.sessions.turns.items.list(hosted.turn.turnId,
+          { session_id: hosted.session.sessionId, order: 'asc', limit: 100 }, { signal: controller.signal, maxRetries: 0 })) {
+          await check(); await load(identity);
+          if (item.type !== 'function_call' || item.name !== 'handrail_call_tool') continue;
+          const envelope = z.object({name:z.string(),arguments_json:z.string()}).strict().safeParse(item.arguments);
+          if (!envelope.success) continue;
+          const reference=`agent:${digest([identity,item.call_id,envelope.data.name])}`;
+          if(!unknown.some(effect=>effect.effectRef===reference))continue;
+          const definition = deps.tools.find(tool => tool.name === envelope.data.name && tool.kind === 'effect');
+          if (!definition) continue;
+          const parsed = definition.parameters.parse(JSON.parse(envelope.data.arguments_json));
+          calls.push({identity:copy(identity),toolName:definition.name,input:parsed,callId:item.call_id,
+            effectRef:`agent:${digest([identity,item.call_id,definition.name])}`});
+        }
+        for (const effect of unknown) {
+          const call = calls.find(call => call.effectRef === effect.effectRef);
+          const definition = call && deps.tools.find(tool => tool.name === call.toolName && tool.kind === 'effect');
+          if (!call || definition?.kind !== 'effect') throw new StoreFailure('effect_conflict');
+          await deps.host.withToolAuthority(call, async () => {
+            await check();
+            const request = await definition.bind(call);
+            if (!sameLeaseValue(request.identity,identity) || request.effectRef !== effect.effectRef || request.idempotencyRef !== effect.effectRef)
+              throw new StoreFailure('effect_conflict');
+            const observation = unwrap(await deps.effects.reconcile(request));
+            if (observation.outcome !== 'verified') throw new Reconcile(call);
+            // A verified ledger receipt is immutable. Re-enter its fenced
+            // completion path solely to project that fact into the job journal;
+            // the effect store returns it without dispatching the adapter.
+            const settled = unwrap(await deps.effects.execute(request,fence!));
+            if(settled.outcome!=='verified')throw new Reconcile(call);
+          });
+        }
+      };
       const commitOutput = async (): Promise<JobStoreResult<AgentOutcome>> => {
         await check();
+        await reconcileTerminalEffects();
         const output = await deps.host.output(copy(identity), record!.output!);
         if (size(output.text) > limits.maxOutputBytes) throw new Halt('limit_exceeded');
         record = { ...record!, output: output.text };
@@ -504,7 +549,11 @@ export function createAgentRuntime(deps: {
       const result = await driver.run({ session: session.binding, turn: record.hosted!.turn, input: record.hosted!.input,
         signal: controller.signal, authorize: async () => { await check(); await load(identity); },
         save: async turn => { record = { ...record!, hosted: { ...record!.hosted!, turn } }; await save!(); },
-        item: item => deps.harness.item(copy(identity), item),
+        item: item => {
+          const sessionId=session.binding.sessionId,turnId=record!.hosted!.turn.turnId;
+          if(!sessionId||!turnId||item.type==='computer_use_call'&&item.turn_id!==turnId)throw new StoreFailure('identity_mismatch');
+          return deps.harness.item(copy(identity),item,{sessionId,turnId});
+        },
         event: async event => {
           emit({ kind: 'model_progress' });
           if (event.type === 'agent.session.turn.output_text.delta') {

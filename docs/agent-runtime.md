@@ -161,3 +161,18 @@ computes SHA-256 before calling the sink. Retain these outputs before publishing
 application success or deleting the provider session. The final artifact list also
 recovers outputs when a live screenshot event was missed; an environment path by
 itself is not delivery to the originating conversation.
+
+
+Computer-use screenshots arrive as live item bytes and may be omitted from
+saved item history. In the harness `item(identity, item, origin)` callback, use
+`readHostedScreenshot(item, origin, maxBytes)` and persist a non-null result in
+native conversation attachment custody immediately. Retain its original session,
+turn, item, digest and media type. A metadata-only replay returns null and must
+not erase an already captured image. Published files from `/workspace/outputs`
+remain separate; do not require the browser itself to write a screenshot file.
+
+A hosted function can finish or time out while native approval remains pending.
+When the original remote turn completes, the runtime reconciles outstanding
+native effects from that turn's original calls. Only immutable verified native
+receipts can settle the job journal. This reconciliation never dispatches an
+unperformed action after the provider stopped waiting for it.

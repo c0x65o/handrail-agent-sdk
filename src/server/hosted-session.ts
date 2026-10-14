@@ -1,3 +1,4 @@
+export {readHostedScreenshot,type HostedScreenshot} from './hosted-screenshot.js';
 export { retainHostedArtifacts } from './hosted-artifacts.js';
 import { createHash } from 'node:crypto';
 import { canonicalAgentJson } from './agent-state-binding.js';

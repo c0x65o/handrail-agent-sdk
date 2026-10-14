@@ -28,7 +28,7 @@ export interface AgentHostedHarness {
   action(identity: JobIdentity, action: HostedAction): Promise<HostedActionResult | JobRequirement | { requirement: JobRequirement; notice: string }>;
   /** Persist projected artifacts/screenshots using exact original conversation
    * and item IDs. Repeated snapshots must not erase previously captured bytes. */
-  item(identity: JobIdentity, item: AgentSessionItem): Promise<void>;
+  item(identity: JobIdentity, item: AgentSessionItem, origin: {sessionId:string;turnId:string}): Promise<void>;
   /** Capture the saved provider turn with a stable receipt before host success. */
   usage(identity: JobIdentity, turn: Turn): Promise<void>;
 }

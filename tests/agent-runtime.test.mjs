@@ -75,3 +75,25 @@ test('provider diagnostics classify hosted failures without logging private prov
   assert.ok(!JSON.stringify(f.events).includes(privateBody));
   assert.equal(ok(await f.journal.load(identity)).state,'running');
 });
+
+
+test('a completed provider turn reconciles its declined native effect without dispatching or restarting', async t=>{
+ let settled=false,dispatches=0;
+ const s=await setup(t,{adapter:{dispatch:async()=>{dispatches++;throw Error('must not dispatch');},
+  reconcile:async()=>settled?{outcome:'verified',receiptRef:'native-declined'}:{outcome:'unknown'}}});
+ assert.equal(ok(await s.runtime.wake(identity)),'waiting');
+ const table=s.harness.table('hosted_provider_fixture');
+ const rows=await s.pool.query(`SELECT id,value FROM ${table}`);
+ const provider=rows.rows.find(row=>row.value.session);
+ const pending=provider.value.session.required_actions[0];
+ assert.equal(pending.arguments.name,'reserve');
+ provider.value.session.required_actions=[];provider.value.session.status='idle';provider.value.turn.status='completed';
+ provider.value.turn.completed_at=Math.floor(Date.now()/1000);
+ provider.value.items=[{...pending,id:pending.call_id,status:'failed'},
+  {id:'final',type:'message',role:'assistant',phase:'final_answer',content:[{type:'output_text',text:'The native action was not completed.'}]}];
+ await s.pool.query(`UPDATE ${table} SET value=$2 WHERE id=$1`,[provider.id,JSON.stringify(provider.value)]);
+ settled=true;s.state.resolution={receiptRef:'native-declined'};ok(await s.runtime.resume(identity));
+ assert.equal(ok(await s.runtime.wake(identity)),'succeeded');assert.equal(dispatches,0);
+ assert.equal(ok(await s.journal.load(identity)).effects[0].outcome,'verified');
+ assert.equal((await s.pool.query(`SELECT value FROM ${table} WHERE id=$1`,[provider.id])).rows[0].value.messages.length,1);
+});
