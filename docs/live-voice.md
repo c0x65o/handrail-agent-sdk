@@ -79,3 +79,20 @@ clients against a local server and the runtime/browser state machines against
 controlled ports. These tests do not prove real-provider quality, microphone
 hardware behavior or a consumer deployment. Consumer integration and supported
 environment verification remain separate release acceptance steps.
+
+For hosts using the SDK's application conversation gateway,
+`PostgresLiveConversationQueue` provides durable spoken-input admission. Supply
+native transaction authorization, a clear-generation identifier, a prepared
+`ChatRequest`, and a callback that starts the exact retained submission through
+the existing authenticated gateway. Queue admission and canonical event
+publication are transactional. Active text turns are preserved; queued speech
+waits for them to settle. Retry uses the saved mutation/turn/start IDs.
+
+The host schedules `drain()` independently of audio and wakes pending queues
+on fresh authenticated traffic after restart. `pendingConversations()` discovers
+only identities; every content read and execution still requires native
+transaction authorization. No bearer credentials are retained. `turnOrigin()`
+returns trusted host-authored voice context for policy, never model metadata.
+Queue records use the canonical conversation scope and are covered by its
+existing permanent-deletion path. A changed clear-generation cancels old queued
+speech. A host must enforce original start-request equality for a queued turn.

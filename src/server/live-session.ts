@@ -1,3 +1,4 @@
+export { PostgresLiveConversationQueue } from './live-conversation.js';
 import { randomUUID } from 'node:crypto';
 import { LIVE_MODEL, type LiveTransport, type LiveTransportInput, type LiveServerEvent,
   type LiveHistoryItem } from './live-transport.js';
