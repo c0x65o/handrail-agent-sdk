@@ -163,6 +163,11 @@ export function createHostedSessionClient(options: {
           signal:ports.signal,authorize:ports.authorize,save:ports.activeInput.save});
         if (outcome.status === 'pending') return;
         if (outcome.status === 'not_submitted') {
+          // A tool response is a pause within this worker, not completion of
+          // its ownership. Retain the unsent correction through native action
+          // handling (including approval waits) and retry after it resumes.
+          // Only a finished turn releases it back to ordinary ingress.
+          if (outcome.reason === 'requires_action') return;
           await ports.activeInput.defer(input.binding,outcome.reason);
         } else {
           const priorTurnIds = [...(turn.priorTurnIds ?? [])];

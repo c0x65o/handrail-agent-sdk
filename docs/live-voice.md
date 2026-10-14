@@ -147,6 +147,13 @@ Active hosted input is observed at least every 500 ms while its worker is listen
 
 Active speech custody transfers atomically out of pending ingress to the original native worker at claim time. The durable claim survives worker reconstruction; a provider receipt projects the user transcript once. Deferral restores the same FIFO entry, while Stop settles claimed speech with its original job. Overlapping application versions cannot re-admit claimed speech from the pending ingress head.
 
+A pending native tool response keeps the unsent correction with that worker.
+The driver handles the existing action first and submits the correction when
+the provider resumes. If the action requires approval, the original approval
+remains held and the unsent correction survives with its checkpoint; it does not
+approve the action or create another job. Only confirmed turn completion defers
+unsubmitted input back to ordinary ingress.
+
 After a request is durably admitted, the SDK forwards subsequent user speech to
 the saved conversation even if GPT-Live acknowledges it without emitting another
 delegation. It buffers accumulated speech until 1.2 seconds of quiet by default
