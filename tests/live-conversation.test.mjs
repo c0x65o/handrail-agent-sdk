@@ -102,6 +102,8 @@ test('active speech attaches once to the original canonical work and survives wo
  const active=q.activeInputs(turnId,'native-job',origin=>origin.speakerContext==='authenticated_user');
  const pending=await active.next();assert.equal(pending.key,id);assert.equal(pending.messages[0].content[0].text,'correction');
  assert.deepEqual(await f.queue().activeInputs(turnId,'native-job',()=>true).next(),pending);
+ const head=await f.options.persistence.getDocument(f.options.tenantId,'checkpoint',f.conversationId,q.prefix+'head');
+ assert.equal(head.value.completed,head.value.next,'claimed speech is no longer available to another ingress drainer');
  await q.drain();assert.equal(f.starts.length,1,'active input must not start a second canonical worker');
  const receipt={turnId:'provider-turn',messageId:'provider-message'};
  await active.received(id,receipt);await active.received(id,receipt);

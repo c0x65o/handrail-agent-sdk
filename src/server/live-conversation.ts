@@ -149,12 +149,20 @@ export class PostgresLiveConversationQueue {
    * inferred from speech. The caller must hold the exact native job authority. */
   activeInputs(turnId:string,jobRef:string,accept:(origin:Readonly<Record<string,string>>)=>boolean) {
     if(!turnId||!jobRef)throw new TypeError('Active voice input identity required');
+    const claimId=`active:${hash(jobRef)}`;
     const next=()=>this.#transaction(async(p,generation)=>{
       const replay=await replayConversation({eventStore:new PostgresConversationEventStore(p,this.options.tenantId),
         conversationId:this.options.conversationId as ConversationId,checkpointPolicy:false});
       try {
         if(replay.state.replay_error)throw new Error('Saved conversation replay failed');
         if(replay.state.active_turn_id!==turnId)return null;
+        const claimed=await this.#get<{key:string|null}>(p,claimId);
+        if(claimed?.value.key) {
+          const retained=await this.#get<Entry>(p,claimed.value.key),entry=retained?.value;
+          if(!entry||entry.generation!==generation||entry.status!=='steering'||entry.activeInput?.jobRef!==jobRef
+            ||entry.activeInput.turnId!==turnId)throw new Error('Active voice claim changed');
+          return {key:claimed.value.key,messages:[{role:'user' as const,content:[{type:'input_text' as const,text:entry.content}]}]};
+        }
         const head=await this.#get<Head>(p,'head');
         if(!head)return null;
         for(let sequence=head.value.completed+1;sequence<=head.value.next;sequence++) {
@@ -163,10 +171,14 @@ export class PostgresLiveConversationQueue {
           const entry=row.value;
           if(entry.generation!==generation)return null;
           if(entry.submission?.start.conversationTurnId===turnId || entry.status==='steered')continue;
-          if(entry.activeInput?.jobRef===jobRef && entry.activeInput.turnId===turnId && entry.status==='steering')
-            return {key:id,messages:[{role:'user' as const,content:[{type:'input_text' as const,text:entry.content}]}]};
           if(entry.status!=='queued'||entry.activeInput||entry.deferredFor===jobRef||!accept(entry.origin))return null;
           await this.#put(p,id,row.version,{...entry,status:'steering',activeInput:{jobRef,turnId}} satisfies Entry);
+          await this.#put(p,claimId,claimed?.version??null,{key:id});
+          // Ingress custody transfers to the existing native worker now. Its
+          // recoverable claim, not the audio queue, owns settlement. Retiring
+          // this prefix also keeps another/older drainer from admitting the
+          // same speech after this turn finishes during a rolling release.
+          await this.#put(p,'head',head.version,{...head.value,completed:sequence});
           return {key:id,messages:[{role:'user' as const,content:[{type:'input_text' as const,text:entry.content}]}]};
         }
         return null;
@@ -177,12 +189,13 @@ export class PostgresLiveConversationQueue {
       if(!row||!entry||entry.generation!==generation)throw new Error('Saved voice input is no longer current');
       if(!receipt&&entry.deferredFor===jobRef&&entry.status==='queued')return;
       if(entry.activeInput?.jobRef!==jobRef||entry.activeInput.turnId!==turnId)throw new Error('Active voice input identity changed');
+      const claim=await this.#get<{key:string|null}>(p,claimId);
       if(receipt) {
         if(entry.activeInput.receipt) {
           if(!isDeepStrictEqual(entry.activeInput.receipt,receipt))throw new Error('Active voice receipt changed');
           return;
         }
-        if(entry.status!=='steering'||!receipt.messageId||!receipt.turnId)throw new Error('Active voice receipt unavailable');
+        if(entry.status!=='steering'||!receipt.messageId||!receipt.turnId||claim?.value.key!==key)throw new Error('Active voice receipt unavailable');
         const events=new PostgresConversationEventStore(p,this.options.tenantId);
         const revision=await events.getLatestRevision(this.options.conversationId as ConversationId);
         const id=hash([this.prefix,key]);
@@ -193,10 +206,15 @@ export class PostgresLiveConversationQueue {
             metadata:{live_input:{turn_id:turnId,call_id:entry.origin.callId??null}},
             payload:{type:'message.created',message_id:`live-message-${id}`,role:'user',content:[{type:'text',text:entry.content}]}})]});
         await this.#put(p,key,row.version,{...entry,status:'steered',activeInput:{...entry.activeInput,receipt}} satisfies Entry);
+        await this.#put(p,claimId,claim!.version,{key:null});
       } else {
-        if(entry.status!=='steering'||entry.activeInput.receipt)throw new Error('Received voice input cannot be deferred');
+        if(entry.status!=='steering'||entry.activeInput.receipt||claim?.value.key!==key)throw new Error('Received voice input cannot be deferred');
+        const head=await this.#get<Head>(p,'head');
+        if(!head||head.value.completed!==entry.sequence)throw new Error('Deferred voice input ordering changed');
         const {activeInput:_active,...rest}=entry;
         await this.#put(p,key,row.version,{...rest,status:'queued',deferredFor:jobRef} satisfies Entry);
+        await this.#put(p,claimId,claim!.version,{key:null});
+        await this.#put(p,'head',head.version,{...head.value,completed:entry.sequence-1});
       }
     });
     return {next,received:(key:string,receipt:{turnId:string;messageId:string})=>update(key,receipt),defer:(key:string)=>update(key)};
