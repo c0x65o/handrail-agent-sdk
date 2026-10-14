@@ -146,3 +146,5 @@ uncertain. This does not authorize repeating the same call identity.
 Active hosted input is observed at least every 500 ms while its worker is listening, even when the host uses a slower recovery polling interval. Provider acknowledgements and currently executing native actions still determine when the correction can take effect.
 
 Active speech custody transfers atomically out of pending ingress to the original native worker at claim time. The durable claim survives worker reconstruction; a provider receipt projects the user transcript once. Deferral restores the same FIFO entry, while Stop settles claimed speech with its original job. Overlapping application versions cannot re-admit claimed speech from the pending ingress head.
+
+The shared Live prompt explicitly delegates corrections to already-running tasks, including answer format changes. Live client delegation does not implicitly forward subsequent speech. The host still supplies domain instructions, and native authorization and approval checks remain in the saved agent. See https://developers.openai.com/api/docs/guides/live-prompting#delegation.

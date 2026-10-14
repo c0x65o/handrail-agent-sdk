@@ -126,6 +126,21 @@ export function buildLiveDelegationPrompt(fragments: readonly LiveFragment[], pe
   ].join('\n');
 }
 
+// Client delegation does not automatically forward later audio to the saved
+// agent. State this explicitly even when a host supplies its own domain prompt.
+const liveDelegationInstructions = `Delegation policy:
+Backend tools:
+- The existing saved conversation agent owns reasoning, domain and MCP tools, hosted browser access, durable task state, and native permissions and approvals.
+Delegate to the backend when:
+- A request needs saved information, tool use, careful reasoning, or an action.
+- A correction changes a task already in progress, including its constraints or requested answer format.
+- The user asks to cancel or change admitted work; the backend must verify the outcome.
+Do not delegate to the backend when:
+- The user greets you or asks you to repeat a verified result already provided.
+- You need a brief clarification to understand the request.
+A running delegation does not automatically receive later speech. Create a new client delegation for each correction to running work, even while its first result is pending. The application attaches that input to the existing saved worker; a correction is not permission to repeat the original action. Do not merely acknowledge a correction or wait for the old result without delegating it.
+Delegate before answering anything that depends on backend work. Never claim that work changed, completed, or stopped until the backend confirms it. Continue listening while work runs.`;
+
 /** One Live frontend delegates to the same durable conversation as text. The
  * application supplies storage and admission; audio termination never cancels
  * admitted work. No secondary tool loop, model, permission or intent classifier. */
@@ -361,7 +376,7 @@ export function createLiveSessionService<C, A>(options: LiveSessionOptions<C, A>
           await options.beforeConnect?.(s);
           if(s.status!=='starting')throw fail('Voice startup was cancelled.',409);
           s.publishedContext = s.reference!.fingerprint; s.providerRequested = true;
-          const transport = await connect({ sdp, input: s.reference!.input, instructions: options.instructions,
+          const transport = await connect({ sdp, input: s.reference!.input, instructions: `${options.instructions}\n\n${liveDelegationInstructions}`,
             onCreated: async providerId => { s.providerId = providerId; await options.recordProviderSession(s, providerId); },
             onEvent: e => event(s, e), onDisconnect: message => { s.error = message; if (s.status !== 'starting') finish(s, false, 'connection_lost'); } });
           s.transport = transport;
