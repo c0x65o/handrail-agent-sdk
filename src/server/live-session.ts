@@ -231,22 +231,32 @@ export function createLiveSessionService<C, A>(options: LiveSessionOptions<C, A>
     try {
       const authorized = await authorize(s.threadId, s.principalId, s.context);
       if (s.status !== 'connected') return;
-      const lastUser = s.fragments.filter(f => f.role === 'user' && f.start_ms <= e.offset_ms).at(-1);
+      let lastUser = s.fragments.filter(f => f.role === 'user' && f.start_ms <= e.offset_ms).at(-1);
       if (!lastUser || lastUser.sequence <= s.lastSubmittedSequence) {
         d.status = 'no_new_request';
         append(s, 'session.thinking.append', id, 'No new user speech is available. Do not duplicate pending work.'); return;
       }
-      s.lastSubmittedSequence = lastUser.sequence;
-      await refreshContext(s, authorized);
-      await s.capture;
-      if (s.captureError) throw fail('Voice history could not be saved.', 503);
-      // Durable capture, not the bounded display window, supplies the request.
-      const fragments = await options.transcripts.read(s, s.lastBodySequence, lastUser.sequence);
+      let fragments: LiveFragment[];
+      for (;;) {
+        await refreshContext(s, authorized);
+        await s.capture;
+        if (s.captureError) throw fail('Voice history could not be saved.', 503);
+        // Durable capture, not the bounded display window, supplies the request.
+        fragments = await options.transcripts.read(s, s.lastBodySequence, lastUser.sequence);
+        if (fragments.filter(f => f.role === 'user').at(-1)?.sequence !== lastUser.sequence)
+          throw fail('Voice history is incomplete.', 503);
+        await authorize(s.threadId, s.principalId, s.context);
+        if (s.status !== 'connected') return;
+        if (s.latestUserSequence <= lastUser.sequence) break;
+        // A provider delegation can precede the final transcript deltas. Keep
+        // its identity and refresh the unsent request instead of silently
+        // dropping it and requiring another provider event to rescue speech.
+        const latest = s.fragments.filter(f => f.role === 'user').at(-1);
+        if (!latest) throw fail('Voice history is incomplete.', 503);
+        lastUser = latest;
+      }
       const user = fragments.filter(f => f.role === 'user');
-      if (!user.length || user.at(-1)?.sequence !== lastUser.sequence) throw fail('Voice history is incomplete.', 503);
-      await authorize(s.threadId, s.principalId, s.context);
-      if (s.status !== 'connected') return;
-      if (s.latestUserSequence > lastUser.sequence) { d.status = 'superseded'; return; }
+      s.lastSubmittedSequence = lastUser.sequence;
       const after = s.lastBodySequence;
       const body = user.map(f => f.text).join('');
       const pending = [...s.delegations.values()].filter(x => x !== d).slice(-8)

@@ -68,6 +68,36 @@ test('corrections supersede stale spoken results and hangup leaves admitted work
   assert.equal(f.usage[0].finalized,true);assert.equal(f.usage[0].projectId,'project');
 });
 
+test('speech arriving during delegation preparation is retained without needing a second provider delegation',async t=>{
+  let unblock,checking=false;
+  const blocked=new Promise(resolve=>{unblock=resolve;});
+  const f=fixture(t,{prepareContext:async()=>{
+    if(checking)await blocked;
+    return {input:[],reference:'Saved context',fingerprint:'initial',projectId:'project'};
+  },contextPollMs:0});
+  await f.start();checking=true;
+  f.speech('Read the household summary. ');f.delegate();
+  await pause(15);
+  f.speech('Make that one sentence with amber compass.');unblock();
+  await until(()=>f.queued.length===1);
+  assert.equal(f.queued[0].body,'Read the household summary. Make that one sentence with amber compass.');
+  assert.equal(f.queued[0].delegationId,'delegation-1');
+  f.delegate('later-provider-event');await pause(20);assert.equal(f.queued.length,1);
+});
+
+for(const boundary of ['end','revoke'])test(`unsent transcript refresh cannot cross ${boundary}`,async t=>{
+  let unblock,checking=false;
+  const blocked=new Promise(resolve=>{unblock=resolve;});
+  const f=fixture(t,{prepareContext:async()=>{
+    if(checking)await blocked;
+    return {input:[],reference:'Saved context',fingerprint:'initial',projectId:'project'};
+  },contextPollMs:0});
+  await f.start();checking=true;f.speech('Read the summary. ');f.delegate();await pause(15);
+  f.speech('Keep it short.');
+  if(boundary==='end')f.service.close('original-session-request','owner');else f.revoke();
+  unblock();await pause(40);assert.equal(f.queued.length,0);
+});
+
 test('native UI requests never impersonate OpenAI-issued delegation IDs',async t=>{
   const f=fixture(t);await f.start();
   await f.service.submit('original-session-request','owner',{requestId:'open-brief',body:'Read the saved brief.'});
