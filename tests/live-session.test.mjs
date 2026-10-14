@@ -160,3 +160,27 @@ test('successful remote hangup confirms audio termination without inventing fina
  assert.equal(result.end_confirmed,true);assert.equal(result.usage_finalized,false);
  assert.equal(f.usage[0].finalized,false);
 });
+
+
+test('native policy can answer or remain silent without a fabricated work receipt',async t=>{
+ let mode='answer',calls=0;
+ const f=fixture(t,{enqueue:async input=>{input.validateCurrent();calls++;return {handled:mode,reply:mode==='answer'?'Your saved task is running.':''};}});
+ await f.start();f.speech('Give me an update.');f.delegate();
+ await until(()=>f.sent.some(e=>e.type==='session.commentary.append'));
+ assert.equal((await f.state()).delegations[0].status,'answer');
+ assert.equal((await f.state()).delegations[0].queued_message_id,null);
+ mode='silence';f.speech('Stop speaking.');f.delegate('quiet');await until(()=>calls===2);await pause(20);
+ assert.equal((await f.state()).delegations[1].status,'silence');
+ assert.equal(f.sent.filter(e=>e.type==='session.commentary.append').length,1);
+ assert.equal((await f.state()).error,null);
+});
+
+
+test('ending during native creation admission confirms no provider IO and settles End',async t=>{
+ let unblock,entered=false;
+ const gate=new Promise(resolve=>{unblock=resolve;});
+ const f=fixture(t,{beforeConnect:async()=>{entered=true;await gate;}});
+ const start=f.start();const rejection=assert.rejects(start,{statusCode:409});await until(()=>entered);
+ const end=f.service.end('original-session-request','owner');unblock();await rejection;
+ assert.equal((await end).end_confirmed,true);assert.equal(f.creates(),0);assert.equal(f.usage.length,0);
+});

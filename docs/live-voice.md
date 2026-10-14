@@ -105,3 +105,9 @@ revision conflict retries from the new head, preserving the original input key.
 project native tool receipts after audio termination. Verify the saved turn's
 voice origin and event provenance before projecting; these display records never
 authorize or repeat tool execution and do not establish playback.
+
+Native bindings can use `beforeConnect(scope)` to atomically claim provider
+creation after context checks. An End received during that claim settles without
+provider IO. `enqueue` may return `{handled: 'answer' | 'clarify' | 'silence', reply}`
+when native policy determines no work should be admitted. The SDK delivers that
+answer without fabricating a queue receipt; intent and permission remain native.

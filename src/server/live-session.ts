@@ -30,6 +30,9 @@ export interface LiveSubmission<C = unknown> {
   /** Invoke inside the host's admission transaction, after any asynchronous work. */
   validateCurrent(): void;
 }
+/** Native policy may answer/clarify without admitting backend work. The SDK
+ * delivers that decision but never interprets intent or grants authorization. */
+export type LiveAdmissionReceipt = {queued_message_id:string} | {handled:'answer'|'clarify'|'silence';reply:string};
 export interface LiveWorkResult { status: string; text?: string | null; notice?: string | null }
 export interface LiveSnapshot {
   id: string; thread_id: string; model: string; status: 'starting' | 'connected' | 'closing' | 'closed' | 'error';
@@ -48,6 +51,8 @@ export interface LiveFinalReceipt<C> extends LiveSnapshot {
 export interface LiveSessionOptions<C, A> {
   authorize(threadId: string, principalId: string, context: C): Promise<A>;
   prepareContext(scope: LiveScope<C>, authorized: A): Promise<LiveConversationContext>;
+  /** Native durable creation claim, after context checks and before provider IO. */
+  beforeConnect?(scope: LiveScope<C>): Promise<void>;
   /** Bind the original provider identity before receiving delegation events. */
   recordProviderSession(scope: LiveScope<C>, providerId: string): Promise<void>;
   transcripts: {
@@ -55,7 +60,7 @@ export interface LiveSessionOptions<C, A> {
     /** Return every retained fragment in (afterSequence, throughSequence]. */
     read(scope: LiveScope<C>, afterSequence: number, throughSequence: number): Promise<LiveFragment[]>;
   };
-  enqueue(input: LiveSubmission<C>): Promise<{ queued_message_id: string }>;
+  enqueue(input: LiveSubmission<C>): Promise<LiveAdmissionReceipt>;
   readResult(threadId: string, queueId: string, authorized: A): Promise<LiveWorkResult | null | undefined>;
   recordUsage(receipt: LiveUsageReceipt): Promise<void>;
   onFinish?(receipt: LiveFinalReceipt<C>): Promise<void>;
@@ -151,7 +156,7 @@ export function createLiveSessionService<C, A>(options: LiveSessionOptions<C, A>
   }
   function finish(s: Session<C>, finalized: boolean, reason: string) {
     if (s.finished) return;
-    s.finished = true; s.finalized = finalized; s.endConfirmed = finalized; s.status = s.error ? 'error' : 'closed';
+    s.finished = true; s.finalized = finalized; s.endConfirmed = finalized || !s.providerRequested; s.status = s.error ? 'error' : 'closed';
     clearInterval(s.timer); clearTimeout(s.closeTimer);
     for (const timer of s.delegationTimers.values()) clearTimeout(timer);
     s.delegationTimers.clear(); s.transport?.dispose();
@@ -238,6 +243,11 @@ export function createLiveSessionService<C, A>(options: LiveSessionOptions<C, A>
         speech: { userSpeech: body, fragments, owner_fragment_id: lastUser.id,
           after_sequence: after, through_sequence: lastUser.sequence, owner_fragment_ids: user.map(f => f.id) },
         validateCurrent: () => validateCurrent(s, lastUser.sequence) });
+      if('handled' in receipt){
+        d.status=receipt.handled;
+        if(receipt.reply && receipt.handled!=='silence')append(s,'session.commentary.append',id,receipt.reply);
+        return;
+      }
       if (!receipt.queued_message_id) throw new Error('No durable queue receipt was returned.');
       d.queueId = receipt.queued_message_id; d.status = 'queued'; s.error = null;
       append(s, 'session.thinking.append', id, 'The request is saved in the conversation queue. It is not complete. Results will follow here or in the saved conversation.');
@@ -251,7 +261,9 @@ export function createLiveSessionService<C, A>(options: LiveSessionOptions<C, A>
           .filter(other => other !== d && ['queued', 'unconfirmed', 'succeeded', 'failed', 'cancelled', 'timed_out'].includes(other.status))
           .map(other => other.speechSequence));
       }
-      s.error = attempted ? 'A voice request could not be confirmed. Check the conversation queue before submitting it again.'
+      s.error = rejected(error) ? (typeof (error as {liveRejection:unknown}).liveRejection==='string'
+        ? String((error as {liveRejection:string}).liveRejection) : 'No new message was queued. Review the saved conversation before trying again.')
+        : attempted ? 'A voice request could not be confirmed. Check the conversation queue before submitting it again.'
         : 'I could not check this voice request. No message was queued. Please try again.';
       append(s, 'session.commentary.append', id, s.error);
     }
@@ -346,6 +358,8 @@ export function createLiveSessionService<C, A>(options: LiveSessionOptions<C, A>
           const authorized = await authorize(threadId, principalId, context);
           await refreshContext(s, authorized);
           if (s.status !== 'starting') throw fail('Voice startup was cancelled.', 409);
+          await options.beforeConnect?.(s);
+          if(s.status!=='starting')throw fail('Voice startup was cancelled.',409);
           s.publishedContext = s.reference!.fingerprint; s.providerRequested = true;
           const transport = await connect({ sdp, input: s.reference!.input, instructions: options.instructions,
             onCreated: async providerId => { s.providerId = providerId; await options.recordProviderSession(s, providerId); },
@@ -358,7 +372,7 @@ export function createLiveSessionService<C, A>(options: LiveSessionOptions<C, A>
           return { ...snapshot(s), sdp: transport.sdp };
         } catch (error) {
           s.error = 'GPT-Live could not connect. Saved work remains in the conversation.';
-          if (s.status !== 'closing') finish(s, false, 'startup_failed');
+          if (s.status !== 'closing' || !s.transport) finish(s, false, 'startup_failed');
           throw errorStatus(error) ? error : fail(s.error, 502);
         }
       })();
@@ -382,6 +396,10 @@ export function createLiveSessionService<C, A>(options: LiveSessionOptions<C, A>
         const receipt = await enqueue({ threadId: s.threadId, principalId, context: s.context,
           body: input.body, prompt: input.body, sessionId: id, delegationId: d.id,
           validateCurrent: () => validateCurrent(s, d.speechSequence) });
+        if('handled' in receipt){d.status=receipt.handled;
+          if(receipt.reply && receipt.handled!=='silence')append(s,'session.commentary.append',null,receipt.reply);
+          return snapshot(s);
+        }
         if (!receipt.queued_message_id) throw Error('Native queue receipt unavailable.');
         d.queueId = receipt.queued_message_id; d.status = 'queued';
       } catch (error) { d.status = d.status === 'submitting' ? 'unconfirmed' : 'rejected'; throw error; }
