@@ -3,33 +3,35 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'audio_recorder.dart';
 
-typedef HandrailAudioTranscriber
-    = Future<({String? text, String? errorCode, bool retryable})> Function(
-        {required List<int> bytes,
-        required String mediaType,
-        required Duration duration,
-        required String idempotencyKey,
-        required Future<void> cancellation});
+typedef HandrailAudioTranscriber =
+    Future<({String? text, String? errorCode, bool retryable})> Function({
+      required List<int> bytes,
+      required String mediaType,
+      required Duration duration,
+      required String idempotencyKey,
+      required Future<void> cancellation,
+    });
 
 /// Capture, authenticated transcription, retained retry and draft insertion.
 /// The callback should delegate directly to HandrailAiClient.transcribeAudioResult.
 class HandrailTranscriptionControl extends StatefulWidget {
-  const HandrailTranscriptionControl(
-      {super.key,
-      required this.controller,
-      required this.transcribe,
-      this.scope,
-      this.enabled = true,
-      this.maximumDuration = maxHandrailVoiceRecordingDuration,
-      this.maximumBytes = 25 * 1024 * 1024,
-      this.maxDraftLength,
-      this.recorderFactory,
-      this.buttonKey,
-      this.buttonStyle,
-      this.onChanged,
-      this.onBusyChanged,
-      this.onErrorChanged,
-      this.createId});
+  const HandrailTranscriptionControl({
+    super.key,
+    required this.controller,
+    required this.transcribe,
+    this.scope,
+    this.enabled = true,
+    this.maximumDuration = maxHandrailVoiceRecordingDuration,
+    this.maximumBytes = 25 * 1024 * 1024,
+    this.maxDraftLength,
+    this.recorderFactory,
+    this.buttonKey,
+    this.buttonStyle,
+    this.onChanged,
+    this.onBusyChanged,
+    this.onErrorChanged,
+    this.createId,
+  });
   final TextEditingController controller;
   final HandrailAudioTranscriber transcribe;
   final Object? scope;
@@ -48,14 +50,15 @@ class HandrailTranscriptionControl extends StatefulWidget {
   final ValueChanged<String?>? onErrorChanged;
   final String Function()? createId;
   @override
-  State<HandrailTranscriptionControl> createState() =>
-      _HandrailTranscriptionControlState();
+  HandrailTranscriptionControlState createState() =>
+      HandrailTranscriptionControlState();
 }
 
 enum _Phase { idle, starting, recording, transcribing, failed }
 
-class _HandrailTranscriptionControlState
-    extends State<HandrailTranscriptionControl> with WidgetsBindingObserver {
+class HandrailTranscriptionControlState
+    extends State<HandrailTranscriptionControl>
+    with WidgetsBindingObserver {
   _Phase _phase = _Phase.idle;
   HandrailAudioRecorder? _recorder;
   HandrailAudioRecording? _recording;
@@ -64,11 +67,24 @@ class _HandrailTranscriptionControlState
   int _generation = 0;
   String? _operationId, _transcript, _error;
   bool _retryable = false;
+  Completer<bool>? _completion;
+  bool _finishRequested = false;
+
+  /// Finish the current capture and insert its transcript into the latest draft.
+  /// False means failure, cancellation, a scope change, or a disposed control.
+  /// Repeated requests share one capture/transcription; the host owns sending.
+  Future<bool> finish() {
+    if (!widget.enabled || !_busy) return Future.value(false);
+    _finishRequested = true;
+    if (_phase == _Phase.recording) unawaited(_stop());
+    return _completion!.future;
+  }
+
   bool get _busy => const {
-        _Phase.starting,
-        _Phase.recording,
-        _Phase.transcribing
-      }.contains(_phase);
+    _Phase.starting,
+    _Phase.recording,
+    _Phase.transcribing,
+  }.contains(_phase);
 
   @override
   void initState() {
@@ -85,6 +101,9 @@ class _HandrailTranscriptionControlState
   }
 
   void _release() {
+    if (!(_completion?.isCompleted ?? true)) _completion!.complete(false);
+    _completion = null;
+    _finishRequested = false;
     _generation++;
     _timer?.cancel();
     _timer = null;
@@ -147,33 +166,44 @@ class _HandrailTranscriptionControlState
     if (!widget.enabled || _busy) return;
     _release();
     final generation = _generation;
+    _completion = Completer<bool>();
     _phaseChanged(_Phase.starting);
     try {
-      _operationId = widget.createId?.call() ??
+      _operationId =
+          widget.createId?.call() ??
           'mic:${DateTime.now().microsecondsSinceEpoch}:'
               '${List.generate(16, (_) => Random.secure().nextInt(256).toRadixString(16).padLeft(2, '0')).join()}';
-      final recorder = _recorder = widget.recorderFactory?.call() ??
+      final recorder = _recorder =
+          widget.recorderFactory?.call() ??
           HandrailPcmAudioRecorder(
-              maximumDuration: widget.maximumDuration,
-              maximumBytes: widget.maximumBytes);
+            maximumDuration: widget.maximumDuration,
+            maximumBytes: widget.maximumBytes,
+          );
       await recorder.start();
       if (!_current(generation)) return;
       _phaseChanged(_Phase.recording);
+      if (_finishRequested) {
+        await _stop();
+        return;
+      }
       // WAV is 16 kHz mono PCM16 plus a 44-byte header. Observe both negotiated limits.
       final duration = Duration(
-          microseconds: min(
-              widget.maximumDuration.inMicroseconds,
-              max(1, widget.maximumBytes - 44) *
-                  Duration.microsecondsPerSecond ~/
-                  32000));
+        microseconds: min(
+          widget.maximumDuration.inMicroseconds,
+          max(1, widget.maximumBytes - 44) *
+              Duration.microsecondsPerSecond ~/
+              32000,
+        ),
+      );
       _timer = Timer(duration, () => unawaited(_stop()));
     } on HandrailAudioRecordingFailure catch (error) {
       if (_current(generation))
         _fail(
-            error.kind == HandrailAudioRecordingFailureKind.permissionDenied
-                ? 'permission_denied'
-                : 'capture_failed',
-            retryable: false);
+          error.kind == HandrailAudioRecordingFailureKind.permissionDenied
+              ? 'permission_denied'
+              : 'capture_failed',
+          retryable: false,
+        );
     } catch (_) {
       if (_current(generation)) _fail('capture_failed', retryable: false);
     }
@@ -203,25 +233,30 @@ class _HandrailTranscriptionControlState
   Future<void> _transcribe(int generation) async {
     final recording = _recording;
     if (recording == null || !_current(generation)) return;
+    if (_completion?.isCompleted ?? true) _completion = Completer<bool>();
     _phaseChanged(_Phase.transcribing);
     final abort = _abort = Completer<void>();
     final bytes = recording.copyBytes();
     try {
       final result = await widget.transcribe(
-          bytes: bytes,
-          mediaType: recording.mediaType,
-          duration: recording.duration,
-          idempotencyKey: _operationId!,
-          cancellation: abort.future);
+        bytes: bytes,
+        mediaType: recording.mediaType,
+        duration: recording.duration,
+        idempotencyKey: _operationId!,
+        cancellation: abort.future,
+      );
       if (!_current(generation) || !identical(_abort, abort)) return;
       if (result.errorCode != null) {
-        _fail(result.errorCode!,
-            retryable: result.retryable &&
-                const {
-                  'deadline_exceeded',
-                  'rate_limited',
-                  'service_unavailable'
-                }.contains(result.errorCode));
+        _fail(
+          result.errorCode!,
+          retryable:
+              result.retryable &&
+              const {
+                'deadline_exceeded',
+                'rate_limited',
+                'service_unavailable',
+              }.contains(result.errorCode),
+        );
         return;
       }
       final text = result.text?.trim();
@@ -247,21 +282,27 @@ class _HandrailTranscriptionControlState
   void _insert() {
     final transcript = _transcript;
     if (transcript == null || !widget.enabled) return;
-    final text = [widget.controller.text.trimRight(), transcript]
-        .where((part) => part.isNotEmpty)
-        .join(' ');
+    final text = [
+      widget.controller.text.trimRight(),
+      transcript,
+    ].where((part) => part.isNotEmpty).join(' ');
     if (widget.maxDraftLength != null && text.length > widget.maxDraftLength!) {
       _fail('draft_limit', retryable: true);
       return;
     }
     widget.controller.value = TextEditingValue(
-        text: text, selection: TextSelection.collapsed(offset: text.length));
+      text: text,
+      selection: TextSelection.collapsed(offset: text.length),
+    );
     widget.onChanged?.call(text);
+    if (!(_completion?.isCompleted ?? true)) _completion!.complete(true);
     _release();
     _phaseChanged(_Phase.idle);
   }
 
   void _fail(String code, {required bool retryable}) {
+    if (!(_completion?.isCompleted ?? true)) _completion!.complete(false);
+    _finishRequested = false;
     _timer?.cancel();
     _error = code;
     _retryable = retryable;
@@ -278,68 +319,76 @@ class _HandrailTranscriptionControlState
   }
 
   String get _errorText => switch (_error) {
-        'permission_denied' => 'Allow microphone access to dictate a message.',
-        'draft_limit' => 'Shorten the draft, then insert the saved dictation.',
-        'outcome_unknown' =>
-          'The recording outcome could not be confirmed. It was not added to the draft.',
-        'authentication_required' => 'Sign in again to use voice input.',
-        _ =>
-          'Voice input could not finish. Your typed draft is still available.',
-      };
+    'permission_denied' => 'Allow microphone access to dictate a message.',
+    'draft_limit' => 'Shorten the draft, then insert the saved dictation.',
+    'outcome_unknown' =>
+      'The recording outcome could not be confirmed. It was not added to the draft.',
+    'authentication_required' => 'Sign in again to use voice input.',
+    _ => 'Voice input could not finish. Your typed draft is still available.',
+  };
 
   @override
-  Widget build(BuildContext context) =>
-      Row(mainAxisSize: MainAxisSize.min, children: [
-        if (_phase == _Phase.failed && widget.onErrorChanged == null)
-          Semantics(
-            liveRegion: true,
-            child: Tooltip(
-              message: _errorText,
-              child: Icon(Icons.error_outline,
-                  color: Theme.of(context).colorScheme.error, size: 20),
+  Widget build(BuildContext context) => Row(
+    mainAxisSize: MainAxisSize.min,
+    children: [
+      if (_phase == _Phase.failed && widget.onErrorChanged == null)
+        Semantics(
+          liveRegion: true,
+          child: Tooltip(
+            message: _errorText,
+            child: Icon(
+              Icons.error_outline,
+              color: Theme.of(context).colorScheme.error,
+              size: 20,
             ),
           ),
-        if (_busy || _retryable)
-          IconButton(
-              tooltip: 'Discard recording',
-              onPressed: _cancel,
-              icon: const Icon(Icons.close_rounded, size: 18)),
+        ),
+      if (_busy || _retryable)
         IconButton(
-          key: widget.buttonKey,
-          style: widget.buttonStyle,
-          tooltip: switch (_phase) {
-            _Phase.starting => 'Starting microphone…',
-            _Phase.recording => 'Stop recording and transcribe',
-            _Phase.transcribing => 'Transcribing…',
-            _Phase.failed when _retryable => _transcript != null
+          tooltip: 'Discard recording',
+          onPressed: _cancel,
+          icon: const Icon(Icons.close_rounded, size: 18),
+        ),
+      IconButton(
+        key: widget.buttonKey,
+        style: widget.buttonStyle,
+        tooltip: switch (_phase) {
+          _Phase.starting => 'Starting microphone…',
+          _Phase.recording => 'Stop recording and transcribe',
+          _Phase.transcribing => 'Transcribing…',
+          _Phase.failed when _retryable =>
+            _transcript != null
                 ? 'Insert saved dictation'
                 : 'Retry transcription',
-            _ => 'Dictate a message',
-          },
-          onPressed: !widget.enabled
-              ? null
-              : _phase == _Phase.recording
-                  ? () => unawaited(_stop())
-                  : _busy
-                      ? null
-                      : _retryable
-                          ? () => _transcript != null
-                              ? _insert()
-                              : unawaited(_transcribe(_generation))
-                          : () => unawaited(_start()),
-          color: _phase == _Phase.recording ? Colors.red : null,
-          constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
-          icon: _phase == _Phase.starting || _phase == _Phase.transcribing
-              ? const SizedBox.square(
-                  dimension: 18,
-                  child: CircularProgressIndicator(strokeWidth: 2))
-              : Icon(
-                  _phase == _Phase.recording
-                      ? Icons.stop_circle_outlined
-                      : _retryable
-                          ? Icons.refresh
-                          : Icons.mic_none_rounded,
-                  size: 20),
-        ),
-      ]);
+          _ => 'Dictate a message',
+        },
+        onPressed: !widget.enabled
+            ? null
+            : _phase == _Phase.recording
+            ? () => unawaited(_stop())
+            : _busy
+            ? null
+            : _retryable
+            ? () => _transcript != null
+                  ? _insert()
+                  : unawaited(_transcribe(_generation))
+            : () => unawaited(_start()),
+        color: _phase == _Phase.recording ? Colors.red : null,
+        constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
+        icon: _phase == _Phase.starting || _phase == _Phase.transcribing
+            ? const SizedBox.square(
+                dimension: 18,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              )
+            : Icon(
+                _phase == _Phase.recording
+                    ? Icons.stop_circle_outlined
+                    : _retryable
+                    ? Icons.refresh
+                    : Icons.mic_none_rounded,
+                size: 20,
+              ),
+      ),
+    ],
+  );
 }

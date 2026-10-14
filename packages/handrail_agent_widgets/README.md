@@ -38,7 +38,7 @@ server permissions.
 
 `HandrailComposer` places the multiline draft above a toolbar with Add and an optional shield on the left, and dictation and a green Send arrow on the right. Padding is 8 logical pixels, draft inset 4 pixels, corner radius 16 pixels, minimum draft height 26 pixels, and controls 40 pixels with smaller icons. The draft starts at one line and grows with its content.
 
-Pass the shared composer controller, an authenticated SDK session adapter, and current availability. The default attachment controls use the SDK picker and upload queue. The SDK session owns admission, synchronization and the pending-message journal; hosts supply authentication and storage bindings. `input` and `voiceControls` let existing authenticated text/paste/transcription implementations share the layout. Dictation appends to the draft and never sends it. The combined workspace negotiates protected transcription and hides the microphone when unavailable. The standalone composer supports device speech recognition as an explicit lower-level fallback; platform availability and microphone/speech permissions apply.
+Pass the shared composer controller, an authenticated SDK session adapter, and current availability. The default attachment controls use the SDK picker and upload queue. The SDK session owns admission, synchronization and the pending-message journal; hosts supply authentication and storage bindings. `input` and `voiceControls` let existing authenticated text/paste/transcription implementations share the layout. Stopping dictation appends to the latest draft for review; Send finishes capture/transcription and submits the current draft and attachments once. The combined workspace negotiates protected transcription and hides the microphone when unavailable. The standalone composer supports device speech recognition as an explicit lower-level fallback; platform availability and microphone/speech permissions apply.
 
 `decoration`, `inputTextStyle`, and `sendButtonStyle` customize the stock composer for host branding and dark themes. Unspecified properties retain the standard defaults. Custom input widgets retain their own typography. Set `showAttachmentControl: false` when the authenticated gateway does not offer uploads; this hides the toolbar control without changing upload policy.
 
@@ -269,7 +269,13 @@ custom shells; its `transcribe` accepts the same SDK-bound function.
 
 The shared control owns permission/capture progress, Stop/Discard, bounded PCM/WAV
 capture, per-recording identity, cancellation, authenticated HTTP retry and draft
-insertion. It inserts into the latest draft without sending. If the combined text
+insertion. Stop inserts into the latest draft for review. Send during recording or
+transcription waits for that insertion, then uses the current authorized host send
+callback with the latest attachments. Failure, Discard, scope changes and disposal
+cancel a pending send. Custom shells can use a
+`GlobalKey<HandrailTranscriptionControlState>` and await `finish()`; send only on
+`true`, after rechecking the current scope, authorization and attachment readiness.
+If the combined text
 is too long, it retains the transcript for insertion after editing, without a
 second provider request. Retryable transport failures retain the exact audio/key;
 unknown outcomes cannot retry. Scope/controller changes, backgrounding and

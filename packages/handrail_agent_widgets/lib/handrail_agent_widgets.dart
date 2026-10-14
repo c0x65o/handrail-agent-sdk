@@ -334,6 +334,8 @@ class HandrailComposer extends StatefulWidget {
 
 class _HandrailComposerState extends State<HandrailComposer> {
   bool _dictating = false;
+  bool _finishing = false;
+  final _transcriptionKey = GlobalKey<HandrailTranscriptionControlState>();
   String? _transcriptionError;
   final _ownedFocus = FocusNode(debugLabel: 'Handrail composer');
   FocusNode get _inputFocus => widget.focusNode ?? _ownedFocus;
@@ -430,8 +432,30 @@ class _HandrailComposerState extends State<HandrailComposer> {
     if (identical(_editorRoute, route)) _editorRoute = null;
   }
 
-  void _send() {
-    if (!widget.enabled ||
+  Future<void> _send() async {
+    if (_finishing ||
+        !widget.enabled ||
+        widget.sending ||
+        widget.onSend == null)
+      return;
+    final controller = widget.controller;
+    final scope = widget.transcriptionScope;
+    if (_dictating) {
+      final transcription = _transcriptionKey.currentState;
+      if (transcription == null) return;
+      setState(() => _finishing = true);
+      try {
+        if (!await transcription.finish()) return;
+        // Let the host recompute canSend from the inserted text and latest files.
+        await WidgetsBinding.instance.endOfFrame;
+      } finally {
+        if (mounted) setState(() => _finishing = false);
+      }
+    }
+    if (!mounted ||
+        !identical(controller, widget.controller) ||
+        scope != widget.transcriptionScope ||
+        !widget.enabled ||
         !widget.canSend ||
         widget.sending ||
         _dictating ||
@@ -748,7 +772,7 @@ class _HandrailComposerState extends State<HandrailComposer> {
                   onPressed:
                       widget.enabled &&
                           !widget.sending &&
-                          !_dictating &&
+                          !_finishing &&
                           widget.attachmentDrafts?.pickingAttachments != true
                       ? widget.onAttach ??
                             (widget.attachmentDrafts == null
@@ -776,6 +800,7 @@ class _HandrailComposerState extends State<HandrailComposer> {
               if (widget.voiceControls == null &&
                   widget.transcribeAudio != null)
                 HandrailTranscriptionControl(
+                  key: _transcriptionKey,
                   controller: widget.controller,
                   transcribe: widget.transcribeAudio!,
                   scope: widget.transcriptionScope,
@@ -816,6 +841,8 @@ class _HandrailComposerState extends State<HandrailComposer> {
                     ? 'Stopping response…'
                     : widget.onStop != null && widget.sending
                     ? 'Stop response'
+                    : _dictating
+                    ? 'Finish dictation and send'
                     : 'Send message',
                 style: (widget.sendButtonStyle ?? const ButtonStyle()).merge(
                   IconButton.styleFrom(
@@ -831,9 +858,10 @@ class _HandrailComposerState extends State<HandrailComposer> {
                     : widget.sending && widget.onStop != null
                     ? widget.onStop
                     : widget.enabled &&
-                          widget.canSend &&
+                          (widget.canSend || _dictating) &&
                           !widget.sending &&
-                          !_dictating &&
+                          !_finishing &&
+                          (!_dictating || widget.transcribeAudio != null) &&
                           widget.attachmentDrafts?.pickingAttachments != true &&
                           widget.attachmentDrafts?.uploadingAttachments != true
                     ? _send
