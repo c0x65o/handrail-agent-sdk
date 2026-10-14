@@ -7,6 +7,11 @@ environment:
   sdk: ">=3.10.0 <4.0.0"
   flutter: ">=3.38.0"
 dependencies:
+  handrail_agent_audio:
+    git:
+      url: https://github.com/c0x65o/handrail-agent-sdk.git
+      ref: 0fd1245339be5a41f17dc29c1921540d76ccc30e
+      path: packages/handrail_agent_audio
   flutter:
     sdk: flutter
   flutter_markdown_plus: ^1.0.12

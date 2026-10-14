@@ -200,6 +200,15 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.5.2"
+  handrail_agent_audio:
+    dependency: "direct main"
+    description:
+      path: "packages/handrail_agent_audio"
+      ref: "0fd1245339be5a41f17dc29c1921540d76ccc30e"
+      resolved-ref: "0fd1245339be5a41f17dc29c1921540d76ccc30e"
+      url: "https://github.com/c0x65o/handrail-agent-sdk.git"
+    source: git
+    version: "0.1.0"
   hooks:
     dependency: transitive
     description:
