@@ -12,7 +12,7 @@ for(const finishRace of [false,true])test(`running observer accepts canonical in
   let binding={submissionKey:'original',baseline:null,submissionAttempted:true,turnId:'old'};
   const items=[{id:'outdated',type:'message',role:'assistant',phase:'final_answer',turn_id:'old',content:[{type:'output_text',text:'outdated answer'}]}];
   let sent;const sentPromise=new Promise(resolve=>sent=resolve);
-  const page=data=>Object.assign(Promise.resolve({data}),{async *[Symbol.asyncIterator](){yield* data;}});
+  const page=data=>Object.assign(Promise.resolve({data,async *iterPages(){yield {data};}}),{async *[Symbol.asyncIterator](){yield* data;}});
   const sessions={retrieve:async()=>session,items:{list:()=>page([...items].reverse())},
     turns:{list:()=>page([current]),retrieve:async id=>id==='old'?original:successor,
       items:{list:(_id)=>page(items.filter(item=>item.turn_id===_id))}},

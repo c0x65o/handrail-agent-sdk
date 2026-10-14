@@ -20,7 +20,7 @@ function fixture(){
  commit:async(_id,expected,next,change)=>{assert.equal(expected,checkpoint?.version??0);checkpoint=structuredClone(next);
  if(change.kind!=='checkpoint')snapshot={...snapshot,state:change.kind==='waiting'?'waiting':change.kind,revision:snapshot.revision+1,...(change.kind==='waiting'?{requirement:change.requirement}:{})};return success();},
  resume:async(_id,_revision,resolution)=>{checkpoint={...checkpoint,resolution};snapshot={...snapshot,state:'queued'};return success();}};
- const page=data=>Object.assign(Promise.resolve({data}),{async *[Symbol.asyncIterator](){yield* data;}});
+ const page=data=>Object.assign(Promise.resolve({data,async *iterPages(){yield {data};}}),{async *[Symbol.asyncIterator](){yield* data;}});
  const sessions={async create(body){session={id:'remote-session',metadata:body.metadata,status:'idle',required_actions:[]};return session;},async retrieve(){return session;},list:()=>page(session?[session]:[]),
  turns:{list:()=>page(turn?[turn]:[]),retrieve:async()=>turn,items:{list:()=>page([{id:'output',type:'message',role:'assistant',phase:'final_answer',content:[{type:'output_text',text:'Verified'}]}])}},
  events:{stream:async()=>({controller:{abort(){}},async *[Symbol.asyncIterator](){yield {type:'agent.session.requires_action',session};}}),
@@ -89,7 +89,7 @@ for(const accepted of [false,true])test(`Stop reconciles pending active input wi
  f.checkpoint={...f.checkpoint,hostedActiveInput:{key:'native-correction',messages,binding:{...binding,attempted:true,accepted:true}}};
  const successor={id:'successor',status:'in_progress',subagent_id:null};
  if(accepted)original.status='completed';
- f.sessions.items={list:()=>({async *[Symbol.asyncIterator](){if(accepted)yield {id:'correction-item',turn_id:successor.id,type:'message',role:'user',content:[{type:'input_text',text:marker}]};}})};
+ f.sessions.items={list:async()=>({async *iterPages(){yield {data:accepted?[{id:'correction-item',turn_id:successor.id,type:'message',role:'user',content:[{type:'input_text',text:marker}]}]:[]};}})};
  f.sessions.turns.retrieve=async id=>id===successor.id?successor:original;
  f.sessions.turns.list=async()=>({data:[accepted?successor:original]});
  const captured=[],usage=[],events=[];

@@ -8,7 +8,7 @@ function fixture() {
   let saved=prepareHostedInput({sessionId:'session_1',originalTurnId:'turn_1',submissionKey:'native_input_1',messages});
   let turn={id:'turn_1',status:'in_progress'},receivedTurn='turn_1',lost=false,saveFails=false,authorized=true,persist=true;
   const items=[],writes=[],history=[];
-  const page=data=>Object.assign(Promise.resolve({data}),{async *[Symbol.asyncIterator](){yield* data;}});
+  const page=data=>Object.assign(Promise.resolve({data,async *iterPages(){yield {data};}}),{async *[Symbol.asyncIterator](){yield* data;}});
   const sessions={
     async retrieve(){return {metadata:{handrail_scope:session.scopeDigest,handrail_creation:session.creationKey,
       handrail_configuration:session.configurationDigest},required_actions:[]};},
@@ -77,4 +77,27 @@ test('pending native browser/tool approval remains pending',async()=>{
   f.sessions.retrieve=async()=>({...await retrieve(),required_actions:[{type:'computer_use_approval_request'}]});
   assert.deepEqual(await f.run(),{status:'not_submitted',reason:'requires_action'});
   assert.equal(f.writes.length,0);assert.equal(f.saved.attempted,undefined);
+});
+
+test('receipt recovery checks every history page without authorizing once per old item',async()=>{
+  const f=fixture();f.lost=true;await assert.rejects(f.run(),/transport_lost/);
+  const receipt=f.items[0];let checks=0;
+  f.ports.authorize=async()=>{checks++;};
+  f.sessions.items.list=async()=>({async *iterPages(){
+    yield {data:[receipt,...Array.from({length:99},(_,n)=>({id:`old-${n}`,type:'message',role:'assistant',content:[]}))]};
+    yield {data:[{id:'older',type:'message',role:'assistant',content:[]}]};
+  }});
+  assert.equal((await f.run()).status,'received');
+  assert.equal(checks,4,'session, each page, and retained receipt require current access');
+  assert.equal(f.writes.length,1);
+});
+
+test('history paging still rejects duplicate receipts and revocation before custody',async()=>{
+  const f=fixture();f.lost=true;await assert.rejects(f.run(),/transport_lost/);
+  const receipt=f.items[0];
+  f.sessions.items.list=async()=>({async *iterPages(){yield {data:[receipt]};yield {data:[{...receipt,id:'duplicate'}]};}});
+  await assert.rejects(f.run(),/BINDING_CONFLICT/);assert.equal(f.saved.receipt,undefined);
+  f.sessions.items.list=async()=>({async *iterPages(){yield {data:[receipt]};f.authorized=false;yield {data:[]};}});
+  await assert.rejects(f.run(),/not_authorized/);assert.equal(f.saved.receipt,undefined);
+  assert.equal(f.writes.length,1);
 });

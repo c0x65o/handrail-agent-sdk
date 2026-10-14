@@ -64,12 +64,19 @@ export async function submitHostedInput(ports: {
   if (binding.receipt) return { status: 'received', ...binding.receipt };
   const readReceipt = async () => {
     let receipt: HostedInputBinding['receipt'];
-    for await (const item of sessions.items.list(binding.sessionId, { order: 'desc', limit: 100 }, options)) {
+    // History is already private to this verified session. Reauthorize each
+    // provider page and the retained receipt, rather than replaying native
+    // admission once per historical item while the live worker is waiting.
+    const history = await sessions.items.list(binding.sessionId, { order: 'desc', limit: 100 }, options);
+    for await (const page of history.iterPages()) {
       await ports.authorize();
-      if (item.type !== 'message' || item.role !== 'user'
-        || !item.content.some(part => part.type === 'input_text' && part.text === marker)) continue;
-      if (!item.id || !item.turn_id || receipt) throw conflict();
-      receipt = { messageId: item.id, turnId: item.turn_id };
+      for (const item of page.data) {
+        ports.signal.throwIfAborted();
+        if (item.type !== 'message' || item.role !== 'user'
+          || !item.content.some(part => part.type === 'input_text' && part.text === marker)) continue;
+        if (!item.id || !item.turn_id || receipt) throw conflict();
+        receipt = { messageId: item.id, turnId: item.turn_id };
+      }
     }
     if (!receipt) return null;
     if (!binding.attempted) throw conflict();
