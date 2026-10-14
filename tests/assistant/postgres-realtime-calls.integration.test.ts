@@ -79,3 +79,24 @@ it("retains call admission, remote identity and end requests across workers, rac
     await expect(store().list({ limit: 101 })).rejects.toThrow("page size");
   } finally { await database.close(); }
 }, 30_000);
+
+
+it("retains definite creation rejection without allowing a new provider identity on that call",async()=>{
+ const database=new PGlite();
+ const adapt=(db:Pick<PGlite,"query">):PostgresSqlClient=>({
+  async query<T extends Record<string,unknown>>(text:string,values?:readonly unknown[]){const result=await db.query<T>(text,values?[...values]:[]);return {rows:result.rows,rowCount:result.affectedRows??result.rows.length};},
+  transaction:run=>database.transaction(tx=>run(adapt(tx as unknown as Pick<PGlite,"query">))) });
+ const persistence=new PostgresAiPersistence(adapt(database));
+ const calls=new PostgresRealtimeCallStore(persistence,"environment","owner");
+ try {
+  await persistence.migrate();
+  await calls.admit({callId:"rejected",workerId:"original",conversationId:"saved",fingerprint:"native"});
+  await expect(calls.confirmCreationRejected("rejected","original")).rejects.toBeInstanceOf(DurableRealtimeCallConflictError);
+  await calls.beginCreation("rejected","original");await calls.requestEnd("rejected");
+  await expect(calls.confirmCreationRejected("rejected","other")).rejects.toBeInstanceOf(DurableRealtimeCallConflictError);
+  expect(await calls.confirmCreationRejected("rejected","original")).toMatchObject({status:"ended",creationStarted:true,creationRejected:true,providerCallRef:null});
+  expect(await calls.confirmCreationRejected("rejected","original")).toMatchObject({status:"ended"});
+  await expect(calls.attachProviderCall("rejected","original","unexpected")).rejects.toBeInstanceOf(DurableRealtimeCallConflictError);
+  await expect(calls.beginCreation("rejected","original")).rejects.toBeInstanceOf(DurableRealtimeCallConflictError);
+ }finally{await database.close();}
+},30000);

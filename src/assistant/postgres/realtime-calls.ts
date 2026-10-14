@@ -11,6 +11,8 @@ export interface DurableRealtimeCallRecord {
   readonly workerId: string;
   readonly status: DurableRealtimeCallStatus;
   readonly creationStarted: boolean;
+  /** Definitive provider rejection; an uncertain network result is not evidence. */
+  readonly creationRejected?: true;
   /** Private server reference, never a client-authorized provider call ID. */
   readonly providerCallRef: string | null;
   readonly leaseExpiresAt: number;
@@ -41,7 +43,8 @@ function validRecord(value: DurableRealtimeCallRecord, callId: string): DurableR
     (value.status === "active" && value.providerCallRef === null) ||
     (["starting", "active", "ending"].includes(value.status) && !value.creationStarted) ||
     (value.status === "admitted" && value.creationStarted) ||
-    (value.status === "ended" && value.creationStarted && value.providerCallRef === null) ||
+    (value.status === "ended" && value.creationStarted && value.providerCallRef === null && value.creationRejected!==true)
+    || (value.creationRejected!==undefined && (value.creationRejected!==true || value.status!=="ended" || !value.creationStarted || value.providerCallRef!==null)) ||
     value.updatedAt < value.createdAt || value.leaseExpiresAt < value.createdAt ||
     (!value.creationStarted && value.providerCallRef !== null)) throw new TypeError("Stored realtime call is invalid.");
   identity(value.conversationId); identity(value.workerId);
@@ -147,9 +150,18 @@ export class PostgresRealtimeCallStore {
   attachProviderCall(callId: string, workerId: string, providerCallRef: string) {
     identity(providerCallRef);
     return this.#update(callId, (call) => {
-      if (call.workerId !== workerId || !call.creationStarted ||
+      if (call.workerId !== workerId || !call.creationStarted || call.creationRejected ||
         (call.providerCallRef !== null && call.providerCallRef !== providerCallRef)) throw new DurableRealtimeCallConflictError();
       return { ...call, providerCallRef, status: call.status === "starting" ? "active" : call.status };
+    });
+  }
+  /** Only the original authorized provider adapter may supply this proof.
+   * Never use a timeout, missing receipt or lease expiry as a rejection. */
+  confirmCreationRejected(callId: string, workerId: string) {
+    return this.#update(callId, call => {
+      if(call.workerId!==workerId || !call.creationStarted || call.providerCallRef!==null)
+        throw new DurableRealtimeCallConflictError();
+      return {...call,status:"ended",creationRejected:true};
     });
   }
   renewLease(callId: string, workerId: string) {

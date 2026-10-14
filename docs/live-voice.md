@@ -111,3 +111,13 @@ creation after context checks. An End received during that claim settles without
 provider IO. `enqueue` may return `{handled: 'answer' | 'clarify' | 'silence', reply}`
 when native policy determines no work should be admitted. The SDK delivers that
 answer without fabricating a queue receipt; intent and permission remain native.
+
+A host that keeps a durable call lifecycle should claim provider creation from
+`beforeConnect`, after context authorization has succeeded. Startup authorization
+must allow its owned pending call; an active provider identity is required when
+admitting speech, not before creating that provider session. A definite HTTP
+creation rejection is reported as `LiveTransportError.creationOutcome ===
+'not_created'`. Only that provider evidence can settle a started call with no
+provider identity (`PostgresRealtimeCallStore.confirmCreationRejected`, using the
+original worker). Timeouts, interrupted requests and missing receipts remain
+uncertain. This does not authorize repeating the same call identity.
