@@ -542,7 +542,9 @@ export function createAgentRuntime(deps: {
           { bootstrap: session.binding.bootstrapJobId === identity.jobId }));
         if (size(input) > limits.maxContextBytes) throw new Halt('limit_exceeded');
         record = { ...record, hosted: { session: session.binding, turn: { submissionKey: `handrail:${digest(identity)}` },
-          input: [{ role: 'user', content: [{ type: 'input_text', text: `Current application instructions:\n${deps.instructions}` }] }, ...input] } };
+          input: [{ role: 'user', content: [{ type: 'input_text', text: `Current application instructions:\n${deps.instructions}\n\nHost-configured provider capabilities: ${deps.harness.browser === false
+            ? 'The provider-managed desktop browser is disabled for this session.'
+            : 'The provider-managed desktop browser is enabled through computer_use. Use the provider browser for requested website interaction; preserve its native approval and private-input gates.'} The handrail_list_tools catalog describes application functions only; it does not enumerate provider-managed tools. An absent browser entry in that catalog is not evidence that the provider browser is disabled. Report observed provider failures accurately; do not substitute search for a specifically requested browser interaction.` }] }, ...input] } };
         await save();
       }
       if (record.hosted!.session.sessionId !== session.binding.sessionId) throw new StoreFailure('invalid_checkpoint');
