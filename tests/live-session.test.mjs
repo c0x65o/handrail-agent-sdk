@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {createLiveSessionService,liveResultChunks} from '../dist/server/live-session.js';
+import {createLiveSessionService,liveResultChunks,LiveTransportError} from '../dist/server/live-session.js';
 
 const pause=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 async function until(check){for(let i=0;i<200;i++){if(await check())return;await pause(5);}assert.fail('Live state did not settle');}
@@ -183,4 +183,17 @@ test('ending during native creation admission confirms no provider IO and settle
  const start=f.start();const rejection=assert.rejects(start,{statusCode:409});await until(()=>entered);
  const end=f.service.end('original-session-request','owner');unblock();await rejection;
  assert.equal((await end).end_confirmed,true);assert.equal(f.creates(),0);assert.equal(f.usage.length,0);
+});
+
+
+test('proven creation rejection or confirmed startup cleanup releases the original call',async t=>{
+ for(const evidence of ['not_created','requested']) {
+  const failure=new LiveTransportError('creation_failed');
+  if(evidence==='not_created')failure.creationOutcome=evidence;else failure.cleanup=evidence;
+  const f=fixture(t,{connect:async()=>{throw failure;}});await assert.rejects(f.start());
+  const state=await f.service.end('original-session-request','owner');
+  assert.equal(state.end_confirmed,true);assert.equal(state.usage_finalized,false);
+ }
+ const uncertain=fixture(t,{connect:async()=>{throw new LiveTransportError('creation_failed');}});
+ await assert.rejects(uncertain.start());assert.equal((await uncertain.service.end('original-session-request','owner')).end_confirmed,false);
 });

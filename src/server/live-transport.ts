@@ -15,6 +15,7 @@ export class LiveTransportError extends Error {
   /** Server-only reconciliation data; never serialize as a public error body. */
   providerId: string | undefined;
   cleanup: 'requested' | 'unconfirmed' | undefined;
+  creationOutcome: 'not_created' | 'uncertain' | undefined;
   constructor(readonly code: 'invalid_offer' | 'creation_failed' | 'invalid_answer' |
     'receipt_failed' | 'connection_failed' | 'connection_closed' | 'hangup_failed',
     readonly statusCode = 502) {
@@ -84,7 +85,12 @@ export function createLiveTransportConnector(options: {
           } },
         }, transport: { type: 'webrtc', sdp: input.sdp },
       }, { maxRetries: 0, timeout: timeoutMs, ...(input.signal ? { signal: input.signal } : {}) });
-    } catch { throw new LiveTransportError('creation_failed'); }
+    } catch(error) {
+      const failure=new LiveTransportError('creation_failed');
+      failure.creationOutcome=error instanceof OpenAI.APIError && [400,401,403,404,422].includes(error.status??0)
+        ? 'not_created':'uncertain';
+      throw failure;
+    }
     timing(input, 'provider_session_create_duration_ms', started);
     const providerId = created?.session?.id;
     if (typeof providerId !== 'string' || !providerId || providerId.length > 256) throw new LiveTransportError('invalid_answer');

@@ -50,7 +50,7 @@ test('uses OpenAI session and sideband clients with server-owned delegation and 
 
 test('does not retry uncertain creation or expose provider diagnostics',async t=>{
   const f=await fixture(t,{status:500});await assert.rejects(f.start(),error=>{
-    assert.equal(error.code,'creation_failed');assert.doesNotMatch(error.message,/private|sk-secret/);return true;
+    assert.equal(error.code,'creation_failed');assert.equal(error.creationOutcome,'uncertain');assert.doesNotMatch(error.message,/private|sk-secret/);return true;
   });
   assert.equal(f.requests.length,1,'client retry configuration is overridden for session creation');
 });
@@ -65,4 +65,16 @@ test('invalid answer and failed custody end the known original session without a
 test('sideband startup rejection cleans up the saved provider session',async t=>{
   const f=await fixture(t,{rejectSocket:true});await assert.rejects(f.start(),{code:'connection_failed'});
   assert.equal(f.requests.at(-1).path,'/v1/live/sessions/live_original/hangup');
+});
+
+
+test('a definitive provider rejection records that no call was created',async t=>{
+  for(const status of [400,401,403,404,422]) {
+    const f=await fixture(t,{status});
+    await assert.rejects(f.start(),error=>{
+      assert.equal(error.code,'creation_failed');assert.equal(error.creationOutcome,'not_created');
+      assert.doesNotMatch(error.message,/private|sk-secret/);return true;
+    });
+    assert.equal(f.requests.length,1);
+  }
 });

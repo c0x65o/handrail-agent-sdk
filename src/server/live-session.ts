@@ -1,6 +1,6 @@
 export { PostgresLiveConversationQueue } from './live-conversation.js';
 import { randomUUID } from 'node:crypto';
-import { LIVE_MODEL, type LiveTransport, type LiveTransportInput, type LiveServerEvent,
+import { LIVE_MODEL, LiveTransportError, type LiveTransport, type LiveTransportInput, type LiveServerEvent,
   type LiveHistoryItem } from './live-transport.js';
 
 export { LIVE_MODEL, LiveTransportError, createLiveTransportConnector } from './live-transport.js';
@@ -82,7 +82,7 @@ type Delegation = { id: string; status: string; queueId?: string; revision: numb
   speechSequence: number; notice?: string; body?: string; providerDelegation: boolean };
 type Session<C> = LiveScope<C> & {
   offer: string; status: LiveSnapshot['status']; error: string | null; finished: boolean;
-  providerRequested: boolean; providerId: string | null; transport?: LiveTransport;
+  providerRequested: boolean; creationEnded?:boolean; providerId: string | null; transport?: LiveTransport;
   creation?: Promise<LiveSnapshot & { sdp: string }>;
   reference?: LiveConversationContext; contextObservedAt: number; publishedContext?: string;
   contextRead?: Promise<void>; contextAppends: Set<string>;
@@ -156,7 +156,7 @@ export function createLiveSessionService<C, A>(options: LiveSessionOptions<C, A>
   }
   function finish(s: Session<C>, finalized: boolean, reason: string) {
     if (s.finished) return;
-    s.finished = true; s.finalized = finalized; s.endConfirmed = finalized || !s.providerRequested; s.status = s.error ? 'error' : 'closed';
+    s.finished = true; s.finalized = finalized; s.endConfirmed = finalized || !s.providerRequested || s.creationEnded===true; s.status = s.error ? 'error' : 'closed';
     clearInterval(s.timer); clearTimeout(s.closeTimer);
     for (const timer of s.delegationTimers.values()) clearTimeout(timer);
     s.delegationTimers.clear(); s.transport?.dispose();
@@ -371,6 +371,8 @@ export function createLiveSessionService<C, A>(options: LiveSessionOptions<C, A>
           s.timer = setInterval(() => void tick(s), options.pollMs ?? 2000); s.timer.unref?.();
           return { ...snapshot(s), sdp: transport.sdp };
         } catch (error) {
+          if(error instanceof LiveTransportError && (error.creationOutcome==='not_created'||error.cleanup==='requested'))s.creationEnded=true;
+          if(error instanceof LiveTransportError && error.creationOutcome==='not_created')s.providerRequested=false;
           s.error = 'GPT-Live could not connect. Saved work remains in the conversation.';
           if (s.status !== 'closing' || !s.transport) finish(s, false, 'startup_failed');
           throw errorStatus(error) ? error : fail(s.error, 502);
