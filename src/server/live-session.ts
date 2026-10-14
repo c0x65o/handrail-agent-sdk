@@ -76,6 +76,8 @@ export interface LiveSessionOptions<C, A> {
   maxMs?: number;
   closeMs?: number;
   transcriptSettleMs?: number;
+  /** Buffer follow-up speech to an admitted worker; this does not classify intent. */
+  activeSpeechSettleMs?: number;
 }
 
 type Delegation = { id: string; status: string; queueId?: string; revision: number;
@@ -89,6 +91,7 @@ type Session<C> = LiveScope<C> & {
   delegations: Map<string, Delegation>; delegationTimers: Map<string, ReturnType<typeof setTimeout>>;
   delegationChain: Promise<void>; revision: number; nextRevision: number;
   eventIds: Set<string>; sequence: number; latestUserSequence: number; lastSubmittedSequence: number;
+  pendingSpeechSequence: number;
   lastBodySequence: number; fragments: LiveFragment[]; capture: Promise<void>; captureError: string | null;
   finalization?: Promise<void>; seconds: number; finalized: boolean; endConfirmed: boolean; started: number;
   completion: Promise<void>; complete: () => void;
@@ -126,8 +129,8 @@ export function buildLiveDelegationPrompt(fragments: readonly LiveFragment[], pe
   ].join('\n');
 }
 
-// Client delegation does not automatically forward later audio to the saved
-// agent. State this explicitly even when a host supplies its own domain prompt.
+// Explain the shared saved-worker transport even when a host supplies its own
+// domain prompt. Speech is context, never proof that an action happened.
 const liveDelegationInstructions = `Delegation policy:
 Backend tools:
 - The existing saved conversation agent owns reasoning, domain and MCP tools, hosted browser access, durable task state, and native permissions and approvals.
@@ -138,7 +141,7 @@ Delegate to the backend when:
 Do not delegate to the backend when:
 - The user greets you or asks you to repeat a verified result already provided.
 - You need a brief clarification to understand the request.
-A running delegation does not automatically receive later speech. Create a new client delegation for each correction to running work, even while its first result is pending. The application attaches that input to the existing saved worker; a correction is not permission to repeat the original action. Do not merely acknowledge a correction or wait for the old result without delegating it.
+The application forwards later user speech while admitted work is active to the existing saved worker. A new client delegation can also request a correction; the application deduplicates the same speech. A correction is not permission to repeat the original action. Do not claim that a correction was applied just because you heard it; wait for the backend's verified update.
 Delegate before answering anything that depends on backend work. Never claim that work changed, completed, or stopped until the backend confirms it. Continue listening while work runs.`;
 
 /** One Live frontend delegates to the same durable conversation as text. The
@@ -223,18 +226,18 @@ export function createLiveSessionService<C, A>(options: LiveSessionOptions<C, A>
       throw Object.assign(fail('The voice context changed before submission.', 409), { code: 'live_context_changed', liveRejection: true });
     }
   }
-  async function delegate(s: Session<C>, e: Extract<LiveServerEvent, { type: 'session.delegation.created' }>) {
-    const id = e.delegation.id;
-    if (s.status !== 'connected' || e.delegation.target !== 'client' || s.delegations.has(id)) return;
-    const d: Delegation = { id, status: 'checking', revision: 0, speechSequence: 0, providerDelegation: true };
+  async function delegate(s: Session<C>, request: {id:string;offsetMs:number;providerDelegation:boolean}) {
+    const id = request.id, providerId = request.providerDelegation ? id : null;
+    if (s.status !== 'connected' || s.delegations.has(id)) return;
+    const d: Delegation = { id, status: 'checking', revision: 0, speechSequence: 0, providerDelegation: request.providerDelegation };
     s.delegations.set(id, d);
     try {
       const authorized = await authorize(s.threadId, s.principalId, s.context);
       if (s.status !== 'connected') return;
-      let lastUser = s.fragments.filter(f => f.role === 'user' && f.start_ms <= e.offset_ms).at(-1);
+      let lastUser = s.fragments.filter(f => f.role === 'user' && f.start_ms <= request.offsetMs).at(-1);
       if (!lastUser || lastUser.sequence <= s.lastSubmittedSequence) {
         d.status = 'no_new_request';
-        append(s, 'session.thinking.append', id, 'No new user speech is available. Do not duplicate pending work.'); return;
+        append(s, 'session.thinking.append', providerId, 'No new user speech is available. Do not duplicate pending work.'); return;
       }
       let fragments: LiveFragment[];
       for (;;) {
@@ -270,12 +273,12 @@ export function createLiveSessionService<C, A>(options: LiveSessionOptions<C, A>
         validateCurrent: () => validateCurrent(s, lastUser.sequence) });
       if('handled' in receipt){
         d.status=receipt.handled;
-        if(receipt.reply && receipt.handled!=='silence')append(s,'session.commentary.append',id,receipt.reply);
+        if(receipt.reply && receipt.handled!=='silence')append(s,'session.commentary.append',providerId,receipt.reply);
         return;
       }
       if (!receipt.queued_message_id) throw new Error('No durable queue receipt was returned.');
       d.queueId = receipt.queued_message_id; d.status = 'queued'; s.error = null;
-      append(s, 'session.thinking.append', id, 'The request is saved in the conversation queue. It is not complete. Results will follow here or in the saved conversation.');
+      append(s, 'session.thinking.append', providerId, 'The request is saved in the conversation queue. It is not complete. Results will follow here or in the saved conversation.');
     } catch (error) {
       const attempted = d.status === 'submitting';
       d.status = rejected(error) || !attempted ? 'rejected' : 'unconfirmed';
@@ -290,7 +293,7 @@ export function createLiveSessionService<C, A>(options: LiveSessionOptions<C, A>
         ? String((error as {liveRejection:string}).liveRejection) : 'No new message was queued. Review the saved conversation before trying again.')
         : attempted ? 'A voice request could not be confirmed. Check the conversation queue before submitting it again.'
         : 'I could not check this voice request. No message was queued. Please try again.';
-      append(s, 'session.commentary.append', id, s.error);
+      append(s, 'session.commentary.append', providerId, s.error);
     }
   }
   function event(s: Session<C>, e: LiveServerEvent) {
@@ -309,7 +312,8 @@ export function createLiveSessionService<C, A>(options: LiveSessionOptions<C, A>
       const id = e.delegation.id;
       if (e.delegation.target !== 'client' || s.delegations.has(id) || s.delegationTimers.has(id)) return;
       const timer = setTimeout(() => {
-        s.delegationChain = s.delegationChain.then(() => delegate(s, e)).finally(() => s.delegationTimers.delete(id));
+        s.delegationChain = s.delegationChain.then(() => delegate(s, {id,offsetMs:e.offset_ms,providerDelegation:true}))
+          .finally(() => s.delegationTimers.delete(id));
       }, options.transcriptSettleMs ?? 350);
       timer.unref?.(); s.delegationTimers.set(id, timer); return;
     }
@@ -325,7 +329,15 @@ export function createLiveSessionService<C, A>(options: LiveSessionOptions<C, A>
       start_ms: e.start_ms, end_ms: e.end_ms, provider_event_id: e.event_id, observed_at: new Date(now()).toISOString() };
     s.capture = s.capture.then(() => options.transcripts.append(s, fragment)).catch(() => { s.captureError = 'Voice fragment persistence failed.'; });
     s.fragments.push(fragment);
-    if (role === 'user') { s.lastSpeech = now(); s.latestUserSequence = fragment.sequence; }
+    if (role === 'user') {
+      s.lastSpeech = now(); s.latestUserSequence = fragment.sequence;
+      // Once work is admitted, the saved worker must hear subsequent user
+      // speech even when GPT-Live only acknowledges it without delegating.
+      // This transports every follow-up; the existing worker owns intent,
+      // tools, confirmations and cancellation. No wording classifier runs here.
+      if ([...s.delegations.values()].some(d => d.status === 'queued' && d.queueId))
+        s.pendingSpeechSequence = fragment.sequence;
+    }
     if (s.fragments.length > 160) s.fragments.shift();
   }
   async function tick(s: Session<C>) {
@@ -353,6 +365,14 @@ export function createLiveSessionService<C, A>(options: LiveSessionOptions<C, A>
           ? result.text || 'The assistant finished this turn. Open the conversation for its result.'
           : 'This assistant request did not complete. Check its status in the saved conversation.');
       }
+      if (s.pendingSpeechSequence > s.lastSubmittedSequence &&
+        now() - s.lastSpeech >= (options.activeSpeechSettleMs ?? 1200)) {
+        const id = `speech:${s.latestUserSequence}`;
+        s.delegationChain = s.delegationChain.then(() => delegate(s, {
+          id,offsetMs:Number.MAX_SAFE_INTEGER,providerDelegation:false,
+        }));
+        await s.delegationChain;
+      }
     } catch { s.error = 'The assistant connection is unavailable. Saved work remains in the conversation.'; close(s); }
     finally { s.busy = false; }
   }
@@ -375,7 +395,7 @@ export function createLiveSessionService<C, A>(options: LiveSessionOptions<C, A>
         finished: false, providerRequested: false, providerId: null, contextObservedAt: 0, contextAppends: new Set(),
         delegations: new Map(), delegationTimers: new Map(), delegationChain: Promise.resolve(),
         revision: 0, nextRevision: 0, eventIds: new Set(), sequence: 0, latestUserSequence: 0,
-        lastSubmittedSequence: 0, lastBodySequence: 0, fragments: [], capture: Promise.resolve(), captureError: null,
+        lastSubmittedSequence: 0, pendingSpeechSequence: 0, lastBodySequence: 0, fragments: [], capture: Promise.resolve(), captureError: null,
         seconds: 0, finalized: false, endConfirmed: false, started: now(), heartbeat: now(), lastSpeech: now(), busy: false };
       sessions.set(id, s);
       s.creation = (async () => {

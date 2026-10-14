@@ -19,7 +19,7 @@ function fixture(t,overrides={}) {
     connect:async input=>{createCount++;events=input.onEvent;await input.onCreated('live_original');return {
       providerId:'live_original',sdp:'v=0\r\nanswer',send:event=>sent.push(event),hangup:async()=>{},dispose(){},
     };},
-    instructions:'Delegate work to the saved agent.',pollMs:5,contextPollMs:60_000,closeMs:10,transcriptSettleMs:1,
+    instructions:'Delegate work to the saved agent.',pollMs:5,contextPollMs:60_000,closeMs:10,transcriptSettleMs:1,activeSpeechSettleMs:10,
     ...overrides,
   });
   t.after(()=>service.dispose());
@@ -106,6 +106,53 @@ test('native UI requests never impersonate OpenAI-issued delegation IDs',async t
   f.results.set('work-1',{status:'succeeded',text:'Here is the saved brief.'});
   await until(()=>f.sent.some(e=>e.type==='session.commentary.append'));
   assert.equal(f.sent.find(e=>e.type==='session.commentary.append').delegation_id,null);
+});
+
+test('admitted work receives later speech when Live acknowledges it without another delegation',async t=>{
+  const f=fixture(t);await f.start();f.speech('Read the summary.');f.delegate();await until(()=>f.queued.length===1);
+  f.speech('Correction: use cobalt meadow.');
+  await until(()=>f.queued.length===2);
+  assert.equal(f.queued[1].body,'Correction: use cobalt meadow.');
+  assert.equal(f.queued[1].speech.after_sequence,1);
+  assert.match(f.queued[1].delegationId,/^speech:/);
+  f.delegate('late-provider-correction');await pause(25);assert.equal(f.queued.length,2);
+  f.results.set('work-2',{status:'succeeded',text:'Verified cobalt meadow.'});
+  await until(()=>f.sent.some(e=>e.type==='session.commentary.append'));
+  assert.equal(f.sent.find(e=>e.type==='session.commentary.append').delegation_id,null);
+});
+
+test('speech alone cannot start work before admission or after confirmed completion',async t=>{
+  const f=fixture(t);await f.start();f.speech('Hello.');await pause(30);assert.equal(f.queued.length,0);
+  f.delegate();await until(()=>f.queued.length===1);
+  f.results.set('work-1',{status:'succeeded',text:'Finished.'});
+  await until(async()=>(await f.state()).delegations[0].status==='succeeded');
+  f.speech('Thanks.');await pause(30);assert.equal(f.queued.length,1);
+});
+
+test('active speech buffering combines fragments and retains input when original work finishes first',async t=>{
+  let now=0;
+  const f=fixture(t,{now:()=>now,activeSpeechSettleMs:100});await f.start();f.speech('Read it.');f.delegate();await until(()=>f.queued.length===1);
+  now=10;f.speech('Correction: ');now=50;f.speech('one sentence.');
+  f.results.set('work-1',{status:'succeeded',text:'Old answer.'});
+  now=149;await pause(20);assert.equal(f.queued.length,1);
+  now=150;await until(()=>f.queued.length===2);
+  assert.equal(f.queued[1].body,'Correction: one sentence.');
+  assert.equal(f.sent.some(e=>e.content==='Old answer.'),false);
+});
+
+for(const boundary of ['end','revoke'])test(`buffered active speech cannot cross ${boundary}`,async t=>{
+  const f=fixture(t,{activeSpeechSettleMs:30});await f.start();f.speech();f.delegate();await until(()=>f.queued.length===1);
+  f.speech('Cancel that request.');
+  if(boundary==='end')f.service.close('original-session-request','owner');else f.revoke();
+  await pause(60);assert.equal(f.queued.length,1);
+});
+
+test('uncertain active speech is never retried by the transcript buffer or a later delegation',async t=>{
+  let attempts=0;
+  const f=fixture(t,{enqueue:async()=>{attempts++;if(attempts===1)return {queued_message_id:'work-1'};throw Error('Lost admission receipt');}});
+  await f.start();f.speech();f.delegate();await until(()=>attempts===1);
+  f.speech('Change the answer.');await until(()=>attempts===2);
+  f.delegate('late-correction');await pause(40);assert.equal(attempts,2);
 });
 
 test('an uncertain admission is retained and never retried under a fresh delegation',async t=>{

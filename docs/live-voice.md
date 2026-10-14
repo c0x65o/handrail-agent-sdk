@@ -147,4 +147,17 @@ Active hosted input is observed at least every 500 ms while its worker is listen
 
 Active speech custody transfers atomically out of pending ingress to the original native worker at claim time. The durable claim survives worker reconstruction; a provider receipt projects the user transcript once. Deferral restores the same FIFO entry, while Stop settles claimed speech with its original job. Overlapping application versions cannot re-admit claimed speech from the pending ingress head.
 
-The shared Live prompt explicitly delegates corrections to already-running tasks, including answer format changes. Live client delegation does not implicitly forward subsequent speech. The host still supplies domain instructions, and native authorization and approval checks remain in the saved agent. See https://developers.openai.com/api/docs/guides/live-prompting#delegation.
+After a request is durably admitted, the SDK forwards subsequent user speech to
+the saved conversation even if GPT-Live acknowledges it without emitting another
+delegation. It buffers accumulated speech until 1.2 seconds of quiet by default
+(`activeSpeechSettleMs`), using active-work state, not wording or an intent
+classifier. Initial speech still requires provider delegation or explicit native
+submission. Speech after confirmed completion does not automatically start work.
+The original worker interprets the follow-up and keeps its native permissions,
+approval and cancellation rules. End prevents further admission.
+
+Application-owned speech uses a stable sequence identity and `delegation_id:
+null` in provider updates; it never invents an OpenAI delegation ID. Provider
+delegations and buffered speech share one serialized admission path and speech
+watermark, including uncertain-write fencing. A later provider event cannot
+repeat the same input. See OpenAI's [transcript processing guidance](https://developers.openai.com/api/docs/guides/live-delegation#react-to-transcript-fragments).
