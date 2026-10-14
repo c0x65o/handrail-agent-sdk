@@ -160,9 +160,9 @@ export class BrowserLiveCall {
     });
   }
   mute() {
-    if (this.#state.status !== 'connected') return;
+    if (!['idle', 'starting', 'connected'].includes(this.#state.status)) return;
     const muted = !this.#state.muted;
-    for (const track of this.#stream?.getAudioTracks() ?? []) track.enabled = !muted;
+    for (const track of this.#stream?.getAudioTracks() ?? []) track.enabled = this.#state.status === 'connected' && !muted;
     this.#set({ muted }); this.#listening();
   }
   async play() {

@@ -151,3 +151,12 @@ test('proven pre-admission rejection preserves earlier speech for a correction',
   f.delegate('correction');await until(()=>admitted.length===1);
   assert.equal(admitted[0].body,'Change the first page. Actually the second page.');
 });
+
+test('successful remote hangup confirms audio termination without inventing final usage',async t=>{
+ const f=fixture(t);await f.start();
+ const ending=f.service.end('original-session-request','owner');
+ // Keep the standalone test alive while the server's unref'ed close timer runs.
+ await pause(20);const result=await ending;
+ assert.equal(result.end_confirmed,true);assert.equal(result.usage_finalized,false);
+ assert.equal(f.usage[0].finalized,false);
+});

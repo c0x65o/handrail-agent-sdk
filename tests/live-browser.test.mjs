@@ -106,3 +106,10 @@ test('speaking indication requires advancing audible local playout and expires o
   playback.observe(reports(3,3,2),{trackIds:['remote'],now:1801});assert.equal(playback.isSpeaking(1801),false);
   playback.reset();assert.equal(playback.isSpeaking(1200),false);
 });
+
+test('a context switch can start muted without enabling capture during setup',async t=>{
+  const f=fixture(t);f.call.mute();await f.call.start();
+  assert.equal(f.call.getSnapshot().status,'connected');assert.equal(f.call.getSnapshot().muted,true);
+  assert.equal(f.track.enabled,false);assert.equal(f.call.getSnapshot().listening,false);
+  f.call.mute();assert.equal(f.track.enabled,true);
+});

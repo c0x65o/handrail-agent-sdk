@@ -33,6 +33,7 @@ export interface LiveWorkResult { status: string; text?: string | null; notice?:
 export interface LiveSnapshot {
   id: string; thread_id: string; model: string; status: 'starting' | 'connected' | 'closing' | 'closed' | 'error';
   error: string | null; usage_seconds: number; usage_finalized: boolean;
+  end_confirmed: boolean;
   delegations: { id: string; status: string; queued_message_id: string | null }[];
 }
 export interface LiveUsageReceipt {
@@ -83,7 +84,7 @@ type Session<C> = LiveScope<C> & {
   delegationChain: Promise<void>; revision: number; nextRevision: number;
   eventIds: Set<string>; sequence: number; latestUserSequence: number; lastSubmittedSequence: number;
   lastBodySequence: number; fragments: LiveFragment[]; capture: Promise<void>; captureError: string | null;
-  finalization?: Promise<void>; seconds: number; finalized: boolean; started: number;
+  finalization?: Promise<void>; seconds: number; finalized: boolean; endConfirmed: boolean; started: number;
   completion: Promise<void>; complete: () => void;
   heartbeat: number; lastSpeech: number; busy: boolean;
   timer?: ReturnType<typeof setInterval>; closeTimer?: ReturnType<typeof setTimeout>;
@@ -134,7 +135,7 @@ export function createLiveSessionService<C, A>(options: LiveSessionOptions<C, A>
   }
   function snapshot(s: Session<C>): LiveSnapshot {
     return { id: s.id, thread_id: s.threadId, model: LIVE_MODEL, status: s.status, error: s.error,
-      usage_seconds: s.seconds, usage_finalized: s.finalized,
+      usage_seconds: s.seconds, usage_finalized: s.finalized, end_confirmed: s.endConfirmed,
       delegations: [...s.delegations.values()].map(d => ({ id: d.id, status: d.status, queued_message_id: d.queueId ?? null })) };
   }
   function append(s: Session<C>, type: 'session.thinking.append' | 'session.commentary.append',
@@ -149,13 +150,13 @@ export function createLiveSessionService<C, A>(options: LiveSessionOptions<C, A>
   }
   function finish(s: Session<C>, finalized: boolean, reason: string) {
     if (s.finished) return;
-    s.finished = true; s.finalized = finalized; s.status = s.error ? 'error' : 'closed';
+    s.finished = true; s.finalized = finalized; s.endConfirmed = finalized; s.status = s.error ? 'error' : 'closed';
     clearInterval(s.timer); clearTimeout(s.closeTimer);
     for (const timer of s.delegationTimers.values()) clearTimeout(timer);
     s.delegationTimers.clear(); s.transport?.dispose();
     s.finalization = (async () => {
       if (!finalized && s.transport) {
-        try { await s.transport.hangup(); }
+        try { await s.transport.hangup(); s.endConfirmed = true; }
         catch { s.error = 'The remote call end is unconfirmed. Reconcile the saved provider session.'; }
       }
       await s.capture;
@@ -337,7 +338,7 @@ export function createLiveSessionService<C, A>(options: LiveSessionOptions<C, A>
         delegations: new Map(), delegationTimers: new Map(), delegationChain: Promise.resolve(),
         revision: 0, nextRevision: 0, eventIds: new Set(), sequence: 0, latestUserSequence: 0,
         lastSubmittedSequence: 0, lastBodySequence: 0, fragments: [], capture: Promise.resolve(), captureError: null,
-        seconds: 0, finalized: false, started: now(), heartbeat: now(), lastSpeech: now(), busy: false };
+        seconds: 0, finalized: false, endConfirmed: false, started: now(), heartbeat: now(), lastSpeech: now(), busy: false };
       sessions.set(id, s);
       s.creation = (async () => {
         try {
