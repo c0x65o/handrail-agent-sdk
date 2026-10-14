@@ -42,6 +42,7 @@ export class BrowserLiveCall {
   #stopping: Promise<void> | undefined;
   #disposed = false;
   #providerId?: string;
+  #failure: string | null = null;
   #startedAt?: number;
   #ready?: () => void;
   #readyFailure?: (error: Error) => void;
@@ -177,8 +178,9 @@ export class BrowserLiveCall {
   stop(error: string | null = null): Promise<void> {
     if (this.#stopping) return this.#stopping;
     if (this.#state.status === 'closed') return Promise.resolve();
+    if (error) this.#failure = error;
     this.#abort.abort(); this.#readyFailure?.(new Error('Voice ended.'));
-    this.#set({ status: 'closing', muted: true, listening: false, error: error ?? this.#state.error });
+    this.#set({ status: 'closing', muted: true, listening: false, error: this.#failure });
     // End local audio immediately while the trusted server drains final usage.
     for (const track of this.#stream?.getTracks() ?? []) { track.enabled = false; track.stop(); }
     for (const track of this.#remoteTracks) track.enabled = false;
@@ -200,7 +202,7 @@ export class BrowserLiveCall {
           try { this.#channel.send(JSON.stringify({ type: 'session.close' })); } catch { /* Host reconciliation retains the original identity. */ }
         }
         this.#release();
-        this.#set({ status: confirmed ? 'closed' : 'end_unconfirmed', playbackBlocked: false,
+        this.#set({ status: confirmed ? 'closed' : 'end_unconfirmed', playbackBlocked: false, error: this.#failure,
           ...(!confirmed ? { error: 'Microphone stopped. The call end is unconfirmed. Retry ending this call.' } : {}) });
       }
     })().finally(() => { this.#stopping = undefined; });

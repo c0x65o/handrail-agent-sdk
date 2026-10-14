@@ -62,7 +62,7 @@ test('lost end receipt is visible and retry ends the same call without creating 
   await f.call.start();await f.call.stop();
   assert.equal(f.call.getSnapshot().status,'end_unconfirmed');assert.equal(f.track.readyState,'ended');
   assert.deepEqual(f.peer.channel.sent,[{type:'session.close'}]);
-  await f.call.stop();assert.equal(f.call.getSnapshot().status,'closed');assert.equal(attempts,2);assert.equal(f.exchanges.length,1);
+  await f.call.stop();assert.equal(f.call.getSnapshot().status,'closed');assert.equal(attempts,2);assert.equal(f.exchanges.length,1);assert.equal(f.call.getSnapshot().error,null);
 });
 
 test('autoplay blocking remains actionable and device disconnection stops audio',async t=>{
