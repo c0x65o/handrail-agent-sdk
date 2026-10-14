@@ -124,6 +124,40 @@ test('expired private form reopens after recovery without reviving stale submiss
   assert.equal((await s.harness.pool.query(`SELECT * FROM ${s.harness.table('jobs')}`)).rowCount, 1);
 });
 
+for (const phase of ['issue', 'complete']) test(`saved approval recovers after failed answer ${phase}, expiry and restart`, async t => {
+  const s = await setup(t), entry = await start(s);
+  const table = s.harness.table(phase === 'issue' ? 'job_challenges' : 'job_events');
+  const fn = `"${s.harness.schema}"."fail_answer_once"`;
+  await s.harness.pool.query(`CREATE FUNCTION ${fn}() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN RAISE EXCEPTION 'synthetic answer delivery outage'; END $$`);
+  await s.harness.pool.query(`CREATE TRIGGER fail_answer BEFORE INSERT ON ${table} FOR EACH ROW EXECUTE FUNCTION ${fn}()`);
+  const failed = await submit(s, entry, 'test-only-password');
+  assert.equal(failed.status, 403);
+  assert.match(failed.headers.get('x-handrail-agent-input-error'), /^answer_(issue|complete)_unavailable$/);
+  await s.harness.pool.query(`DROP TRIGGER fail_answer ON ${table}`);
+  await s.harness.pool.query(`DROP FUNCTION ${fn}()`);
+  const store = managedStore(s.harness.pool, s.harness.schema, s.keys);
+  const key = `interaction:${new URL(entry.secureUrl).pathname.split('/').at(-1)}`;
+  const saved = await store.get(identity.host, key);
+  assert.equal(saved.value.completed, true, 'the original response was saved before the outage');
+  assert.equal(ok(await s.journal.load(identity)).answer, undefined);
+  const expired = Date.now() - 1;
+  await store.put(identity.host, key, { ...saved.value, expiresAt: expired }, saved.version);
+  await s.harness.pool.query(`UPDATE ${s.harness.table('job_challenges')} SET expires_at=$1`, [expired]);
+  const runtime = await s.restart();
+  s.state.denied = true;
+  assert.equal((await s.request(entry.secureUrl)).status, 403);
+  s.state.denied = false;
+  if (phase === 'issue') {
+    // Original scheduler recovers the saved response without a second user click.
+    ok(await runtime.resume(identity)); ok(await runtime.wake(identity));
+  } else assert.equal((await s.request(entry.secureUrl)).status, 200);
+  await settled(s);
+  const deliveries = (await s.harness.pool.query(`SELECT * FROM ${s.harness.table('job_answer_deliveries')}`)).rows;
+  assert.equal(deliveries.length, 1);
+  assert.equal((await s.harness.pool.query(`SELECT * FROM ${s.harness.table('jobs')}`)).rowCount, 1);
+  assert.equal(s.provider.requests.length, 2);
+});
+
 test('expired form cannot renew after Stop or revoked native authority', async t => {
   const s = await setup(t), entry = await start(s);
   const store = managedStore(s.harness.pool, s.harness.schema, s.keys);

@@ -43,6 +43,7 @@ const equal = (a: Scope, b: Scope) => canonicalScope(a) === canonicalScope(b);
 const ref = z.string().uuid();
 const safeError = (stage = 'request') => new Response('Account access is unavailable. Return to your conversation.', { status: 403, headers: { 'Cache-Control': 'no-store', 'X-Handrail-Agent-Input-Error': stage } });
 const json = (value: unknown) => new Response(JSON.stringify(value), { headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } });
+class AnswerDeliveryError extends Error { constructor(readonly stage: string) { super('CAPABILITY_ANSWER_UNAVAILABLE'); } }
 const unwrap = <T>(r: { ok: true; value: T } | { ok: false; code: string }): T => { if (!r.ok) throw Error('CAPABILITY_UNAVAILABLE'); return r.value; };
 
 /** Batteries-included SDK service. The application mounts handleRequest and
@@ -223,6 +224,17 @@ export function createManagedAgentCapabilities(options: ManagedAgentCapabilities
         return { receiptRef: snapshot.answer.responseRef, input: 'The user responded to the private access step. Continue the original task using the provider result. Do not ask for credentials in chat.' };
       },
     } });
+    const resume = runtime.resume;
+    runtime.resume = async identity => {
+      const snapshot = await journal.load(identity);
+      if (snapshot.ok && snapshot.value.state === 'waiting' && !snapshot.value.answer
+        && snapshot.value.requirement.requirementRef.startsWith('managed:')) {
+        const id = snapshot.value.requirement.requirementRef.slice(8);
+        const saved = await store.get<Interaction>(identity.host, `interaction:${id}`);
+        if (saved?.value.completed) await complete(saved.value, false);
+      }
+      return resume(identity);
+    };
     const stop = runtime.stop;
     runtime.stop = async () => {
       runtimes.delete(runtime);
@@ -233,24 +245,38 @@ export function createManagedAgentCapabilities(options: ManagedAgentCapabilities
     };
     runtimes.add(runtime); registrations.push({ runtime, host: deps.host, definitionRef: deps.definitionRef }); return runtime;
   }
-  async function complete(i: Interaction) {
-    const current = await authorizeJob(i.identity);
-    if (current.state !== 'waiting' || current.requirement.requirementRef !== requirement(i).requirementRef) throw Error('CAPABILITY_WAIT_CHANGED');
-    const answers = createJobAnswer({ now: Date.now, withAnswerAuthority: async (_id, actor, _op, run) => {
-      const state = await authorizeJob(i.identity);
-      if (state.state !== 'waiting' || actor !== i.identity.host.userRef) return { ok: false, code: 'not_authorized' };
-      const active = jobs.get(i.identity.jobId), a = active ? await active.host.authorize(i.identity) : null;
-      // Persisted job authority is checked by the answer store. A registered
-      // runtime supplies current native grant revision; otherwise wait for it.
-      if (!a) return { ok: false, code: 'not_authorized' };
-      return run({ host: a.host, grantRevision: a.grantRevision, cancellationRevision: 0 });
-    } }, answerStore);
-    if (current.answer?.responseRef !== `managed-answer:${i.ref}`) {
-      unwrap(await answers.issue({ identity: i.identity, requirement: requirement(i), jobRevision: current.revision,
-        expiresAt: i.expiresAt, resolverRef: i.identity.host.userRef }));
-      unwrap(await answers.complete({ identity: i.identity, requirementRef: requirement(i).requirementRef, requirementRevision: 1,
-        resolverRef: i.identity.host.userRef, deliveryKey: `managed:${i.ref}`, status: 'verified', responseRef: `managed-answer:${i.ref}` }));
-    }
+  async function complete(input: Interaction, notify = true) {
+    // Approval is already durable. Serialize retry/expiry renewal with the same
+    // private record; never ask for the response again or manufacture a new job.
+    await store.lock(input.identity.host, `account:${input.accountRef}`, async () => {
+      const key = `interaction:${input.ref}`;
+      const saved = await store.get<Interaction>(input.identity.host, key);
+      if (!saved?.value.completed) throw Error('CAPABILITY_RESPONSE_NOT_SAVED');
+      let i = saved.value;
+      const current = await authorizeJob(i.identity);
+      if (current.state !== 'waiting' || current.requirement.requirementRef !== requirement(i).requirementRef) throw Error('CAPABILITY_WAIT_CHANGED');
+      const answers = createJobAnswer({ now: Date.now, withAnswerAuthority: async (_id, actor, _op, run) => {
+        const state = await authorizeJob(i.identity);
+        if (state.state !== 'waiting' || actor !== i.identity.host.userRef) return { ok: false, code: 'not_authorized' };
+        const active = jobs.get(i.identity.jobId);
+        if (!active) return { ok: false, code: 'not_authorized' };
+        return active.host.withAuthority(i.identity, 'append', run);
+      } }, answerStore);
+      if (current.answer?.responseRef !== `managed-answer:${i.ref}`) {
+        if (i.expiresAt <= Date.now()) {
+          i = { ...i, expiresAt: Date.now() + 900_000 };
+          await store.put(i.identity.host, key, i, saved.version);
+        }
+        const issued = await answers.issue({ identity: i.identity, requirement: requirement(i), jobRevision: current.revision,
+          expiresAt: i.expiresAt, resolverRef: i.identity.host.userRef });
+        if (!issued.ok) throw new AnswerDeliveryError(`answer_issue_${issued.code}`);
+        const delivered = await answers.complete({ identity: i.identity, requirementRef: requirement(i).requirementRef, requirementRevision: 1,
+          resolverRef: i.identity.host.userRef, deliveryKey: `managed:${i.ref}`, status: 'verified', responseRef: `managed-answer:${i.ref}` });
+        if (!delivered.ok) throw new AnswerDeliveryError(`answer_complete_${delivered.code}`);
+      }
+    });
+    const i = input;
+    if (!notify) return;
     if (options.onAnswered) {
       await options.onAnswered(structuredClone(i.identity));
       return;
@@ -367,7 +393,7 @@ export function createManagedAgentCapabilities(options: ManagedAgentCapabilities
       stage = 'answer_delivery';
       if (completed) await complete(i);
       return response;
-    } catch { return fail(); }
+    } catch (error) { return error instanceof AnswerDeliveryError ? safeError(error.stage) : fail(); }
   }
   return { createRuntime, handleRequest,
     /** For applications with an explicit tool allowlist. Current host authority

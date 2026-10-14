@@ -41,7 +41,11 @@ export function createJobAnswerStore(db: AgentPostgresDatabase, tables = journal
         const [old] = await tx.select().from(challenges).where(eq(challenges.jobId, head.jobId));
         if (old && old.jobRevision === value.jobRevision && old.requirementRef === value.requirementRef
           && old.requirementRevision === value.requirementRevision) {
-          if (!sameLeaseValue(old, value)) reject('conflict');
+          if (sameLeaseValue(old, value)) return;
+          // The authenticated resolver may renew only an expired, unconsumed
+          // challenge for this unchanged wait and unchanged authority.
+          if (old.expiresAt > now || old.consumed || !sameLeaseValue({ ...old, expiresAt: value.expiresAt }, value)) reject('conflict');
+          await tx.update(challenges).set(value).where(eq(challenges.jobId, head.jobId));
           return;
         }
         await tx.insert(challenges).values(value).onConflictDoUpdate({ target: challenges.jobId, set: value });

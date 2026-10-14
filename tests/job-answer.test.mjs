@@ -111,6 +111,23 @@ test('expiry, resolver, scope, grant change and revocation deny unconsumed answe
   assert.equal(valid(await journal.load(identity)).revision, 3);
 });
 
+test('only the current resolver can renew an expired unchanged challenge', async t => {
+  const { first, state, answer, challenge, journal } = await setup(t);
+  valid(await answer(first).issue(challenge));
+  const renewed = { ...challenge, expiresAt: 3000 };
+  denied(await answer(first).issue(renewed), 'conflict');
+  state.now = 2000;
+  state.grantRevision++;
+  denied(await answer(first).issue(renewed), 'conflict');
+  state.grantRevision--;
+  state.revoked = true;
+  denied(await answer(first).issue(renewed), 'not_authorized');
+  state.revoked = false;
+  valid(await answer(first).issue(renewed));
+  valid(await answer(first).complete(delivery));
+  assert.equal(valid(await journal.load(identity)).revision, 4);
+});
+
 test('superseded challenge revision cannot deliver an answer to a later wait', async t => {
   const { first, answer, challenge, lease, fence, journal } = await setup(t, { release: false });
   valid(await answer(first).issue(challenge));

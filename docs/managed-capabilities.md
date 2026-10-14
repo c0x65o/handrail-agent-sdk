@@ -89,3 +89,5 @@ recovery tests. Production delivery still requires testing the installed consume
 its authentication, original conversation, artifact storage and cancellation path.
 
 Private input failures include `X-Handrail-Agent-Input-Error`, a fixed stage label (authentication, interaction lookup, current job authority, form renewal/rendering, submission, or answer delivery). The header contains no exception text, private URL, provider payload or submitted values. Use it to distinguish the failing boundary without exposing form data.
+
+Saved private responses survive a failed answer handoff. On the original scheduler resume or an authenticated reopening, the SDK delivers the saved response under current host authority, renewing only an expired challenge for the unchanged wait and authority. Stop, revoked access and changed waits still reject it. The original job and provider session continue; the user does not submit the response again. Delivery diagnostics use fixed `answer_issue_*` / `answer_complete_*` store codes, never raw exceptions.
