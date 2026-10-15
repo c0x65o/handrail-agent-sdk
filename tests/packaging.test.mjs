@@ -28,6 +28,7 @@ for (const specifier of ['handrail-agent-sdk', 'handrail-agent-sdk/server']) {
       console.log(JSON.stringify(Object.keys(entry)));
     `]);
     assert.deepEqual(JSON.parse(output), specifier.endsWith('/server') ? ['createBrowserUse', 'createEffects', 'createJobAdmission', 'createJobAnswer', 'createJobCancellation', 'createJobLease', 'createLoginFillExecutor', 'createLoginVault', 'createPaymentFillExecutor', 'createPaymentVault', 'createVaultEntry', 'createVaultRequestExecutor', 'createVaultUse', 'validateVaultCardValue', 'validateVaultLoginValue'] : [
+      'PROVIDER_FAILURE_MESSAGES', 'describeJobError', 'providerFailureCode',
       'validateBrowserLease', 'validateBrowserLeaseSuccessor', 'validateBrowserObservation',
       'validateBrowserOperation', 'validateBrowserOperationSchema', 'validateBrowserProfile',
       'validateBrowserRevocationResult', 'validateBrowserTakeover', 'validateBrowserTakeoverTransition',
@@ -77,16 +78,16 @@ test('entrypoints and contract import graph have no startup calls or external ru
       } else assert.ok(ts.isFunctionDeclaration(statement));
     }
   }
-  for (const name of ['job', 'connection', 'vault', 'browser']) {
+  // Follow local imports and re-exports so extracted contract helpers receive
+  // the same purity checks, without pinning their internal binding names.
+  const contracts = new Set(['job', 'connection', 'vault', 'browser']);
+  for (const name of contracts) {
     const source = ts.createSourceFile(`${name}.js`, readFileSync(new URL(`../dist/contracts/${name}.js`, import.meta.url), 'utf8'), ts.ScriptTarget.Latest);
     for (const statement of source.statements) {
-      if (ts.isImportDeclaration(statement)) {
-        const expectedImports = {
-          connection: { './job.js': ['validateJobCommand'] },
-          vault: { './job.js': ['validateJobCommand', 'validateJobSnapshot'] },
-          browser: { './job.js': ['validateJobCommand', 'validateJobSnapshot'], './vault.js': ['validateVaultOperation'] },
-        };
-        assert.deepEqual(statement.importClause.namedBindings.elements.map(e => e.name.text), expectedImports[name]?.[statement.moduleSpecifier.text]);
+      if (ts.isImportDeclaration(statement) || ts.isExportDeclaration(statement)) {
+        const dependency = statement.moduleSpecifier?.text;
+        assert.match(dependency ?? '', /^\.\/[a-z-]+\.js$/, `${name}: contract dependencies must stay local`);
+        contracts.add(dependency.slice(2, -3));
         continue;
       }
       assert.ok(ts.isFunctionDeclaration(statement) || ts.isVariableStatement(statement));
@@ -95,12 +96,16 @@ test('entrypoints and contract import graph have no startup calls or external ru
           const init = declaration.initializer;
           const literalChoice = node => ts.isCallExpression(node) && node.expression.text === 'oneOf'
             && node.arguments.every(ts.isStringLiteral);
+          const stringTable = ts.isObjectLiteralExpression(init)
+            && init.properties.every(p => ts.isPropertyAssignment(p)
+              && (ts.isIdentifier(p.name) || ts.isStringLiteral(p.name))
+              && ts.isStringLiteral(p.initializer));
           const fields = ['connection', 'vault', 'browser'].includes(name)
             && ['effectFields', 'contextFields'].includes(declaration.name.text)
             && ts.isObjectLiteralExpression(init)
             && init.properties.every(p => ts.isShorthandPropertyAssignment(p)
               || (ts.isPropertyAssignment(p) && (ts.isIdentifier(p.initializer) || literalChoice(p.initializer))));
-          assert.ok(ts.isArrowFunction(init) || ts.isArrayLiteralExpression(init) || fields
+          assert.ok(ts.isArrowFunction(init) || ts.isArrayLiteralExpression(init) || fields || stringTable
             || (name === 'vault' && declaration.name.text === 'identityField' && literalChoice(init)));
         }
       }
@@ -209,5 +214,5 @@ test('public PostgreSQL factories are inert and their implementation never impor
 test('managed capabilities import through the server-only public entrypoint without starting resources', () => {
   assert.deepEqual(JSON.parse(runNode(['--input-type=module', '--eval', `
     console.log(JSON.stringify(Object.keys(await import('handrail-agent-sdk/server/capabilities'))));
-  `])), ['createManagedAgentCapabilities']);
+  `])), ['createManagedAgentCapabilities', 'readManagedInputDiagnostics']);
 });

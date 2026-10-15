@@ -14,18 +14,28 @@ const reminder = { title: 'Synthetic fixture only', localDate: '2028-02-29', loc
 const calendar = { eventId: id, expectedVersion: 1, patch: { title: 'Changed' } };
 const trip = { id, expectedVersion: 1, patch: { destination: null } };
 
-// Simulated model output, real Agent/Runner and real PostgreSQL authority,
+// Simulated hosted provider output, real native runtime and PostgreSQL authority,
 // checkpoints and effects. No domain services or external effects are invoked.
 function modelFor(calls, definitions, onRequest = () => {}) {
   let emitted = 0;
   return {
     async getResponse() { throw Error('STREAM_EXPECTED'); },
     async *getStreamedResponse(request) {
-      assert.deepEqual(request.tools.map(t => t.name), definitions.map(t => t.name));
-      for (const t of request.tools) {
-        assert.equal(t.strict, false);
+      const history = typeof request.input === 'string' ? [] : request.input;
+      const discovery = history.find(i => i.type === 'function_call_result' && i.callId === 'catalog-discovery');
+      if (!discovery) {
+        yield { type: 'response_done', response: { output: [{ type: 'hosted_function_call',
+          name: 'handrail_list_tools', callId: 'catalog-discovery', arguments: '{}' }] } };
+        return;
+      }
+      const tools = JSON.parse(discovery.output.text);
+      assert.deepEqual(tools.map(t => t.name), definitions.map(t => t.name));
+      for (const t of tools) {
         assert.deepEqual(t.parameters, definitions.find(d => d.name === t.name).input_schema);
       }
+      // Business-call scripts count only application results. Catalog schemas
+      // above came through the real handrail_list_tools response, not request.tools.
+      request = { ...request, input: history.filter(i => i.callId !== 'catalog-discovery') };
       await onRequest(request);
       const n = (typeof request.input === 'string' ? [] : request.input).filter(i => i.type === 'function_call_result').length;
       const c = calls[Math.max(n, emitted++)];
@@ -74,7 +84,7 @@ async function setup(t, calls, options = {}) {
     effectCount: async () => (await client.query(`SELECT coalesce(sum(attempts),0)::int AS n FROM ${harness.table('synthetic_provider')}`)).rows[0].n };
 }
 
-test('unchanged original 85, requested 92 and current 100 catalogs reach the actual Runner model boundary', async t => {
+test('unchanged original 85, requested 92 and current 100 catalogs reach the hosted provider boundary', async t => {
   assert.equal(catalog.originalNames.length, 85);
   assert.equal(catalog.requestedCount, 92);
   assert.equal(catalog.definitions.length, 100);
@@ -87,7 +97,7 @@ test('unchanged original 85, requested 92 and current 100 catalogs reach the act
   });
 });
 
-test('all retained historical 22/26 failure schemas reach Runner unchanged', async t => {
+test('all retained historical 22/26 failure schemas reach the hosted provider unchanged', async t => {
   for (const [report, failures] of Object.entries(catalog.failures)) await t.test(report, async t => {
     const definitions = failures.map(f => ({ name: f.name, description: 'Retained historical failure', input_schema: f.inputSchema }));
     const s = await setup(t, [], { definitions });
@@ -158,7 +168,7 @@ test('invalid catalog arguments never reach approval, authorized IO or effects',
     ['assistance_list', []],
     ['assistance_list', { unexpected: 1 }],
   ];
-  // Each invalid input travels through a fresh Runner job using the actual
+  // Each invalid input travels through a fresh hosted job using the actual
   // unmodified schema extracted from the full catalog.
   for (const [name, input] of invalid) await t.test(`${name} ${JSON.stringify(input).slice(0,100)}`, async t => {
     await assertInvalidArgumentsCorrection(t, { name, input }, { definitions: catalog.definitions.filter(d => d.name === name) });

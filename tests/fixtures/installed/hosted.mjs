@@ -28,7 +28,7 @@ export async function hostedBoundary({ pool, schema, identity, model, host, tool
         } else if(event.type==='agent.session.input.tool_result') {
           const action=value.session.required_actions.find(a=>a.call_id===event.call_id);if(!action)return;
           const out=Array.isArray(event.output)?event.output.map(p=>p.type==='input_text'?p:{type:'input_image',image:p.image_url}):event.output;
-          value.history.push({type:'function_call_result',callId:event.call_id,name:action.arguments.name,status:'completed',output:typeof out==='string'?{type:'text',text:out}:out});
+          value.history.push({type:'function_call_result',callId:event.call_id,name:action.arguments.name??action.name,status:'completed',output:typeof out==='string'?{type:'text',text:out}:out});
           value.session.required_actions=value.session.required_actions.filter(a=>a.call_id!==event.call_id);
           if(!value.session.required_actions.length){value.session.status='running';value.turn.status='running';}
         } else if(event.type==='agent.session.input.computer_use_approval_request_result') {
@@ -58,6 +58,9 @@ export async function hostedBoundary({ pool, schema, identity, model, host, tool
                 const output=event.response.output;
                 value.turn.usage.input_tokens+=event.response.usage?.inputTokens??0;value.turn.usage.output_tokens+=event.response.usage?.outputTokens??0;value.turn.usage.total_tokens+=event.response.usage?.totalTokens??0;
                 value.session.required_actions=output.filter(i=>i.type==='function_call').map(i=>({type:'function_call',call_id:i.callId,turn_id:turnId,name:'handrail_call_tool',arguments:{name:i.name,arguments_json:i.arguments}}));
+                // Let fixtures exercise native provider functions through the
+                // runtime, including catalog discovery, without synthesizing results.
+                value.session.required_actions.push(...output.filter(i=>i.type==='hosted_function_call').map(i=>({type:'function_call',call_id:i.callId,turn_id:turnId,name:i.name,arguments:JSON.parse(i.arguments)})));
                 value.session.required_actions.push(...output.filter(i=>i.type==='computer_use_approval_request').map(i=>({...i,turn_id:turnId})));
                 value.history.push(...output.filter(i=>i.type==='function_call'));
                 value.items.push(...output.filter(i=>i.type==='message').map((i,n)=>({...i,id:`message-${value.items.length+n}`,phase:'final_answer'})));
