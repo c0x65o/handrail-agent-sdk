@@ -18,8 +18,8 @@ import type { AgentInputItem, ToolCallOutputContent } from '@openai/agents';
 import { z, type ZodObject } from 'zod';
 import type { AgentJsonSchemaParameters } from './agent-tool-schema.js';
 export type { AgentJsonSchemaParameters } from './agent-tool-schema.js';
-import { validateJobCommand } from '../contracts/job.js';
-import type { JobIdentity, JobRequirement, JobSnapshot } from '../contracts/job.js';
+import { validateJobCommand, providerFailureCode } from '../contracts/job.js';
+import type { JobIdentity, JobRequirement, JobSnapshot, ProviderFailureCode } from '../contracts/job.js';
 import { sameLeaseValue, validLeaseAuthority } from './job-lease.js';
 import type { JobAppendFence, JobLease, JobLeaseAuthority, JobLeaseFence, JobLeaseHost } from './job-lease.js';
 import type { JobAdmissionStore, JobStore, JobStoreResult, JobStoreErrorCode } from './job-store.js';
@@ -73,13 +73,15 @@ export interface AgentCheckpoint {
   readonly resolutionInputCall?: { readonly receiptRef: string; readonly callId: string };
   readonly usage?: AgentUsage;
   readonly output?: string;
+  /** Original provider error in encrypted custody, never in public events. */
+  readonly providerFailure?: { readonly code: string | null; readonly message: string | null };
   /** SDK-authored nonsecret interaction links, retained for stable projection. */
   readonly interactionNotices?: readonly string[];
 }
 export type AgentCommit = { readonly kind: 'checkpoint' }
   | { readonly kind: 'waiting'; readonly requirement: JobRequirement }
   | { readonly kind: 'succeeded'; readonly receiptRef: string }
-  | { readonly kind: 'failed' };
+  | { readonly kind: 'failed'; readonly providerFailureCode?: ProviderFailureCode };
 export interface AgentStateStore {
   /** Opt-in paged private custody. The host supplies a total storage quota;
    * maxStateBytes still bounds control metadata, not the encrypted pages. */
@@ -171,6 +173,8 @@ export interface AgentRuntimeLimits {
 export type AgentRuntimeEvent = { readonly kind: 'model_progress' | 'tool_completed' | 'checkpoint' | 'waiting' | 'succeeded' }
   | { readonly kind: 'error'; readonly code: 'execution_failed' | 'preparation_failed' | 'limit_exceeded' | 'stopped' | 'lease_lost' | 'not_authorized' | 'invalid_checkpoint'
       | `hosted_${HostedSessionError['code']}` | 'provider_request_failed'; readonly providerStatus?: number }
+  | { readonly kind: 'error'; readonly code: 'provider_turn_failed'; readonly providerStatus?: never; readonly providerFailureCode: ProviderFailureCode;
+      readonly jobId: string; readonly correlationRef: string; readonly providerSessionId: string; readonly providerTurnId: string }
   | { readonly kind: 'usage'; readonly usage: AgentUsage };
 export type AgentOutcome = 'succeeded' | 'failed' | 'waiting' | 'cancelled' | 'busy' | 'stopped' | 'retryable';
 class Halt extends Error { constructor(readonly code: 'limit_exceeded' | 'stopped') { super(code); } }
@@ -669,7 +673,20 @@ export function createAgentRuntime(deps: {
       // authenticated Stop transaction owns the explicit_stop actor and fence.
       // Committing failure here would win the race and erase that outcome.
       if (result.turn.status === 'cancelled') return { ok: true, value: 'stopped' };
-      if (result.turn.status !== 'completed') { await save({ kind: 'failed' }); return { ok: true, value: 'failed' }; }
+      if (result.turn.status !== 'completed') {
+        const code = providerFailureCode(result.turn.error?.code);
+        // Keep bounded original details in the existing encrypted checkpoint.
+        // Only the closed classification and existing IDs leave private custody.
+        record = { ...record, providerFailure: {
+          code: typeof result.turn.error?.code === 'string' ? result.turn.error.code.slice(0, 256) : null,
+          message: typeof result.turn.error?.message === 'string' ? result.turn.error.message.slice(0, 8192) : null,
+        } };
+        await save({ kind: 'failed', providerFailureCode: code });
+        emit({ kind: 'error', code: 'provider_turn_failed', providerFailureCode: code,
+          jobId: identity.jobId, correlationRef: identity.origin.correlationRef,
+          providerSessionId: result.turn.session_id, providerTurnId: result.turn.id });
+        return { ok: true, value: 'failed' };
+      }
       if (size(result.outputText) > limits.maxOutputBytes) throw new Halt('limit_exceeded');
       const measured=[...result.priorTurns,result.turn].filter(turn=>turn.usage);
       record = { ...record, output: result.outputText,

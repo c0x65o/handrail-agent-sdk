@@ -1,6 +1,6 @@
 import type { ConversationTransport, ConversationTransportCapabilities, StartTurnInput, ResumeTurnInput,
   TurnObservation, TurnObservationResult, TurnResumePoint, CancelTurnInput, TransportResult } from '../assistant/index.js';
-import type { JobIdentity } from '../contracts/job.js';
+import { describeJobError, type JobIdentity } from '../contracts/job.js';
 import type { createAgentRuntime } from './agent-runtime.js';
 import type { AuthoritativeAttribution, StreamEvent, ChatRequest } from '../assistant/index.js';
 
@@ -153,7 +153,7 @@ export function createAgentCheckpointReader(deps: {
       frames.push({ ...envelope, sequence: frames.length, type: 'response.cancelled', reason: snapshot.cancellation.reason });
     } else if (snapshot.state === 'failed') {
       frames.push({ ...envelope, sequence: frames.length, type: 'response.error', error: { category: 'internal', code: 'internal_error',
-        message: 'Assistant execution failed.', retryable: false } });
+        message: describeJobError(snapshot.error), retryable: false } });
     }
     const prefix = `${requestId}:`;
     let cursor = -1;
@@ -166,7 +166,7 @@ export function createAgentCheckpointReader(deps: {
       if (!state && cursor >= frames.length - 1 && (snapshot.state === 'cancelled' || snapshot.state === 'failed')) {
         const result: TurnObservationResult = snapshot.state === 'cancelled'
           ? { status: 'cancelled', checkpoint: after }
-          : { status: 'failed', checkpoint: after, error: { ...failure().error, retryable: false } };
+          : { status: 'failed', checkpoint: after, error: { ...failure().error, message: describeJobError(snapshot.error), retryable: false } };
         return { events: [], checkpoint: after, result };
       }
       if (cursor >= frames.length) throw Error('invalid_agent_cursor');
@@ -176,7 +176,7 @@ export function createAgentCheckpointReader(deps: {
     let result: TurnObservationResult | undefined;
     if (snapshot.state === 'succeeded') result = { status: 'completed', checkpoint };
     if (snapshot.state === 'cancelled') result = { status: 'cancelled', checkpoint };
-    if (snapshot.state === 'failed') result = { status: 'failed', checkpoint, error: { ...failure().error, retryable: false } };
+    if (snapshot.state === 'failed') result = { status: 'failed', checkpoint, error: { ...failure().error, message: describeJobError(snapshot.error), retryable: false } };
     if (snapshot.state === 'waiting') {
       const pending = await deps.pendingToolCallIds(binding, snapshot.requirement.requirementRef);
       // Managed secure-entry/help waits have no native proposal. Preserve the

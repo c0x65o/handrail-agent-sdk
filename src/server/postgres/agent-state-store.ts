@@ -79,7 +79,8 @@ export function createAgentStateStore(db: AgentPostgresDatabase, keys: AgentStat
           if (change.kind !== 'checkpoint') {
             let snapshot: JobSnapshot;
             if (change.kind === 'waiting') snapshot = { ...base, state: 'waiting', requirement: change.requirement };
-            else if (change.kind === 'failed') snapshot = { ...base, state: 'failed', error: { code: 'execution_failed', correlationRef: identity.origin.correlationRef } };
+            else if (change.kind === 'failed') snapshot = { ...base, state: 'failed', error: { code: change.providerFailureCode ? 'provider_turn_failed' : 'execution_failed', correlationRef: identity.origin.correlationRef,
+              ...(change.providerFailureCode ? { providerFailureCode: change.providerFailureCode } : {}) } };
             else {
               if (current.effects.some(e => e.outcome === 'unknown') || typeof checkpoint.output !== 'string') reject('effect_conflict');
               snapshot = { ...base, state: 'succeeded', receipt: { receiptRef: change.receiptRef, verification: 'host_verified', jobId: identity.jobId, revision: base.revision } };

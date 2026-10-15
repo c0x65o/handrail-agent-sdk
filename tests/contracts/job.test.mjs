@@ -195,3 +195,13 @@ test('effect history has no cumulative call allowance', () => {
   s.effects = Array.from({length: 300}, (_, i) => ({...effect, effectRef: `effect-${i}`}));
   valid(validateJobSnapshot(s));
 });
+
+
+test('provider failure classification survives the journal without accepting arbitrary error text', () => {
+  const s=snapshot('failed');
+  s.error={code:'provider_turn_failed',correlationRef:'trace',providerFailureCode:'sandbox_error'};
+  valid(validateJobSnapshot(s));
+  for (const patch of [{providerFailureCode:'private-provider-code'},{message:'private-provider-message'},{code:'execution_failed'}]) {
+    invalid(validateJobSnapshot({...s,error:{...s.error,...patch}}));
+  }
+});

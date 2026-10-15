@@ -107,3 +107,29 @@ for(const accepted of [false,true])test(`Stop reconciles pending active input wi
  }
  assert.equal(events.length,1);assert.notEqual(f.snapshot.state,'cancelled');await r.stop();
 });
+
+for (const code of ['sandbox_error', 'rate_limit_exceeded', 'unexpected_private_code']) test(`hosted failure retains private details and reports a safe category: ${code}`, async () => {
+ const f=fixture(), observed=[], usage=[];
+ const send=f.sessions.events.create;
+ f.sessions.events.create=async(...args)=>{
+   await send(...args);
+   if(f.providerTurn?.status==='completed') {
+     f.providerTurn.status='failed';f.providerTurn.error={code,message:'private provider diagnostic: secret-marker'};
+   }
+ };
+ f.options.observe=e=>{observed.push(e);if(e.kind==='error')throw Error('broken observer');};
+ f.options.harness.usage=async(_id,turn)=>usage.push(turn.status);
+ const r=f.runtime();
+ assert.deepEqual(await r.wake(identity),success('failed'));
+ assert.deepEqual(f.checkpoint.providerFailure,{code,message:'private provider diagnostic: secret-marker'});
+ const failure=observed.find(e=>e.code==='provider_turn_failed');
+ assert.equal(failure.providerFailureCode,code==='unexpected_private_code'?'unknown':code);
+ assert.equal(failure.jobId,identity.jobId);assert.equal(failure.providerTurnId,'provider-turn');
+ assert.equal(failure.providerSessionId,'remote-session');assert.equal(failure.correlationRef,'trace');
+ assert.ok(!JSON.stringify(observed).includes('secret-marker'));
+ assert.ok(!JSON.stringify(observed).includes('unexpected_private_code'));
+ assert.deepEqual(usage,['failed']);assert.equal(f.executions,1);assert.equal(f.outputs,0);
+ await r.stop();
+ const recovered=f.runtime();assert.deepEqual(await recovered.wake(identity),success('failed'));
+ assert.equal(f.executions,1);assert.equal(f.messages,1);await recovered.stop();
+});

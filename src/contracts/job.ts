@@ -1,3 +1,5 @@
+import { PROVIDER_FAILURE_MESSAGES, type ProviderFailureCode } from './provider-failure.js';
+export { PROVIDER_FAILURE_MESSAGES, providerFailureCode, type ProviderFailureCode } from './provider-failure.js';
 /**
  * Pure wire contracts, not an execution owner. The host derives identities,
  * authorizes every command, verifies receipts, and atomically persists revisions.
@@ -8,12 +10,13 @@
 export type JobState = 'queued' | 'running' | 'waiting' | 'succeeded' | 'failed' | 'cancelled';
 export type JobErrorCode = 'invalid_payload' | 'invalid_revision' | 'identity_mismatch'
   | 'invalid_transition' | 'requirement_mismatch' | 'effect_conflict'
-  | 'not_authorized' | 'unavailable' | 'observation_withheld' | 'execution_failed';
+  | 'not_authorized' | 'unavailable' | 'observation_withheld' | 'execution_failed' | 'provider_turn_failed';
 export type JobValidation<T> = { readonly ok: true; readonly value: T }
   | { readonly ok: false; readonly code: JobErrorCode };
 export interface JobError {
   readonly code: JobErrorCode;
   readonly correlationRef: string;
+  readonly providerFailureCode?: ProviderFailureCode;
 }
 export interface JobQueueRef {
   readonly queueRef: string;
@@ -139,7 +142,7 @@ type Check = (value: unknown) => boolean;
 type RecordValue = Record<string, unknown>;
 const errorCodes: readonly JobErrorCode[] = ['invalid_payload', 'invalid_revision', 'identity_mismatch',
   'invalid_transition', 'requirement_mismatch', 'effect_conflict', 'not_authorized',
-  'unavailable', 'observation_withheld', 'execution_failed'];
+  'unavailable', 'observation_withheld', 'execution_failed', 'provider_turn_failed'];
 const ref: Check = v => typeof v === 'string' && /^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/.test(v);
 const revision: Check = v => typeof v === 'number' && Number.isSafeInteger(v) && v >= 0;
 const positive: Check = v => revision(v) && (v as number) > 0;
@@ -186,7 +189,9 @@ const requirement: Check = v => shape(v, {
 });
 const answer: Check = v => shape(v, { requirementRef: ref, requirementRevision: positive, responseRef: ref });
 const receipt: Check = v => shape(v, { receiptRef: ref, verification: oneOf('host_verified'), jobId: ref, revision: positive });
-const error: Check = v => shape(v, { code: oneOf(...errorCodes), correlationRef: ref });
+const error: Check = v => shape(v, { code: oneOf(...errorCodes), correlationRef: ref }, {
+  providerFailureCode: oneOf(...Object.keys(PROVIDER_FAILURE_MESSAGES)),
+}) && (record(v) && (v.providerFailureCode === undefined || v.code === 'provider_turn_failed'));
 const effect: Check = v => shape(v, { actionRef: ref, operationRef: ref, effectRef: ref, outcome: oneOf('unknown', 'verified', 'not_applied') });
 const delivery: Check = v => shape(v, { attemptRef: ref }, { callbackRef: ref, queue });
 function matchesRequirement(a: JobAnswer, r: JobRequirement): boolean {
@@ -346,3 +351,10 @@ function result(v: unknown): v is JobResult {
   }
 }
 export function validateJobResult(value: unknown): JobValidation<JobResult> { return checked(value, result); }
+
+/** Safe user-facing explanation shared by native hosts and the chat transport. */
+export function describeJobError(error: JobError): string {
+  return error.code === 'provider_turn_failed'
+    ? PROVIDER_FAILURE_MESSAGES[error.providerFailureCode ?? 'unknown']
+    : 'The assistant could not complete this request. Ask the administrator to inspect its saved execution details.';
+}

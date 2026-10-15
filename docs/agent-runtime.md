@@ -6,6 +6,26 @@ environment. Handrail owns admission, conversation scope, native tool authority,
 effect receipts, private checkpoints and delivery to the original conversation.
 There is no application-run Runner or per-turn Responses inference fallback.
 
+## Failed provider turns
+
+A terminal failed hosted turn commits `JobError.code = 'provider_turn_failed'`
+and a closed `providerFailureCode` classification. `describeJobError` (root
+export) gives a safe explanation for application presentation; the standard
+application transport uses it for both first delivery and checkpoint replay.
+Unknown provider codes use the `unknown` classification. Existing failures that
+predate this metadata cannot acquire a provider reason retroactively.
+
+The `error` observer event includes the classification, job/correlation IDs and
+provider session/turn IDs. Connect `observe` to the application's structured
+diagnostics. The original error code and message stay in the existing encrypted
+checkpoint (`providerFailure`, capped at 256 and 8192 characters respectively).
+Do not copy that private object into logs, transcripts or public error responses.
+
+Provider failure is terminal for the admitted job. Completed effects and usage
+receipts remain intact; reconnecting or waking the same job does not submit it
+again. Check completed work before explicitly continuing an unfinished request.
+Cancellation remains the native Stop path and is not reclassified as failure.
+
 Use `harness`, not a model adapter:
 
 ```ts

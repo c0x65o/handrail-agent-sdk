@@ -97,3 +97,40 @@ test('a completed provider turn reconciles its declined native effect without di
  assert.equal(ok(await s.journal.load(identity)).effects[0].outcome,'verified');
  assert.equal((await s.pool.query(`SELECT value FROM ${table} WHERE id=$1`,[provider.id])).rows[0].value.messages.length,1);
 });
+
+
+test('failed hosted turn persists safe diagnostics and projects them after restart without replaying effects', async t => {
+  const {createAgentRuntime}=await import('handrail-agent-sdk/server/agents');
+  const {createAgentCheckpointReader}=await import('handrail-agent-sdk/server/application');
+  const {parseStreamEvent}=await import('handrail-agent-sdk/assistant');
+  const f=await setup(t,{runtimeFactory:options=>{
+    const retrieve=options.harness.client.beta.agents.sessions.turns.retrieve;
+    options.harness.client.beta.agents.sessions.turns.retrieve=async(...args)=>{
+      const turn=await retrieve(...args);
+      return turn.status==='completed'?{...turn,status:'failed',error:{code:'sandbox_error',message:'SECRET provider environment diagnostic'}}:turn;
+    };
+    return createAgentRuntime(options);
+  }});
+  assert.equal(ok(await f.runtime.wake(identity)),'failed');
+  const saved=ok(await f.journal.load(identity));
+  assert.deepEqual(saved.error,{code:'provider_turn_failed',correlationRef:identity.origin.correlationRef,providerFailureCode:'sandbox_error'});
+  assert.equal(ok(await f.states.load(identity,f.authority())).providerFailure.message,'SECRET provider environment diagnostic');
+  const journal=(await f.client.query(`SELECT event FROM ${f.harness.table('job_events')}`)).rows;
+  assert.ok(!JSON.stringify([journal,f.events]).includes('SECRET'));
+  assert.ok(f.events.some(e=>e.code==='provider_turn_failed'&&e.providerFailureCode==='sandbox_error'));
+  const before=f.model.requests;
+  await f.runtime.stop();
+  const fresh=await services(f.harness.schema,f.key);t.after(()=>fresh.close());
+  const member={id:'fixture',source:'server_derived',trust:'authoritative'};
+  const reader=createAgentCheckpointReader({runtime:fresh.runtime,attribution:async()=>({organization:member,project:member,service_environment:member,known_user:member,session:member,automation:{...member,id:null}}),pendingToolCallIds:async()=>[]});
+  const binding={identity,turnId:'turn-one',mutationId:'mutation-one'};
+  const empty={lastAppliedCursor:null,lastAppliedEventId:null,lastAppliedRevision:null};
+  const first=await reader(binding,empty);
+  const error=first.events.map(parseStreamEvent).find(e=>e.type==='response.error').error;
+  assert.match(error.message,/hosted execution environment failed/);assert.equal(error.retryable,false);
+  assert.equal(first.result.error.message,error.message);
+  const replay=await reader(binding,first.checkpoint);assert.deepEqual(replay.events,[]);assert.equal(replay.result.error.message,error.message);
+  assert.equal(ok(await fresh.runtime.wake(identity)),'failed');
+  assert.equal(f.model.requests,before);assert.equal(fresh.model.requests,0);
+  assert.equal((await f.client.query(`SELECT attempts FROM ${f.harness.table('synthetic_provider')}`)).rows[0].attempts,1);
+});
