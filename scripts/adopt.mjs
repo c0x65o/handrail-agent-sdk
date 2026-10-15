@@ -4,6 +4,7 @@ import { copyFileSync, existsSync, mkdirSync, readFileSync, readdirSync, statSyn
 import { basename, dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { execFileSync } from "node:child_process";
+import { parse } from "@babel/parser";
 
 const PACKAGE = "handrail-agent-sdk";
 const LEGACY_PACKAGE = "@handrail/ai-assistant";
@@ -11,8 +12,6 @@ const LEGACY_PACKAGES = [LEGACY_PACKAGE, "@handrail/ai"];
 const DEPENDENCY_GROUPS = ["dependencies", "devDependencies", "optionalDependencies", "peerDependencies"];
 const SOURCE_PATTERN = /^git\+https:\/\/(?:git@)?github\.com\/c0x65o\/handrail-agent-sdk\.git#[0-9a-f]{40}$/u;
 const TEXT_EXTENSIONS = new Set([".js", ".jsx", ".mjs", ".cjs", ".ts", ".tsx", ".mts", ".cts"]);
-const LEGACY_IMPORT_PATTERN = /@handrail\/ai(?:-assistant)?(?=\/|["'])/u;
-const LEGACY_IMPORT_REPLACEMENT_PATTERN = /@handrail\/ai(?:-assistant)?(?=\/|["'])/gu;
 const RELEASE_VERSION_PATTERN = /^(?:0\.(?:[2-9]|[1-9]\d+)\.\d+|[1-9]\d*\.\d+\.\d+)(?:[-+].*)?$/u;
 const TEMPLATE_ROOT = fileURLToPath(new URL("../templates/standard-react-node", import.meta.url));
 const SDK_REPOSITORY = "https://github.com/c0x65o/handrail-agent-sdk.git";
@@ -44,6 +43,39 @@ function sourceFiles(root) {
   return found;
 }
 
+// Parse module specifiers, never package catalog values, comments or example strings.
+function moduleSpecifiers(source, path) {
+  const ext = extension(path);
+  const plugins = ["decorators-legacy"];
+  if ([".ts", ".tsx", ".mts", ".cts"].includes(ext)) plugins.push(["typescript", { dts: /\.d\.[cm]?ts$/u.test(path) }]);
+  if ([".js", ".jsx", ".tsx"].includes(ext)) plugins.push("jsx");
+  let ast;
+  try { ast = parse(source, { sourceType: "unambiguous", sourceFilename: path,
+    createImportExpressions: true, allowReturnOutsideFunction: true, plugins }); }
+  catch (error) { throw new SyntaxError(`${path}: ${error.message}`); }
+  const found = [];
+  const visit = node => {
+    if (!node || typeof node !== "object") return;
+    let specifier;
+    if (["ImportDeclaration", "ExportNamedDeclaration", "ExportAllDeclaration", "ImportExpression"].includes(node.type)) specifier = node.source;
+    else if (node.type === "TSImportType") specifier = node.argument;
+    else if (node.type === "TSExternalModuleReference") specifier = node.expression;
+    else if (node.type === "CallExpression" && node.callee?.type === "Identifier" && node.callee.name === "require") specifier = node.arguments[0];
+    if (specifier?.type === "StringLiteral") found.push(specifier);
+    for (const value of Object.values(node)) {
+      if (Array.isArray(value)) value.forEach(visit);
+      else if (value && typeof value === "object" && typeof value.type === "string") visit(value);
+    }
+  };
+  visit(ast);
+  return found;
+}
+
+function migratedSpecifier(value) {
+  const legacy = LEGACY_PACKAGES.find(name => value === name || value.startsWith(`${name}/`));
+  return legacy ? `${PACKAGE}/assistant${value.slice(legacy.length)}` : value;
+}
+
 function manifestAt(root) {
   const path = join(root, "package.json");
   if (!existsSync(path)) usage(`No package.json exists under ${root}`);
@@ -61,8 +93,9 @@ function inspect(root) {
   const { value: manifest } = manifestAt(root);
   const files = sourceFiles(root);
   const source = files.map((path) => readFileSync(path, "utf8")).join("\n");
-  const importsSdkPath = (path) => source.includes(`${PACKAGE}/assistant/${path}`) ||
-    source.includes(`${LEGACY_PACKAGE}/${path}`);
+  const specifiers = files.flatMap(path => moduleSpecifiers(readFileSync(path, "utf8"), path).map(node => node.value));
+  const legacyImports = specifiers.some(value => migratedSpecifier(value) !== value);
+  const importsSdkPath = path => specifiers.some(value => migratedSpecifier(value) === `${PACKAGE}/assistant/${path}`);
   const current = dependency(manifest, PACKAGE);
   const legacy = LEGACY_PACKAGES.some(name => dependency(manifest, name));
   const standardUi = importsSdkPath("react/styled") &&
@@ -87,7 +120,7 @@ function inspect(root) {
     { id: "package", ok: Boolean(current), detail: current ? `${current.group}: ${current.source}` : `${PACKAGE} is missing` },
     { id: "immutable-source", ok: Boolean(current && SOURCE_PATTERN.test(current.source)), detail: current && SOURCE_PATTERN.test(current.source) ? "full immutable Git SHA" : "dependency must use the approved Git URL and a full SHA" },
     { id: "lockfile", ok: lockMatches, detail: lockMatches ? `${locked.version}, resolved Git SHA and identity match` : "package-lock must resolve one canonical package at version 0.2.0 or newer from the exact manifest Git URL/SHA in every dependency group, with no legacy, duplicate or linked node" },
-    { id: "legacy-package-removed", ok: !legacy && !LEGACY_IMPORT_PATTERN.test(source), detail: !legacy && !LEGACY_IMPORT_PATTERN.test(source) ? "no legacy dependency/imports" : `${LEGACY_PACKAGE} remains` },
+    { id: "legacy-package-removed", ok: !legacy && !legacyImports, detail: !legacy && !legacyImports ? "no legacy dependency/imports" : `${LEGACY_PACKAGE} remains` },
     { id: "high-level-server", ok: importsSdkPath("server/assistant") && source.includes("createHandrailAssistant"), detail: "standard server assembly" },
     { id: "telemetry", ok: importsSdkPath("server/usage-control") && source.includes("usageFromEnvironment"), detail: "automatic Handrail usage binding" },
     { id: "recovery", ok: recovery, detail: recovery
@@ -157,7 +190,11 @@ function migrate(root, write, frozenRevision) {
   }
   const replacements = sourceFiles(root).flatMap(sourcePath => {
     const before = readFileSync(sourcePath, "utf8");
-    const after = before.replace(LEGACY_IMPORT_REPLACEMENT_PATTERN, `${PACKAGE}/assistant`);
+    let after = before;
+    for (const node of moduleSpecifiers(before, sourcePath).sort((a, b) => b.start - a.start)) {
+      const replacement = migratedSpecifier(node.value);
+      if (replacement !== node.value) after = after.slice(0, node.start) + JSON.stringify(replacement) + after.slice(node.end);
+    }
     return before === after ? [] : [{path:sourcePath, after}];
   });
   const changed = beforeManifest !== JSON.stringify(manifest);

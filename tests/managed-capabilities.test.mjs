@@ -9,6 +9,20 @@ import { managedStore } from '../dist/server/managed/store.js';
 const ok = r => { assert.equal(r.ok, true, r.code); return r.value; };
 const origin = 'https://app.example.com', baseUrl = `${origin}/agent-access`;
 const empty = { lastAppliedCursor: null, lastAppliedEventId: null, lastAppliedRevision: null };
+const privateLogin = {type:'browser_authentication',credential_origin:'https://project.example.com',reason:'Sign in',
+  fields:[{id:'email',label:'Email',type:'email',required:true},{id:'pass',label:'Password',type:'password',required:true}],options:[]};
+const externalSelection = {credentialRef:'project-vault-entry',revision:'revision-1',optionId:null,
+  fields:[{fieldId:'email',source:'username'},{fieldId:'pass',source:'password'}]};
+function authenticationModel(rejectLogin=false) {
+  const requests=[];
+  return {requests,async *getStreamedResponse(request) {
+    requests.push(request);
+    yield {type:'response_done',response:{output:!request.authCompleted||rejectLogin?
+      [{type:'computer_use_approval_request',request_id:request.authCompleted?'login-rejected':'login-original',request:privateLogin}]:
+      [{type:'message',role:'assistant',status:'completed',content:[{type:'output_text',text:'Dashboard loaded.'}]}],
+    usage:{inputTokens:1,outputTokens:1,totalTokens:2}}};
+  }};
+}
 function model(handoff) {
   const requests = [];
   return { requests, async getResponse() { throw Error('STREAM_EXPECTED'); }, async *getStreamedResponse(request) {
@@ -32,7 +46,7 @@ async function setup(t, flags = { vault: true, browser: false }, handoff = false
   const create = () => createManagedAgentCapabilities({ database: harness.pool, schema: harness.schema, keys, baseUrl, features: flags,
     authenticate: async () => signedIn ? scope : null,
     restoreRuntime: hooks.lazy ? async original => { assert.deepEqual(original,identity); capabilities.createRuntime(deps); } : undefined,
-    onAnswered: hooks.onAnswered });
+    onAnswered: hooks.onAnswered, credentialProvider: hooks.credentialProvider });
   let capabilities = create(), deps;
   t.after(() => capabilities.close());
   const provider = hooks.model || model(handoff);
@@ -70,6 +84,48 @@ async function settled(s) {
   }
   assert.fail('original task did not resume');
 }
+
+test('optional project credentials satisfy the original private request without exposing values or creating a saved SDK account',async t=>{
+  const password=randomBytes(24).toString('hex'),username=randomBytes(16).toString('hex');let resolutions=0;
+  const s=await setup(t,{vault:true,browser:true},false,{model:authenticationModel(),credentialProvider:{
+    async select(input){assert.deepEqual(input.identity,identity);assert.equal(input.requestId,'login-original');return externalSelection;},
+    async resolve(input,selected){assert.deepEqual(selected,externalSelection);resolutions++;return {username,password};},
+  }});
+  assert.equal(ok(await s.runtime.wake(identity)),'succeeded');assert.equal(resolutions,1);
+  const state=ok(await s.states.load(identity,s.authority()));
+  const records=(await s.harness.pool.query(`SELECT * FROM ${s.harness.table('managed_capability_records')}`)).rows;
+  const events=(await s.harness.pool.query(`SELECT * FROM ${s.harness.table('job_events')}`)).rows;
+  for(const value of [username,password])assert.equal(JSON.stringify([records,state,events,s.provider.requests]).includes(value),false);
+  const store=managedStore(s.harness.pool,s.harness.schema,s.keys);
+  assert.deepEqual(await store.list(identity.host,'account:'),[]);
+  const interaction=(await store.list(identity.host,'interaction:'))[0].value;
+  assert.equal(interaction.response.request_id,'login-original');
+  assert.deepEqual(interaction.response.response.fields,[{field_id:'email',value:username},{field_id:'pass',value:password}]);
+});
+
+for(const reason of ['no_match','revoked','vault_disabled'])test(`project credential ${reason} retains the authenticated private form`,async t=>{
+  let selected=0,resolved=0;
+  const s=await setup(t,{vault:reason!=='vault_disabled',browser:true},false,{model:authenticationModel(),credentialProvider:{
+    async select(){selected++;return reason==='no_match'?null:externalSelection;},
+    async resolve(){resolved++;return null;},
+  }});
+  assert.equal(ok(await s.runtime.wake(identity)),'waiting');
+  const state=ok(await s.states.load(identity,s.authority()));
+  assert.ok(state.interactionNotices.some(n=>n.includes('Complete sign-in privately')));
+  assert.equal(selected,reason==='vault_disabled'?0:1);assert.equal(resolved,reason==='revoked'?1:0);
+  const recovered=await s.restart();
+  ok(await recovered.resume(identity));assert.equal(ok(await recovered.wake(identity)),'waiting');
+  assert.equal(selected,reason==='vault_disabled'?0:1,'recovery does not repeat account selection');
+});
+
+test('a rejected project login asks for private input instead of trying saved credentials repeatedly',async t=>{
+  let attempts=0;
+  const s=await setup(t,{vault:true,browser:true},false,{model:authenticationModel(true),credentialProvider:{
+    async select(){attempts++;return externalSelection;},async resolve(){return {username:'fixture-user',password:'fixture-password'};},
+  }});
+  assert.equal(ok(await s.runtime.wake(identity)),'waiting');assert.equal(attempts,1);
+  assert.ok(ok(await s.states.load(identity,s.authority())).interactionNotices.some(n=>n.includes('Complete sign-in privately')));
+});
 test('one SDK setup supplies form, encrypted custody, visible link, native answer and automatic same-job resume', async t => {
   const s = await setup(t), password = randomBytes(32).toString('hex'), entry = await start(s);
   assert.match(entry.html, /Save securely and continue/); assert.match(entry.page.headers.get('content-security-policy'), /frame-ancestors 'none'/);

@@ -164,3 +164,43 @@ for (const stopMethod of ["stopUsageWorker", "stopBackgroundWorkers"]) test(`acc
   assert.equal(result.status, 0, result.stdout);
   assert.equal(JSON.parse(result.stdout).findings.find(finding => finding.id === "ui").ok, true);
 });
+
+test('migration changes module specifiers while preserving catalog metadata and examples', () => {
+  const root = host();
+  const path = join(root, 'src/catalog.ts');
+  const untouched = [
+    'const packages = ["@handrail/ai", "@handrail/ai-assistant"];',
+    '// import fake from "@handrail/ai/server";',
+    'const example = \'require("@handrail/ai")\';',
+    'const template = `import fake from "@handrail/ai";`;',
+    'const lookalike = "@handrail/ai-other";',
+  ];
+  writeFileSync(join(root, 'src/catalog.d.ts'), 'export const packageName: string;\nexport type Context = import("@handrail/ai/types").Context;');
+  const imports = [
+    'export * from "@handrail/ai/server";',
+    'export { x } from "@handrail/ai-assistant/server";',
+    'const lazy = import("@handrail/ai");',
+    'const common = require("@handrail/ai-assistant");',
+    'import legacy = require("@handrail/ai/types");',
+    'type Context = import("@handrail/ai-assistant/types").Context;',
+  ];
+  writeFileSync(path, [...untouched, ...imports].join('\n'));
+  execFileSync(process.execPath, [cli, 'migrate-package', root, '--sdk-revision', approved.split('#')[1], '--write']);
+  const result = readFileSync(path, 'utf8');
+  for (const line of untouched) assert.ok(result.includes(line), line);
+  for (const line of imports) assert.ok(result.includes(line.replace(/@handrail\/ai(?:-assistant)?/u, 'handrail-agent-sdk/assistant')), line);
+  writeCanonicalLock(root);
+  const checked = spawnSync(process.execPath, [cli, 'check', root], { encoding: 'utf8' });
+  assert.equal(checked.status, 0, checked.stderr || checked.stdout);
+});
+
+test('invalid syntax aborts migration before any source or manifest write', () => {
+  const root = host();
+  const source = readFileSync(join(root, 'src/assistant.tsx'), 'utf8');
+  const manifest = readFileSync(join(root, 'package.json'), 'utf8');
+  writeFileSync(join(root, 'src/broken.ts'), 'const = ;');
+  const result = spawnSync(process.execPath, [cli, 'migrate-package', root, '--sdk-revision', approved.split('#')[1], '--write']);
+  assert.notEqual(result.status, 0);
+  assert.equal(readFileSync(join(root, 'src/assistant.tsx'), 'utf8'), source);
+  assert.equal(readFileSync(join(root, 'package.json'), 'utf8'), manifest);
+});

@@ -20,7 +20,7 @@ export function hostedApprovalNotice(action: Approval, link: string): string {
 
 /** Values flow from the authenticated private portal directly to the registered
  * provider control, never into the model input, tool log or conversation. */
-export function hostedApprovalResponse(action: Approval, form: Record<string, unknown>): HostedActionResult {
+export function hostedApprovalResponse(action: Pick<Approval, 'request' | 'request_id'>, form: Record<string, unknown>): HostedActionResult {
   const request = action.request;
   const response = (value: Extract<HostedActionResult, { type: 'agent.session.input.computer_use_approval_request_result' }>['response']): HostedActionResult =>
     ({ type: 'agent.session.input.computer_use_approval_request_result', request_id: action.request_id, response: value });

@@ -14,6 +14,8 @@ import { hostedApprovalNotice, hostedApprovalPage, hostedApprovalResponse } from
 interface PrivateAccount { label: string; url: string; origins: string[]; username: string; password: string; approved: boolean; revoked: boolean; expiresAt: number }
 import { website } from './managed/network.js';
 import { portalPage, portalHeaders } from './managed/portal.js';
+import { credentialResponse, validateCredentialSelection, type CredentialSelection, type ManagedCredentialProvider } from './managed/credentials.js';
+export type { CredentialRequest, CredentialSelection, ManagedCredentialProvider } from './managed/credentials.js';
 
 export interface ManagedAgentCapabilitiesOptions {
   readonly database: Pool;
@@ -32,11 +34,13 @@ export interface ManagedAgentCapabilitiesOptions {
    * already durable; retries must retain the original job/conversation identity. */
   readonly onAnswered?: (identity: JobIdentity) => Promise<void>;
   readonly features?: { readonly vault?: boolean; readonly browser?: boolean };
+  readonly credentialProvider?: ManagedCredentialProvider;
 }
 type RuntimeOptions = Parameters<typeof createAgentRuntime>[0];
 type ManagedResult = { output: string; wait?: JobRequirement; notice?: string; reconciliation?: boolean };
 interface Interaction { identity: JobIdentity; ref: string; accountRef: string; label: string; url: string;
   kind: 'credentials' | 'hosted'; csrf: string; expiresAt: number; completed: boolean;
+  credentialSelection?: CredentialSelection;
   action?: Extract<HostedAction, { type: 'computer_use_approval_request' }>; response?: HostedActionResult }
 interface Operation { call: AgentCall; phase: 'prepared' | 'started' | 'complete'; result?: ManagedResult }
 const equal = (a: Scope, b: Scope) => canonicalScope(a) === canonicalScope(b);
@@ -190,6 +194,13 @@ export function createManagedAgentCapabilities(options: ManagedAgentCapabilities
         const old = await store.get<Interaction>(identity.host, `interaction:${id}`);
         if (old && JSON.stringify(old.value.action) !== JSON.stringify(action)) throw Error('CAPABILITY_CONFLICT');
         if (old?.value.completed && old.value.response) {
+          if (old.value.credentialSelection && action.request.type === 'browser_authentication') {
+            const input = { identity, requestId: action.request_id, request: action.request };
+            const values = await options.credentialProvider?.resolve(input, old.value.credentialSelection);
+            await authorizeJob(identity);
+            if (!values) throw Error('CREDENTIAL_AUTHORITY_LOST');
+            return credentialResponse(input, old.value.credentialSelection, values);
+          }
           if (old.value.accountRef) {
             const account = await store.get<PrivateAccount>(identity.host, `account:${old.value.accountRef}`);
             if (!account || account.value.revoked || !account.value.approved || account.value.expiresAt <= Date.now()
@@ -201,6 +212,34 @@ export function createManagedAgentCapabilities(options: ManagedAgentCapabilities
           url: action.request.type === 'browser_origin_access' ? action.request.origin : action.request.credential_origin ?? '',
           kind: 'hosted', action, csrf: randomBytes(32).toString('hex'), expiresAt: Date.now() + 900_000, completed: false };
         if (!old) await store.put(identity.host, `interaction:${id}`, i, 0);
+        if (!old && flags.vault && options.credentialProvider && action.request.type === 'browser_authentication'
+          && action.request.credential_origin) {
+          const input = { identity, requestId: action.request_id, request: action.request };
+          // A rejected login must return control to the private form, not loop
+          // through passwords. Claim once per original job and exact origin,
+          // before calling the provider; recovery never creates another attempt.
+          const attemptKey = `credential-attempt:${createHash('sha256').update(JSON.stringify([identity.jobId, i.url])).digest('hex')}`;
+          const claimed = await store.lock(identity.host, attemptKey, async () => {
+            if (await store.get(identity.host, attemptKey)) return false;
+            await store.put(identity.host, attemptKey, { requestId: action.request_id }, 0);
+            return true;
+          });
+          if (claimed) {
+            const selection = await options.credentialProvider.select(input);
+            await authorizeJob(identity);
+            if (selection) {
+              validateCredentialSelection(input, selection);
+              const values = await options.credentialProvider.resolve(input, selection);
+              await authorizeJob(identity);
+              if (values) {
+                const response = credentialResponse(input, selection, values);
+                await store.put(identity.host, `interaction:${id}`, { ...i, completed: true,
+                  credentialSelection: selection, response }, 1);
+                return response;
+              }
+            }
+          }
+        }
         return { requirement: requirement(i), notice: hostedApprovalNotice(action, `${base.href}/${id}`) };
       },
     }, limits: { ...deps.limits, leaseTtlMs: Math.max(deps.limits.leaseTtlMs, 90_000) },

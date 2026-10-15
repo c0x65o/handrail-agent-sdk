@@ -18,6 +18,7 @@ revision and Git paths `packages/handrail_agent_client` and
 [the migration guide](assistant-consolidation.md) for old-to-new package names.
 
 The `handrail-agent-sdk` CLI provides `scaffold`, `migrate-package` and `check` commands.
+Migration parses JavaScript/TypeScript module specifiers, including dynamic imports, CommonJS requires and declaration files. Package catalog values, comments and quoted examples remain unchanged. A source syntax error aborts before any manifest or source write; dry-run reports the exact files that would change.
 Run `--help` for exact arguments. Migration requires an explicit full
 `--sdk-revision`: a revision from the former Assistant repository cannot be
 reused in this repository. Migration is a dry run unless `--write` is supplied.

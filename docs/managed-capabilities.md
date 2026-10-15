@@ -101,3 +101,31 @@ The SDK checks the current original wait and host authority, retains the first
 decision, and rejects conflicting answers. The host's scheduler resumes that same
 job; saving an answer does not execute it. These methods cannot read or answer
 credential forms. Keep passwords and verification codes on the private portal.
+# Optional application Vault
+
+`createManagedAgentCapabilities` accepts an optional `credentialProvider` with
+`select(input)` and `resolve(input, selection)` methods. Applications that omit it
+retain the existing private form and SDK account storage behavior.
+
+The input contains the original job identity, provider request ID and registered
+browser authentication request. `select` returns an opaque `credentialRef`, its
+`revision`, `optionId` (null for a plain form), and explicit `{fieldId, source}`
+mappings, or null to request private human input. `resolve` rechecks current
+application authority and returns the requested source values privately, or null
+when unavailable. Selection must use explicit configuration or a structured model
+decision; field rendering types alone cannot distinguish a password from an MFA
+code. Never send values to a model to perform selection.
+
+The SDK validates the registered fields and option, rechecks job authority, and
+passes values only through the registered private browser response. It retains
+the response encrypted for same-request recovery without creating a reusable SDK
+account. Recovery re-resolves the exact selected revision through the host, so
+revoked or changed credentials cannot be replayed. The host owns origin, scope,
+revision checks and access auditing. Provider failures must never include secret
+values in public diagnostics.
+
+Automatic credential selection is attempted once per original job and exact
+credential origin. A new request after rejection or MFA uses the private form;
+the SDK does not cycle through saved passwords. Multi-page logins can therefore
+require private input after the first automated page. A missing provider, disabled
+Vault, absent match or unavailable credential retains the existing private form.
