@@ -5,7 +5,7 @@ const escape = (s: string) => s.replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '
 
 /** Nonsecret conversation notice. Authentication details and the provider's
  * full reason stay on the authenticated form, never in a transport notice. */
-export function hostedApprovalNotice(action: Approval, link: string): string {
+export function hostedApprovalNotice(action: Approval, link: string, followUp = false): string {
   const request = action.request;
   const value = request.type === 'browser_origin_access' ? request.origin : request.credential_origin;
   let website = 'the requested website';
@@ -15,7 +15,7 @@ export function hostedApprovalNotice(action: Approval, link: string): string {
   } catch { /* The private form retains the exact provider request. */ }
   if (request.type === 'browser_origin_access')
     return `The cloud browser needs your approval to open ${website}. [Review website access](${link}). After you allow access, I’ll continue your original request and return the result here.`;
-  return `The website ${website} needs you to complete sign-in. [Complete sign-in privately](${link}). I’ll continue your original request afterward. Do not send passwords or verification codes in chat.`;
+  return `The website ${website} ${followUp ? 'needs another private sign-in step. It may need corrected details or a verification code' : 'needs you to complete sign-in'}. [Complete sign-in privately](${link}). I’ll continue your original request afterward. Do not send passwords or verification codes in chat.`;
 }
 
 /** Values flow from the authenticated private portal directly to the registered
@@ -43,16 +43,18 @@ export function hostedApprovalResponse(action: Pick<Approval, 'request' | 'reque
   return response({ type: request.type, action: 'submit', fields, ...(option ? { selected_option: option.id } : {}) });
 }
 
-export function hostedApprovalPage(input: { action: Approval; csrf: string; path: string; nonce: string; accounts?: Array<{ ref: string; label: string }> }): string {
+export function hostedApprovalPage(input: { action: Approval; csrf: string; path: string; nonce: string; message?: string; followUp?: boolean; accounts?: Array<{ ref: string; label: string }> }): string {
   const r = input.action.request;
   const form = (body: string) => `<form method="post" action="${escape(input.path)}"><input type="hidden" name="csrf" value="${escape(input.csrf)}">${body}</form>`;
   const origin = r.type === 'browser_origin_access' ? r.origin : r.credential_origin;
   let content = `<h1>${r.type === 'browser_origin_access' ? 'Allow website access' : 'Complete sign-in privately'}</h1><p>Website: <strong>${escape(origin ?? 'Not supplied by the provider')}</strong></p>`;
+  if (input.message) content += `<p role="alert">${escape(input.message)}</p>`;
+  if (input.followUp) content += '<p>The website needs another sign-in step. Use the current fields below for corrected details or verification. Earlier entries are not copied into this step.</p>';
   if (r.reason) content += `<p>${escape(r.reason)}</p>`;
   if (r.type === 'browser_origin_access') {
     content += form('<button name="decision" value="approve">Allow this website</button> <button name="decision" value="deny">Deny</button>');
   } else {
-    content += '<p>Your entries go to the registered browser form through OpenAI. They are kept out of chat and model input.</p>';
+    content += '<p>Your entries go to the registered browser form through OpenAI. They are kept out of chat and model input. Submitting this form does not confirm a successful login. Keep this page open for any next step.</p>';
     const options = r.options.length ? r.options : [{ id: '', label: 'Sign in', field_ids: r.fields.map(f => f.id) }];
     for (const option of options) {
       const fields = r.fields.filter(f => option.field_ids.includes(f.id)).map(f => {
@@ -61,7 +63,18 @@ export function hostedApprovalPage(input: { action: Approval; csrf: string; path
       }).join('');
       content += form(`<h2>${escape(option.label)}</h2><input type="hidden" name="option" value="${escape(option.id)}">${input.accounts?.length ? `<label>Saved account<select name="accountRef"><option value="">Choose an account</option>${input.accounts.map(a => `<option value="${escape(a.ref)}">${escape(a.label)}</option>`).join('')}</select></label>` : ''}${fields}<button name="action" value="submit">Continue securely</button>`);
     }
-    content += form('<button name="action" value="cancel">Cancel sign-in</button>');
+    content += form('<p>Cancel only if you want to stop this sign-in attempt.</p><button name="action" value="cancel">Cancel sign-in</button>');
   }
   return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Private browser access</title><style nonce="${escape(input.nonce)}">body{font:17px system-ui;margin:32px auto;padding:20px;max-width:680px}label{display:block;margin:18px 0}input{display:block;padding:12px;font:inherit;max-width:100%}button{font:inherit;padding:12px;margin:8px 0}</style></head><body>${content}</body></html>`;
+}
+
+/** A receipt describes the saved action, never inferred website success. */
+export function privateInputReceipt(input: { path: string; nonce: string; decision?: string; finished?: boolean; message?: string; refresh?: boolean; saved?: boolean }): string {
+  const cancelled = input.decision === 'cancel' || input.decision === 'deny';
+  const title = input.saved === false ? 'Sign-in needs attention' : input.decision === 'cancel' ? 'Private access cancelled' : input.decision === 'deny' ? 'Website access denied' : 'Response saved securely';
+  const message = input.message ?? (cancelled
+    ? 'Your cancellation or denial was saved. No sign-in details were submitted with this response. Return to the conversation if you want to start again.'
+    : input.finished ? 'The assistant has finished this task. Check the conversation for its result; this receipt does not confirm that the website accepted the login.'
+    : 'Your response is saved. The assistant will continue the original task. If the website needs corrected details or a verification code, the next step will appear here. A saved response is not a confirmed login.');
+  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">${input.refresh && !cancelled && !input.finished ? '<meta http-equiv="refresh" content="3">' : ''}<title>${title}</title><style nonce="${escape(input.nonce)}">body{font:17px system-ui;margin:32px auto;padding:20px;max-width:680px}a{display:inline-block;padding:12px 0}</style></head><body><h1>${title}</h1><p role="status">${escape(message)}</p><a href="${escape(input.path)}">${input.saved === false ? 'Reopen private sign-in' : 'Check sign-in progress'}</a></body></html>`;
 }

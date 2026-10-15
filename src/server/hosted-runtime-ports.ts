@@ -26,6 +26,8 @@ export interface AgentHostedHarness {
   /** Current host policy or existing secure owner-input flow. The pending
    * provider request ID is retained; model content never grants access. */
   action(identity: JobIdentity, action: HostedAction): Promise<HostedActionResult | JobRequirement | { requirement: JobRequirement; notice: string }>;
+  /** Credential-free transport observation; acceptance is not login success. */
+  actionDelivery?(identity: JobIdentity, action: HostedAction, status: 'accepted' | 'uncertain'): Promise<void>;
   /** Persist projected artifacts/screenshots using exact original conversation
    * and item IDs. Repeated snapshots must not erase previously captured bytes. */
   item(identity: JobIdentity, item: AgentSessionItem, origin: {sessionId:string;turnId:string}): Promise<void>;

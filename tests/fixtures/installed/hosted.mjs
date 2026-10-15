@@ -32,8 +32,10 @@ export async function hostedBoundary({ pool, schema, identity, model, host, tool
           value.session.required_actions=value.session.required_actions.filter(a=>a.call_id!==event.call_id);
           if(!value.session.required_actions.length){value.session.status='running';value.turn.status='running';}
         } else if(event.type==='agent.session.input.computer_use_approval_request_result') {
+          await host.beforeBrowserAnswer?.(event);
           value.session.required_actions=value.session.required_actions.filter(a=>a.request_id!==event.request_id);
           value.session.status='running';value.turn.status='running';value.authCompleted=true;
+          value.authStepCount=(value.authStepCount??0)+1;value.authCancelled=event.response.action==='cancel';
         } else if(event.type==='agent.session.input.cancel') {value.session.status='idle';value.session.required_actions=[];value.turn.status='cancelled';}
         await put(sessionId,value);
       },
@@ -44,7 +46,7 @@ export async function hostedBoundary({ pool, schema, identity, model, host, tool
             let value=await read();if(!value?.turn)return;
             if(value.turn.status==='running' && !value.session.required_actions.length) {
               const visible=host.visibleTools?await host.visibleTools(identity,tools.map(t=>t.name)):tools.map(t=>t.name);
-              for await(const event of model.getStreamedResponse({input:value.history,signal,tools:tools.filter(t=>visible.includes(t.name)),authCompleted:value.authCompleted})) {
+              for await(const event of model.getStreamedResponse({input:value.history,signal,tools:tools.filter(t=>visible.includes(t.name)),authCompleted:value.authCompleted,authStepCount:value.authStepCount??0,authCancelled:value.authCancelled===true})) {
                 if(signal.aborted)throw Error('provider observer aborted');
                 if(event.type==='output_text_delta') {
                   yield {type:'agent.session.turn.output_text.delta',event_id:randomUUID(),session_id:sessionId,

@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { createSecretKey, randomBytes } from 'node:crypto';
-import { createManagedAgentCapabilities } from 'handrail-agent-sdk/server/capabilities';
+import { createManagedAgentCapabilities, readManagedInputDiagnostics } from 'handrail-agent-sdk/server/capabilities';
 import { createAgentCheckpointReader } from 'handrail-agent-sdk/server/application';
 import { createPostgresHarness, migrations } from './fixtures/installed/database.mjs';
 import { services, identity } from './fixtures/installed/host.mjs';
@@ -46,11 +46,11 @@ async function setup(t, flags = { vault: true, browser: false }, handoff = false
   const create = () => createManagedAgentCapabilities({ database: harness.pool, schema: harness.schema, keys, baseUrl, features: flags,
     authenticate: async () => signedIn ? scope : null,
     restoreRuntime: hooks.lazy ? async original => { assert.deepEqual(original,identity); capabilities.createRuntime(deps); } : undefined,
-    onAnswered: hooks.onAnswered, credentialProvider: hooks.credentialProvider });
+    onAnswered: hooks.onAnswered, onPrivateInput: hooks.onPrivateInput, credentialProvider: hooks.credentialProvider });
   let capabilities = create(), deps;
   t.after(() => capabilities.close());
   const provider = hooks.model || model(handoff);
-  const s = await services(harness.schema, randomBytes(32).toString('hex'), { model: provider,
+  const s = await services(harness.schema, randomBytes(32).toString('hex'), { model: provider, host: hooks.host,
     runtimeFactory: options => { deps = options; return capabilities.createRuntime(options); } });
   t.after(() => s.close());
   ok(await s.admission.admit({ namespaceRef: 'fixture', grantRevision: 1, operation: { operationRef: 'connect', inputRefs: {} },
@@ -84,6 +84,114 @@ async function settled(s) {
   }
   assert.fail('original task did not resume');
 }
+
+async function currentPrivateForm(s) {
+  const job=ok(await s.journal.load(identity));assert.equal(job.state,'waiting');
+  const secureUrl=`${baseUrl}/${job.requirement.requirementRef.slice(8)}`;
+  const response=await s.request(secureUrl);assert.equal(response.status,200);
+  const html=await response.text(),csrf=/name="csrf" value="([a-f0-9]+)"/.exec(html)?.[1];assert.ok(csrf);
+  return {secureUrl,csrf,html};
+}
+function privateSubmit(s,entry,form) {
+  return s.request(entry.secureUrl,{method:'POST',headers:{origin,'content-type':'application/x-www-form-urlencoded'},
+    body:new URLSearchParams({csrf:entry.csrf,...form})});
+}
+const diagnostics=s=>readManagedInputDiagnostics({database:s.harness.pool,schema:s.harness.schema,keys:s.keys,identity});
+
+test('wrong password, corrected password, 2FA, expired code and replacement code stay in one original task',async t=>{
+  const observed=[],submitted=[],secrets=Array.from({length:5},()=>randomBytes(18).toString('hex'));
+  const requests=[],challenges=[privateLogin,{...privateLogin,reason:'Incorrect password. Try again.'},
+    {...privateLogin,reason:'Enter the verification code',fields:[{id:'otp',label:'Verification code',type:'text',required:true}]},
+    {...privateLogin,reason:'The code expired. Enter a new code',fields:[{id:'fresh-code',label:'New verification code',type:'text',required:true}]}];
+  const model={requests,async *getStreamedResponse(r){requests.push(r);yield {type:'response_done',response:{output:r.authStepCount<challenges.length?
+    [{type:'computer_use_approval_request',request_id:`step-${r.authStepCount}`,request:challenges[r.authStepCount]}]:
+    [{type:'message',role:'assistant',status:'completed',content:[{type:'output_text',text:'Dashboard loaded.'}]}],usage:{inputTokens:1,outputTokens:1,totalTokens:2}}};}};
+  const s=await setup(t,{vault:true,browser:true},false,{model,onAnswered:async()=>{},onPrivateInput:e=>observed.push(e),
+    host:{beforeBrowserAnswer:async event=>submitted.push(structuredClone(event))}});
+  assert.equal(ok(await s.runtime.wake(identity)),'waiting');
+  let first;
+  for(let n=0;n<challenges.length;n++) {
+    const entry=await currentPrivateForm(s);first??=entry;
+    if(n) {
+      assert.match(entry.html,/another sign-in step/);
+      const old=await s.request(first.secureUrl);assert.equal(old.status,303);
+      assert.equal(new URL(old.headers.get('location'),origin).href,entry.secureUrl);
+      const notices=ok(await s.states.load(identity,s.authority())).interactionNotices;
+      assert.match(notices.at(-1),/another private sign-in step/);
+    }
+    const result=await privateSubmit(s,entry,{action:'submit',field_0:secrets[n],...(n<2?{field_1:secrets[4]}:{})});
+    assert.equal(result.status,200);assert.match(await result.text(),/not a confirmed login/);
+    const runtime=await s.restart();ok(await runtime.resume(identity));
+    assert.equal(ok(await runtime.wake(identity)),n===3?'succeeded':'waiting');
+  }
+  assert.deepEqual(submitted.map(e=>e.request_id),['step-0','step-1','step-2','step-3']);
+  assert.deepEqual(submitted[3].response.fields,[{field_id:'fresh-code',value:secrets[3]}]);
+  const retained=await diagnostics(s);
+  assert.equal(retained.events.filter(e=>e.kind==='response_saved').length,4);
+  assert.equal(retained.events.filter(e=>e.kind==='provider_accepted').length,4);
+  assert.equal(retained.events.filter(e=>e.kind==='follow_up_requested').length,3);
+  assert.ok(retained.events.every(e=>e.jobId===identity.jobId));
+  const checkpoint=ok(await s.states.load(identity,s.authority()));
+  const rows=(await s.harness.pool.query(`SELECT * FROM ${s.harness.table('managed_capability_records')}`)).rows;
+  for(const secret of secrets)assert.equal(JSON.stringify([retained,observed,checkpoint,requests,rows]).includes(secret),false);
+  assert.equal(JSON.stringify(retained).includes(new URL(first.secureUrl).pathname.split('/').at(-1)),false);
+  assert.equal((await s.harness.pool.query(`SELECT * FROM ${s.harness.table('jobs')}`)).rowCount,1);
+});
+
+test('invalid fields stay pending; explicit cancellation has a distinct receipt and diagnostic decision',async t=>{
+  const s=await setup(t,{vault:true,browser:true},false,{model:authenticationModel(),onAnswered:async()=>{},
+    onPrivateInput:()=>{throw Error('telemetry outage with private text');}});
+  ok(await s.runtime.wake(identity));const entry=await currentPrivateForm(s);
+  const invalid=await privateSubmit(s,entry,{action:'submit',field_0:'private-incomplete'});
+  assert.equal(invalid.status,422);assert.match(await invalid.text(),/not submitted/);
+  assert.equal(ok(await s.journal.load(identity)).answer,undefined);
+  const cancelled=await privateSubmit(s,entry,{action:'cancel'});assert.equal(cancelled.status,200);
+  const html=await cancelled.text();assert.match(html,/cancellation or denial was saved/);assert.doesNotMatch(html,/http-equiv="refresh"/);
+  const replay=await privateSubmit(s,entry,{action:'submit',field_0:'changed',field_1:'changed'});
+  assert.match(await replay.text(),/cancellation or denial was saved/);
+  const events=(await diagnostics(s)).events;
+  assert.equal(events.filter(e=>e.kind==='response_saved').length,1);
+  assert.equal(events.find(e=>e.kind==='response_saved').decision,'cancel');
+  assert.ok(events.some(e=>e.kind==='form_invalid'));
+});
+
+test('uncertain private delivery recovers the identical request and never reports cancellation',async t=>{
+  let disconnected=true;const submissions=[];
+  const s=await setup(t,{vault:true,browser:true},false,{model:authenticationModel(),onAnswered:async()=>{},
+    host:{beforeBrowserAnswer:async event=>{submissions.push(event);if(disconnected)throw Error('transport outage');}}});
+  ok(await s.runtime.wake(identity));const entry=await currentPrivateForm(s);
+  assert.equal((await privateSubmit(s,entry,{action:'submit',field_0:'user',field_1:'private-value'})).status,200);
+  ok(await s.runtime.resume(identity));assert.equal(ok(await s.runtime.wake(identity)),'retryable');
+  assert.ok((await diagnostics(s)).events.some(e=>e.kind==='provider_delivery_uncertain'));
+  disconnected=false;const runtime=await s.restart();assert.equal(ok(await runtime.wake(identity)),'succeeded');
+  assert.deepEqual(submissions[0],submissions[1]);
+  assert.ok((await diagnostics(s)).events.some(e=>e.kind==='provider_accepted'));
+  assert.equal((await diagnostics(s)).events.some(e=>e.decision==='cancel'),false);
+});
+
+test('updating an expired SDK account requires fresh private consent and retains its account identity',async t=>{
+  const accountRef='11111111-1111-4111-8111-111111111111',requests=[];
+  const model={requests,async *getStreamedResponse(r){requests.push(r);
+    yield {type:'response_done',response:{output:r.input.some(i=>i.type==='function_call_result')?
+      [{type:'message',role:'assistant',status:'completed',content:[{type:'output_text',text:'Account updated.'}]}]:
+      [{type:'function_call',callId:'update-login',name:'agent_connect_account',arguments:JSON.stringify({accountRef,label:'Existing account',url:'https://example.com/login'})}],
+      usage:{inputTokens:1,outputTokens:1,totalTokens:2}}};}};
+  const s=await setup(t,undefined,false,{model}),store=managedStore(s.harness.pool,s.harness.schema,s.keys);
+  const previous={label:'Existing account',url:'https://example.com/login',origins:['https://example.com'],
+    username:'old-user',password:'old-password',approved:true,revoked:false,expiresAt:Date.now()-1};
+  await store.put(identity.host,`account:${accountRef}`,previous,0);
+  const entry=await start(s);assert.equal(entry.accountRef,accountRef);
+  assert.equal((await submit(s,entry,'replacement-private-password',{form:{consent:'no'}})).status,403);
+  assert.deepEqual((await store.get(identity.host,`account:${accountRef}`)).value,previous);
+  assert.equal((await submit(s,entry,'replacement-private-password')).status,200);await settled(s);
+  const accounts=await store.list(identity.host,'account:');assert.equal(accounts.length,1);
+  assert.equal(accounts[0].id,`account:${accountRef}`);assert.equal(accounts[0].value.password,'replacement-private-password');
+  assert.ok(accounts[0].value.expiresAt>Date.now());
+  assert.equal(JSON.stringify([requests,await diagnostics(s)]).includes('replacement-private-password'),false);
+  const other=await readManagedInputDiagnostics({database:s.harness.pool,schema:s.harness.schema,keys:s.keys,
+    identity:{...identity,host:{...identity.host,userRef:'another-owner'}}});
+  assert.deepEqual(other,{total:0,events:[]});
+});
 
 test('optional project credentials satisfy the original private request without exposing values or creating a saved SDK account',async t=>{
   const password=randomBytes(24).toString('hex'),username=randomBytes(16).toString('hex');let resolutions=0;
@@ -125,6 +233,32 @@ test('a rejected project login asks for private input instead of trying saved cr
   }});
   assert.equal(ok(await s.runtime.wake(identity)),'waiting');assert.equal(attempts,1);
   assert.ok(ok(await s.states.load(identity,s.authority())).interactionNotices.some(n=>n.includes('Complete sign-in privately')));
+});
+
+for(const revoke of ['provider','vault'])test(`recovery rechecks ${revoke} before delivering a saved external credential response`,async t=>{
+  const flags={vault:true,browser:true};let resolutions=0,revoked=false;
+  const s=await setup(t,flags,false,{model:authenticationModel(),
+    host:{beforeBrowserAnswer:async()=>{if(!revoked)throw Error('fixture-private-transport-disconnected');}},credentialProvider:{
+    async select(){return externalSelection;},async resolve(){resolutions++;return revoked?null:{username:'old-user',password:'old-password'};},
+  }});
+  assert.equal(ok(await s.runtime.wake(identity)),'retryable');
+  // The transport failed after encrypted custody but before provider delivery.
+  const store=managedStore(s.harness.pool,s.harness.schema,s.keys);
+  const row=(await store.list(identity.host,'interaction:'))[0];
+  assert.equal(row.value.completed,true);
+  revoked=true;
+  if(revoke==='vault')flags.vault=false;
+  const runtime=await s.restart();
+  assert.equal(ok(await runtime.wake(identity)),'waiting');
+  assert.equal(resolutions,revoke==='vault'?1:2);
+  assert.equal(s.provider.requests.some(r=>r.authCompleted),false,'no stale credentials reach the browser');
+  const pending=(await store.get(identity.host,row.id)).value;
+  assert.equal(pending.completed,false);assert.equal(pending.response,undefined);assert.equal(pending.credentialSelection,undefined);
+  const page=await s.request(`${baseUrl}/${pending.ref}`);assert.equal(page.status,200);
+  const csrf=/name="csrf" value="([a-f0-9]+)"/.exec(await page.text())?.[1];assert.ok(csrf);
+  assert.equal((await s.request(`${baseUrl}/${pending.ref}`,{method:'POST',headers:{origin,'content-type':'application/x-www-form-urlencoded'},
+    body:new URLSearchParams({csrf,action:'submit',field_0:'replacement-user',field_1:'replacement-password'})})).status,200);
+  await settled(s);
 });
 test('one SDK setup supplies form, encrypted custody, visible link, native answer and automatic same-job resume', async t => {
   const s = await setup(t), password = randomBytes(32).toString('hex'), entry = await start(s);
@@ -196,7 +330,7 @@ test('expired private form reopens after recovery without reviving stale submiss
   const saved = await store.get(identity.host, key);
   await store.put(identity.host, key, { ...saved.value, expiresAt: Date.now() - 1 }, saved.version);
   await s.restart();
-  assert.equal((await submit(s, entry, 'test-only-password')).status, 403);
+  assert.equal((await submit(s, entry, 'test-only-password')).status, 409);
   s.auth(false);
   const anonymous = await s.request(entry.secureUrl);
   assert.equal(anonymous.status, 403);
@@ -208,7 +342,7 @@ test('expired private form reopens after recovery without reviving stale submiss
   const page = await s.request(entry.secureUrl); assert.equal(page.status, 200);
   const csrf = /name="csrf" value="([a-f0-9]+)"/.exec(await page.text())?.[1];
   assert.ok(csrf); assert.notEqual(csrf, entry.csrf);
-  assert.equal((await submit(s, entry, 'test-only-password')).status, 403);
+  assert.equal((await submit(s, entry, 'test-only-password')).status, 409);
   assert.equal(ok(await s.journal.load(identity)).state, 'waiting');
   assert.equal(s.provider.requests.length, 1, 'reopening does not execute work or grant approval');
   assert.equal((await submit(s, { ...entry, csrf }, 'test-only-password')).status, 200);
@@ -223,7 +357,7 @@ for (const phase of ['issue', 'complete']) test(`saved approval recovers after f
   await s.harness.pool.query(`CREATE FUNCTION ${fn}() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN RAISE EXCEPTION 'synthetic answer delivery outage'; END $$`);
   await s.harness.pool.query(`CREATE TRIGGER fail_answer BEFORE INSERT ON ${table} FOR EACH ROW EXECUTE FUNCTION ${fn}()`);
   const failed = await submit(s, entry, 'test-only-password');
-  assert.equal(failed.status, 403);
+  assert.equal(failed.status, 503);
   assert.match(failed.headers.get('x-handrail-agent-input-error'), /^answer_(issue|complete)_unavailable$/);
   await s.harness.pool.query(`DROP TRIGGER fail_answer ON ${table}`);
   await s.harness.pool.query(`DROP FUNCTION ${fn}()`);
@@ -273,7 +407,7 @@ test('portal rejects wrong user, unauthenticated links, cross-site posts, invali
   s.auth(true, identity.host);
   for (const change of [{ headers: { origin: 'https://attacker.example.com' } }, { form: { csrf: 'x'.repeat(64) } },
     { form: { consent: 'no' } }, { form: { origins: 'https://127.0.0.1' } }, { form: { origins: 'http://airline.example.com' } }])
-    assert.equal((await submit(s, entry, 'test-only-password', change)).status, 403);
+    assert.equal((await submit(s, entry, 'test-only-password', change)).status, change.form?.csrf ? 409 : 403);
   assert.equal((await managedStore(s.harness.pool, s.harness.schema, s.keys).list(identity.host, 'account:')).length, 0);
 });
 test('Stop prevents credential capture and a secure link cannot resume a cancelled task', async t => {

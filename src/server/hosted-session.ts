@@ -133,6 +133,7 @@ export function createHostedSessionClient(options: {
       session: HostedSessionBinding; turn: HostedTurnBinding; input: AgentSessionInputMessageParam[];
       signal: AbortSignal; authorize(): Promise<void>; save(turn: HostedTurnBinding): Promise<void>;
       action(action: HostedAction): Promise<HostedActionResult | null>;
+      actionDelivery?(action: HostedAction, status: 'accepted' | 'uncertain'): Promise<void>;
       /** Only independent native reads may batch; mutations retain provider order. */
       parallelRead?(action: HostedAction): boolean;
       event?(event: AgentSessionEvent): Promise<void>;
@@ -225,8 +226,14 @@ export function createHostedSessionClient(options: {
           if (!matches) throw new HostedSessionError('invalid_action_result');
           await ports.authorize();
           awaitLiveTerminal = true;
-          await sessions.events.create(sessionId, { events: [response],
-            'Idempotency-Key': hash([turn.submissionKey, response]) }, requestOptions(ports.signal));
+          const observe = async (status: 'accepted' | 'uncertain') => {
+            try { await ports.actionDelivery?.(action, status); } catch { /* Telemetry is not authority. */ }
+          };
+          try {
+            await sessions.events.create(sessionId, { events: [response],
+              'Idempotency-Key': hash([turn.submissionKey, response]) }, requestOptions(ports.signal));
+          } catch (error) { await observe('uncertain'); throw error; }
+          await observe('accepted');
         };
         for (let n = 0; n < session.required_actions.length;) {
           const actions = [session.required_actions[n++]!];

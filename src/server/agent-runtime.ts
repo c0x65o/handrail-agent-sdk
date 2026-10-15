@@ -550,7 +550,7 @@ export function createAgentRuntime(deps: {
         record = { ...record, hosted: { session: session.binding, turn: { submissionKey: `handrail:${digest(identity)}` },
           input: [{ role: 'user', content: [{ type: 'input_text', text: `Current application instructions:\n${deps.instructions}\n\nHost-configured provider capabilities: ${deps.harness.browser === false
             ? 'The provider-managed desktop browser is disabled for this session.'
-            : 'The provider-managed desktop browser is enabled through computer_use. Use the provider browser for requested website interaction; preserve its native approval and private-input gates.'} The handrail_list_tools catalog describes application functions only; it does not enumerate provider-managed tools. An absent browser entry in that catalog is not evidence that the provider browser is disabled. Report observed provider failures accurately; do not substitute search for a specifically requested browser interaction.` }] }, ...input] } };
+            : 'The provider-managed desktop browser is enabled through computer_use. Use the provider browser for requested website interaction; preserve its native approval and private-input gates.'} The handrail_list_tools catalog describes application functions only; it does not enumerate provider-managed tools. An absent browser entry in that catalog is not evidence that the provider browser is disabled. For sign-in, a submitted private response is not cancellation or proof of successful login. If the website rejects a password or code, continue the browser sign-in flow so it can request corrected input privately. Handle subsequent verification requests in the same task, never request secrets in chat, and never retry an explicit cancellation without a new user request. Report observed provider failures accurately; do not substitute search for a specifically requested browser interaction.` }] }, ...input] } };
         await save();
       }
       if (record.hosted!.session.sessionId !== session.binding.sessionId) throw new StoreFailure('invalid_checkpoint');
@@ -610,6 +610,7 @@ export function createAgentRuntime(deps: {
           const envelope = z.object({ name: z.string(), arguments_json: z.string() }).strict().safeParse(action.arguments);
           return envelope.success && deps.tools.some(tool => tool.name === envelope.data.name && tool.kind === 'read');
         },
+        actionDelivery: (action, status) => deps.harness.actionDelivery?.(copy(identity), action, status) ?? Promise.resolve(),
         action: async action => {
           if (action.type !== 'function_call') {
             const decision = await deps.harness.action(copy(identity), action);

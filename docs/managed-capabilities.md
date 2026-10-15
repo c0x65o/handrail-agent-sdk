@@ -101,7 +101,7 @@ The SDK checks the current original wait and host authority, retains the first
 decision, and rejects conflicting answers. The host's scheduler resumes that same
 job; saving an answer does not execute it. These methods cannot read or answer
 credential forms. Keep passwords and verification codes on the private portal.
-# Optional application Vault
+## Optional application Vault
 
 `createManagedAgentCapabilities` accepts an optional `credentialProvider` with
 `select(input)` and `resolve(input, selection)` methods. Applications that omit it
@@ -120,7 +120,9 @@ The SDK validates the registered fields and option, rechecks job authority, and
 passes values only through the registered private browser response. It retains
 the response encrypted for same-request recovery without creating a reusable SDK
 account. Recovery re-resolves the exact selected revision through the host, so
-revoked or changed credentials cannot be replayed. The host owns origin, scope,
+revoked or changed credentials cannot be replayed. If resolution becomes unavailable
+or Vault is disabled before delivery, the SDK removes the stale response and
+reopens the original private form. The host owns origin, scope,
 revision checks and access auditing. Provider failures must never include secret
 values in public diagnostics.
 
@@ -129,3 +131,51 @@ credential origin. A new request after rejection or MFA uses the private form;
 the SDK does not cycle through saved passwords. Multi-page logins can therefore
 require private input after the first automated page. A missing provider, disabled
 Vault, absent match or unavailable credential retains the existing private form.
+
+## Sign-in recovery and diagnostics
+
+Private sign-in is a sequence of provider requests, not a single login result.
+Each request retains its exact original job, provider request ID, login methods
+and field IDs. A rejected password, subsequent two-factor challenge, or rejected
+or expired verification code can produce another private form in the same task.
+The SDK emits a new conversation notice and an already-open private receipt page
+follows the current same-job step. It never copies a previous password/code into
+a new request or infers the meaning of fields from labels. Verification codes
+are private responses, not reusable SDK accounts. The provider must expose the
+next authentication request; unsupported methods such as passkeys/QR sign-in
+remain provider limitations, not a reason to collect secrets in chat.
+
+The portal distinguishes explicit cancellation from submission. A receipt means
+the response was saved, **not** that the website accepted it. Required/invalid
+fields return an empty form with a corrective message (422); expired or stale
+forms return a reopen link (409). Reopening rotates the expired form's CSRF under
+current authority, without resubmitting old input. A saved response whose answer
+handoff fails returns a recoverable 503 receipt; reopening or the existing host
+scheduler recovers the same response. Uncertain provider delivery retains the
+same request and idempotency identity. Stop and revoked authority still prevent
+continuation. Do not reinterpret an expired form or transport error as cancellation.
+
+`agent_connect_account` accepts an optional existing `accountRef` from
+`agent_accounts` to update an expired or incorrect **SDK-owned** login. Updating
+it requires the normal private storage consent form and preserves its identity.
+One-off browser corrections never silently update either SDK accounts or an
+application-owned Vault. Application Vault updates use that application's own
+authorized management flow.
+
+An optional `onPrivateInput(event)` observer receives credential-free lifecycle
+events: request/follow-up, form opening/renewal/expiry/validation, saved decision,
+native answer delivery, provider acceptance or uncertain delivery, and authority
+rejection. Events carry the original job ID, timestamp, one-way step correlation,
+fixed stage/kind, and explicit submit/cancel/approve/deny where known. They exclude
+credentials, field IDs, labels, provider reasons, origins, private links, CSRF,
+and exception bodies. Provider acceptance is not website authentication success.
+
+The SDK also retains the latest 64 events and total recorded count per original
+job in encrypted custody, so missing infrastructure logs need not erase the
+history. This is a diagnostic retention window, not an execution/retry limit.
+Trusted server diagnostics can call `readManagedInputDiagnostics({database,
+schema, keys, identity})` from `handrail-agent-sdk/server/capabilities` after
+authorizing inspection of that exact persisted identity. It works after task
+completion and returns `{total, events}`; an empty history is missing evidence,
+not proof no input occurred. Observer/storage failures do not grant authority or
+block sign-in. Do not expose this server reader directly to model-selected scopes.

@@ -10,12 +10,15 @@ import { createEffectStore, createJobAnswerStore, createJobJournal, migrateAgent
 import type { AgentStateKeys } from './postgres/keys.js';
 import { managedStore, canonicalScope, type Scope } from './managed/store.js';
 import type { HostedAction, HostedActionResult } from './hosted-session.js';
-import { hostedApprovalNotice, hostedApprovalPage, hostedApprovalResponse } from './managed/hosted-approval.js';
+import { hostedApprovalNotice, hostedApprovalPage, hostedApprovalResponse, privateInputReceipt } from './managed/hosted-approval.js';
 interface PrivateAccount { label: string; url: string; origins: string[]; username: string; password: string; approved: boolean; revoked: boolean; expiresAt: number }
 import { website } from './managed/network.js';
 import { portalPage, portalHeaders } from './managed/portal.js';
 import { credentialResponse, validateCredentialSelection, type CredentialSelection, type ManagedCredentialProvider } from './managed/credentials.js';
 export type { CredentialRequest, CredentialSelection, ManagedCredentialProvider } from './managed/credentials.js';
+
+import { privateInputDiagnostics, privateStep, type PrivateInputDiagnostic, type PrivateInputEventKind, type PrivateInputStage } from './managed/input-diagnostics.js';
+export { readManagedInputDiagnostics, type PrivateInputDiagnostic, type PrivateInputDiagnostics } from './managed/input-diagnostics.js';
 
 export interface ManagedAgentCapabilitiesOptions {
   readonly database: Pool;
@@ -35,12 +38,14 @@ export interface ManagedAgentCapabilitiesOptions {
   readonly onAnswered?: (identity: JobIdentity) => Promise<void>;
   readonly features?: { readonly vault?: boolean; readonly browser?: boolean };
   readonly credentialProvider?: ManagedCredentialProvider;
+  readonly onPrivateInput?: (event: PrivateInputDiagnostic) => void | Promise<void>;
 }
 type RuntimeOptions = Parameters<typeof createAgentRuntime>[0];
 type ManagedResult = { output: string; wait?: JobRequirement; notice?: string; reconciliation?: boolean };
 interface Interaction { identity: JobIdentity; ref: string; accountRef: string; label: string; url: string;
   kind: 'credentials' | 'hosted'; csrf: string; expiresAt: number; completed: boolean;
   credentialSelection?: CredentialSelection;
+  followUp?: boolean;
   action?: Extract<HostedAction, { type: 'computer_use_approval_request' }>; response?: HostedActionResult }
 interface Operation { call: AgentCall; phase: 'prepared' | 'started' | 'complete'; result?: ManagedResult }
 const equal = (a: Scope, b: Scope) => canonicalScope(a) === canonicalScope(b);
@@ -58,6 +63,21 @@ export function createManagedAgentCapabilities(options: ManagedAgentCapabilities
   if (base.protocol !== 'https:' || base.search || base.hash || base.username || base.password || base.pathname.endsWith('/')) throw Error('CAPABILITY_BASE_URL_INVALID');
   const flags = Object.freeze({ vault: options.features?.vault !== false, browser: options.features?.browser !== false });
   const store = managedStore(options.database, options.schema, options.keys);
+  const recordInput = privateInputDiagnostics(store, options.onPrivateInput);
+  const decision = (i: Interaction) => i.response?.type === 'agent.session.input.computer_use_approval_request_result'
+    ? i.response.response.type === 'browser_authentication' ? i.response.response.action : i.response.response.decision : undefined;
+  const diagnose = (i: Interaction, kind: PrivateInputEventKind, source?: PrivateInputDiagnostic['source'], stage?: PrivateInputStage) => recordInput(i.identity, {
+    kind, at: Date.now(), jobId: i.identity.jobId, step: privateStep(i.ref),
+    inputKind: i.action?.request.type ?? 'credentials', ...(decision(i) ? { decision: decision(i)! } : {}), ...(source ? { source } : {}), ...(stage ? { stage } : {}),
+  });
+  const receipt = (i: Interaction, path: string, finished = false, message?: string) => {
+    const nonce = randomBytes(18).toString('base64');
+    return new Response(privateInputReceipt({ path, nonce, ...(decision(i) ? {decision:decision(i)!} : {}), finished, ...(message ? {message} : {}), refresh: !message }), { headers: portalHeaders(nonce) });
+  };
+  const attention = (path: string, message: string, status = 409) => {
+    const nonce = randomBytes(18).toString('base64');
+    return new Response(privateInputReceipt({path,nonce,message,saved:false}), {status,headers:portalHeaders(nonce)});
+  };
   const journal = createJobJournal(options.database, options.schema);
   const effectsStore = createEffectStore(options.database, options.schema);
   const answerStore = createJobAnswerStore(options.database, options.schema);
@@ -102,7 +122,7 @@ export function createManagedAgentCapabilities(options: ManagedAgentCapabilities
     const old = await store.get<Interaction>(call.identity.host, `interaction:${id}`);
     const i: Interaction = old?.value ?? { identity: call.identity, ref: id, accountRef, label, url, kind,
       csrf: randomBytes(32).toString('hex'), expiresAt: Date.now() + 900_000, completed: false };
-    if (!old) await store.put(call.identity.host, `interaction:${id}`, i, 0);
+    if (!old) { await store.put(call.identity.host, `interaction:${id}`, i, 0); await diagnose(i, 'requested'); }
     const link = `${base.href}/${id}`;
     return { output: JSON.stringify({ status: 'waiting_for_user', accountRef, secureUrl: link }), wait: requirement(i),
       notice: kind === 'credentials' ? `[Enter the account login securely](${link}). This task will continue after you save it. Do not send the password in chat.`
@@ -114,6 +134,14 @@ export function createManagedAgentCapabilities(options: ManagedAgentCapabilities
     if (!await isCurrent()) throw Error('CAPABILITY_AUTHORITY_LOST');
     if (call.toolName === 'agent_connect_account') {
       const url = website(args.url as string);
+      if (args.accountRef) {
+        const saved = await store.get<PrivateAccount>(scope, `account:${args.accountRef}`);
+        if (!saved) return {output:JSON.stringify({status:'account_not_found'})};
+        // Updating an expired/revoked login still needs a new private form and
+        // explicit consent. Never overwrite it from a browser-authentication
+        // response: that response may contain a one-time verification code.
+        return interact(call, 'credentials', args.accountRef as string, args.label as string, url.href);
+      }
       return interact(call, 'credentials', createHash('sha256').update(call.effectRef).digest('hex').slice(0, 8) + '-0000-4000-8000-' + createHash('sha256').update(call.effectRef).digest('hex').slice(8, 20), args.label as string, url.href);
     }
     const id = args.accountRef as string;
@@ -133,7 +161,7 @@ export function createManagedAgentCapabilities(options: ManagedAgentCapabilities
     if (closed) throw Error('CAPABILITIES_CLOSED');
     const definitions: Array<{ name: string; description: string; parameters: AgentRuntimeTool['parameters'] }> = [];
     if (flags.vault) definitions.push(
-      { name: 'agent_connect_account', description: 'Request a private SDK vault form for one account. Use a public HTTPS login page and a nonsecret person/account label. The user approves the website and enters their username/password privately. Never request credentials in chat. This pauses until the user saves access.', parameters: z.object({ label: z.string().min(1).max(80), url: z.string().url().max(2048) }).strict() },
+      { name: 'agent_connect_account', description: 'Request a private SDK vault form for one account. To update an existing or expired saved login when the user asks, include its exact accountRef from agent_accounts. Use a public HTTPS login page and a nonsecret account label. The user approves storage and enters username/password privately. Never request credentials in chat or store a verification code as a password. This pauses until the user saves access.', parameters: z.object({ label: z.string().min(1).max(80), url: z.string().url().max(2048), accountRef: ref.optional() }).strict() },
       { name: 'agent_disconnect_account', description: 'Revoke saved browser access for an exact account only when the user asks to disconnect it. This removes saved credentials, not existing remote provider login sessions.', parameters: z.object({ accountRef: ref }).strict() },
     );
     let runtime: ReturnType<typeof createAgentRuntime>;
@@ -185,6 +213,14 @@ export function createManagedAgentCapabilities(options: ManagedAgentCapabilities
     const names = new Set(managed.map(t => t.name));
     runtime = createAgentRuntime({ ...deps, harness: { ...deps.harness,
       browser: flags.browser && deps.harness.browser !== false,
+      async actionDelivery(identity, action, status) {
+        if (action.type === 'computer_use_approval_request') {
+          const id = createHash('sha256').update(JSON.stringify([identity, action.request_id])).digest('hex');
+          const saved = await store.get<Interaction>(identity.host, `interaction:${id}`);
+          if (saved) await diagnose(saved.value, status === 'accepted' ? 'provider_accepted' : 'provider_delivery_uncertain');
+        }
+        await deps.harness.actionDelivery?.(identity, action, status);
+      },
       async action(identity, action) {
         if (action.type !== 'computer_use_approval_request') return deps.harness.action(identity, action);
         if (!flags.browser || deps.harness.browser === false) throw Error('BROWSER_DISABLED');
@@ -194,24 +230,48 @@ export function createManagedAgentCapabilities(options: ManagedAgentCapabilities
         const old = await store.get<Interaction>(identity.host, `interaction:${id}`);
         if (old && JSON.stringify(old.value.action) !== JSON.stringify(action)) throw Error('CAPABILITY_CONFLICT');
         if (old?.value.completed && old.value.response) {
+          await diagnose(old.value, 'response_reused');
           if (old.value.credentialSelection && action.request.type === 'browser_authentication') {
             const input = { identity, requestId: action.request_id, request: action.request };
-            const values = await options.credentialProvider?.resolve(input, old.value.credentialSelection);
+            const values = flags.vault ? await options.credentialProvider?.resolve(input, old.value.credentialSelection) : null;
             await authorizeJob(identity);
-            if (!values) throw Error('CREDENTIAL_AUTHORITY_LOST');
-            return credentialResponse(input, old.value.credentialSelection, values);
+            if (values) return credentialResponse(input, old.value.credentialSelection, values);
+            // The provider is still requesting this exact form. Forget its
+            // unusable automatic response and retain the same private handoff.
+            const { credentialSelection: _selection, response: _response, ...pendingInput } = old.value;
+            const pending = { ...pendingInput, completed: false, csrf: randomBytes(32).toString('hex'), expiresAt: Date.now() + 900_000 };
+            await store.put(identity.host, `interaction:${id}`, pending, old.version);
+            await diagnose(pending, 'credentials_unavailable');
+            return { requirement: requirement(pending), notice: hostedApprovalNotice(action, `${base.href}/${id}`, true) };
           }
           if (old.value.accountRef) {
             const account = await store.get<PrivateAccount>(identity.host, `account:${old.value.accountRef}`);
             if (!account || account.value.revoked || !account.value.approved || account.value.expiresAt <= Date.now()
-              || !account.value.origins.includes(old.value.url)) throw Error('ACCOUNT_AUTHORITY_LOST');
+              || !account.value.origins.includes(old.value.url)) {
+              const { response: _response, ...retained } = old.value;
+              const pending = { ...retained, accountRef: '', completed: false, csrf: randomBytes(32).toString('hex'), expiresAt: Date.now() + 900_000 };
+              await store.put(identity.host, `interaction:${id}`, pending, old.version);
+              await diagnose(pending, 'credentials_unavailable');
+              return { requirement: requirement(pending), notice: hostedApprovalNotice(action, `${base.href}/${id}`, true) };
+            }
           }
           return old.value.response;
         }
         const i: Interaction = old?.value ?? { identity, ref: id, accountRef: '', label: 'browser access',
           url: action.request.type === 'browser_origin_access' ? action.request.origin : action.request.credential_origin ?? '',
           kind: 'hosted', action, csrf: randomBytes(32).toString('hex'), expiresAt: Date.now() + 900_000, completed: false };
-        if (!old) await store.put(identity.host, `interaction:${id}`, i, 0);
+        if (!old) {
+          if (action.request.type === 'browser_authentication') {
+            const flowKey = `authentication-flow:${createHash('sha256').update(JSON.stringify([identity.jobId, i.url])).digest('hex')}`;
+            await store.lock(identity.host, flowKey, async () => {
+              const previous = await store.get<{step:string}>(identity.host, flowKey);
+              i.followUp = !!previous && previous.value.step !== id;
+              await store.put(identity.host, flowKey, {step:id}, previous?.version ?? 0);
+            });
+          }
+          await store.put(identity.host, `interaction:${id}`, i, 0);
+          await diagnose(i, i.followUp ? 'follow_up_requested' : 'requested');
+        }
         if (!old && flags.vault && options.credentialProvider && action.request.type === 'browser_authentication'
           && action.request.credential_origin) {
           const input = { identity, requestId: action.request_id, request: action.request };
@@ -235,12 +295,13 @@ export function createManagedAgentCapabilities(options: ManagedAgentCapabilities
                 const response = credentialResponse(input, selection, values);
                 await store.put(identity.host, `interaction:${id}`, { ...i, completed: true,
                   credentialSelection: selection, response }, 1);
+                await diagnose({ ...i, response }, 'response_saved', 'credential_provider');
                 return response;
               }
             }
           }
         }
-        return { requirement: requirement(i), notice: hostedApprovalNotice(action, `${base.href}/${id}`) };
+        return { requirement: requirement(i), notice: hostedApprovalNotice(action, `${base.href}/${id}`, i.followUp) };
       },
     }, limits: { ...deps.limits, leaseTtlMs: Math.max(deps.limits.leaseTtlMs, 90_000) },
       tools: [...deps.tools, ...managed], host: { ...deps.host,
@@ -260,7 +321,10 @@ export function createManagedAgentCapabilities(options: ManagedAgentCapabilities
         if (!snapshot.requirement.requirementRef.startsWith('managed:')) return deps.host.resolveWait(snapshot);
         const id = snapshot.requirement.requirementRef.slice(8), i = await store.get<Interaction>(snapshot.identity.host, `interaction:${id}`);
         if (!i?.value.completed || snapshot.answer?.responseRef !== `managed-answer:${id}`) return null;
-        return { receiptRef: snapshot.answer.responseRef, input: 'The user responded to the private access step. Continue the original task using the provider result. Do not ask for credentials in chat.' };
+        const action = decision(i.value);
+        return { receiptRef: snapshot.answer.responseRef, input: action === 'cancel' || action === 'deny'
+          ? 'The user explicitly declined this private access step. Do not retry sign-in automatically. Report the unfinished task accurately.'
+          : 'The user submitted the private access step; this is not cancellation or confirmed login. Continue the original task using the provider result. If the website rejects the details or requests verification, use its next private authentication request. Never ask for passwords or codes in chat.' };
       },
     } });
     const resume = runtime.resume;
@@ -318,6 +382,7 @@ export function createManagedAgentCapabilities(options: ManagedAgentCapabilities
         const delivered = await answers.complete({ identity: i.identity, requirementRef: requirement(i).requirementRef, requirementRevision: 1,
           resolverRef: i.identity.host.userRef, deliveryKey: `managed:${i.ref}`, status: 'verified', responseRef: `managed-answer:${i.ref}` });
         if (!delivered.ok) throw new AnswerDeliveryError(`answer_complete_${delivered.code}`);
+        await diagnose(i, 'answer_delivered');
       }
     });
     const i = input;
@@ -377,8 +442,9 @@ export function createManagedAgentCapabilities(options: ManagedAgentCapabilities
   async function handleRequest(request: Request): Promise<Response> {
     // Fixed nonsecret stages make production failures diagnosable without
     // exposing URLs, provider payloads, credentials, CSRF, or exception text.
-    let stage = 'request';
-    const fail = () => safeError(stage);
+    let stage: PrivateInputStage = 'request';
+    let observed: Interaction | undefined;
+    const fail = async () => { if (observed) await diagnose(observed, 'access_rejected', undefined, stage); return safeError(stage); };
     try {
       if (closed || (!flags.vault && !flags.browser)) return new Response('Not found', { status: 404 });
       const url = new URL(request.url), prefix = `${base.pathname}/`;
@@ -392,13 +458,22 @@ export function createManagedAgentCapabilities(options: ManagedAgentCapabilities
       const id = url.pathname.slice(prefix.length), key = `interaction:${id}`, found = await store.get<Interaction>(scope, key);
       if (!found || !equal(found.value.identity.host, scope)) return fail();
       if (found.value.kind !== 'credentials' && found.value.kind !== 'hosted') return fail();
-      let i = found.value;
+      let i = found.value; observed = i;
       stage = 'job_authority';
       const current = await authorizeJob(i.identity);
       if (i.completed) {
         stage = 'answer_delivery';
         if (current.state === 'waiting' && current.requirement.requirementRef === requirement(i).requirementRef) await complete(i);
-        return new Response('Access saved. You can return to your conversation.', { headers: portalHeaders('completed') });
+        // Old links follow only the current same-job private step, never a
+        // replacement task or a step belonging to another user/conversation.
+        if (request.method === 'GET' && current.state === 'waiting' && current.requirement.requirementRef.startsWith('managed:')
+          && current.requirement.requirementRef !== requirement(i).requirementRef) {
+          const nextId = current.requirement.requirementRef.slice(8);
+          const next = await store.get<Interaction>(scope, `interaction:${nextId}`);
+          if (next && JSON.stringify(next.value.identity) === JSON.stringify(i.identity) && !next.value.completed)
+            return new Response(null, { status: 303, headers: { ...portalHeaders('redirect'), Location: `${base.pathname}/${nextId}` } });
+        }
+        return receipt(i, url.pathname, current.state === 'succeeded');
       }
       if (current.state !== 'waiting' || current.requirement.requirementRef !== requirement(i).requirementRef) return fail();
       stage = 'feature';
@@ -416,18 +491,23 @@ export function createManagedAgentCapabilities(options: ManagedAgentCapabilities
           if (fresh.value.expiresAt > Date.now()) return fresh.value;
           const renewed = { ...fresh.value, csrf: randomBytes(32).toString('hex'), expiresAt: Date.now() + 900_000 };
           await store.put(scope, key, renewed, fresh.version);
+          await diagnose(renewed, 'form_renewed');
           return renewed;
         });
         stage = 'form_render';
+        await diagnose(i, 'form_opened');
         const nonce = randomBytes(18).toString('base64');
         const accounts = flags.vault && i.action?.request.type === 'browser_authentication' && i.action.request.credential_origin
           ? (await store.list<PrivateAccount>(scope, 'account:')).filter(a => a.value.approved && !a.value.revoked && a.value.expiresAt > Date.now()
             && a.value.origins.includes(i.action!.request.type === 'browser_authentication' ? i.action!.request.credential_origin! : ''))
             .map(a => ({ ref: a.id.slice(8), label: a.value.label })) : [];
-        return new Response(i.kind === 'hosted' && i.action ? hostedApprovalPage({ action: i.action, csrf: i.csrf, path: url.pathname, nonce, accounts }) : portalPage({ ...i, kind: 'credentials', path: url.pathname, nonce }), { headers: portalHeaders(nonce) });
+        return new Response(i.kind === 'hosted' && i.action ? hostedApprovalPage({ action: i.action, csrf: i.csrf, path: url.pathname, nonce, accounts, followUp: !!i.followUp }) : portalPage({ ...i, kind: 'credentials', path: url.pathname, nonce }), { headers: portalHeaders(nonce) });
       }
       stage = 'submission';
-      if (i.expiresAt <= Date.now()) return fail();
+      if (i.expiresAt <= Date.now()) {
+        await diagnose(i, 'form_expired');
+        return attention(url.pathname, 'This private form expired. Your entries were not submitted. Reopen the current sign-in step and enter fresh details.');
+      }
       if (request.headers.get('origin') !== base.origin || request.headers.get('sec-fetch-site') === 'cross-site') return fail();
       if (Number(request.headers.get('content-length') ?? 0) > 16384) return fail();
       const reader = request.body?.getReader(); if (!reader) return fail();
@@ -435,7 +515,10 @@ export function createManagedAgentCapabilities(options: ManagedAgentCapabilities
       while (true) { const r = await reader.read(); if (r.done) break; length += r.value.length; if (length > 16384) { await reader.cancel(); return fail(); } chunks.push(r.value); }
       const text = Buffer.concat(chunks).toString('utf8');
       const form = request.headers.get('content-type')?.startsWith('application/json') ? JSON.parse(text) : Object.fromEntries(new URLSearchParams(text));
-      if (typeof form.csrf !== 'string' || form.csrf.length !== i.csrf.length || !timingSafeEqual(Buffer.from(form.csrf), Buffer.from(i.csrf))) return fail();
+      if (typeof form.csrf !== 'string' || Buffer.byteLength(form.csrf) !== Buffer.byteLength(i.csrf) || !timingSafeEqual(Buffer.from(form.csrf), Buffer.from(i.csrf))) {
+        await diagnose(i, 'form_stale');
+        return attention(url.pathname, 'This form is out of date. Your entries were not submitted. Reopen the current sign-in step before entering details.');
+      }
       let completed = false;
       stage = 'submission_commit';
       const response = await store.lock(scope, `account:${i.accountRef}`, async () => {
@@ -461,7 +544,10 @@ export function createManagedAgentCapabilities(options: ManagedAgentCapabilities
             if (!flags.vault || typeof form.accountRef !== 'string') return fail();
             const account = await store.get<PrivateAccount>(scope, `account:${form.accountRef}`);
             if (!account || !account.value.approved || account.value.revoked || account.value.expiresAt <= Date.now()
-              || !i.action.request.credential_origin || !account.value.origins.includes(i.action.request.credential_origin)) return fail();
+              || !i.action.request.credential_origin || !account.value.origins.includes(i.action.request.credential_origin)) {
+              await diagnose(i, 'credentials_unavailable');
+              return attention(url.pathname, 'The selected saved account is no longer available for this website. Reopen sign-in and enter current details privately.');
+            }
             i.accountRef = form.accountRef;
             for (let n = 0; n < i.action.request.fields.length; n++) {
               const source = form[`source_${n}`];
@@ -469,18 +555,34 @@ export function createManagedAgentCapabilities(options: ManagedAgentCapabilities
               else if (source) return fail();
             }
           }
-          i.response = hostedApprovalResponse(i.action, form);
+          try { i.response = hostedApprovalResponse(i.action, form); }
+          catch {
+            await diagnose(i, 'form_invalid');
+            const nonce = randomBytes(18).toString('base64');
+            return new Response(hostedApprovalPage({action:i.action,csrf:i.csrf,path:url.pathname,nonce,followUp:!!i.followUp,
+              message:'The response was not submitted. Choose a sign-in method and complete all required fields. Enter private values again.'}),
+              {status:422,headers:portalHeaders(nonce)});
+          }
         }
         await authorizeJob(i.identity);
         await store.put(scope, key, { ...i, completed: true }, fresh.version);
         completed = true;
-        return new Response('Your response was saved securely. The assistant can continue. You can close this page.', { headers: portalHeaders('complete') });
+        await diagnose(i, 'response_saved', i.accountRef && i.kind === 'hosted' ? 'saved_account' : 'private_form');
+        return receipt(i, url.pathname);
       });
       // Release the account lock before waking a model that may use the account.
       stage = 'answer_delivery';
       if (completed) await complete(i);
       return response;
-    } catch (error) { return error instanceof AnswerDeliveryError ? safeError(error.stage) : fail(); }
+    } catch (error) {
+      if (observed && stage === 'answer_delivery') {
+        await diagnose(observed, 'answer_delivery_failed', undefined, stage);
+        const result = receipt(observed, new URL(request.url).pathname, false,
+          'Your response is saved, but continuation is not confirmed yet. Check sign-in progress to recover the original task; do not enter the same details again.');
+        return new Response(result.body, {status:503,headers:{...Object.fromEntries(result.headers), 'X-Handrail-Agent-Input-Error':error instanceof AnswerDeliveryError ? error.stage : 'answer_delivery'}});
+      }
+      return fail();
+    }
   }
   return { createRuntime, handleRequest, readBrowserOriginAccess, answerBrowserOriginAccess,
     /** For applications with an explicit tool allowlist. Current host authority
