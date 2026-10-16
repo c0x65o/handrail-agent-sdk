@@ -141,3 +141,32 @@ it("keeps paged jump visibility stable through resize and threshold oscillation"
   expect(following).toHaveBeenLastCalledWith(true);
   view.unmount(); controller.dispose();
 });
+
+it("resumes at the tail when the browser coalesces an upward gesture and return into one scroll event", async () => {
+  const controller = new ConversationDisplayWindow({ reader: { page: async () => page("a"), changes: vi.fn() } });
+  const following = vi.fn();
+  const props = { controller, conversationId: "a", pollingMilliseconds: 0,
+    onFollowingLatestChange: following, renderMessage: (record: ConversationDisplayRecord) => <p>{record.id}</p> };
+  const view = render(<ConversationDisplayTranscript {...props} contentVersion={0}/>);
+  await view.findByText("a-message");
+  const transcript = view.getByRole("log");
+  const size = { height: 1200, viewport: 400, top: 800 };
+  Object.defineProperties(transcript, {
+    scrollHeight: { configurable: true, get: () => size.height },
+    clientHeight: { configurable: true, get: () => size.viewport },
+    scrollTop: { configurable: true, get: () => size.top, set: (v: number) => { size.top = Math.max(0, Math.min(v, size.height - size.viewport)); } },
+  });
+  fireEvent.scroll(transcript);
+  view.rerender(<ConversationDisplayTranscript {...props} contentVersion={1}/>);
+  // Browsers coalesce scroll events: the final offset can equal the prior one.
+  fireEvent.wheel(transcript, { deltaY: -1 });
+  fireEvent.scroll(transcript);
+  expect(view.queryByRole("button", { name: "Jump to latest" })).toBeNull();
+  expect(following).toHaveBeenLastCalledWith(true);
+  // Sending adds a message and changes the composer/viewport height.
+  size.height += 150; size.viewport -= 40;
+  view.rerender(<ConversationDisplayTranscript {...props} contentVersion={2}/>);
+  expect(size.top).toBe(size.height - size.viewport);
+  expect(view.queryByRole("button", { name: "Jump to latest" })).toBeNull();
+  view.unmount(); controller.dispose();
+});

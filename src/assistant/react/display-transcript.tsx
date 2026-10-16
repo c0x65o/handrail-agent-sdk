@@ -251,9 +251,12 @@ export function ConversationDisplayTranscript({ controller, conversationId, posi
         const distance = element.scrollHeight - element.scrollTop - element.clientHeight;
         // Scroll events also come from viewport resizing and anchor restoration.
         // Preserve intent through those events and the old near-bottom threshold.
-        if (!layoutChanged && element.scrollTop !== previous.top) {
-          if (element.scrollTop < previous.top && distance > 2) following.current = false;
-          else if (element.scrollTop > previous.top && distance <= 2 && !state.hasNewer) following.current = true;
+        if (!layoutChanged) {
+          // Scroll events can coalesce an upward gesture and a return to the
+          // same tail offset. Reaching the tail must clear the gesture's pause
+          // even when there is no net movement since the previous event.
+          if (distance <= 2 && !state.hasNewer) following.current = true;
+          else if (element.scrollTop < previous.top) following.current = false;
         }
         captureScroll(element);
         onFollowingLatestChange?.(following.current);

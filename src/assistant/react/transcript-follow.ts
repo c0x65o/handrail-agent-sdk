@@ -69,11 +69,13 @@ export function useSmartTranscriptFollow(
     const layoutChanged = previous.height !== element.scrollHeight || previous.viewport !== element.clientHeight;
     // Layout and our own smooth jump can emit scroll events while still far
     // from the bottom. Only reader movement should turn following off.
-    if (top < previous.top && !layoutChanged) {
+    if (!layoutChanged && element.scrollHeight - top - element.clientHeight <= Math.min(2, threshold)) {
+      // Coalesced scroll events can return to the same tail offset after an
+      // upward gesture paused following. Net movement is not required.
+      updateFollowing(true);
+    } else if (top < previous.top && !layoutChanged) {
       smoothScrollRef.current = false;
       updateFollowing(false);
-    } else if (!layoutChanged && top > previous.top && element.scrollHeight - top - element.clientHeight <= Math.min(2, threshold)) {
-      updateFollowing(true);
     } else if (!layoutChanged && !smoothScrollRef.current && top !== previous.top && !nearBottom) {
       updateFollowing(false);
     }

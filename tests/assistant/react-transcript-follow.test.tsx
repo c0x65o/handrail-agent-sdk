@@ -224,3 +224,15 @@ it("keeps the jump control mounted through threshold oscillation and layout chan
   size.top = size.height - size.viewport; fireEvent.scroll(transcript);
   expect(screen.queryByLabelText("Jump to latest message")).toBeNull();
 });
+
+
+it("resumes after coalesced scrolling returns to the same bottom offset", () => {
+  render(<Harness/>);
+  const { transcript, size } = geometry();
+  fireEvent.wheel(transcript, { deltaY: -1 });
+  fireEvent.scroll(transcript);
+  expect(screen.queryByLabelText("Jump to latest message")).toBeNull();
+  size.height += 150;
+  fireEvent.click(screen.getByText("Append"));
+  expect(size.top).toBe(size.height - size.viewport);
+});
