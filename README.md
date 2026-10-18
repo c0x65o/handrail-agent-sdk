@@ -13,6 +13,7 @@ assistance module owns schedule/watch lifecycle and notification orchestration.
 - `packages/handrail_agent_client` and `packages/handrail_agent_widgets`: native Dart client and Flutter UI from this repository.
 
 The source consolidation is in progress. See [migration status](docs/assistant-consolidation.md) and [source provenance](docs/assistant-source-provenance.md); this does not establish published or deployed consumer adoption.
+- For catalogs above 256 tools, configure the host's [bounded deferred catalog budget](docs/deferred-tool-catalog.md).
 - For turnkey browser and encrypted account access, use
   [managed capabilities](docs/managed-capabilities.md): one setup, one route, two flags.
 - Browser runtime tools and private login entry/fill adapters are described in

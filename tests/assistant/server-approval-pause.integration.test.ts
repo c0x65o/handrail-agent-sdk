@@ -85,7 +85,9 @@ it.each(['confirmed', 'rejected'] as const)('HTTP decisions resume an external %
   } finally { await assistant.stopBackgroundWorkers(); }
 }, 30_000);
 
-it.each([['confirmed', 'complete'], ['rejected', 'complete'], ['confirmed', 'running'], ['confirmed', 'none'], ['rejected', 'none']] as const)('rests across comments and restart, then resumes %s once (comment=%s)', async (decision, commentMode) => {
+it.each([['confirmed', 'complete', false], ['rejected', 'complete', false], ['confirmed', 'running', false],
+  ['confirmed', 'none', false], ['rejected', 'none', false], ['confirmed', 'none', true], ['rejected', 'none', true]] as const)(
+  'rests across comments and restart, then resumes %s once (comment=%s, largeCatalog=%s)', async (decision, commentMode, largeCatalog) => {
   const commentRunning = commentMode === 'running';
   const hasComment = commentMode !== 'none';
   const testContext = { ...context, tenantId: randomUUID() };
@@ -93,24 +95,39 @@ it.each([['confirmed', 'complete'], ['rejected', 'complete'], ['confirmed', 'run
     createConversationId: () => 'conversation' as never, authorizeConversation: () => 'allow', authorizeApproval: () => 'allow' });
   await bundle.catalog.create({ authorizationContext: testContext, idempotencyKey: 'new' as never });
   const effect = vi.fn(async () => ({ saved: true }));
+  const additionalTools = largeCatalog ? Array.from({ length: 260 }, (_, index) => ({
+    name: index < 258 ? `domain_${index}` : `auxiliary_${index}`, description: `Operation ${index}`,
+    input_schema: { type: 'object' as const, properties: {} },
+  })) : [];
   const plugin = createToolPlugin({ pluginId: 'test', version: '1.0.0', displayName: 'Test',
-    registrations: [{ definition: { name: 'save', description: 'Save', input_schema: { type: 'object', properties: {} } }, executor: effect }],
+    registrations: [{ definition: { name: 'save', description: 'Save', input_schema: { type: 'object', properties: {} } }, executor: effect },
+      ...additionalTools.map(definition => ({ definition, executor: effect }))],
     approvals: [{ toolName: 'save', mode: 'always', summarize: () => 'Save the change' }] });
   let physical = 0;
   let releaseComment!: () => void;
   const commentGate = new Promise<void>(resolve => { releaseComment = resolve; });
-  const providerRequest = vi.fn(async function* () {
+  const providerRequest = vi.fn(async function* (request: import('../../src/assistant/providers/openai.js').OpenAIResponsesRequest) {
+    if (largeCatalog) {
+      const projected = request.tools.flatMap(tool => tool.type === 'namespace' ? tool.tools : tool.type === 'function' ? [tool] : []);
+      expect(projected.map(tool => tool.name).sort()).toEqual(['save', 'handrail_files_list', 'handrail_files_open', ...additionalTools.map(tool => tool.name)].sort());
+      if (physical > 0) expect(request.input).toEqual(expect.arrayContaining([
+        expect.objectContaining({ type: 'function_call', name: 'save', namespace: 'erp', call_id: 'call' }),
+        expect.objectContaining({ type: 'function_call_output', call_id: 'call' }),
+      ]));
+    }
     const current = ++physical;
     if (current === 2 && commentRunning) await commentGate;
     if (current === 1) {
-      yield { type: 'response.output_item.added', output_index: 0, item: { type: 'function_call', id: 'fc', call_id: 'call', name: 'save', arguments: '' } };
+      yield { type: 'response.output_item.added', output_index: 0, item: { type: 'function_call', id: 'fc', call_id: 'call', name: 'save', ...(largeCatalog ? { namespace: 'erp' } : {}), arguments: '' } };
       yield { type: 'response.function_call_arguments.done', output_index: 0, item_id: 'fc', arguments: '{}' };
     } else yield { type: 'response.output_text.delta', delta: current === 2 ? 'Comment received.' : 'Decision received.' };
     yield { type: 'response.completed', response: { usage: { input_tokens: 2, output_tokens: 1, total_tokens: 3 } } };
   });
   const diagnostics = vi.fn();
   const create = () => createHandrailAssistant({ id: 'test', authorize: () => testContext, persistence, tools: [plugin], diagnostics, automaticTitles: false,
-    provider: openaiResponses({ model: 'fixture', request: providerRequest, supportsToolSearch: false, savedConversation: true }) });
+    provider: openaiResponses({ model: 'fixture', request: providerRequest, supportsToolSearch: largeCatalog, savedConversation: true,
+      ...(largeCatalog ? { maximumTotalTools: 512, namespaces: [{ name: 'erp', description: 'ERP domain tools',
+        toolNames: ['save', ...additionalTools.slice(0, 258).map(tool => tool.name)] }] } : {}) }) });
   let assistant = await create();
   const post = (path: string, value: unknown) => assistant.handle(new Request(`https://app.test/${path}`, {
     method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(value) }));

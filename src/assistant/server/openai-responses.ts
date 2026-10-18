@@ -362,6 +362,7 @@ export function openaiResponses<TContext extends HandrailAssistantAuthorizationC
               results: invocation.tool_results, generation: invocation.generation, instructions: input.instructions,
               functionStrict: options.functionStrict, namespaces: options.namespaces, hosted: options.hosted, toolChoice,
               supportsToolSearch: options.supportsToolSearch, maximumEagerTools: options.maximumEagerTools,
+              maximumTotalTools: options.maximumTotalTools,
               maximumInputMessages: options.maximumInputMessages, documentInput: options.document_input,
               reasoningEffort: options.reasoningEffort, includeReasoningEncryptedContent: options.includeReasoningEncryptedContent }),
             invocation, invoke: () => createOpenAIResponsesProviderAdapter({ ...currentOptions, request: network,

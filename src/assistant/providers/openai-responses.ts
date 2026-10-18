@@ -37,8 +37,10 @@ export interface OpenAIResponsesProviderOptions {
   readonly model: string;
   readonly request: (request: OpenAIResponsesRequest, options: { readonly signal: AbortSignal }) => AsyncIterable<unknown> | Promise<AsyncIterable<unknown>>;
   readonly namespaces?: readonly ToolNamespaceDefinition[];
-  /** Host-only eager catalog limit (1-1024). Defaults to 16; the total catalog limit remains 256. */
+  /** Host-only eager catalog limit (1-1024). Defaults to 16; independent of maximumTotalTools. */
   readonly maximumEagerTools?: number;
+  /** Host-only bound on all authorized domain and auxiliary tools (1-1024). Defaults to 256. */
+  readonly maximumTotalTools?: number;
   readonly hosted?: OpenAIResponsesHostedToolsOptions;
   readonly supportsToolSearch?: boolean;
   /** Provider schema strictness. False preserves optional/open input schemas; host validation still applies. Defaults true. */
@@ -363,7 +365,8 @@ export class OpenAIResponsesProviderAdapter implements ProviderAdapter {
       const namespaces = (this.options.namespaces ?? []).map((namespace) => ({ ...namespace,
         toolNames: namespace.toolNames.filter((name) => allowed.has(name)) })).filter((namespace) => namespace.toolNames.length > 0);
       const plan = createDeferredToolDiscoveryPlan({ tools: invocation.tools, namespaces,
-        ...(this.options.maximumEagerTools === undefined ? {} : { maximumEagerTools: this.options.maximumEagerTools }) });
+        ...(this.options.maximumEagerTools === undefined ? {} : { maximumEagerTools: this.options.maximumEagerTools }),
+        ...(this.options.maximumTotalTools === undefined ? {} : { maximumTotalTools: this.options.maximumTotalTools }) });
       const identities = allowedToolIdentities(plan);
       const loadedParent = invocation.continuation_of ? await this.#continuations.load(invocation.continuation_of) : null;
       const parent = loadedParent === null ? null : immutableContinuationRecord(loadedParent);

@@ -33,7 +33,7 @@ export interface CreateDeferredToolDiscoveryPlanOptions {
   readonly includeUnassigned?: boolean;
   /** Bound on eagerly projected schemas. Defaults to 16. */
   readonly maximumEagerTools?: number;
-  /** Bound on all discovered tools. Defaults to 256. */
+  /** Host-only bound on all discovered domain and auxiliary tools (1-1024). Defaults to 256. */
   readonly maximumTotalTools?: number;
 }
 

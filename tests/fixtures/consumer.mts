@@ -259,3 +259,13 @@ void createVaultUse(vaultUseHost, vaultUsePort, [requestExecutor]);
 import type { VaultHttpClient as PublicHttpClient } from 'handrail-agent-sdk';
 // @ts-expect-error HTTP execution still accepts only a bound operation and fence.
 vaultUse.execute({ ...vaultRequest, headers: { authorization: 'model-input' } }, leaseFence);
+
+// Large deferred catalogs use the same host option at both public provider entrypoints.
+import { createOpenAIResponsesProviderAdapter, type OpenAIResponsesProviderOptions } from 'handrail-agent-sdk/assistant/providers/openai';
+import { openaiResponses, type HandrailOpenAIResponsesOptions } from 'handrail-agent-sdk/assistant/server/assistant';
+const catalogBounds = { maximumTotalTools: 512, maximumEagerTools: 16 } as const;
+declare const responsesRequest: OpenAIResponsesProviderOptions['request'];
+const responsesOptions: OpenAIResponsesProviderOptions = { model: 'fixture', request: responsesRequest, ...catalogBounds };
+const serverResponsesOptions: HandrailOpenAIResponsesOptions = responsesOptions;
+createOpenAIResponsesProviderAdapter(responsesOptions);
+openaiResponses(serverResponsesOptions);
