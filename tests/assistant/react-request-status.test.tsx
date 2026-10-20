@@ -43,12 +43,13 @@ it("keeps successive approvals and continuation visible outside the transcript u
   view.rerender(<StyledChatPreset {...props} state={state} proposals={[proposal("one", "executed"), proposal("two")]}/>);
   expect(current().textContent).toContain("1 action needs your review");
   view.rerender(<StyledChatPreset {...props} state={state} proposals={[proposal("one", "executed"), proposal("two", "confirmed")]}/>);
-  expect(current().textContent).toContain("Continuing…");
+  expect(current().textContent).toContain("Approved · awaiting execution");
   view.rerender(<StyledChatPreset {...props} state={state} proposals={[proposal("one", "executed"), proposal("two", "executing")]}/>);
   expect(current().textContent).toContain("Running approved changes…");
   expect(within(current()).queryByRole("button")).toBeNull();
   view.rerender(<StyledChatPreset {...props} state={state} proposals={[proposal("one", "executed"), proposal("two", "executed")]}/>);
-  expect(current().textContent).toContain("Continuing…");
+  expect(current().textContent).toContain("Waiting to resume");
+  expect(current().getAttribute("data-phase")).toBe("waiting");
   state = advance(state,
     { type: "turn.completed", turn_id: "turn", outcome: "tool_calls", output_message_ids: [] },
     { type: "turn.started", turn_id: "next", continuation_of_turn_id: "turn", input_message_ids: ["question"] },
@@ -100,7 +101,7 @@ it.each(["failed", "cancelled", "completed"] as const)("honors %s over a stale r
   const activity = new InMemoryConversationActivityStore();
   activity.upsert({ conversationId: "conversation", turnId: "turn", turnStatus: "running", unread: false });
   render(<StyledChatPreset state={state} proposals={[proposal("one", "confirmed")]} activity={activity} includeStyles={false} transcription={false}/>);
-  expect(current().textContent).toContain(status === "failed" ? "Request failed" : status === "cancelled" ? "Request cancelled" : "Request complete");
+  expect(current().textContent).toContain(status === "failed" ? "Request failed" : status === "cancelled" ? "Request cancelled" : "Finished · some actions need attention");
   expect(current().getAttribute("data-phase")).not.toBe("working");
 });
 
@@ -160,7 +161,7 @@ it("requires execution evidence before describing a confirmed approval as runnin
     { type: "tool_call.approval_required", turn_id: "turn", tool_call_id: "one" });
   const props = { proposals: [proposal("one", "confirmed")], includeStyles: false, transcription: false as const };
   const view = render(<StyledChatPreset {...props} state={state}/>);
-  expect(current().textContent).toContain("Continuing…");
+  expect(current().textContent).toContain("Approved · awaiting execution");
   state = advance(state, { type: "tool_call.started", turn_id: "turn", tool_call_id: "one" });
   view.rerender(<StyledChatPreset {...props} state={state}/>);
   expect(current().textContent).toContain("Running approved changes…");
@@ -196,3 +197,53 @@ it.each([["user", "Request stopped by you"], ["timeout", "Request timed out"],
     expect(current().textContent).toContain(title);
     expect(screen.queryByRole("button", { name: "Review next" })).toBeNull();
   });
+
+
+it("does not show stale remote activity over a terminal turn", () => {
+  const state = advance(waiting(), { type: "turn.failed", turn_id: "turn",
+    error: { code: "internal_error", message: "The saved continuation failed", retryable: true } });
+  const activity = new InMemoryConversationActivityStore();
+  activity.upsert({ conversationId: "conversation", turnId: "older-turn", turnStatus: "running", unread: false });
+  render(<StyledChatPreset state={state} proposals={[proposal("one", "confirmed")]} activity={activity} includeStyles={false} transcription={false}/>);
+  expect(current().textContent).toContain("Request failed");
+  expect(current().textContent).not.toContain("Working");
+  expect(screen.getByText("Approved · execution interrupted")).toBeTruthy();
+});
+
+it("shows unavailable observation without inventing execution or erasing a saved approval", () => {
+  render(<ConversationRequestStatus state={waiting()} proposals={[proposal("one", "confirmed")]}
+    activity={undefined} savingDecision={false} hasPendingApprovals={false} observationError="Application gateway request failed"/>);
+  expect(current().textContent).toContain("Request status unavailable");
+  expect(current().getAttribute("data-phase")).toBe("attention");
+  expect(current().textContent).not.toContain("Continuing");
+});
+
+it.each(["confirmed", "failed"] as const)("uses the same saved decision in the action list, card and footer: %s", status => {
+  let state = advance(waiting(),
+    { type: "tool_call.requested", turn_id: "turn", tool_call_id: "one", name: "update_device", arguments: {} },
+    { type: "tool_call.approval_required", turn_id: "turn", tool_call_id: "one" });
+  if (status === "failed") state = advance(state, { type: "turn.failed", turn_id: "turn",
+    error: { code: "internal_error", message: "Continuation failed", retryable: true } });
+  render(<StyledChatPreset state={state} proposals={[proposal("one", "confirmed")]} includeStyles={false} transcription={false} toolActivity="expanded"/>);
+  expect(screen.queryByText("Waiting for approval")).toBeNull();
+  expect(document.querySelector('[data-tool-status="' + (status === "failed" ? "approval_interrupted" : "approved") + '"]')).toBeTruthy();
+  expect(current().textContent).toContain(status === "failed" ? "Request failed" : "Approved · awaiting execution");
+});
+
+
+it("does not regress a canonical confirmed decision when the approval fetch is stale", () => {
+  const canonical = { ...proposal("one", "confirmed"), proposal_version: 2 };
+  const state = { ...waiting(), approval_proposals: [canonical] };
+  render(<StyledChatPreset state={state} proposals={[proposal("one", "pending")]} includeStyles={false} transcription={false}/>);
+  expect(current().textContent).toContain("Approved · awaiting execution");
+  expect(screen.queryByText("Review required")).toBeNull();
+});
+
+
+it("does not let a stale pending control flag undo the complete saved decision set", () => {
+  render(<ConversationRequestStatus state={waiting()} proposals={[proposal("one", "confirmed")]}
+    activity={undefined} savingDecision={false} hasPendingApprovals onReview={vi.fn()}/>);
+  expect(current().textContent).toContain("Approved · awaiting execution");
+  expect(screen.queryByRole("button", { name: "Review next" })).toBeNull();
+  expect(current().getAttribute("data-phase")).toBe("waiting");
+});

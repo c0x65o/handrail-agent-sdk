@@ -442,3 +442,37 @@ it("retains one admitted identity across more observer losses than the preparati
     for(const [request] of inner.startTurn.mock.calls) expect(request).toEqual(input);
   } finally { await finishing.stopWorkers(); }
 });
+
+it("coalesces the same saved approval handoff across restart, and retries the original identity only when requested", async () => {
+  const store = new InMemoryDurableApplicationTurnStore<string, never>();
+  let invocations = 0;
+  const checkpoint = { lastAppliedEventId: null, lastAppliedCursor: null, lastAppliedRevision: null };
+  const worker = (workerId: string) => createDurableApplicationTransport({ store, workerId, pollMilliseconds: 25,
+    delegate: createApplicationTurnTransport<never, string>({ execute: async () => {
+      invocations++;
+      return { status: "waiting_for_approval", pendingToolCallIds: ["same-call"], checkpoint };
+    } }), requestCodec: { encode: value => value, decode: value => value, fingerprint: () => "original-input" }, checkpointForEvent: () => checkpoint });
+  const first = worker("first");
+  const started = await first.startTurn({ conversationId: "same", conversationTurnId: "same" as never,
+    mutationId: "same", idempotencyKey: "same", request: "original approved input" });
+  if (!started.ok) throw new Error(started.error.message);
+  for await (const event of started.value.observation.events) { void event; }
+  await started.value.observation.result;
+  const decision = { decisionFingerprint: "original-proposal-version-2" };
+  await first.resumeApprovalTurn("same", "same", decision);
+  await vi.waitFor(async () => expect((await store.load("same", "same"))?.record.status).toBe("waiting_for_approval"));
+  await first.stopWorkers();
+  const restarted = worker("restarted"), peer = worker("peer");
+  try {
+    for (let index = 0; index < 3; index++) {
+      await Promise.all([restarted.resumeApprovalTurn("same", "same", decision), peer.resumeApprovalTurn("same", "same", decision)]);
+      await vi.waitFor(async () => expect((await store.load("same", "same"))?.record.status).toBe("waiting_for_approval"));
+    }
+    expect(invocations).toBe(2); // original admission and one saved decision
+    await restarted.resumeApprovalTurn("same", "same", {});
+    await vi.waitFor(async () => expect((await store.load("same", "same"))?.record.status).toBe("waiting_for_approval"));
+    expect(invocations).toBe(3);
+    expect((await store.load("same", "same"))?.record).toMatchObject({ request: "original approved input",
+      mutationId: "same", idempotencyKey: "same", approvalResumeFingerprint: decision.decisionFingerprint });
+  } finally { await Promise.all([restarted.stopWorkers(), peer.stopWorkers()]); }
+});

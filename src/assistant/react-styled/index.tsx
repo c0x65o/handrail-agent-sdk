@@ -1,3 +1,4 @@
+import { approvalStatusLabel } from "../conversation/tool-activity.js";
 import { useTurnApprovalMode } from "../react/use-turn-approval-mode.js";
 import type { TurnApprovalModeInput, TurnApprovalModeResult } from "../composer-approval.js";
 import { ConversationPagedApprovalReview } from "../react/paged-approval-review.js";
@@ -312,7 +313,19 @@ export function StyledChatPreset(props: StyledChatPresetProps): ReactNode {
       const target = resolvedState.active_turn_id ?? (latest?.status === "waiting_for_approval" ? latest.turn_id : null);
       return target && resolvedState.conversation_id ? { conversationId: resolvedState.conversation_id, turnId: target } : null;
     } });
-  const proposals = props.proposals ?? (props.approvalResources ? approvalReview.proposals : resolvedState?.approval_proposals);
+  const reviewProposals = props.proposals ?? (props.approvalResources ? approvalReview.proposals : resolvedState?.approval_proposals);
+  const proposals = useMemo(() => {
+    const records = new Map(resolvedState.approval_proposals.map(proposal => [proposal.proposal_id, proposal]));
+    for (const proposal of reviewProposals ?? []) {
+      const previous = records.get(proposal.proposal_id);
+      if (!previous || proposal.proposal_version >= previous.proposal_version) records.set(proposal.proposal_id, proposal);
+    }
+    return [...records.values()];
+  }, [resolvedState.approval_proposals, reviewProposals]);
+  const subscribeDisplay = useCallback((notify: () => void) => session?.subscribe(notify) ?? (() => undefined), [session]);
+  const getDisplayError = useCallback(() => session?.getSnapshot().error?.message, [session]);
+  const observationError = useSyncExternalStore(subscribeDisplay, getDisplayError, getDisplayError);
+  const activityState = { ...resolvedState, approval_proposals: proposals ?? [] };
   const statusRoot = useRef<HTMLDivElement>(null);
   const subscribeApprovals = useCallback((notify: () => void) => session?.subscribe(notify) ?? (() => undefined), [session]);
   const getPendingApprovals = useCallback(() => session?.getSnapshot().control?.hasPendingApprovals ?? false, [session]);
@@ -363,7 +376,7 @@ export function StyledChatPreset(props: StyledChatPresetProps): ReactNode {
     <header className="hr-chat__header"><h2>{props.title ?? "Assistant"}</h2>{props.conversationPicker && <div className="hr-chat__picker">{props.conversationPicker}</div>}</header>
     <main className="hr-chat__body">
       {resolvedState && <ConversationTranscript state={resolvedState} className="hr-chat__transcript" role="region" includeActivity
-        renderActivity={group => <ConversationActivityCard state={resolvedState} group={group}
+        renderActivity={group => <ConversationActivityCard state={activityState} group={group}
           display={props.toolActivity ?? "collapsed"} renderDetails={props.renderToolActivity}/>}
         {...(proposals ? { proposals } : {})} emptyState={props.emptyState}
         includeToolResult={props.includeToolResult ?? (call => !!props.toolRendererKeys?.[call.name ?? ""])}
@@ -412,7 +425,7 @@ export function StyledChatPreset(props: StyledChatPresetProps): ReactNode {
     {(props.approvals || props.citations) && <aside className="hr-chat__aux">{props.readOnly
       ? <fieldset disabled style={{ border: 0, margin: 0, padding: 0 }}>{props.approvals}</fieldset> : props.approvals}{props.citations}</aside>}
     <div ref={statusRoot} style={{ flex: "none" }}><ConversationRequestStatus state={resolvedState} proposals={proposals ?? []}
-      activity={currentActivity} hasPendingApprovals={hasPendingApprovals} savingDecision={approvalReview.busy !== null}
+      activity={currentActivity} observationError={observationError} hasPendingApprovals={hasPendingApprovals} savingDecision={approvalReview.busy !== null}
       onReview={!props.readOnly && (proposals?.some(proposal => proposal.status === "pending") || hasPendingApprovals)
         ? reviewNextApproval : undefined}/></div>
     {props.readOnly ? <p className="hr-history__notice">Archived conversations are read-only. Restore this conversation to continue.</p>
@@ -1041,10 +1054,7 @@ export function StandardApprovalCard({ proposal, context }: {
   const pending = proposal.status === "pending";
   const expired = proposal.status === "expired";
   return <article className="hr-chat__approval" role="listitem" aria-label="Assistant action">
-    <strong>{structuredDetailLabel(proposal.tool_name)}</strong><span className="hr-chat__approval-status">{expired && pending ? "Expired" : ({
-      pending: "Review required", confirmed: "Approved · awaiting execution", rejected: "Rejected",
-      executing: "Executing", executed: "Executed", failed: "Execution failed", expired: "Expired",
-    })[proposal.status]}</span>
+    <strong>{structuredDetailLabel(proposal.tool_name)}</strong><span className="hr-chat__approval-status">{approvalStatusLabel(proposal, context.state)}</span>
     {arguments_ ? <StructuredDetailsDisclosure value={arguments_} summary="Action details" always
       defaultOpen={pending && !shouldCollapseStructuredDetails(arguments_)}/>
       : saved.status === "loading" ? <p role="status">Loading saved action details…</p>

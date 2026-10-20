@@ -582,6 +582,14 @@ export async function createHandrailAssistant<TContext extends HandrailAssistant
         const pending = saved.record.terminal.pendingToolCallIds;
         if (!proposals.some(proposal => proposal.turn_id === turn.turn_id && pending.includes(proposal.tool_call_id) &&
           proposal.status !== "pending")) continue;
+        // A returned wait is not another approval decision. Persist the exact
+        // canonical proposal versions with the wake so settlement, restart and
+        // repeated reads cannot continuously resume an unchanged intent.
+        const decisionFingerprint = createHash("sha256").update(JSON.stringify(proposals
+          .filter(proposal => proposal.turn_id === turn.turn_id && pending.includes(proposal.tool_call_id))
+          .map(proposal => [proposal.proposal_id, proposal.proposal_version, proposal.status])
+          .sort((a, b) => String(a[0]).localeCompare(String(b[0]))))).digest("hex");
+        if (saved.record.approvalResumeFingerprint === decisionFingerprint) continue;
         if (state.active_turn_id === null) {
           try {
             await bundle.events.append({ conversationId: conversationId as never, expectedRevision: state.revision,
@@ -601,7 +609,7 @@ export async function createHandrailAssistant<TContext extends HandrailAssistant
         if (!durableTransports.has(key)) await transportFor(context);
         signal?.throwIfAborted();
         const outcome = await durableTransports.get(key)!.resumeApprovalTurn(conversationId, turn.turn_id,
-          signal ? { recovery: true, signal } : undefined);
+          { decisionFingerprint, ...(signal ? { recovery: true, signal } : {}) });
         if (!outcome.ok) throw new Error(outcome.error.message);
         return { settled: false, ...(outcome.value.status === "started" ? { started: { conversationId, turnId: turn.turn_id } } : {}) };
       }

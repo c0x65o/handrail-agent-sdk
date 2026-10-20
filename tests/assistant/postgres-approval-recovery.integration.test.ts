@@ -76,8 +76,10 @@ it("prepares legacy decision identities in bounded restartable pages without rew
   expect(await sql.query("SELECT proposal_id,version,payload,updated_at FROM handrail_ai_approvals WHERE tenant_id='legacy' ORDER BY proposal_id")).toEqual(before);
 });
 
-it.each(["confirmed", "rejected"] as const)("recovers a %s decision saved before its audit event, without a browser or duplicate effect", async status => {
-  const context = contextFor(`restart-${status}`), conversationId = "chat", turnId = "turn";
+it.each(["confirmed", "rejected", "held"] as const)("recovers a %s decision saved before its audit event, without a browser or duplicate effect", async scenario => {
+  const status = scenario === "held" ? "confirmed" : scenario;
+  const held = scenario === "held";
+  const context = contextFor(`restart-${scenario}`), conversationId = "chat", turnId = "turn";
   const bundle = storage.forScope<HandrailAssistantAuthorizationContext>(context, { createConversationId: () => conversationId as never });
   await bundle.catalog.create({ authorizationContext: context, idempotencyKey: "create" as never });
   const request: ChatRequest = { protocol_version: "handrail.ai-runtime.v1", continuation_of: null,
@@ -109,6 +111,7 @@ it.each(["confirmed", "rejected"] as const)("recovers a %s decision saved before
       runtime = input.tools;
       return createApplicationTurnTransport<StreamEvent, ChatRequest>({ async execute(_request, execution) {
         providerCalls();
+        if (held) return { status: "waiting_for_approval", pendingToolCallIds: [call.tool_call_id], checkpoint };
         const result = await input.tools.awaitApproval({ conversationId, turnId, call, signal: execution.signal });
         expect(result).toMatchObject({ status: "completed", result: { is_error: status === "rejected" } });
         return { status: "completed", checkpoint };
@@ -139,6 +142,36 @@ it.each(["confirmed", "rejected"] as const)("recovers a %s decision saved before
   expect((await bundle.durableTurns.load(conversationId, turnId))?.record).toMatchObject({ status: "waiting_for_approval", attempt: 1 });
   const restarted = await make(true), peer = await make(true);
   try {
+    if (held) {
+      await vi.waitFor(async () => {
+        const saved = (await bundle.durableTurns.load(conversationId, turnId))!.record;
+        expect(saved.status).toBe("waiting_for_approval");
+        expect(saved.approvalResumeFingerprint).toMatch(/^[a-f0-9]{64}$/);
+      });
+      // Repeated recovery and ordinary observation are not new approval decisions.
+      for (let index = 0; index < 3; index++) {
+        await Promise.all([restarted.recoverPending(), peer.recoverPending()]);
+        const response = await restarted.handle(new Request("https://assistant.test/turns/resume", {
+          method: "POST", headers: { "content-type": "application/json" },
+          body: JSON.stringify({ conversationId, turnId, resumeFrom: checkpoint }),
+        }));
+        expect(response.status).toBe(200);
+        expect(await response.text()).toContain("waiting_for_approval");
+      }
+      expect(providerCalls).toHaveBeenCalledOnce();
+      expect(effect).not.toHaveBeenCalled();
+      await Promise.all([restarted.stopBackgroundWorkers(), peer.stopBackgroundWorkers()]);
+      const recreated = await make(true);
+      try {
+        await recreated.recoverPending();
+        expect(providerCalls).toHaveBeenCalledOnce();
+        // The unchanged human decision and exact reviewed arguments survive.
+        expect(await bundle.approvals.transition(transition)).toEqual(receipt);
+        expect((await bundle.durableTurns.load(conversationId, turnId))!.record)
+          .toMatchObject({ status: "waiting_for_approval", request, approvalResumes: 1 });
+      } finally { await recreated.stopBackgroundWorkers(); }
+      return;
+    }
     await vi.waitFor(async () => expect((await bundle.durableTurns.load(conversationId, turnId))?.record.status).toBe("completed"), { timeout: 10_000 });
     await Promise.all([restarted.recoverPending(), peer.recoverPending()]);
     expect(providerCalls).toHaveBeenCalledOnce(); expect(effect).toHaveBeenCalledTimes(status === "confirmed" ? 1 : 0);

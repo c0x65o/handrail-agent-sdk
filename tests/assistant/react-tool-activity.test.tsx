@@ -174,3 +174,15 @@ it("does not hide failures using an unrelated, ambiguous, or execution-conflicte
   expect(projectToolActivity({ ...state, approval_proposals: [rejected], tool_calls: [{ ...state.tool_calls[0]!,
     started_at: "2026-09-04T00:00:00.000Z" as never }] }).failed).toBe(1);
 });
+
+
+it.each([["executed", "completed"], ["failed", "failed"]] as const)(
+  "uses a saved %s receipt when the tool observation lags behind", (status, expected) => {
+    const state = history([call("write"), { type: "tool_call.approval_required", turn_id: "turn", tool_call_id: "write" }]);
+    const saved = { proposal_id: "p", turn_id: "turn", tool_call_id: "write", tool_name: "write",
+      status, proposal_version: 4 } as unknown as ConversationState["approval_proposals"][number];
+    const activity = projectToolActivity({ ...state, approval_proposals: [saved] });
+    expect(activity.items[0]?.status).toBe(expected);
+    expect(activity.awaitingApproval).toBe(0);
+    expect(activity.running).toBe(0);
+  });

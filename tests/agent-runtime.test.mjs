@@ -71,7 +71,8 @@ test('provider diagnostics classify hosted failures without logging private prov
   const model={async *getStreamedResponse(){throw new APIError(429,{message:privateBody},privateBody,new Headers());}};
   const f=await setup(t,{model});
   assert.equal(ok(await f.runtime.wake(identity)),'retryable');
-  assert.ok(f.events.some(event=>event.kind==='error'&&event.code==='provider_request_failed'&&event.providerStatus===429));
+  assert.ok(f.events.some(event=>event.kind==='error'&&event.code==='provider_request_failed'&&event.providerStatus===429
+    &&event.jobId===identity.jobId&&event.correlationRef===identity.origin.correlationRef));
   assert.ok(!JSON.stringify(f.events).includes(privateBody));
   assert.equal(ok(await f.journal.load(identity)).state,'running');
 });

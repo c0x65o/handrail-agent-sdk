@@ -1,7 +1,7 @@
 /** @vitest-environment jsdom */
 import { parseConversationEvent } from "../../src/assistant/conversation/events.js";
 import { reduceConversationEvent } from "../../src/assistant/conversation/reducer.js";
-import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, expect, it, vi } from "vitest";
 import { createInitialConversationState, type ConversationApprovalProposalRecord, type ConversationState,
   type ConversationToolCallRecord } from "../../src/assistant/conversation/state.js";
@@ -55,7 +55,7 @@ it("retains saved decided cards and failures and prevents decisions for archived
   const view = render(<StyledChatPreset state={f.state} approvalResources={f.resources} readOnly includeStyles={false} transcription={false}/>);
   const history = (await screen.findByText("Action history (1)")).closest("details")!;
   fireEvent.click(history.querySelector("summary")!);
-  expect(await screen.findByText("Rejected")).toBeTruthy();
+  expect(await within(history).findByText("Rejected")).toBeTruthy();
   expect(screen.queryByRole("button", { name: "Confirm" })).toBeNull();
   expect(screen.queryByRole("textbox")).toBeNull();
   view.rerender(<StyledChatPreset state={f.state} proposals={[f.proposal]} approvalResources={f.resources} readOnly includeStyles={false} transcription={false}/>);

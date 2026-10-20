@@ -87,6 +87,23 @@ capabilities. Consolidation can reuse them. UI source tests and disposable
 PostgreSQL tests establish local compatibility; only installed consumer tests
 and authorized live acceptance establish adoption and runtime delivery.
 
+## Saved approval continuation
+
+Automatic approval continuation records a fingerprint of the matching proposal
+IDs, saved versions and statuses in the existing durable turn, atomically with
+its pending transition. Repeated settlement, recovery scans and reconnects cannot
+wake the same decision again after execution returns to waiting. Restart after
+admission still recovers the pending turn through its existing lease and claim.
+A later saved decision version can wake that same turn; there is no new job,
+approval, execution budget or scheduler.
+
+HTTP resume remains observation-only for settled waits. Trusted hosts using
+`resumeApprovalTurn` still authorize and canonically admit each resumption;
+automatic callers supply `decisionFingerprint` to coalesce duplicate handoffs.
+This identity does not establish execution success or authorize replay of an
+unknown effect. Native receipt reconciliation, current access, explicit expiry
+and application-specific approval policy remain authoritative.
+
 ## SDK source checks
 
 From this repository, `make setup-flutter` installs the locked Node test gateway

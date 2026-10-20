@@ -2,7 +2,14 @@ import type { ConversationPresentationState as ConversationState, ConversationPr
 import type { ConversationApprovalProposalRecord, ConversationToolCallRecord } from "./state.js";
 import { parseToolRecoverySummary, type ToolRecoverySummary } from "../tools/recovery.js";
 
-export type ToolActivityStatus = "pending" | "running" | "awaiting_approval" | "completed" | "failed" | "cancelled" | "incomplete" | "rejected" | "expired";
+export type ToolActivityStatus = "pending" | "running" | "approved" | "approval_interrupted" | "awaiting_approval" | "completed" | "failed" | "cancelled" | "incomplete" | "rejected" | "expired";
+export function approvalStatusLabel(proposal: ConversationApprovalProposalRecord, state: ConversationState): string {
+  const turn = state.turns.find(turn => turn.turn_id === proposal.turn_id);
+  if (proposal.status === "confirmed" && (turn?.status === "failed" || turn?.status === "cancelled" ||
+    turn?.status === "completed" && turn.outcome !== "tool_calls")) return "Approved · execution interrupted";
+  return ({ pending: "Review required", confirmed: "Approved · awaiting execution", rejected: "Rejected",
+    executing: "Executing", executed: "Executed", failed: "Execution failed", expired: "Expired" })[proposal.status];
+}
 export interface ToolActivityItem {
   readonly toolCallId: string;
   readonly name: string;
@@ -36,10 +43,16 @@ function statusFor(call: ConversationToolCallRecord, turn: ConversationTurnRecor
   const proposal = matching.length === 1 ? matching[0] : undefined;
   if (!call.started_at && (!call.result || call.result.is_error) && !proposal?.failure_reason &&
     (proposal?.status === "rejected" || proposal?.status === "expired")) return proposal.status;
+  if (proposal?.status === "confirmed" && !call.started_at && !call.result) {
+    return turn?.status === "failed" || turn?.status === "cancelled" || turn?.status === "completed" && turn.outcome !== "tool_calls"
+      ? "approval_interrupted" : "approved";
+  }
   if (call.result) return call.result.is_error ? "failed" : "completed";
+  if (proposal?.status === "executed") return "completed";
+  if (proposal?.status === "failed") return "failed";
   if (turn?.status === "cancelled") return "cancelled";
   if (turn?.status === "failed" || turn?.status === "completed" && turn.outcome !== "tool_calls") return "incomplete";
-  if (call.started_at) return "running";
+  if (call.started_at || proposal?.status === "executing") return "running";
   if (call.approval_required_at) return "awaiting_approval";
   return "pending";
 }
@@ -74,5 +87,5 @@ export function projectToolActivity(state: ConversationState, turnId?: string): 
     ...(recovered ? { recovered } : {}), ...(failedAttempts ? { failedAttempts } : {}),
     rejected: count("rejected"), expired: count("expired"),
     completed: count("completed"), running: count("running"), pending: count("pending"),
-    awaitingApproval: count("awaiting_approval"), failed: count("failed"), cancelled: count("cancelled"), incomplete: count("incomplete") });
+    awaitingApproval: count("awaiting_approval"), failed: count("failed"), cancelled: count("cancelled"), incomplete: count("incomplete") + count("approval_interrupted") });
 }

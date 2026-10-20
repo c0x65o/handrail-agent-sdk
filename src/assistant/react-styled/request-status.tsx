@@ -4,24 +4,26 @@ import type { ConversationApprovalProposalRecord } from "../conversation/state.j
 import { projectToolActivity } from "../conversation/tool-activity.js";
 
 /** Current request status lives outside the scrolling transcript and action history. */
-export function ConversationRequestStatus({ state, proposals, activity, hasPendingApprovals, savingDecision, onReview }: {
+export function ConversationRequestStatus({ state, proposals, activity, hasPendingApprovals, savingDecision, observationError, onReview }: {
   readonly state: ConversationPresentationState;
   readonly proposals: readonly ConversationApprovalProposalRecord[];
   readonly activity: ConversationActivityRecord | undefined;
   readonly hasPendingApprovals: boolean;
   readonly savingDecision: boolean;
+  readonly observationError?: string | undefined;
   readonly onReview?: (() => void) | undefined;
 }) {
   const turn = state.turns.find(item => item.turn_id === state.active_turn_id) ?? state.turns.at(-1);
-  const tools = projectToolActivity(state);
+  const tools = projectToolActivity({ ...state, approval_proposals: proposals });
   const pending = proposals.filter(proposal => proposal.status === "pending");
   const decisions = proposals.filter(proposal => proposal.turn_id === turn?.turn_id);
   const decided = decisions.length > 0 && decisions.every(proposal => proposal.status !== "pending");
-  const waiting = pending.length > 0 || hasPendingApprovals || turn?.status === "waiting_for_approval" && !decided;
+  const waiting = pending.length > 0 || hasPendingApprovals && (!decided || state.partial) || turn?.status === "waiting_for_approval" && !decided;
   const executing = decisions.some(proposal => proposal.status === "executing" || proposal.status === "confirmed"
     && tools.items.some(tool => tool.toolCallId === proposal.tool_call_id && tool.status === "running"));
-  const continuing = decisions.some(proposal => proposal.status === "confirmed")
-    || turn?.status === "waiting_for_approval" && decided || turn?.status === "completed" && turn.outcome === "tool_calls";
+  const approved = decisions.some(proposal => proposal.status === "confirmed");
+  const continuing = approved || turn?.status === "waiting_for_approval" && decided
+    || turn?.status === "completed" && turn.outcome === "tool_calls";
   const remoteRunning = activity?.turnStatus === "running" && (!turn || activity.turnId !== undefined && activity.turnId !== turn.turn_id);
   const terminal = turn?.status === "failed" || turn?.status === "cancelled" || turn?.status === "completed" && turn.outcome !== "tool_calls";
   const writing = state.messages.some(message => message.role === "assistant" && message.turn_id === turn?.turn_id
@@ -30,25 +32,34 @@ export function ConversationRequestStatus({ state, proposals, activity, hasPendi
   let title: string, detail: string;
   if (savingDecision) {
     phase = "saving"; title = "Saving approval decision…"; detail = "Please wait for confirmation.";
+  } else if (turn?.status === "failed" || !terminal && activity?.turnStatus === "error" && activity.turnId === turn?.turn_id) {
+    phase = "attention"; title = "Request failed"; detail = turn?.error?.message ?? "Review the error in this conversation.";
+  } else if (observationError && !terminal) {
+    phase = "attention"; title = "Request status unavailable";
+    detail = "The connection failed. Saved approvals are retained; execution has not been confirmed.";
   } else if (waiting && !terminal) {
     phase = "waiting"; title = "Waiting for approval";
     detail = pending.length > 0 && !state.partial
       ? `${pending.length} ${pending.length === 1 ? "action needs" : "actions need"} your review.`
       : "There are actions that need your review.";
+  } else if (!terminal && approved && !executing && !tools.running) {
+    phase = "waiting"; title = "Approved · awaiting execution";
+    detail = "Your approval is saved. Execution has not been confirmed.";
   } else if (!terminal && turn?.remote_may_still_be_running && !state.active_turn_id && !executing && !continuing) {
     phase = "working"; title = "Checking request status…"; detail = "The assistant may still be working.";
-  } else if (remoteRunning || !terminal && (state.active_turn_id || executing || continuing
+  } else if (!terminal && (remoteRunning || state.active_turn_id || executing || continuing
     || turn?.status === "running" || turn?.status === "queued" || turn?.status === "waiting_for_tool_result")) {
     phase = "working";
     title = remoteRunning ? "Working…" : executing ? "Running approved changes…"
       : tools.running || tools.pending || turn?.status === "waiting_for_tool_result" ? "Working…"
-        : continuing ? "Continuing…" : writing ? "Writing response…" : turn?.status === "queued" ? "Queued…" : "Thinking…";
+        : continuing ? "Waiting to resume" : writing ? "Writing response…" : turn?.status === "queued" ? "Queued…" : "Thinking…";
+    if (title === "Waiting to resume") phase = "waiting";
     const progress = activity?.progress;
     detail = activity?.turnStatus === "running" && activity.summary
       ? `${activity.summary}${progress ? ` (${progress.completed}/${progress.total}${progress.unit ? ` ${progress.unit}` : ""})` : ""}`
-      : title === "Queued…" ? "Waiting to start." : title === "Continuing…" ? "Waiting for the assistant to resume."
+      : title === "Queued…" ? "Waiting to start." : title === "Waiting to resume" ? "The request has not finished."
         : "The request is still in progress.";
-  } else if (turn?.status === "failed" || activity?.turnStatus === "error") {
+  } else if (!terminal && activity?.turnStatus === "error") {
     phase = "attention"; title = "Request failed"; detail = "Review the error in this conversation.";
   } else if (turn?.status === "cancelled") {
     phase = "attention";
@@ -58,7 +69,7 @@ export function ConversationRequestStatus({ state, proposals, activity, hasPendi
           : turn.cancellation_reason === "runtime_shutdown" ? "Runtime shut down" : "Request cancelled";
     detail = "Review any changes that already ran.";
   } else if (turn?.status === "completed" || activity?.turnStatus === "completed") {
-    phase = tools.failed || tools.incomplete ? "attention" : "complete";
+    phase = tools.failed || tools.incomplete || approved || executing || pending.length ? "attention" : "complete";
     title = phase === "attention" ? "Finished · some actions need attention" : "Request complete";
     detail = "The assistant has finished responding.";
   } else return null;
@@ -68,7 +79,7 @@ export function ConversationRequestStatus({ state, proposals, activity, hasPendi
         : phase === "complete" ? "✓" : "!"}</span>
       <span><strong>{title}</strong><span className="hr-chat__request-detail">{detail}</span></span>
     </div>
-    {waiting && !terminal && !savingDecision && onReview && <button type="button" onClick={onReview}>Review next</button>}
+    {waiting && !terminal && !observationError && !savingDecision && onReview && <button type="button" onClick={onReview}>Review next</button>}
   </section>;
 }
 

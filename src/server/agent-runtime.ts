@@ -172,7 +172,8 @@ export interface AgentRuntimeLimits {
 }
 export type AgentRuntimeEvent = { readonly kind: 'model_progress' | 'tool_completed' | 'checkpoint' | 'waiting' | 'succeeded' }
   | { readonly kind: 'error'; readonly code: 'execution_failed' | 'preparation_failed' | 'limit_exceeded' | 'stopped' | 'lease_lost' | 'not_authorized' | 'invalid_checkpoint'
-      | `hosted_${HostedSessionError['code']}` | 'provider_request_failed'; readonly providerStatus?: number }
+      | `hosted_${HostedSessionError['code']}` | 'provider_request_failed'; readonly providerStatus?: number;
+      readonly jobId?: string; readonly correlationRef?: string; readonly providerSessionId?: string; readonly providerTurnId?: string }
   | { readonly kind: 'error'; readonly code: 'provider_turn_failed'; readonly providerStatus?: never; readonly providerFailureCode: ProviderFailureCode;
       readonly jobId: string; readonly correlationRef: string; readonly providerSessionId: string; readonly providerTurnId: string }
   | { readonly kind: 'usage'; readonly usage: AgentUsage };
@@ -745,9 +746,12 @@ export function createAgentRuntime(deps: {
         : error instanceof Halt ? error.code
         : error instanceof HostedSessionError ? `hosted_${error.code}` as const
         : error instanceof APIError ? 'provider_request_failed' : 'execution_failed';
-      // Only a fixed SDK classification and HTTP status leave private custody.
+      // Only fixed classifications, HTTP status and opaque correlation IDs leave private custody.
       // Provider messages, bodies, headers and tool arguments may contain secrets.
-      emit({ kind: 'error', code, ...(error instanceof APIError && error.status !== undefined ? { providerStatus: error.status } : {}) });
+      emit({ kind: 'error', code, jobId: identity.jobId, correlationRef: identity.origin.correlationRef,
+        ...(record?.hosted?.session.sessionId ? { providerSessionId: record.hosted.session.sessionId } : {}),
+        ...(record?.hosted?.turn.turnId ? { providerTurnId: record.hosted.turn.turnId } : {}),
+        ...(error instanceof APIError && error.status !== undefined ? { providerStatus: error.status } : {}) });
       if (error instanceof StoreFailure) return { ok: false, code: error.code };
       if (!fence) return { ok: false, code: 'not_authorized' };
       return { ok: true, value: controller.signal.aborted || stopped ? 'stopped' : 'retryable' };

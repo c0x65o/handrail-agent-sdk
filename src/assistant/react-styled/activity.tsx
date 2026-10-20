@@ -4,7 +4,7 @@ import type { ConversationActivityGroup } from "../conversation/timeline.js";
 import { projectToolActivity, type ToolActivitySnapshot } from "../conversation/tool-activity.js";
 import { structuredDetailLabel } from "../react/structured-details.js";
 
-const labels = { pending: "Queued", running: "Running", awaiting_approval: "Waiting for approval",
+const labels = { pending: "Queued", running: "Running", awaiting_approval: "Waiting for approval", approved: "Approved · awaiting execution", approval_interrupted: "Approved · execution interrupted",
   rejected: "Rejected", expired: "Expired", completed: "Completed", failed: "Failed", cancelled: "Stopped", incomplete: "No result recorded" };
 
 /** Inline action history; live request status belongs in the fixed status strip. */

@@ -13,7 +13,7 @@ export interface ToolActivityProps {
   readonly children?: (activity: ToolActivitySnapshot) => ReactNode;
 }
 const labels: Record<ToolActivityStatus, string> = { pending: "Pending", running: "Running",
-  awaiting_approval: "Waiting for approval", completed: "Completed", failed: "Failed",
+  awaiting_approval: "Waiting for approval", approved: "Approved · awaiting execution", approval_interrupted: "Approved · execution interrupted", completed: "Completed", failed: "Failed",
   rejected: "Rejected", expired: "Expired", cancelled: "Cancelled", incomplete: "No result recorded" };
 
 /** Optional unstyled details panel backed by canonical tool lifecycle evidence. */

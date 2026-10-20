@@ -1,3 +1,5 @@
+import { createApplicationTurnTransport } from "../../src/assistant/transports/application-turn.js";
+import { createDurableApplicationTransport, InMemoryDurableApplicationTurnStore } from "../../src/assistant/transports/durable.js";
 import { describe, expect, it, vi } from "vitest";
 import { createApplicationGatewayDisplayHistory } from "../../src/assistant/transports/application-gateway.js";
 import {
@@ -442,4 +444,48 @@ it.each([401, 403, 429])("normalizes plain HTTP %s and Retry-After for starts an
   const history = createApplicationGatewayDisplayHistory({ baseUrl: "https://app.test", fetch });
   await expect(history.control({ conversationId: "chat" })).rejects.toMatchObject({ transportCode: expected.code,
     retryable: expected.retryable, retryAfterMs: expected.retryAfterMs });
+});
+
+
+it("retains the original execution after a gateway timeout hides admission, across restart and repeated retry", async () => {
+  const store = new InMemoryDurableApplicationTurnStore<string, Event>();
+  const effect = vi.fn();
+  const checkpoint = { lastAppliedEventId: null, lastAppliedCursor: null, lastAppliedRevision: null };
+  const make = (workerId: string) => createDurableApplicationTransport({ store, workerId, pollMilliseconds: 25,
+    requestCodec: { encode: (value: string) => value, decode: value => value, fingerprint: () => "reviewed-input" },
+    checkpointForEvent: point, delegate: createApplicationTurnTransport<Event, string>({ async execute(request) {
+      expect(request).toBe("original reviewed intent"); effect(); return { status: "completed", checkpoint };
+    } }) });
+  let worker = make("before-timeout");
+  const gateway = () => createApplicationGateway({ transport: worker,
+    authorize: () => ({ principalId: "owner" }), checkpointForEvent: point });
+  let server = gateway(), loseReply = true;
+  const fetch: typeof globalThis.fetch = async (url, init) => {
+    const response = await server.handle(new Request(url, init));
+    if (loseReply) {
+      loseReply = false;
+      // Server admitted and settled the original work; a proxy loses that acknowledgement.
+      await response.text();
+      return new Response("Gateway timeout", { status: 504 });
+    }
+    return response;
+  };
+  const client = createApplicationGatewayTransport<Event, string>({ baseUrl: "https://app.test/ai", fetch });
+  const input = { conversationId: "timeout-chat", conversationTurnId: "original-turn" as never,
+    mutationId: "original-message", idempotencyKey: "original-admission", request: "original reviewed intent" };
+  try {
+    expect(await client.startTurn(input)).toMatchObject({ ok: false, error: { retryable: true } });
+    expect(effect).toHaveBeenCalledOnce();
+    await worker.stopWorkers(); worker = make("after-timeout"); server = gateway();
+    for (let index = 0; index < 3; index++) {
+      const result = await client.startTurn(input);
+      if (!result.ok) throw new Error(result.error.message);
+      expect(result.value.turnId).toBe(input.conversationTurnId);
+      for await (const event of result.value.observation.events) { void event; }
+      expect((await result.value.observation.result).status).toBe("completed");
+    }
+    expect(effect).toHaveBeenCalledOnce();
+    expect((await store.load(input.conversationId, input.conversationTurnId))!.record)
+      .toMatchObject({ request: input.request, mutationId: input.mutationId, idempotencyKey: input.idempotencyKey, attempt: 1 });
+  } finally { await worker.stopWorkers(); }
 });

@@ -47,6 +47,8 @@ export interface DurableApplicationTurnRecord<TStoredRequest = unknown, TEvent =
   readonly attempt: number;
   /** Human decisions restart execution without spending crash recovery attempts. */
   readonly approvalResumes?: number;
+  /** Canonical saved decisions already handed to this turn; retained across restart. */
+  readonly approvalResumeFingerprint?: string;
   /** Authenticated mid-turn preference. Original request/fingerprint remain immutable. */
   readonly approvalPreference?: {
     readonly mode: "required" | "automatic";
@@ -158,8 +160,10 @@ export interface DurableApplicationTransport<TEvent, TRequest> extends Conversat
   readonly activeWorkerCount: number;
   /** Trusted caller must first verify this turn was canonically admitted and authorized. */
   cancelTurnBeforeStart(input: CancelTurnInput): Promise<TransportResult<AuthoritativeCancelTurnResult>>;
-  /** Trusted caller must authorize the decision and canonically admit this resumption. */
-  resumeApprovalTurn(conversationId: string, turnId: string, options?: { readonly recovery?: boolean; readonly signal?: AbortSignal }):
+  /** Trusted caller must authorize the decision and canonically admit this resumption.
+   * Automatic dispatch supplies the canonical decision fingerprint so repeated
+   * observations of the same decision cannot start another execution. */
+  resumeApprovalTurn(conversationId: string, turnId: string, options?: { readonly recovery?: boolean; readonly signal?: AbortSignal; readonly decisionFingerprint?: string }):
     Promise<TransportResult<{ readonly status: "started" | "already_running" | "terminal" | "deferred" }>>;
   recoverTurn(conversationId: string, turnId: string): Promise<TransportResult<{ readonly status: "started" | "already_running" | "terminal" | "deferred" }>>;
   /** One bounded discovery batch. A scheduler can yield between pages and
@@ -765,6 +769,7 @@ export function createDurableApplicationTransport<TEvent, TRequest, TStoredReque
       try {
         if (workersStopped) return safeFailure("unavailable", "The durable worker is draining.", true);
         identifier(conversationId, "conversationId"); identifier(turnId, "turnId");
+        if (recovery?.decisionFingerprint !== undefined) identifier(recovery.decisionFingerprint, "decisionFingerprint");
         if (options.authorizeRecovery && !await options.authorizeRecovery({ conversationId, turnId })) {
           return safeFailure("not_found", "The durable turn was not found.", false);
         }
@@ -776,7 +781,9 @@ export function createDurableApplicationTransport<TEvent, TRequest, TStoredReque
         const resumed = await update(conversationId, turnId, record => {
           recovery?.signal?.throwIfAborted();
           if (record.status !== "waiting_for_approval" || record.cancellation !== null) return null;
-          return { ...record, status: "pending", terminal: null, lease: null,
+          if (recovery?.decisionFingerprint !== undefined &&
+            record.approvalResumeFingerprint === recovery.decisionFingerprint) return null;
+          return { ...record, ...(recovery?.decisionFingerprint === undefined ? {} : { approvalResumeFingerprint: recovery.decisionFingerprint }), status: "pending", terminal: null, lease: null,
             approvalResumes: (record.approvalResumes ?? 0) + 1, updatedAt: timestamp(now()) };
         });
         if (!resumed) return safeFailure("not_found", "The durable turn was not found.", false);
