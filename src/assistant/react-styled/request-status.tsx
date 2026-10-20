@@ -37,6 +37,9 @@ export function ConversationRequestStatus({ state, proposals, activity, hasPendi
   } else if (observationError && !terminal) {
     phase = "attention"; title = "Request status unavailable";
     detail = "The connection failed. Saved approvals are retained; execution has not been confirmed.";
+  } else if (tools.items.some(tool => tool.status === "reconciliation_required")) {
+    phase = "attention"; title = "Execution needs reconciliation";
+    detail = "Saved execution records disagree. The outcome must be checked before continuing.";
   } else if (waiting && !terminal) {
     phase = "waiting"; title = "Waiting for approval";
     detail = pending.length > 0 && !state.partial

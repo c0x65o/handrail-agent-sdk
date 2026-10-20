@@ -89,6 +89,14 @@ and authorized live acceptance establish adoption and runtime delivery.
 
 ## Saved approval continuation
 
+If an exact saved approval reports execution but its matching tool result is an
+error, the shared action projection, approval label and request footer report
+`Execution needs reconciliation`. Neither record alone establishes clean
+completion or permission to repeat the effect. Hosts with custom approval cards
+should use `approvalStatusLabel(proposal, state)` so their cards agree with the
+shared activity and footer. This is presentation of conflicting receipts, not a
+new execution or recovery authority.
+
 Automatic approval continuation records a fingerprint of the matching proposal
 IDs, saved versions and statuses in the existing durable turn, atomically with
 its pending transition. Repeated settlement, recovery scans and reconnects cannot

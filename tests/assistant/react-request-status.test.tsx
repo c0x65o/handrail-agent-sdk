@@ -29,6 +29,24 @@ function waiting() {
 }
 const current = () => screen.getByRole("region", { name: "Current request" });
 
+it.each(["waiting_for_approval", "completed", "failed"] as const)("keeps conflicting execution receipts truthful across list, card and %s footer", status => {
+  let state = advance(waiting(),
+    { type: "tool_call.requested", turn_id: "turn", tool_call_id: "one", name: "update_device", arguments: {} },
+    { type: "tool_call.started", turn_id: "turn", tool_call_id: "one" },
+    { type: "tool_call.result_recorded", turn_id: "turn", tool_call_id: "one", content: [{ type: "text", text: "Receipt unavailable" }], is_error: true });
+  if (status === "completed") state = advance(state, { type: "turn.completed", turn_id: "turn", outcome: "stop", output_message_ids: [] });
+  if (status === "failed") state = advance(state, { type: "turn.failed", turn_id: "turn", error: { code: "internal_error", message: "Stopped", retryable: true } });
+  const view = render(<StyledChatPreset includeStyles={false} transcription={false} state={state} proposals={[proposal("one", "executed")]} toolActivity="expanded"/>);
+  expect(view.container.querySelector('[data-tool-status="reconciliation_required"]')).toBeTruthy();
+  expect(current().getAttribute("data-phase")).toBe("attention");
+  expect(current().textContent).toContain(status === "failed" ? "Request failed" : "Execution needs reconciliation");
+  fireEvent.click(screen.getByText("Action history (1)", { exact: true }));
+  expect(view.container.querySelector('.hr-chat__approval')?.textContent).toContain("Execution needs reconciliation");
+  expect(screen.queryByText("Executed", { exact: true })).toBeNull();
+  expect(screen.queryByText("Failed", { exact: true })).toBeNull();
+  expect(screen.queryByRole("button", { name: "Confirm", exact: true })).toBeNull();
+});
+
 it("keeps successive approvals and continuation visible outside the transcript until actual completion", () => {
   let state = waiting();
   const props = { includeStyles: false, transcription: false as const };

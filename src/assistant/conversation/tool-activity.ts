@@ -2,9 +2,11 @@ import type { ConversationPresentationState as ConversationState, ConversationPr
 import type { ConversationApprovalProposalRecord, ConversationToolCallRecord } from "./state.js";
 import { parseToolRecoverySummary, type ToolRecoverySummary } from "../tools/recovery.js";
 
-export type ToolActivityStatus = "pending" | "running" | "approved" | "approval_interrupted" | "awaiting_approval" | "completed" | "failed" | "cancelled" | "incomplete" | "rejected" | "expired";
+export type ToolActivityStatus = "pending" | "running" | "approved" | "approval_interrupted" | "reconciliation_required" | "awaiting_approval" | "completed" | "failed" | "cancelled" | "incomplete" | "rejected" | "expired";
 export function approvalStatusLabel(proposal: ConversationApprovalProposalRecord, state: ConversationState): string {
   const turn = state.turns.find(turn => turn.turn_id === proposal.turn_id);
+  const call = state.tool_calls.find(call => call.turn_id === proposal.turn_id && call.tool_call_id === proposal.tool_call_id && call.name === proposal.tool_name);
+  if (call && statusFor(call, turn, [proposal]) === "reconciliation_required") return "Execution needs reconciliation";
   if (proposal.status === "confirmed" && (turn?.status === "failed" || turn?.status === "cancelled" ||
     turn?.status === "completed" && turn.outcome !== "tool_calls")) return "Approved · execution interrupted";
   return ({ pending: "Review required", confirmed: "Approved · awaiting execution", rejected: "Rejected",
@@ -41,6 +43,9 @@ function statusFor(call: ConversationToolCallRecord, turn: ConversationTurnRecor
   const matching = proposals.filter(proposal => proposal.turn_id === call.turn_id &&
     proposal.tool_call_id === call.tool_call_id && proposal.tool_name === call.name);
   const proposal = matching.length === 1 ? matching[0] : undefined;
+  // A saved execution acknowledgement plus an error result does not prove
+  // either clean completion or no effect. Retain both facts for reconciliation.
+  if (proposal?.status === "executed" && call.result?.is_error) return "reconciliation_required";
   if (!call.started_at && (!call.result || call.result.is_error) && !proposal?.failure_reason &&
     (proposal?.status === "rejected" || proposal?.status === "expired")) return proposal.status;
   if (proposal?.status === "confirmed" && !call.started_at && !call.result) {
@@ -87,5 +92,5 @@ export function projectToolActivity(state: ConversationState, turnId?: string): 
     ...(recovered ? { recovered } : {}), ...(failedAttempts ? { failedAttempts } : {}),
     rejected: count("rejected"), expired: count("expired"),
     completed: count("completed"), running: count("running"), pending: count("pending"),
-    awaitingApproval: count("awaiting_approval"), failed: count("failed"), cancelled: count("cancelled"), incomplete: count("incomplete") + count("approval_interrupted") });
+    awaitingApproval: count("awaiting_approval"), failed: count("failed"), cancelled: count("cancelled"), incomplete: count("incomplete") + count("approval_interrupted") + count("reconciliation_required") });
 }
