@@ -179,3 +179,8 @@ authorizing inspection of that exact persisted identity. It works after task
 completion and returns `{total, events}`; an empty history is missing evidence,
 not proof no input occurred. Observer/storage failures do not grant authority or
 block sign-in. Do not expose this server reader directly to model-selected scopes.
+
+## Multi-step logins
+
+By default a credential provider gets one automatic attempt per job and website, then the private form opens. Set `credentialFill: 'each_step'` for logins that ask for the email and password on separate screens. Each set of credentials can be filled twice. After that the sign-in is cancelled, and no form is opened for those credentials. A request the provider declines, such as a verification code, still uses the private form.
+

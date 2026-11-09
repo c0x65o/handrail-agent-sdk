@@ -46,7 +46,7 @@ async function setup(t, flags = { vault: true, browser: false }, handoff = false
   const create = () => createManagedAgentCapabilities({ database: harness.pool, schema: harness.schema, keys, baseUrl, features: flags,
     authenticate: async () => signedIn ? scope : null,
     restoreRuntime: hooks.lazy ? async original => { assert.deepEqual(original,identity); capabilities.createRuntime(deps); } : undefined,
-    onAnswered: hooks.onAnswered, onPrivateInput: hooks.onPrivateInput, credentialProvider: hooks.credentialProvider });
+    onAnswered: hooks.onAnswered, onPrivateInput: hooks.onPrivateInput, credentialProvider: hooks.credentialProvider, credentialFill: hooks.credentialFill });
   let capabilities = create(), deps;
   t.after(() => capabilities.close());
   const provider = hooks.model || model(handoff);
@@ -209,6 +209,38 @@ test('optional project credentials satisfy the original private request without 
   const interaction=(await store.list(identity.host,'interaction:'))[0].value;
   assert.equal(interaction.response.request_id,'login-original');
   assert.deepEqual(interaction.response.response.fields,[{field_id:'email',value:username},{field_id:'pass',value:password}]);
+});
+
+const stepUser=randomBytes(8).toString('hex'),stepPass=randomBytes(12).toString('hex');
+function loginSteps(...steps){
+ const requests=[];
+ return {requests,async *getStreamedResponse(request){
+  requests.push(request);const step=steps[requests.length-1];
+  yield {type:'response_done',response:{output:step?[{type:'computer_use_approval_request',request_id:`step-${requests.length}`,request:{...privateLogin,fields:[{id:step,label:step,type:step==='email'?'text':'password',required:true}],options:[]}}]:
+   [{type:'message',role:'assistant',status:'completed',content:[{type:'output_text',text:'Finished.'}]}],usage:{inputTokens:1,outputTokens:1,totalTokens:2}}};
+ }};
+}
+const fillStep=calls=>({async select(input){const fieldId=input.request.fields[0].id;return {credentialRef:'saved',revision:'r1',optionId:null,fields:[{fieldId,source:fieldId==='email'?'username':'password'}]};},
+ async resolve(input,selected){calls.push(selected.fields[0].source);return {username:stepUser,password:stepPass};}});
+const responses=async s=>(await managedStore(s.harness.pool,s.harness.schema,s.keys).list(identity.host,'interaction:')).map(r=>r.value.response).sort((a,b)=>a.request_id.localeCompare(b.request_id));
+test('each_step fills every screen of a multi-step login without a private form',async t=>{
+ const calls=[],s=await setup(t,{vault:true,browser:true},false,{model:loginSteps('email','pass'),credentialFill:'each_step',credentialProvider:fillStep(calls)});
+ assert.equal(ok(await s.runtime.wake(identity)),'succeeded');assert.deepEqual(calls,['username','password']);
+ assert.deepEqual((await responses(s)).map(r=>r.response.fields[0].value),[stepUser,stepPass]);
+});
+test('each_step retries a rejected credential once, then cancels instead of opening a form',async t=>{
+ const calls=[],s=await setup(t,{vault:true,browser:true},false,{model:loginSteps('email','pass','pass','pass'),credentialFill:'each_step',credentialProvider:fillStep(calls)});
+ assert.equal(ok(await s.runtime.wake(identity)),'succeeded');assert.deepEqual(calls,['username','password','password']);
+ const all=await responses(s);assert.equal(all.length,4);assert.equal(all.at(-1).response.action,'cancel');
+ assert.equal(JSON.stringify(all.at(-1)).includes(stepPass),false);
+});
+test('each_step still uses the private form for a step the provider declines, such as a code',async t=>{
+ const s=await setup(t,{vault:true,browser:true},false,{model:loginSteps('code'),credentialFill:'each_step',credentialProvider:{select:async()=>null,resolve:async()=>{throw Error('UNEXPECTED');}}});
+ assert.equal(ok(await s.runtime.wake(identity)),'waiting');
+});
+test('the default still makes one automatic attempt per website',async t=>{
+ const calls=[],s=await setup(t,{vault:true,browser:true},false,{model:loginSteps('email','pass'),credentialProvider:fillStep(calls)});
+ assert.equal(ok(await s.runtime.wake(identity)),'waiting');assert.deepEqual(calls,['username']);
 });
 
 for(const reason of ['no_match','revoked','vault_disabled'])test(`project credential ${reason} retains the authenticated private form`,async t=>{

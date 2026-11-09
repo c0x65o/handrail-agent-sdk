@@ -38,6 +38,12 @@ export interface ManagedAgentCapabilitiesOptions {
   readonly onAnswered?: (identity: JobIdentity) => Promise<void>;
   readonly features?: { readonly vault?: boolean; readonly browser?: boolean };
   readonly credentialProvider?: ManagedCredentialProvider;
+  /** `once` (default) tries one automatic fill per job and website, then opens the
+   * private form. `each_step` fills every step of a multi-screen login and, when
+   * the same credentials have already been tried, cancels the sign-in instead of
+   * opening a form for them. Requests the provider declines, such as a verification
+   * code, still use the private form. */
+  readonly credentialFill?: 'once' | 'each_step';
   readonly onPrivateInput?: (event: PrivateInputDiagnostic) => void | Promise<void>;
 }
 type RuntimeOptions = Parameters<typeof createAgentRuntime>[0];
@@ -58,6 +64,8 @@ const unwrap = <T>(r: { ok: true; value: T } | { ok: false; code: string }): T =
 /** Batteries-included SDK service. The application mounts handleRequest and
  * uses createRuntime instead of createAgentRuntime. No app-owned browser, vault
  * store, secure form, grant adapter or tool catalog is required. */
+const MAX_CREDENTIAL_FILLS = 2;
+
 export function createManagedAgentCapabilities(options: ManagedAgentCapabilitiesOptions) {
   const base = new URL(options.baseUrl);
   if (base.protocol !== 'https:' || base.search || base.hash || base.username || base.password || base.pathname.endsWith('/')) throw Error('CAPABILITY_BASE_URL_INVALID');
@@ -275,6 +283,32 @@ export function createManagedAgentCapabilities(options: ManagedAgentCapabilities
         if (!old && flags.vault && options.credentialProvider && action.request.type === 'browser_authentication'
           && action.request.credential_origin) {
           const input = { identity, requestId: action.request_id, request: action.request };
+          if (options.credentialFill === 'each_step') {
+            const selection = await options.credentialProvider.select(input);
+            await authorizeJob(identity);
+            if (selection) {
+              validateCredentialSelection(input, selection);
+              // Counted per set of credentials, so email then password are separate
+              // steps while a rejected password cannot be retried indefinitely.
+              const sources = [...new Set(selection.fields.map(f => f.source))].sort();
+              const attemptKey = `credential-attempt:${createHash('sha256').update(JSON.stringify([identity.jobId, i.url, sources])).digest('hex')}`;
+              const allowed = await store.lock(identity.host, attemptKey, async () => {
+                const prior = await store.get<{count:number}>(identity.host, attemptKey);
+                const count = (prior?.value.count ?? 0) + 1;
+                if (count > MAX_CREDENTIAL_FILLS) return false;
+                await store.put(identity.host, attemptKey, { count }, prior?.version ?? 0);
+                return true;
+              });
+              const values = allowed ? await options.credentialProvider.resolve(input, selection) : null;
+              await authorizeJob(identity);
+              const response = values ? credentialResponse(input, selection, values) : hostedApprovalResponse(action, { action: 'cancel' });
+              await store.put(identity.host, `interaction:${id}`, { ...i, completed: true,
+                ...(values ? { credentialSelection: selection } : {}), response }, 1);
+              await diagnose({ ...i, response }, 'response_saved', 'credential_provider');
+              return response;
+            }
+            return { requirement: requirement(i), notice: hostedApprovalNotice(action, `${base.href}/${id}`, i.followUp) };
+          }
           // A rejected login must return control to the private form, not loop
           // through passwords. Claim once per original job and exact origin,
           // before calling the provider; recovery never creates another attempt.
