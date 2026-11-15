@@ -61,6 +61,13 @@ database driver and build tooling. A host with an existing framework can copy
    branding through its supported theme/slots. Connect shutdown to the host's
    request/worker drain, call `stopAssistant`, then close the database pool.
 
+The database factory handles idle pool connection errors with the fixed
+`database_pool_idle_connection_error` diagnostic, without logging raw errors or
+connection details. PostgreSQL's driver removes the failed connection and opens
+a replacement on demand. Queries interrupted by an outage still fail to their
+caller; the handler does not retry queries or replay writes. Existing apps must
+update their own pool factories; upgrading the SDK does not rewrite host code.
+
 New history needs the schema and a stable trusted tenant/scope. Missing provider
 configuration is separate from authentication or persistence. Do not mask an
 unauthorized or failed history read as an empty conversation list.

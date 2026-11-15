@@ -1,0 +1,12 @@
+{
+  "extends": "../templates/standard-react-node/tsconfig.json",
+  "compilerOptions": {
+    "paths": {
+      "handrail-agent-sdk/assistant/persistence/postgres": ["../dist/assistant/postgres/index.d.ts"]
+    }
+  },
+  "include": [
+    "../templates/standard-react-node/src/assistant/host/database.ts",
+    "assistant/template-database.test.ts"
+  ]
+}
