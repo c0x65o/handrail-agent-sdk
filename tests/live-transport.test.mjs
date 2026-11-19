@@ -38,6 +38,7 @@ async function until(check){for(let i=0;i<100;i++){if(check())return;await new P
 test('uses OpenAI session and sideband clients with server-owned delegation and browser event permissions',async t=>{
   const f=await fixture(t);const transport=await f.start();t.after(()=>transport.dispose());
   const request=f.requests[0];assert.equal(request.path,'/v1/live/sessions');
+  assert.equal(request.body.session.model,'gpt-live-1.1');
   assert.equal(request.body.session.delegation.type,'client');
   assert.deepEqual(request.body.session.client.data_channel.allowed_client_events,['session.close']);
   assert.equal(request.headers['openai-project'],'fixture-project');

@@ -4,7 +4,7 @@ import { SidebandWS } from 'openai/resources/live/sideband/ws';
 import type { InitialItem, SessionConfig } from 'openai/resources/live/live';
 import type { ConnectClientEvent, ConnectServerEvent } from 'openai/resources/live/sideband/sideband';
 
-export const LIVE_MODEL = 'gpt-live-1';
+export const LIVE_MODEL = 'gpt-live-1.1';
 export type LiveServerEvent = ConnectServerEvent;
 export type LiveClientEvent = ConnectClientEvent;
 export type LiveHistoryItem = InitialItem;
