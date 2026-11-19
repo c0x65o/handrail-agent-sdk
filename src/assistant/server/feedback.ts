@@ -61,6 +61,7 @@ export function createFeedbackTools<TContext extends FeedbackContext>(options: F
 }) {
   const kindFor = (name: string) => (Object.keys(FEEDBACK_SUBMIT_TOOLS) as FeedbackKind[]).find(kind => FEEDBACK_SUBMIT_TOOLS[kind] === name);
   const scope = (context: TContext) => `feedback-${digest(JSON.stringify([options.binding, context.tenantId, context.scopeId, context.principalId]))}`;
+  const externalConversation = (context: TContext, conversation: string) => digest(JSON.stringify([scope(context), conversation]));
   const check = async (context: TContext, kind: FeedbackKind, signal: AbortSignal, location?: ApplicationToolExecutionLocation) => {
     signal.throwIfAborted();
     let allowed = false;
@@ -100,7 +101,7 @@ export function createFeedbackTools<TContext extends FeedbackContext>(options: F
     const identity = digest(JSON.stringify([scope(context), location.conversationId, intent, kind]));
     // Identity fields are server-owned and absent from the model-facing schema.
     const payload = JSON.parse(JSON.stringify({ ...args, ...(kind === "bug" ? { event_id: identity }
-      : { idempotency_key: identity, external_conversation_id: digest(JSON.stringify([scope(context), location.conversationId])) }) })) as JsonObject;
+      : { idempotency_key: identity, external_conversation_id: externalConversation(context, location.conversationId) }) })) as JsonObject;
     const frozen: FrozenIntent = { version: 1, kind, conversationId: location.conversationId, identity, payload };
     const key = { tenantId: context.tenantId, kind: "tool_execution" as const, scopeId: scope(context), recordId: identity };
     try { await options.persistence.compareAndSetDocument({ ...key, expectedVersion: null, value: frozen }); }
@@ -157,7 +158,7 @@ export function createFeedbackTools<TContext extends FeedbackContext>(options: F
               await check(current, kind, signal, execution.location);
               if (receipt.kind !== kind || !identifier(receipt.reportId)) throw new TypeError("Invalid saved feedback receipt.");
               await lifecycle?.submitted(current, execution.location.conversationId,
-                digest(JSON.stringify([scope(current), execution.location.conversationId])), receipt);
+                externalConversation(current, execution.location.conversationId), receipt);
               return { kind: receipt.kind, reportId: receipt.reportId };
             } catch (error) {
               if (error instanceof PostgresToolExecutionUncertainError) return failure("feedback_reconciliation_required",
@@ -202,6 +203,7 @@ export function createFeedbackTools<TContext extends FeedbackContext>(options: F
           return failure("feedback_readback_unverified", "Authoritative feedback readback did not verify the saved receipt. Do not redispatch.");
         }
         await check(context, kind, signal, location);
+        await lifecycle?.submitted(context, location.conversationId, externalConversation(context, location.conversationId), receipt);
         return { kind, reportId: receipt.reportId };
       });
     } catch (error) {

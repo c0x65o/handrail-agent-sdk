@@ -186,7 +186,7 @@ export class FeedbackWatches {
       kind: "feedback_command" as const,
       recordId: hash([context.principalId, context.scopeId, conversation, kind, stop, intent]),
     };
-    const { grant, skipRemote } = await this.db.client.transaction(async (tx) => {
+    const { grant, skipRemote, existingState } = await this.db.client.transaction(async (tx) => {
       const db = new PostgresAiPersistence(tx);
       const document = await db.getDocument<Watch>(key.tenantId, key.kind, key.scopeId, key.recordId);
       if (!document) throw new Error("Original report conversation is missing");
@@ -216,7 +216,11 @@ export class FeedbackWatches {
           expectedVersion: null,
           value: { grantId: grant.id, conversationId: conversation, skipRemote },
         });
-      const state = stop ? "stopped" : watch.state === "following" ? "following" : "pending";
+      // A prior start may already have reached Handrail. Only the worker reads
+      // that exact grant to settle it, including a retry under another intent.
+      if (!stop && !inactive && watch.state !== "available")
+        return { grant, skipRemote, existingState: watch.state };
+      const state = stop ? "stopped" : "pending";
       if (state !== watch.state || grant !== watch.grant)
         await db.compareAndSetDocument({
           ...key,
@@ -225,6 +229,7 @@ export class FeedbackWatches {
         });
       return { grant, skipRemote };
     });
+    if (existingState) return { [existingState]: true };
     if (skipRemote) return { stopped: true };
     const response = await call({
       request_id: report,
@@ -239,7 +244,7 @@ export class FeedbackWatches {
       throw new Error("Unverified feedback observation");
     if (!stop) {
       const { doc, watch } = await this.load(context, conversation, kind, report);
-      if (watch.grant.id !== grant.id || ["stopped", "revoked"].includes(watch.state))
+      if (watch.grant.id !== grant.id || Date.parse(grant.expires_at) <= Date.now() || ["stopped", "revoked"].includes(watch.state))
         throw new Error("Follow-up superseded");
       if (watch.state !== "following")
         await this.db.compareAndSetDocument({
@@ -259,7 +264,7 @@ export class FeedbackWatches {
     }>(
       `
       SELECT tenant_id,record_id,version,payload FROM handrail_ai_documents WHERE kind='feedback_watch' AND scope_id=$1
-      AND payload->>'state' IN ('following','unavailable') AND (payload->>'next')::bigint <= $2
+      AND payload->>'state' IN ('pending','following','unavailable') AND (payload->>'next')::bigint <= $2
       AND (payload->'grant'->>'expires_at')::timestamptz > now()
       ORDER BY (payload->>'next')::bigint,tenant_id,record_id LIMIT 8`,
       [this.namespace, Date.now()],
@@ -292,6 +297,7 @@ export class FeedbackWatches {
                   status: string;
                   information_request?: {
                     information_request_id: string;
+                    current_behavior?: string;
                     question: string;
                     options: string[];
                   } | null;
@@ -303,6 +309,7 @@ export class FeedbackWatches {
                 typeof r.status !== "string" ||
                 (q &&
                   (typeof q.question !== "string" ||
+                    (q.current_behavior != null && typeof q.current_behavior !== "string") ||
                     typeof q.information_request_id !== "string" ||
                     !Array.isArray(q.options) ||
                     !q.options.every((x) => typeof x === "string")))
@@ -310,6 +317,7 @@ export class FeedbackWatches {
                 throw new Error("Invalid observation projection");
               text = [
                 `${grant.kind} ${grant.report_id} — ${r.status}`,
+                ...(q?.current_behavior?.trim() ? ["What it does today", q.current_behavior] : []),
                 ...(q ? ["Needs your input", q.question, ...q.options] : []),
               ].join("\n");
               digest = hash([text, q?.information_request_id]);
@@ -341,9 +349,15 @@ export class FeedbackWatches {
           );
         }
       } catch (error) {
-        state = [401, 403, 404, 410].includes(Number((error as { status?: number })?.status))
-          ? "revoked"
-          : "unavailable";
+        const failure = error as { status?: number; code?: string } | null;
+        if (watch.state === "pending") {
+          // An absent grant can return the same 403 as a mismatched binding.
+          // Neither proves creation or revocation. Keep its identity until expiry.
+          state = failure?.status === 410 || failure?.code === "feedback_observation_identity_revoked"
+            ? "revoked" : "pending";
+        } else {
+          state = [401, 403, 404, 410].includes(Number(failure?.status)) ? "revoked" : "unavailable";
+        }
       }
       signal.throwIfAborted();
       try {
@@ -355,7 +369,7 @@ export class FeedbackWatches {
               if (!(await this.authorize(watch, timeout, tx))) state = "revoked";
               timeout.throwIfAborted();
             } catch {
-              state = "unavailable";
+              state = watch.state === "pending" ? "pending" : "unavailable";
             }
           }
           signal.throwIfAborted();

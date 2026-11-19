@@ -42,6 +42,9 @@ for (const kind of ["bug", "enhancement"])
     let open = question,
       grant,
       saved,
+      starts = 0,
+      loseAck = true,
+      delayAck,
       observationStatus = 200,
       reads = 0,
       posted = 0,
@@ -62,7 +65,10 @@ for (const kind of ["bug", "enhancement"])
       authorize: async (c, k, op, s, conversation) =>
         c.principalId === "user" && (!conversation || conversation === "chat"),
       authorizeDelivery: async (_watch, _signal, tx) => !tx || authorizedAtCommit,
-      resolveIntent: async (c, l, k, op) => (consent ? op + intentVersion : ""),
+      resolveIntent: async (_context, _location, _kind, op) => {
+        if (!consent) return "";
+        return op === "submit" ? "original-submit" : op + intentVersion;
+      },
       reporters: async () => ({
         bug: { apiBaseUrl: "https://fixture.invalid/api", reportToken: "private-token" },
         enhancement: {
@@ -98,12 +104,14 @@ for (const kind of ["bug", "enhancement"])
             });
           if (p.endsWith("/read")) {
             reads++;
+            assert.equal(p.split("/").at(-2), grant.id);
             assert.deepEqual(b.binding, grant.binding);
             return json({ contract_version: "v1", observation: grant, record: record() }, observationStatus);
           }
           if (p.endsWith("/cancel"))
             return json({ contract_version: "v1", observation: { ...grant, cancelled: true } });
           if (p.endsWith("/observations")) {
+            starts++;
             grant = {
               id: b.id,
               report_id: report,
@@ -112,7 +120,10 @@ for (const kind of ["bug", "enhancement"])
               expires_at: b.expires_at,
               cancelled: false,
             };
-            return json({ contract_version: "v1", observation: grant });
+            if (loseAck) throw new Error("Fixture lost the response after acceptance");
+            const acknowledgement = json({ contract_version: "v1", observation: grant });
+            await delayAck?.();
+            return acknowledgement;
           }
           if (p.endsWith("/answer") || p.endsWith("/clarifications")) {
             const id = b.information_request_id ?? p.split("/").at(-2);
@@ -178,10 +189,20 @@ for (const kind of ["bug", "enhancement"])
       await assert.rejects(call("lookup", { request_id: report }, { definition }));
     }
     const input = { title: "Offline fixture", description: "Fixture only" };
-    assert.equal((await call("submit", input)).reportId, report);
-    await call("submit", input);
+    const status = () => feedback.status(context, "chat", kind, report, signal);
+    await pg.exec(`
+      CREATE FUNCTION fixture_fail() RETURNS trigger AS $$BEGIN RAISE EXCEPTION 'fixture failure'; END$$ LANGUAGE plpgsql;
+      CREATE TRIGGER fail_remember BEFORE INSERT ON handrail_ai_documents FOR EACH ROW
+        WHEN (NEW.kind='feedback_watch') EXECUTE FUNCTION fixture_fail()`);
+    await assert.rejects(call("submit", input), /may have been accepted/);
     assert.equal(posted, 1);
-    assert.deepEqual(await feedback.reconcile(context,location,kind,signal),{kind,reportId:report});
+    await assert.rejects(status(), /original report conversation/);
+    await pg.exec("DROP TRIGGER fail_remember ON handrail_ai_documents");
+    feedback = createHandrailFeedback(host);
+    for (let i = 0; i < 2; i++)
+      assert.deepEqual(await feedback.reconcile(context, location, kind, signal), { kind, reportId: report });
+    assert.equal((await status()).state, "available");
+    assert.equal(posted, 1, "repair reads the canonical receipt without resubmitting");
     assert.ok((await call("list")).items.length);
     assert.equal((await call("lookup", { request_id: report })).id, report);
     for (const c of [
@@ -195,7 +216,22 @@ for (const kind of ["bug", "enhancement"])
     consent = false;
     await assert.rejects(call("follow_up", follow));
     consent = true;
-    await call("follow_up", follow);
+    await assert.rejects(call("follow_up", follow));
+    assert.equal((await status()).state, "pending");
+    assert.equal(starts, 1);
+    await call("stop_follow_up", { request_id: report });
+    const cancelledGrant = grant.id;
+    feedback = createHandrailFeedback(host);
+    await feedback.refresh(signal);
+    assert.equal((await status()).state, "stopped");
+    assert.equal(reads, 0);
+    await assert.rejects(call("follow_up", follow), /superseded/);
+    intentVersion++;
+    await assert.rejects(call("follow_up", follow)); // a new explicit opt-in, accepted remotely
+    assert.notEqual(grant.id, cancelledGrant);
+    assert.deepEqual(await call("follow_up", follow), { pending: true });
+    assert.equal(starts, 2);
+    loseAck = false;
     feedback = createHandrailFeedback(host); // Same durable database, fresh worker.
     const due = () =>
       pg.query(
@@ -203,11 +239,18 @@ for (const kind of ["bug", "enhancement"])
       );
     const notices = async () =>
       (await pg.query("SELECT payload FROM handrail_ai_events ORDER BY revision")).rows;
-    const status = () => feedback.status(context, "chat", kind, report, signal);
-    assert.equal((await status()).state, "stale");
+    for (const code of [503, 403, 404]) {
+      observationStatus = code;
+      await due();
+      await feedback.refresh(signal);
+      assert.equal((await status()).state, "pending");
+      assert.equal((await notices()).length, 0);
+    }
+    observationStatus = 200;
+    await due();
     // A failed event append must also roll back the receipt and unread index.
     await pg.exec(
-      "CREATE FUNCTION fixture_fail() RETURNS trigger AS $$BEGIN RAISE EXCEPTION 'fixture failure'; END$$ LANGUAGE plpgsql; CREATE TRIGGER fixture_fail BEFORE INSERT ON handrail_ai_events FOR EACH ROW EXECUTE FUNCTION fixture_fail()",
+      "CREATE TRIGGER fixture_fail BEFORE INSERT ON handrail_ai_events FOR EACH ROW EXECUTE FUNCTION fixture_fail()",
     );
     await assert.rejects(feedback.refresh(signal));
     assert.equal((await status()).lastSuccessfulRefresh, null);
@@ -225,10 +268,20 @@ for (const kind of ["bug", "enhancement"])
       true,
     );
     assert.match((await notices())[0].payload.payload.content[0].text, /Which view\?\nOrder\nInvoice/);
+    assert.equal(starts, 2, "recovery used only reads");
+    await call("submit", input);
+    assert.equal(posted, 1);
+    assert.doesNotMatch((await notices())[0].payload.payload.content[0].text, /What it does today/);
+    question.current_behavior = "Both views currently show open orders.";
+    await due();
+    await feedback.refresh(signal);
+    assert.equal((await notices()).length, 2, "only current behavior changed");
+    assert.match((await notices())[1].payload.payload.content[0].text,
+      /What it does today\nBoth views currently show open orders\.\nNeeds your input\nWhich view\?\nOrder\nInvoice/);
     open = { ...question, information_request_id: randomUUID() };
     await due();
     await feedback.refresh(signal);
-    assert.equal((await notices()).length, 2);
+    assert.equal((await notices()).length, 3);
     const answer = {
       request_id: report,
       information_request_id: question.information_request_id,
@@ -306,6 +359,30 @@ for (const kind of ["bug", "enhancement"])
     assert.equal((await status()).state, "revoked");
     assert.equal((await notices()).length, before);
     authorizedAtCommit = true;
+    // An old acknowledgement may arrive after stop AND renewal. Only the
+    // exact renewed grant's delegated read can promote its pending record.
+    let accepted, release;
+    const acceptedRemotely = new Promise(resolve => { accepted = resolve; });
+    const responseGate = new Promise(resolve => { release = resolve; });
+    delayAck = () => { accepted(); return responseGate; };
+    intentVersion++;
+    const delayedStart = call("follow_up", follow);
+    try {
+      await acceptedRemotely;
+      const delayedId = grant.id;
+      await call("stop_follow_up", { request_id: report });
+      intentVersion++;
+      loseAck = true;
+      await assert.rejects(call("follow_up", follow));
+      assert.notEqual(grant.id, delayedId);
+    } finally {
+      release();
+    }
+    await assert.rejects(delayedStart, /superseded/);
+    assert.equal((await status()).state, "pending");
+    await feedback.refresh(signal);
+    assert.equal((await status()).state, "following");
+
     // Legacy BBD/Spartan grants carry the literal local conversation ID.
     grant = { ...grant, id: randomUUID(), binding: { ...grant.binding, conversation_id: "legacy" } };
     await feedback.adoptLegacyGrant(context, "legacy", grant, signal);

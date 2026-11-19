@@ -46,11 +46,12 @@ export function qualificationFixture(overrides = {}) {
       ?? init.headers["x-handrail-application-session"]);
     if (!controls.authorized) return json({ code: "not_authorized" }, 403);
     if (url.endsWith("/discovery")) return json({ contract_version: "v1",
-      capability: { id: "fixture-capability", project_id: "fixture-project", service_env_id: "fixture-runtime" },
+      capability: { id: "fixture-capability", project_id: "fixture-project", service_env_id: "fixture-runtime", environment: "dev" },
       principal: { authenticated: true, authentication_method: "known_users_direct_session" },
-      enhancement_reporting: { enabled: true } });
+      reporter_observations: { available: true },
+      enhancement_reporting: { enabled: true, workflow: { clarification_response: true } } });
     if (new URL(url).pathname.endsWith("/policy")) return json({ schema_version: 1,
-      project_id: "fixture-project", environment: "dev", reporter: { identity_verified: true } });
+      project_id: "fixture-project", environment: "dev", reporter: { identity_verified: true }, reporter_observations: { available: true } });
     if (init.method === "POST") {
       const body = JSON.parse(init.body ?? "{}");
       observations.posts.push(body);
