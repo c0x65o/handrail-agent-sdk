@@ -158,7 +158,7 @@ function shape(v: unknown, required: Record<string, Check>, optional: Record<str
     if (typeof key !== 'string') return false;
     const d = descriptors[key];
     const check = Object.hasOwn(required, key) ? required[key] : Object.hasOwn(optional, key) ? optional[key] : undefined;
-    return !!check && !!d.enumerable && 'value' in d && check(d.value);
+    return !!check && !!d?.enumerable && 'value' in d && check(d.value);
   }) && Object.keys(required).every(key => Object.hasOwn(descriptors, key));
 }
 function list(v: unknown, check: Check): v is unknown[] {

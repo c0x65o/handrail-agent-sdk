@@ -19,6 +19,9 @@ export async function clearPostgresConversation(input: {
   // Hide only calls admitted before this reset. Keep their authority, effects
   // and receipts intact, including for direct authorized audit reads.
   for (const tenant of new Set([input.tenantId, ...(input.relatedTenantIds ?? [])])) {
+    await input.client.query(`UPDATE handrail_ai_documents SET version=version+1,
+      payload=jsonb_set(payload,'{state}','"stopped"') WHERE tenant_id=$1 AND kind='feedback_watch'
+      AND payload->>'conversationId'=$2`, [tenant,input.conversationId]);
     await input.client.query(`INSERT INTO handrail_ai_documents (tenant_id,kind,scope_id,record_id,version,payload)
       SELECT tenant_id,'checkpoint',$2,'cleared-call:' || record_id,1,'{}'::jsonb
       FROM handrail_ai_documents WHERE tenant_id=$1 AND kind='realtime_call' AND payload->>'conversationId'=$2

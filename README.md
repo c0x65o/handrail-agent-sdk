@@ -26,6 +26,7 @@ The source consolidation is in progress. See [migration status](docs/assistant-c
 - `handrail-agent-sdk/server/assistance`: durable schedules, observed conditions and deduplicated inbox facts.
 - `handrail-agent-sdk/server/assistance/postgres`: reusable host-owned SQL storage adapter.
 - `handrail-agent-sdk/server/assistance/notifications`: delivery through the existing effect ledger.
+- [Handrail Feedback](docs/handrail-feedback.md): optional server-side assistant tools and conversation follow-up for owned bugs and enhancements.
 - `handrail-agent-sdk/server/handrail-feedback`: canonical reporter/MCP v2 submission and verified-readiness observation.
 
 The runtime uses OpenAI-hosted Agents API sessions, native function tools and event streaming.

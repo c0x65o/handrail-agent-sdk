@@ -16,6 +16,7 @@
     "examples/headless.mts",
     "docs/agent-runtime.md",
     "docs/assistance.md",
+    "docs/handrail-feedback.md",
     "examples/postgres-application.mts",
     "docs/postgres-runtime.md",
     "docs/continuous-conversation.md",
@@ -245,6 +246,10 @@
       "node": {
         "import": "./dist/server/live-session.js"
       }
+    },
+    "./assistant/server/feedback": {
+      "types": "./dist/assistant/server/handrail-feedback.d.ts",
+      "import": "./dist/assistant/server/handrail-feedback.js"
     }
   },
   "scripts": {
@@ -298,8 +303,6 @@
   },
   "devDependencies": {
     "@electric-sql/pglite": "0.5.4",
-    "@handrail/mcp": "git+https://git@github.com/c0x65o/handrail-mcp.git#7d83b17b0a0575569a77712e1e8e130c8f4e8f81",
-    "@modelcontextprotocol/sdk": "1.30.0",
     "@testing-library/react": "16.3.0",
     "@types/node": "22.20.4",
     "@types/pg": "8.23.1",
@@ -351,5 +354,9 @@
   "bin": {
     "handrail-agent-sdk": "./scripts/adopt.mjs"
   },
-  "sideEffects": false
+  "sideEffects": false,
+  "optionalDependencies": {
+    "@handrail/mcp": "git+https://github.com/c0x65o/handrail-mcp.git#ca6da63a54b950e4f45ebfc19188bb7d69a36008",
+    "@modelcontextprotocol/sdk": "1.30.0"
+  }
 }

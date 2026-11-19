@@ -1,3 +1,4 @@
+import type { createHandrailFeedback } from "./handrail-feedback.js";
 import { isTextFrame } from "../stream-batches.js";
 export { createAttachmentContentValidator, AttachmentContentError, STANDARD_ATTACHMENT_MEDIA_TYPES,
   type AttachmentContentFailure, type AttachmentContentInput, type AttachmentContentPolicy, type StandardAttachmentMediaType } from "./attachment-content.js";
@@ -162,6 +163,7 @@ export interface CreateHandrailAssistantOptions<TContext extends HandrailAssista
   readonly recordFiles?: HandrailAssistantRecordFiles<TContext>;
   readonly toolPolicy?: ApplicationToolPolicy<TContext>;
   /** Resolves current principal/operation access for every tool attempt, including recovered exact retries. */
+  readonly feedback?: ReturnType<typeof createHandrailFeedback<TContext>>;
   readonly toolAdmission?: ApplicationToolAdmission<TContext>;
   /** Project-aware confirmation policy for tools declared with approval mode `policy`. */
   readonly approvalPolicy?: ApplicationApprovalPolicy<TContext>;
@@ -412,10 +414,12 @@ export async function createHandrailAssistant<TContext extends HandrailAssistant
             destinations: await options.recordFiles!.destinationsFor({ context: current, location }),
           }),
         }) : undefined;
-        const admissions = [options.toolAdmission, support.admission, recordTools?.admission]
+        const feedbackAdmission: ApplicationToolAdmission<TContext> = input => options.feedback?.owns(input.definition.name)
+          ? options.feedback.admission(input) : { outcome: "allow" };
+        const admissions = [options.feedback ? feedbackAdmission : undefined, options.toolAdmission, support.admission, recordTools?.admission]
           .filter((admission): admission is ApplicationToolAdmission<TContext> => admission !== undefined);
         return createAiApplication({
-          plugins: [...(options.tools ?? []), ...support.plugins, ...(recordTools ? [recordTools.plugin] : [])], installContext: context,
+          plugins: [...(options.tools ?? []), ...(options.feedback?.plugins ?? []), ...support.plugins, ...(recordTools ? [recordTools.plugin] : [])], installContext: context,
           policy: options.toolPolicy ?? (() => ({ outcome: "allow" })),
           ...(admissions.length === 0 ? {} : { toolAdmission: async input => {
             for (const admission of admissions) if ((await admission(input)).outcome !== "allow") return { outcome: "deny" as const };
@@ -1306,12 +1310,15 @@ export async function createHandrailAssistant<TContext extends HandrailAssistant
   await usageDelivery.ready;
   // Recovery works even when usage reporting is disabled. Hosts reconstruct
   // trusted scopes on every tick; no opaque user credentials are saved at rest.
+  const feedbackStop = new AbortController();
   let recoveryTimer: ReturnType<typeof setTimeout> | undefined;
   let recoveryPriming: Promise<void> | undefined;
   const scheduleRecoveryContexts = (delay: number) => {
-    if (shuttingDown || !options.recoveryContexts && !recoveryContextScanner) return;
+    if (shuttingDown || !options.feedback && !options.recoveryContexts && !recoveryContextScanner) return;
     recoveryTimer = setTimeout(() => {
-      recoveryPriming = primeRecoveryContexts().catch(cause => emitAiDiagnostic(options.diagnostics, {
+      recoveryPriming = Promise.allSettled([primeRecoveryContexts(), options.feedback?.refresh(feedbackStop.signal)]).then(results => {
+        for (const result of results) if (result.status === "rejected") throw result.reason;
+      }).catch(cause => emitAiDiagnostic(options.diagnostics, {
         domain: "gateway", operation: "context_recovery_scan", phase: "failed",
         code: "recovery_contexts_failed", retryable: true, cause,
       })).finally(() => { recoveryPriming = undefined; scheduleRecoveryContexts(15_000); });
@@ -1335,7 +1342,7 @@ export async function createHandrailAssistant<TContext extends HandrailAssistant
           phase: "failed", code: "unavailable", retryable: true }) });
     }
   } catch (error) {
-    shuttingDown = true; if (recoveryTimer !== undefined) clearTimeout(recoveryTimer);
+    shuttingDown = true; feedbackStop.abort(); if (recoveryTimer !== undefined) clearTimeout(recoveryTimer);
     clearInterval(contextRetirementTimer);
     await recoveryContextScanner?.stop();
     await usageDelivery.stop(); await recoveryPriming; await recovery.stop(); await attachmentCleanup?.stop(); throw error;
@@ -1343,6 +1350,7 @@ export async function createHandrailAssistant<TContext extends HandrailAssistant
   let stopping: Promise<void> | undefined;
   const stopBackgroundWorkers = (): Promise<void> => stopping ??= (async () => {
     shuttingDown = true;
+    feedbackStop.abort();
     clearInterval(contextRetirementTimer);
     if (recoveryTimer !== undefined) clearTimeout(recoveryTimer);
     await recoveryContextScanner?.stop();
