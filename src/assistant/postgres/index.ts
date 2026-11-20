@@ -19,7 +19,7 @@ import { postgresDisplayHistorySchema, projectPostgresDisplayEvents } from "./di
 import { postgresApprovalRecoverySchema, PostgresApprovalRecoveryQueue } from "./approval-recovery.js";
 export { PostgresApprovalRecoveryQueue, postgresApprovalRecoverySchema } from "./approval-recovery.js";
 export { PostgresConversationDisplayHistory, postgresDisplayHistorySchema } from "./display-history.js";
-import { ConversationEventValidationError, parseConversationEvent, type ConversationEvent, type ConversationId, type ConversationRevision } from "../conversation/events.js";
+import { ConversationEventValidationError, parseConversationEvent, type ConversationApprovalProposalId, type ConversationEvent, type ConversationId, type ConversationRevision } from "../conversation/events.js";
 import {
   ConversationEventStoreConflictError,
   ConversationEventStoreUnavailableError,
@@ -224,6 +224,9 @@ export const handrailPostgresSchemaV1 = Object.freeze([
   `CREATE TABLE IF NOT EXISTS handrail_ai_events (tenant_id text NOT NULL, conversation_id text NOT NULL, revision bigint NOT NULL, event_id text NOT NULL, payload jsonb NOT NULL, created_at timestamptz NOT NULL DEFAULT now(), PRIMARY KEY (tenant_id, conversation_id, revision), UNIQUE (tenant_id, event_id))`,
   `ALTER TABLE handrail_ai_events ADD COLUMN IF NOT EXISTS mutation_id text`,
   `CREATE UNIQUE INDEX IF NOT EXISTS handrail_ai_events_mutation ON handrail_ai_events (tenant_id, mutation_id) WHERE mutation_id IS NOT NULL`,
+  `CREATE INDEX IF NOT EXISTS handrail_ai_events_approval ON handrail_ai_events
+    (tenant_id, conversation_id, (payload->'payload'->>'proposal_id'), revision)
+    WHERE payload->'payload'->>'type' IN ('approval.proposal_created','approval.proposal_status_changed')`,
   `CREATE INDEX IF NOT EXISTS handrail_ai_events_activity ON handrail_ai_events (tenant_id, conversation_id, created_at DESC)`,
   `CREATE TABLE IF NOT EXISTS handrail_ai_documents (tenant_id text NOT NULL, kind text NOT NULL, scope_id text NOT NULL, record_id text NOT NULL, version bigint NOT NULL, payload jsonb NOT NULL, updated_at timestamptz NOT NULL DEFAULT now(), PRIMARY KEY (tenant_id, kind, scope_id, record_id))`,
   `ALTER TABLE handrail_ai_documents ADD COLUMN IF NOT EXISTS durable_status text`,
@@ -1443,6 +1446,17 @@ export class PostgresConversationEventStore implements ConversationEventStore {
       return Object.freeze({ status: "appended" as const, entries: Object.freeze(events.map(storedEvent)),
         latestRevision: events.at(-1)!.revision });
     }); } catch (error) { throw this.storeError(error, "append"); }
+  }
+
+  async readApprovalEvents(conversationId: ConversationId, proposalId: ConversationApprovalProposalId): Promise<readonly ConversationEvent[]> {
+    try {
+      const result = await this.persistence.client.query<{ payload: ConversationEvent }>(
+        `SELECT payload FROM handrail_ai_events WHERE tenant_id=$1 AND conversation_id=$2
+          AND payload->'payload'->>'proposal_id'=$3
+          AND payload->'payload'->>'type' IN ('approval.proposal_created','approval.proposal_status_changed')
+          ORDER BY revision`, [this.tenantId, conversationId, proposalId]);
+      return result.rows.map(({ payload }) => parseConversationEvent(payload));
+    } catch (error) { throw this.storeError(error, "read"); }
   }
 
   async read(input: ReadConversationEventsInput): Promise<ReadConversationEventsResult> {

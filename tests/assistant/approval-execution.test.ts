@@ -206,6 +206,37 @@ function execute(
 }
 
 describe("approval execution", () => {
+  it("dispatches exactly once when approval follows 6,427 earlier events", async () => {
+    const f = await fixture();
+    await f.events.append({ conversationId, expectedRevision: null,
+      events: Array.from({ length: 6427 }, (_, index) => parseConversationEvent({
+        version: 1, event_id: `history-${index}`, conversation_id: conversationId, revision: index + 1,
+        occurred_at: "2026-08-29T12:00:00Z", ...systemAttribution,
+        payload: { type: "conversation.metadata_updated", metadata: { index } },
+      })),
+    });
+    const proposalId = await createProposal(f);
+    await confirm(f, proposalId);
+    await confirm(f, proposalId); // An idempotent decision retry also reconciles beyond the old cutoff.
+    const bounded = executor(f);
+    expect(await execute(f, bounded, resume(proposalId))).toMatchObject({ result: { is_error: false } });
+    expect(await execute(f, bounded, resume(proposalId))).toMatchObject({ result: { is_error: false } });
+    expect(f.invoke).toHaveBeenCalledOnce();
+  });
+
+  it("rejects a confirmation attributed to a different reviewer than the proposal record", async () => {
+    const f = await fixture();
+    const proposalId = await createProposal(f);
+    await confirm(f, proposalId);
+    const { entries } = await f.events.read({ conversationId });
+    f.events.readApprovalEvents = async () => entries.map(({ event }) =>
+      event.payload.type === "approval.proposal_status_changed"
+        ? parseConversationEvent({ ...event, actor: { type: "user", id: "other-reviewer" } })
+        : event);
+    expect(await execute(f, executor(f), resume(proposalId))).toMatchObject({ result: { is_error: true } });
+    expect(f.invoke).not.toHaveBeenCalled();
+  });
+
   it("admits approval retries before claims and receipt reuse without granting confirmation", async () => {
     const f = await fixture();
     let allowed = true;

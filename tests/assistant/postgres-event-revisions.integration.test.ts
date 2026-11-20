@@ -37,7 +37,15 @@ it("orders PostgreSQL revisions numerically across 9, 10, 99 and 100", async () 
     await persistence.appendEvents({ tenantId: "tenant", conversationId, expectedRevision: 100, events: [event(101)] });
     await store.append({ conversationId, expectedRevision: 101 as never, events: [event(102)] });
     expect(await store.getLatestRevision(conversationId)).toBe(102);
+    const decision = parseConversationEvent({ ...event(103), actor: { type: "user", id: "reviewer" },
+      payload: { type: "approval.proposal_status_changed", proposal_id: "reviewed", proposal_version: 2, status: "confirmed" } });
+    await store.append({ conversationId, expectedRevision: 102 as never, events: [decision] });
+    expect(await store.readApprovalEvents(conversationId, "reviewed" as never)).toEqual([decision]);
+    expect(await store.readApprovalEvents(conversationId, "different" as never)).toEqual([]);
+    expect(await store.readApprovalEvents("different" as ConversationId, "reviewed" as never)).toEqual([]);
+    const otherTenant = new PostgresConversationEventStore(persistence, "other-tenant");
+    expect(await otherTenant.readApprovalEvents(conversationId, "reviewed" as never)).toEqual([]);
     await expect(store.append({ conversationId, expectedRevision: 99 as never, events: [{ ...event(100), event_id: "stale-event" as never }] }))
-      .rejects.toMatchObject({ code: "revision_conflict", actualRevision: 102 });
+      .rejects.toMatchObject({ code: "revision_conflict", actualRevision: 103 });
   } finally { await database.close(); }
 });

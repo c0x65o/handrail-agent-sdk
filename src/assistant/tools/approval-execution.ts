@@ -24,7 +24,8 @@ import type {
   ConversationStateApprovalReviewedArguments,
 } from "../conversation/state.js";
 import type { JsonObject, ToolDefinition } from "../protocol.js";
-import { originalApprovalEvidence } from "../conversation/approval-evidence.js";
+import { jsonValuesEqual } from "../json-equality.js";
+import { readApprovalEvidence } from "../conversation/approval-evidence.js";
 
 export const APPROVAL_EXECUTION_COORDINATOR_LIMITS = Object.freeze({
   eventAppendAttempts: 4,
@@ -35,6 +36,7 @@ export const APPROVAL_EXECUTION_COORDINATOR_LIMITS = Object.freeze({
 export interface ApprovalExecutionCoordinatorLimits {
   readonly maxEventAppendAttempts: number;
   readonly reconciliationPageSize: number;
+  /** @deprecated Approval evidence is now read through the observed head. */
   readonly maxReconciliationPages: number;
 }
 
@@ -242,7 +244,9 @@ export function createApprovalExecutionCoordinator<TPermissionContext>(
         proposalId,
         input.executionId,
         limits,
+        input.signal,
       );
+      if (input.signal.aborted) return frozen({ outcome: "cancelled", proposalId });
       if (audit === null || !matchesProposalIdentity(proposal, audit.created, input)) {
         return frozen({ outcome: "invalid", proposalId });
       }
@@ -466,26 +470,11 @@ async function readProposalAudit(
   proposalId: ConversationApprovalProposalId,
   executionId: string,
   limits: ApprovalExecutionCoordinatorLimits,
+  signal: AbortSignal,
 ): Promise<DurableProposalAudit | null> {
-  let cursor: Awaited<ReturnType<ConversationEventStore["read"]>>["nextCursor"] = null;
-  let matching: ConversationEvent[] = [];
+  let matching: ConversationEvent[];
   try {
-    for (let page = 0; page < limits.maxReconciliationPages; page += 1) {
-      const read = await store.read({
-        conversationId,
-        ...(cursor === null ? {} : { after: { cursor } }),
-        limit: limits.reconciliationPageSize,
-      });
-      matching.push(...read.entries.map(({ event }) => event).filter((event) =>
-        (event.payload.type === "approval.proposal_created" ||
-          event.payload.type === "approval.proposal_status_changed") &&
-        event.payload.proposal_id === proposalId));
-      if (!read.hasMore) break;
-      cursor = read.nextCursor;
-      if (cursor === null) return null;
-      if (page === limits.maxReconciliationPages - 1) return null;
-    }
-    matching = originalApprovalEvidence(matching);
+    matching = await readApprovalEvidence(store, conversationId, proposalId, limits.reconciliationPageSize, signal);
   } catch {
     return null;
   }
@@ -528,7 +517,7 @@ function matchesProposalIdentity<TPermissionContext>(
     payload.tool_name === proposal.tool_name &&
     payload.proposal_version === 1 &&
     payload.expires_at === proposal.expires_at &&
-    JSON.stringify(payload.reviewed_arguments) === JSON.stringify(proposal.reviewed_arguments);
+    jsonValuesEqual(payload.reviewed_arguments, proposal.reviewed_arguments);
 }
 
 function hasExactConfirmation(
@@ -543,6 +532,8 @@ function hasExactConfirmation(
   return payload?.type === "approval.proposal_status_changed" &&
     payload.status === "confirmed" &&
     payload.proposal_version === expectedVersion &&
+    jsonValuesEqual(audit.confirmed?.actor, proposal.decision_attribution?.actor) &&
+    jsonValuesEqual(audit.confirmed?.source, proposal.decision_attribution?.source) &&
     expectedVersion >= 2;
 }
 
@@ -605,27 +596,15 @@ async function eventExists(
   proposal: ConversationApprovalProposalRecord,
   limits: ApprovalExecutionCoordinatorLimits,
 ): Promise<boolean> {
-  let cursor: Awaited<ReturnType<ConversationEventStore["read"]>>["nextCursor"] = null;
   try {
-    for (let page = 0; page < limits.maxReconciliationPages; page += 1) {
-      const read = await store.read({
-        conversationId,
-        ...(cursor === null ? {} : { after: { cursor } }),
-        limit: limits.reconciliationPageSize,
-      });
-      const found = read.entries.find(({ event }) => event.event_id === eventId)?.event;
-      if (found !== undefined) {
-        return JSON.stringify(found.payload) ===
-          JSON.stringify(lifecycleEvent(proposal, conversationId, eventId, found.revision).payload);
-      }
-      if (!read.hasMore) return false;
-      cursor = read.nextCursor;
-      if (cursor === null) return false;
-    }
+    const events = await readApprovalEvidence(store, conversationId, proposal.proposal_id, limits.reconciliationPageSize);
+    const found = events.find(event => event.event_id === eventId);
+    if (!found) return false;
+    const expected = lifecycleEvent(proposal, conversationId, eventId, found.revision);
+    return jsonValuesEqual(found, expected);
   } catch {
     return false;
   }
-  return false;
 }
 
 function lifecycleEvent(

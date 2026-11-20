@@ -20,10 +20,12 @@ export type ConversationEventReconciliationResult =
 /** Primary remains authoritative; shadow failures are observable and rollback-safe. */
 export class DualWriteConversationEventStore implements ConversationEventStore {
   readonly checkpoints?: ConversationEventCheckpointStore;
+  readonly readApprovalEvents?: NonNullable<ConversationEventStore["readApprovalEvents"]>;
   readonly #pageSize: number;
   constructor(readonly options: DualWriteConversationEventStoreOptions) {
     this.#pageSize = options.reconciliationPageSize ?? 100;
     if (!Number.isSafeInteger(this.#pageSize) || this.#pageSize < 1 || this.#pageSize > 1_000) throw new TypeError("reconciliationPageSize is invalid");
+    if (options.primary.readApprovalEvents) this.readApprovalEvents = options.primary.readApprovalEvents.bind(options.primary);
     if (options.primary.checkpoints) this.checkpoints = {
       read: (conversationId: ConversationId) => options.primary.checkpoints!.read(conversationId),
       write: (checkpoint: ConversationEventCheckpoint) => this.writeCheckpoint(checkpoint),

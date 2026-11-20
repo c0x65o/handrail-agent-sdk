@@ -1,5 +1,6 @@
 import {
   parseConversationEvent,
+  type ConversationApprovalProposalId,
   type ConversationClientMutationId,
   type ConversationEvent,
   type ConversationEventId,
@@ -114,6 +115,8 @@ export interface ConversationEventCheckpointStore {
  * only when the complete request represents the already-stored fact or mutation.
  */
 export interface ConversationEventStore {
+  /** All creation and status events for this proposal, including repair copies, in revision order. */
+  readApprovalEvents?(conversationId: ConversationId, proposalId: ConversationApprovalProposalId): Promise<readonly ConversationEvent[]>;
   readonly checkpoints?: ConversationEventCheckpointStore;
   append(
     input: AppendConversationEventsInput,

@@ -1,4 +1,37 @@
-import type { ConversationEvent } from "./events.js";
+import type { ConversationEventStore } from "./event-store.js";
+import type { ConversationApprovalProposalId, ConversationEvent, ConversationId, ConversationRevision } from "./events.js";
+
+/** Older adapters can page to the head observed on the first read. */
+export async function readApprovalEvidence(store: ConversationEventStore, conversationId: ConversationId,
+  proposalId: ConversationApprovalProposalId, pageSize: number, signal?: AbortSignal): Promise<ConversationEvent[]> {
+  const matches = (event: ConversationEvent) => event.conversation_id === conversationId &&
+    (event.payload.type === "approval.proposal_created" || event.payload.type === "approval.proposal_status_changed") &&
+    event.payload.proposal_id === proposalId;
+  if (store.readApprovalEvents) {
+    const events = await store.readApprovalEvents(conversationId, proposalId);
+    if (!events.every(matches)) throw new TypeError("Unexpected approval audit event.");
+    return originalApprovalEvidence(events);
+  }
+  const events: ConversationEvent[] = [];
+  let revision: ConversationRevision | undefined;
+  let head: ConversationRevision | null | undefined;
+  do {
+    signal?.throwIfAborted();
+    const page = await store.read({ conversationId, ...(revision === undefined ? {} : { after: { revision } }), limit: pageSize });
+    if (head === undefined) head = page.latestRevision;
+    if (head === null) break;
+    for (const { event } of page.entries) {
+      if (event.revision !== (revision ?? 0) + 1 || event.conversation_id !== conversationId) {
+        throw new TypeError("Incomplete approval audit history.");
+      }
+      revision = event.revision;
+      if (matches(event)) events.push(event);
+      if (revision === head) break;
+    }
+    if (revision !== head && (!page.hasMore || !page.entries.length)) throw new TypeError("Incomplete approval audit history.");
+  } while (revision !== head);
+  return originalApprovalEvidence(events);
+}
 
 /** Keep original approval evidence while validating later display-only copies. */
 export function originalApprovalEvidence(events: readonly ConversationEvent[]): ConversationEvent[] {

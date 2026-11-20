@@ -1,3 +1,4 @@
+import { readApprovalEvidence } from "./approval-evidence.js";
 import {
   ApprovalProposalStoreError,
   type ApprovalProposalStore,
@@ -524,6 +525,16 @@ async function reconcileEvent<TPermissionContext>(
   eventId: ConversationEventId,
   limits: ApprovalCoordinatorLimits,
 ): Promise<EventReconciliation> {
+  try {
+    const evidence = await readApprovalEvidence(eventStore, input.conversationId, input.proposalId,
+      limits.reconciliationPageSize, input.signal);
+    const decision = evidence.find(event => event.event_id === eventId);
+    if (decision) return eventMatchesDecision(decision, input, proposal)
+      ? { status: "matching", event: decision } : { status: "conflicting" };
+  } catch {
+    return { status: "unavailable" };
+  }
+  // An unrelated event may have taken the same id. Preserve conflict diagnostics.
   let cursor: Awaited<ReturnType<ConversationEventStore["read"]>>["nextCursor"] = null;
   for (let page = 0; page < limits.maxReconciliationPages; page += 1) {
     let read: Awaited<ReturnType<ConversationEventStore["read"]>>;
