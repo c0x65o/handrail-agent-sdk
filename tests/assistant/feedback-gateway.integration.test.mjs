@@ -4,7 +4,8 @@ import { PGlite } from "@electric-sql/pglite";
 import { postgresFromClient } from "../../dist/assistant/postgres/index.js";
 import { createFeedbackTools, createAiApplication, FEEDBACK_SUBMIT_TOOLS } from "../../dist/assistant/server/application.js";
 import { parseConversationEvent } from "../../dist/assistant/conversation/events.js";
-import { openaiResponses } from "../../dist/assistant/server/assistant.js";
+import { createHandrailAssistant, openaiResponses } from "handrail-agent-sdk/assistant/server/assistant";
+import { createHandrailFeedback } from "handrail-agent-sdk/assistant/server/feedback";
 import { createFeedbackGateway, openFeedbackSession } from "../../examples/assistant/trusted-server-feedback.mjs";
 import { qualificationFixture } from "../../examples/assistant/feedback-contract-qualification.mjs";
 
@@ -157,7 +158,7 @@ for (const kind of ["bug", "enhancement"]) {
   });
 }
 
-for (const kind of ["bug", "enhancement"]) test(`${kind}: exact gateway factory, provider tool loop, durable approval and sanitized receipt (fixtures only)`, async () => {
+async function savedFeedbackTurn(kind, shared) {
   const f = await fixture();
   let assistant;
   try {
@@ -172,13 +173,41 @@ for (const kind of ["bug", "enhancement"]) test(`${kind}: exact gateway factory,
       } else yield { type: "response.output_text.delta", delta: "Feedback receipt recorded." };
       yield { type: "response.completed", response: { usage: { input_tokens: 2, output_tokens: 1, total_tokens: 3 } } };
     };
-    assistant = await createFeedbackGateway({ ...f.host, feedback: f.options, assistant: {
-      id: "feedback-fixture", persistence: f.persistence, authorize: () => ({ ...context, rawSession: "raw-session-sentinel" }),
+    const assistantOptions = {
+      id: "feedback-fixture", persistence: f.persistence, authorize: () => context,
       authorizeConversation: input => input.authorizationContext.principalId === "alice" ? "allow" : "deny",
       authorizeApproval: () => "allow",
       automaticTitles: false, attachmentCleanup: false, recoverPendingOnContext: false,
-      provider: openaiResponses({ model: "offline-fixture", request, supportsToolSearch: false }), diagnostics: e => diagnostics.push(e),
-    } });
+      diagnostics: e => diagnostics.push(e),
+    };
+    if (shared) {
+      const feedback = createHandrailFeedback({
+        installationId: "saved-feedback-fixture", persistence: f.persistence.persistence,
+        runtime: { projectId: "fixture-project", serviceEnvId: "fixture-runtime", environment: "dev" },
+        reporters: async () => (await f.host.resolveCurrent(context)).feedbackConfig,
+        currentSession: f.host.resolveCurrent,
+        authorize: (caller, _kind, _op, _signal, conversation) =>
+          caller.principalId === "alice" && (!conversation || conversation === location.conversationId),
+        authorizeDelivery: async () => false,
+        resolveIntent: async () => f.controls.intent,
+      });
+      assistant = await createHandrailAssistant({ ...assistantOptions, feedback,
+        provider: openaiResponses({ model: "offline-fixture", apiKey: "offline", baseUrl: "https://provider.invalid/v1",
+          savedConversation: { fileTools: false }, functionStrict: false, supportsToolSearch: false, maximumEagerTools: 12,
+          fetch: async (url, init) => {
+            assert.equal(url, "https://provider.invalid/v1/responses");
+            const frames = [];
+            for await (const frame of request(JSON.parse(init.body))) frames.push(`data: ${JSON.stringify(frame)}\n\n`);
+            return new Response(frames.join(""), { headers: { "content-type": "text/event-stream" } });
+          },
+        }),
+      });
+    } else {
+      assistant = await createFeedbackGateway({ ...f.host, feedback: f.options, assistant: { ...assistantOptions,
+        authorize: () => ({ ...context, rawSession: "raw-session-sentinel" }),
+        provider: openaiResponses({ model: "offline-fixture", request, supportsToolSearch: false }),
+      } });
+    }
     const bundle = f.persistence.forScope(context, { createConversationId: () => location.conversationId,
       authorizeConversation: () => "allow", authorizeApproval: () => "allow" });
     await bundle.catalog.create({ authorizationContext: context, idempotencyKey: "create" });
@@ -196,17 +225,40 @@ for (const kind of ["bug", "enhancement"]) test(`${kind}: exact gateway factory,
         tools: [], tool_results: [], generation: { max_output_tokens: 100, temperature: 0 }, correlation_hints: {} } });
     assert.equal(response.status, 200);
     const output = response.text();
-    let proposal;
-    await waitFor(async () => { proposal = (await bundle.approvals.listGroup({ permissionContext: context, groupId: location.conversationId }))[0]; return proposal; });
-    assert.equal(f.http.observations.posts.length, 0, "provider cannot bypass approval");
-    const decision = await post("approvals/transition", { conversationId: location.conversationId, proposalId: proposal.proposal_id,
-      expectedVersion: 1, status: "confirmed", idempotencyKey: "confirm", idempotencyFingerprint: "confirm" });
-    assert.equal(decision.status, 200);
+    if (!shared) {
+      let proposal;
+      await waitFor(async () => { proposal = (await bundle.approvals.listGroup({ permissionContext: context, groupId: location.conversationId }))[0]; return proposal; });
+      assert.equal(f.http.observations.posts.length, 0, "provider cannot bypass approval");
+      const decision = await post("approvals/transition", { conversationId: location.conversationId, proposalId: proposal.proposal_id,
+        expectedVersion: 1, status: "confirmed", idempotencyKey: "confirm", idempotencyFingerprint: "confirm" });
+      assert.equal(decision.status, 200);
+    }
     const clientEvents = await output;
     await waitFor(() => f.http.observations.posts.length === 1 && providerInputs.length === 2);
+    if (shared) {
+      const tools = providerInputs[0].tools;
+      const operations = ["submit", "list", "lookup", "answer", "follow_up", "stop_follow_up"];
+      assert.deepEqual(tools.map(t => t.name).sort(), ["bug", "enhancement"].flatMap(k =>
+        operations.map(op => `handrail_${k}_reporter_v1_${op}`)).sort());
+      assert.ok(tools.every(t => t.type === "function" && t.strict === false));
+      for (const suffix of ["submit", "list", "answer"]) {
+        const { parameters } = tools.find(t => t.name === `handrail_${kind}_reporter_v1_${suffix}`);
+        assert.ok(Object.keys(parameters.properties).some(key => !parameters.required?.includes(key)));
+      }
+      assert.match(JSON.stringify(providerInputs[0].input), new RegExp(`please report this ${kind}`));
+      const receipt = providerInputs[1].input.find(item => item.type === "function_call_output");
+      assert.match(receipt.output, new RegExp(`fixture-${kind}`));
+      assert.equal((await bundle.approvals.listGroup({ permissionContext: context, groupId: location.conversationId })).length, 0);
+    }
     assert.match(JSON.stringify(providerInputs), /fixture-(bug|enhancement)/);
     assert.doesNotMatch(JSON.stringify({ providerInputs, clientEvents, diagnostics }), secretPattern);
     assert.doesNotMatch(await f.dump(), secretPattern);
     assert.ok(providerInputs[0].tools.every(tool => !JSON.stringify(tool).includes("idempotency_key") && !JSON.stringify(tool).includes("event_id")));
   } finally { await assistant?.stopBackgroundWorkers(); await f.database.close(); }
-});
+}
+
+for (const kind of ["bug", "enhancement"]) {
+  test(`${kind}: legacy gateway provider loop, durable approval and sanitized receipt`, () => savedFeedbackTurn(kind, false));
+  test(`${kind}: public Handrail Feedback composition serializes twelve tools and executes a saved turn`,
+    () => savedFeedbackTurn(kind, true));
+}

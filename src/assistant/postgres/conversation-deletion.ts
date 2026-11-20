@@ -54,7 +54,7 @@ export function postgresDocumentConversation(
   if (kind === "catalog" || kind === "activity") return recordId;
   if (kind === "attachment" && value && typeof value === "object" && "retainedConversationId" in value &&
     typeof value.retainedConversationId === "string" && value.retainedConversationId.length > 0) return value.retainedConversationId;
-  if (["attachment", "realtime_call", "openai_continuation", "provider_operation"].includes(kind) &&
+  if (["feedback_watch", "feedback_command", "feedback_answer", "attachment", "realtime_call", "openai_continuation", "provider_operation"].includes(kind) &&
     value && typeof value === "object" && "conversationId" in value &&
     typeof value.conversationId === "string" && value.conversationId.length > 0) return value.conversationId;
   return null;
@@ -191,7 +191,7 @@ export async function deletePostgresConversationHistory(input: DeletePostgresCon
     await client.query(`DELETE FROM handrail_ai_documents WHERE tenant_id=$1 AND
       ((kind IN ('checkpoint','turn_state','durable_turn','sync_state') AND scope_id=$2)
         OR (kind IN ('catalog','activity') AND record_id=$2)
-        OR (kind='openai_continuation' AND payload->>'conversationId'=$2))`, [input.tenantId, input.conversationId]);
+        OR (kind IN ('openai_continuation','feedback_watch','feedback_command','feedback_answer') AND payload->>'conversationId'=$2))`, [input.tenantId, input.conversationId]);
     // Preserve admission identity and completion evidence, but no response,
     // prompt, tools or attachment content. A replay must refuse to redispatch.
     await client.query(`UPDATE handrail_ai_documents SET version=3,

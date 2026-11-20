@@ -34,8 +34,9 @@ export function resolveScheduleTime(input: LocalScheduleTime, now: number): numb
   const selected = input.utcOffset == null ? candidates
     : candidates.filter(t => t === Date.parse(`${desired}:00${input.utcOffset}`));
   if (selected.length !== 1) throw Error(candidates.length ? 'ambiguous_schedule_time' : 'nonexistent_schedule_time');
-  if (selected[0] <= now) throw Error('schedule_must_be_future');
-  return selected[0];
+  const instant = selected[0]!; // Exactly one match was established above.
+  if (instant <= now) throw Error('schedule_must_be_future');
+  return instant;
 }
 
 export function assistanceClock(now: number, timeZone: string) {

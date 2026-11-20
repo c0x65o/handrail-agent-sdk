@@ -22,7 +22,7 @@ export interface FeedbackToolsOptions<TContext extends FeedbackContext> {
   /** Resolve a durable explicit user intent from trusted history. Never use a provider call ID.
    * Distinct intents in the same message need distinct IDs; retries must return the original. */
   readonly resolveIntent: (context: TContext, location: ApplicationToolExecutionLocation, kind: FeedbackKind,
-    signal: AbortSignal) => string | Promise<string>;
+    signal: AbortSignal, args?: JsonObject) => string | Promise<string>;
   /** Open a NEW session with current server-resolved credentials. The SDK closes it in finally.
    * Do not capture credentials in context, plugins or a cached session. */
   readonly openSession: (context: TContext, signal: AbortSignal) => Promise<RequestScopedMcpSession>;
@@ -55,9 +55,13 @@ export function parseFeedbackReceipt(result: unknown, kind: FeedbackKind, identi
 
 /** Server-only plugin composition. Uses existing durable tool admission, not a feedback queue.
  * The host must install admission as well as the plugin, and retain its approval policy. */
-export function createFeedbackTools<TContext extends FeedbackContext>(options: FeedbackToolsOptions<TContext>) {
+export function createFeedbackTools<TContext extends FeedbackContext>(options: FeedbackToolsOptions<TContext>, lifecycle?: {
+  readonly environment: "dev" | "staging" | "production";
+  readonly submitted: (context: TContext, conversation: string, externalConversation: string, receipt: FeedbackReceipt) => Promise<void>;
+}) {
   const kindFor = (name: string) => (Object.keys(FEEDBACK_SUBMIT_TOOLS) as FeedbackKind[]).find(kind => FEEDBACK_SUBMIT_TOOLS[kind] === name);
   const scope = (context: TContext) => `feedback-${digest(JSON.stringify([options.binding, context.tenantId, context.scopeId, context.principalId]))}`;
+  const externalConversation = (context: TContext, conversation: string) => digest(JSON.stringify([scope(context), conversation]));
   const check = async (context: TContext, kind: FeedbackKind, signal: AbortSignal, location?: ApplicationToolExecutionLocation) => {
     signal.throwIfAborted();
     let allowed = false;
@@ -92,12 +96,12 @@ export function createFeedbackTools<TContext extends FeedbackContext>(options: F
   };
   const prepare = async (context: TContext, location: ApplicationToolExecutionLocation, kind: FeedbackKind, args: JsonObject, signal: AbortSignal) => {
     await check(context, kind, signal, location);
-    const intent = await options.resolveIntent(context, location, kind, signal);
+    const intent = await options.resolveIntent(context, location, kind, signal, args);
     if (typeof intent !== "string" || !intent.trim() || intent.length > 512) throw new TypeError("A durable feedback intent is required.");
     const identity = digest(JSON.stringify([scope(context), location.conversationId, intent, kind]));
     // Identity fields are server-owned and absent from the model-facing schema.
     const payload = JSON.parse(JSON.stringify({ ...args, ...(kind === "bug" ? { event_id: identity }
-      : { idempotency_key: identity, external_conversation_id: digest(JSON.stringify([scope(context), location.conversationId])) }) })) as JsonObject;
+      : { idempotency_key: identity, external_conversation_id: externalConversation(context, location.conversationId) }) })) as JsonObject;
     const frozen: FrozenIntent = { version: 1, kind, conversationId: location.conversationId, identity, payload };
     const key = { tenantId: context.tenantId, kind: "tool_execution" as const, scopeId: scope(context), recordId: identity };
     try { await options.persistence.compareAndSetDocument({ ...key, expectedVersion: null, value: frozen }); }
@@ -112,7 +116,7 @@ export function createFeedbackTools<TContext extends FeedbackContext>(options: F
   };
   const plugin = createToolPlugin<ApplicationToolExecutor<TContext>, TContext, TContext, TContext>({
     pluginId: "handrail.feedback", version: "1.0.0", displayName: "Handrail feedback",
-    policy: () => ({ outcome: "external_approval_required" }),
+    ...(lifecycle ? {} : { policy: () => ({ outcome: "external_approval_required" as const }) }),
     registrations: async context => {
       const permitted: FeedbackKind[] = [];
       for (const kind of ["bug", "enhancement"] as const) {
@@ -126,7 +130,9 @@ export function createFeedbackTools<TContext extends FeedbackContext>(options: F
         const schema = JSON.parse(JSON.stringify(tool.inputSchema)) as JsonObject;
         const owned = ["event_id", "idempotency_key", "external_conversation_id"];
         const properties = object(schema.properties);
-        for (const key of owned) delete properties[key];
+        const submitFields = kind === "bug" ? ["title","description","impact","reproducer","route","app_version"] :
+          ["title","description","priority","context"];
+        for (const key of Object.keys(properties)) if (owned.includes(key) || lifecycle && !submitFields.includes(key)) delete properties[key];
         schema.properties = properties as JsonObject;
         if (Array.isArray(schema.required)) schema.required = schema.required.filter(key => typeof key === "string" && !owned.includes(key));
         schema.additionalProperties = false;
@@ -136,6 +142,8 @@ export function createFeedbackTools<TContext extends FeedbackContext>(options: F
             if (!execution.location) throw new TypeError("Feedback requires a trusted conversation and turn.");
             const current = execution.applicationContext, signal = execution.signal;
             try {
+              if (scope(current) !== scope(context) || execution.definition.name !== tool.name ||
+                  lifecycle && Object.keys(args).some(key => !Object.hasOwn(properties, key))) throw new TypeError("Invalid feedback dispatch");
               const { frozen, key } = await prepare(current, execution.location, kind, args, signal);
               const receipt = await options.persistence.getOrExecuteTool<FeedbackReceipt>(current.tenantId, key, async () => {
                 await check(current, kind, signal, execution.location);
@@ -149,6 +157,8 @@ export function createFeedbackTools<TContext extends FeedbackContext>(options: F
               }, canonical(frozen as unknown as JsonObject));
               await check(current, kind, signal, execution.location);
               if (receipt.kind !== kind || !identifier(receipt.reportId)) throw new TypeError("Invalid saved feedback receipt.");
+              await lifecycle?.submitted(current, execution.location.conversationId,
+                externalConversation(current, execution.location.conversationId), receipt);
               return { kind: receipt.kind, reportId: receipt.reportId };
             } catch (error) {
               if (error instanceof PostgresToolExecutionUncertainError) return failure("feedback_reconciliation_required",
@@ -180,18 +190,20 @@ export function createFeedbackTools<TContext extends FeedbackContext>(options: F
       if (!receipt) return failure("feedback_reconciliation_required",
         "Authoritative intent-to-report lookup is required: this connector only accepts a known report ID. The saved intent cannot be redispatched.");
       if (receipt.kind !== kind || !identifier(receipt.reportId)) return failure("feedback_receipt_unverified", "The saved feedback receipt is invalid.");
-      // Bug submit receipts are verified above. Its lookup projection has not been
-      // qualified here; do not infer it from the enhancement contract.
-      if (kind === "bug") return failure("feedback_bug_readback_contract_required", "The canonical bug lookup receipt schema must be qualified before authoritative readback.");
+      // Legacy submit-only installations have no qualified bug readback runtime.
+      if (kind === "bug" && !lifecycle) return failure("feedback_bug_readback_contract_required", "The canonical bug lookup receipt schema must be qualified before authoritative readback.");
       return await withSession(context, signal, async session => {
         await check(context, kind, signal, location);
-        const result = object(await session.callTool({ name: "handrail_enhancement_reporter_v1_lookup",
+        const result = object(await session.callTool({ name: `handrail_${kind}_reporter_v1_lookup`,
           arguments: { request_id: receipt.reportId }, toolCallId: identity, signal }));
         const value = object(result.structuredContent);
-        if (result.isError === true || value.contract_version !== "v1" || value.id !== receipt.reportId || value.submission_kind !== "enhancement") {
-          return failure("feedback_readback_unverified", "Authoritative enhancement readback did not verify the saved receipt. Do not redispatch.");
+        const valid = kind === "enhancement" ? value.contract_version === "v1" && value.submission_kind === "enhancement" :
+          value.environment === lifecycle?.environment && typeof value.status === "string";
+        if (result.isError === true || !valid || value.id !== receipt.reportId) {
+          return failure("feedback_readback_unverified", "Authoritative feedback readback did not verify the saved receipt. Do not redispatch.");
         }
         await check(context, kind, signal, location);
+        await lifecycle?.submitted(context, location.conversationId, externalConversation(context, location.conversationId), receipt);
         return { kind, reportId: receipt.reportId };
       });
     } catch (error) {

@@ -254,6 +254,9 @@ export const handrailPostgresSchemaV1 = Object.freeze([
     WHERE kind='durable_turn' AND (durable_status IS NULL OR durable_status IN ('pending','running'))`,
   `CREATE INDEX IF NOT EXISTS handrail_ai_durable_metadata_missing ON handrail_ai_documents (tenant_id,scope_id,record_id)
     WHERE kind='durable_turn' AND durable_status IS NULL`,
+  `CREATE INDEX IF NOT EXISTS handrail_ai_feedback_due_v2 ON handrail_ai_documents
+    (scope_id, ((payload->>'next')::bigint),tenant_id,record_id) WHERE kind='feedback_watch' AND payload->>'state' IN ('pending','following','unavailable')`,
+  `DROP INDEX IF EXISTS handrail_ai_feedback_due`,
   `CREATE INDEX IF NOT EXISTS handrail_ai_documents_scope ON handrail_ai_documents (tenant_id, kind, scope_id, updated_at DESC, record_id)`,
   `CREATE INDEX IF NOT EXISTS handrail_ai_conversation_file_cleanup_pending ON handrail_ai_documents (scope_id, updated_at, tenant_id, record_id) WHERE kind='conversation_file_cleanup' AND payload->>'status'='pending'`,
   `CREATE TABLE IF NOT EXISTS handrail_ai_tool_ledger (tenant_id text NOT NULL, tool_call_id text NOT NULL, status text NOT NULL CHECK (status IN ('completed')), result jsonb NOT NULL, completed_at timestamptz NOT NULL DEFAULT now(), PRIMARY KEY (tenant_id, tool_call_id))`,
@@ -267,7 +270,7 @@ export const handrailPostgresSchemaV1 = Object.freeze([
   `CREATE INDEX IF NOT EXISTS handrail_ai_attachment_blobs_expiry ON handrail_ai_attachment_blobs (tenant_id, expires_at)`,
 ] as const);
 
-export type PostgresDocumentKind = "catalog_identity" | "conversation_deleted" | "checkpoint" | "catalog" | "approval" | "turn_state" | "durable_turn" | "activity" | "sync_state" | "openai_continuation" | "attachment" | "usage_outbox" | "audio_usage_evidence" | "tool_execution" | "provider_operation" | "realtime_call" | "realtime_tool_activity" | "realtime_activity_read";
+export type PostgresDocumentKind = "feedback_watch" | "feedback_command" | "feedback_answer" | "catalog_identity" | "conversation_deleted" | "checkpoint" | "catalog" | "approval" | "turn_state" | "durable_turn" | "activity" | "sync_state" | "openai_continuation" | "attachment" | "usage_outbox" | "audio_usage_evidence" | "tool_execution" | "provider_operation" | "realtime_call" | "realtime_tool_activity" | "realtime_activity_read";
 export * from "./realtime-calls.js";
 export * from "./realtime-tool-activity.js";
 
