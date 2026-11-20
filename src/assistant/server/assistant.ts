@@ -145,6 +145,7 @@ export interface HandrailAssistantProvider<TContext extends HandrailAssistantAut
 }
 
 export interface CreateHandrailAssistantOptions<TContext extends HandrailAssistantAuthorizationContext> {
+  readonly conversationMode?: "single" | "multiple";
   readonly id: string;
   readonly instructions?: string | readonly string[];
   readonly authorize: (request: Request, action: ApplicationGatewayAction) => TContext | Promise<TContext>;
@@ -340,6 +341,7 @@ export async function createHandrailAssistant<TContext extends HandrailAssistant
     let bundle = bundles.get(key);
     if (!bundle) {
       bundle = options.persistence.forScope<TContext>({ tenantId: context.tenantId, scopeId: context.scopeId }, {
+        ...(options.conversationMode ? { conversationMode: options.conversationMode } : {}),
         createConversationId: () => (options.createConversationId?.() ?? globalThis.crypto.randomUUID()) as never,
         ...(options.authorizeConversation === undefined ? {} : { authorizeConversation: options.authorizeConversation as never }),
         ...(options.authorizeApproval === undefined ? {} : { authorizeApproval: options.authorizeApproval as never }),
@@ -378,7 +380,7 @@ export async function createHandrailAssistant<TContext extends HandrailAssistant
       } }) : undefined;
   const titles = createAssistantConversationTitles({ assistantId, catalogFor, bundleFor, provider: options.provider,
     ...(options.externalTitleUserTextsFor === undefined ? {} : { externalUserTextsFor: options.externalTitleUserTextsFor }),
-    ...(options.automaticTitles === undefined ? {} : { automatic: options.automaticTitles }),
+    ...(options.conversationMode === "single" ? { automatic: false } : options.automaticTitles === undefined ? {} : { automatic: options.automaticTitles }),
     ...(options.diagnostics === undefined ? {} : { diagnostics: options.diagnostics }) });
   const approvalStoreFor = (context: TContext) => options.approvalStoreFor?.({
     context, persistence: bundleFor(context),

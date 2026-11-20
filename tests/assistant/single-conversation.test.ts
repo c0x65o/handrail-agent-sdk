@@ -44,14 +44,14 @@ it("concurrent devices and new sessions share one conversation; account scopes r
     .toBe((await f.create("long-2", longScope)).descriptor.conversationId);
   await expect(f.create("denied", { ...f.context, allowed: false })).rejects.toMatchObject({ code: "forbidden" });
 });
-it("adopts a legacy active conversation without deleting other saved rows and disables thread lifecycle", async () => {
+it("starts fresh even when other conversations exist and disables thread lifecycle", async () => {
   const f = fixture(false); await f.create(); await f.create();
   const single = new PostgresConversationCatalog({ ...f.options, conversationMode: "single" });
-  const row = (await single.create({ authorizationContext: f.context, idempotencyKey: "adopt" as never })).descriptor;
+  const row = (await single.create({ authorizationContext: f.context, idempotencyKey: "first-visit" as never })).descriptor;
   const page = await single.list({ authorizationContext: f.context, lifecycle: "active", pageSize: 20,
     order: { field: "updated_at", direction: "desc" } });
   expect(page.items).toHaveLength(1); expect(page.items[0]!.conversationId).toBe(row.conversationId);
-  expect((await persistence.client.query("SELECT 1 FROM handrail_ai_conversations WHERE tenant_id=$1", [f.tenantId])).rows).toHaveLength(2);
+  expect((await persistence.client.query("SELECT 1 FROM handrail_ai_conversations WHERE tenant_id=$1", [f.tenantId])).rows).toHaveLength(3);
   await expect(single.archive({ authorizationContext: f.context, conversationId: row.conversationId,
     expectedVersion: row.version, idempotencyKey: "archive" as never })).rejects.toMatchObject({ code: "unsupported" });
 });

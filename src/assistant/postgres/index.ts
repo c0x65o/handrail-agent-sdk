@@ -9,7 +9,8 @@ export { cleanupPostgresAssistantAttachmentStaging, startPostgresAssistantAttach
 import { assertPostgresConversationWritable, postgresDocumentConversation, deletePostgresConversationHistory,
   deletePostgresConversationAttachments, lockPostgresAttachmentBlob } from "./conversation-deletion.js";
 import { PostgresConversationCatalogTable, PostgresCatalogIdentityError, type PostgresCatalogRow, type PostgresConversationCatalogTableOptions } from "./catalog-table.js";
-export { clearPostgresConversation } from "./conversation-clear.js";
+import { clearPostgresConversation } from "./conversation-clear.js";
+export { clearPostgresConversation };
 export type { PostgresConversationCatalogTableOptions } from "./catalog-table.js";
 export { enqueuePostgresConversationFileCleanup, drainPostgresConversationFileCleanup,
   startPostgresConversationFileCleanupWorker, type PostgresConversationFileCleanupOptions } from "./conversation-file-cleanup.js";
@@ -60,7 +61,7 @@ import {
   type ActiveConversationCatalogDescriptor, type ArchiveConversationResult,
   type ClearConversationResult,
   type ConversationCatalog, type ConversationCatalogAuthorizer, type ConversationCatalogDescriptor, type ConversationCatalogCapabilities,
-  type ConversationCatalogVersion, type CreateConversationResult, type GetConversationResult,
+  type ConversationCatalogIdempotencyKey, type ConversationCatalogVersion, type CreateConversationResult, type GetConversationResult,
   type ListConversationsResult, type PermanentlyDeleteConversationResult,
   type RenameConversationResult, type RestoreConversationResult,
 } from "../conversation/catalog.js";
@@ -1622,17 +1623,11 @@ export class PostgresConversationCatalog<TAuthorizationContext> implements Conve
       const saved = await persistence.getDocument<{ conversationId: ConversationId }>(this.options.tenantId, "checkpoint", key, "current");
       let row = saved ? await this.lookup(tx, scope, saved.value.conversationId) : null;
       if (saved && !row) throw new ConversationCatalogError("not_found", "get");
-      if (!saved) {
-        const page = await this.#table.list(tx, { tenantId: this.options.tenantId, scopeId: scope,
-          lifecycle: "active", pageSize: 1, cursor: null, order: { field: "updated_at", direction: "desc" } });
-        row = page.rows[0] ? catalogDescriptor(page.rows[0]) : null;
-        if (!row && create) {
-          const { conversationMode: _mode, ...options } = this.options;
-          void _mode;
-          row = (await new PostgresConversationCatalog({ ...options, persistence }).create({ authorizationContext: context,
-            idempotencyKey: key as never })).descriptor;
-        }
-        if (row) await persistence.compareAndSetDocument({ tenantId: this.options.tenantId, kind: "checkpoint",
+      if (!saved && create) {
+        row = (await new PostgresConversationCatalog({ ...this.options, conversationMode: "multiple", persistence }).create({
+          authorizationContext: context, idempotencyKey: key as ConversationCatalogIdempotencyKey,
+        })).descriptor;
+        await persistence.compareAndSetDocument({ tenantId: this.options.tenantId, kind: "checkpoint",
           scopeId: key, recordId: "current", expectedVersion: null, value: { conversationId: row.conversationId } });
       }
       await this.options.onRead?.({ client: tx, authorizationContext: context,
@@ -2026,6 +2021,7 @@ export interface PostgresAssistantPersistenceOptions {
 }
 
 export interface PostgresAssistantScopedOptions<TAuthorizationContext> {
+  readonly conversationMode?: "single" | "multiple";
   readonly createConversationId: () => ConversationId;
   readonly authorizeConversation?: ConversationCatalogAuthorizer<TAuthorizationContext>;
   readonly authorizeApproval?: ApprovalProposalPermissionCheck<TAuthorizationContext>;
@@ -2220,6 +2216,7 @@ export function postgresFromClient(
           scopeId: () => scopeId,
           authorize: scoped.authorizeConversation ?? (() => "allow"),
           createId: scoped.createConversationId,
+          ...(scoped.conversationMode === "single" ? { conversationMode: "single", clearContents: clearPostgresConversation } : {}),
         }),
         approvals: new PostgresApprovalProposalStore({
           persistence,
