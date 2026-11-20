@@ -198,3 +198,4 @@ export function createMcpConnectorAdapter<TContext, TAdapterContext = TContext>(
     },
   });
 }
+export * from "./registry.js";

@@ -1,3 +1,5 @@
+import { MutationReceipt, RegistryConsentPrompt, useAssistantReviewComponents, type RegistryConsentPromptProps } from "../react/registry-review.js";
+export * from "../react/registry-review.js";
 import { approvalStatusLabel } from "../conversation/tool-activity.js";
 import { useTurnApprovalMode } from "../react/use-turn-approval-mode.js";
 import type { TurnApprovalModeInput, TurnApprovalModeResult } from "../composer-approval.js";
@@ -191,6 +193,7 @@ export interface StyledChatPresetProps extends ComposerApprovalControlProps, Con
   readonly renderToolActivity?: (activity: ToolActivitySnapshot) => ReactNode;
   readonly conversationPicker?: ReactNode;
   readonly approvals?: ReactNode;
+  readonly registryConsent?: RegistryConsentPromptProps;
   /** Protected proposal resources; supplied automatically by the client workspace. */
   readonly approvalResources?: ConversationApprovalResources;
   readonly changeTurnApprovalMode?: (input: TurnApprovalModeInput) => Promise<TurnApprovalModeResult>;
@@ -266,7 +269,7 @@ export const handrailChatPresetCss = `
 .hr-chat__launcher-trigger{align-items:center;display:inline-flex;gap:.45rem}.hr-chat__launcher-status{font-size:.75rem;font-weight:600}.hr-chat__launcher-trigger[data-busy=true] .hr-chat__launcher-status{color:var(--hr-activity)}.hr-chat__launcher-badge:empty{display:none}.hr-chat__launcher-badge{align-items:center;background:var(--hr-activity);border-radius:999px;color:#fff;display:inline-flex;font-size:.7rem;justify-content:center;min-block-size:1.2rem;min-inline-size:1.2rem;padding-inline:.25rem}
 .hr-chat__voice-activity{display:block;font-size:.75rem;font-weight:400;line-height:1.35;max-inline-size:18rem;overflow-wrap:anywhere}.hr-chat__workspace-picker li .hr-chat__voice-activity{flex-basis:100%;margin-block-start:.25rem}.hr-chat__workspace-picker li button:first-child{flex-wrap:wrap}
 .hr-chat__workspace-picker{align-items:flex-start;display:flex;gap:.4rem;position:relative}.hr-chat__workspace-picker summary{background:var(--hr-panel,#f6f7fb);border:1px solid var(--hr-border,#dfe3eb);border-radius:9px;cursor:pointer;list-style:none;padding:.55rem .7rem}.hr-chat__workspace-picker summary::-webkit-details-marker{display:none}.hr-chat__workspace-picker ul{background:var(--hr-bg,#fff);border:1px solid var(--hr-border,#dfe3eb);border-radius:10px;box-shadow:0 12px 35px #17192724;display:grid;gap:.2rem;inset-block-start:calc(100% + .35rem);inset-inline-end:0;list-style:none;margin:0;max-block-size:20rem;min-inline-size:18rem;overflow:auto;padding:.4rem;position:absolute;z-index:10}.hr-chat__workspace-picker li{align-items:center;display:flex;margin:0;padding:0}.hr-chat__workspace-picker li button:first-child{align-items:center;display:flex;flex:1;inline-size:100%;justify-content:space-between;max-inline-size:none;text-align:start}.hr-chat__workspace-picker small{color:var(--hr-muted,#687083);margin-inline-start:.5rem}.hr-chat__workspace-picker [data-turn-status=running] small{color:var(--hr-activity)}.hr-chat__empty{display:grid;min-block-size:12rem;place-items:center;padding:1rem}
-.hr-chat__pending-approvals{max-block-size:50vh;overflow:auto;overflow-wrap:anywhere;padding:.75rem;border-block-start:1px solid var(--hr-border)}.hr-chat__pending-approvals ul{padding-inline-start:1.5rem}.hr-chat__approvals{display:grid;gap:.5rem}.hr-chat .hr-chat__approval{background:var(--hr-bg);border:1px solid var(--hr-border);border-radius:var(--hr-radius-control);display:grid;gap:.75rem;padding:1rem;inline-size:auto;white-space:normal}.hr-chat__approval>strong{font-size:1.05em}.hr-chat__approval-status{color:var(--hr-muted);font-size:.9em}.hr-chat__approval details{min-inline-size:0}.hr-chat__approval summary{cursor:pointer;font-weight:600}.hr-chat__approval details[open]>summary{margin-block-end:.75rem}.hr-chat__approval-actions{display:flex;flex-wrap:wrap;gap:.5rem;border-block-start:1px solid var(--hr-border);padding-block-start:.75rem}.hr-chat__approval-error{color:var(--hr-danger)}
+.hr-chat__pending-approvals{max-block-size:50vh;overflow:auto;overflow-wrap:anywhere;padding:.75rem;border-block-start:1px solid var(--hr-border)}.hr-chat__pending-approvals ul{padding-inline-start:1.5rem}.hr-chat__approvals{display:grid;gap:.5rem}.hr-chat .hr-chat__approval{background:var(--hr-bg);border:1px solid var(--hr-border);border-radius:var(--hr-radius-control);display:grid;gap:.75rem;padding:1rem;inline-size:auto;white-space:normal}.hr-chat__access-list{margin:0;padding-inline-start:1.5rem}.hr-chat__approval>strong{font-size:1.05em}.hr-chat__approval-status{color:var(--hr-muted);font-size:.9em}.hr-chat__approval details{min-inline-size:0}.hr-chat__approval summary{cursor:pointer;font-weight:600}.hr-chat__approval details[open]>summary{margin-block-end:.75rem}.hr-chat__approval-actions{display:flex;flex-wrap:wrap;gap:.5rem;border-block-start:1px solid var(--hr-border);padding-block-start:.75rem}.hr-chat__approval-error{color:var(--hr-danger)}
 .hr-chat__message-actions{align-items:center;flex-wrap:wrap;gap:.25rem}
 ` + HANDRAIL_CONVERSATION_HISTORY_CSS + HANDRAIL_STRUCTURED_DETAILS_CSS + HANDRAIL_ACTIVITY_CSS + REQUEST_STATUS_CSS + ATTACHMENT_IMAGE_CSS;
 
@@ -379,8 +382,10 @@ export function StyledChatPreset(props: StyledChatPresetProps): ReactNode {
         renderActivity={group => <ConversationActivityCard state={activityState} group={group}
           display={props.toolActivity ?? "collapsed"} renderDetails={props.renderToolActivity}/>}
         {...(proposals ? { proposals } : {})} emptyState={props.emptyState}
+        {...(props.mutationTools ? { mutationTools: props.mutationTools } : {})}
         includeToolResult={props.includeToolResult ?? (call => !!props.toolRendererKeys?.[call.name ?? ""])}
         renderToolResult={call => props.renderCompletedTool ? props.renderCompletedTool(call, resolvedState)
+          : props.mutationTools?.includes(call.name ?? "") && !call.result?.is_error ? <MutationReceipt call={call}/>
           : call.result && renderToolResult ? renderToolResult(call.result, call, undefined) : null}
         renderApproval={proposal => {
           const context: StyledApprovalRenderContext = { state: resolvedState, busy: approvalReview.busy !== null,
@@ -400,6 +405,7 @@ export function StyledChatPreset(props: StyledChatPresetProps): ReactNode {
               conversationId={resolvedState.conversation_id} disabled={!responseIsComplete(resolvedState, message)} reporting={props.badResponseReporting}/>}
           </div>}
         </div>}>
+          {props.registryConsent && <RegistryConsentPrompt {...props.registryConsent} busy={Boolean(props.registryConsent.busy || props.readOnly)}/>}
           <TypingIndicator/>
         </ConversationTranscript>}
       {session && resolvedState && <ConversationPendingApprovals key={resolvedState.conversation_id ?? "unselected"} session={session}
@@ -1030,6 +1036,7 @@ function ConversationGatewayApprovals({ resources, conversationId }: {
 export function StandardApprovalCard({ proposal, context }: {
   readonly proposal: ConversationApprovalProposalRecord; readonly context: StyledApprovalRenderContext;
 }) {
+  const { Card, Button } = useAssistantReviewComponents();
   const session = useContext(ConversationContext)?.runtime?.displaySession;
   const inlineArguments = reviewedToolArguments(context.state, proposal);
   const conversationId = context.state.conversation_id;
@@ -1053,21 +1060,21 @@ export function StandardApprovalCard({ proposal, context }: {
   const arguments_ = inlineArguments ?? saved.review;
   const pending = proposal.status === "pending";
   const expired = proposal.status === "expired";
-  return <article className="hr-chat__approval" role="listitem" aria-label="Assistant action">
+  return <Card className="hr-chat__approval" role="listitem" aria-label="Assistant action">
     <strong>{structuredDetailLabel(proposal.tool_name)}</strong><span className="hr-chat__approval-status">{approvalStatusLabel(proposal, context.state)}</span>
     {arguments_ ? <StructuredDetailsDisclosure value={arguments_} summary="Action details" always
       defaultOpen={pending && !shouldCollapseStructuredDetails(arguments_)}/>
       : saved.status === "loading" ? <p role="status">Loading saved action details…</p>
         : <p>{pending ? "Action details are unavailable. Refresh this conversation before confirming." : "Saved action details are unavailable."}
-          {saved.status === "error" && <button type="button" onClick={saved.retry}>Retry action details</button>}</p>}
+          {saved.status === "error" && <Button type="button" onClick={saved.retry}>Retry action details</Button>}</p>}
     {proposal.failure_reason && <p>{proposal.failure_reason}</p>}
     {pending && <div className="hr-chat__approval-actions">
-      <button type="button" disabled={context.busy || context.readOnly || expired || arguments_ === null}
-        onClick={() => { void context.decide("confirmed"); }}>Confirm</button>
-      <button type="button" disabled={context.busy || context.readOnly || expired}
-        onClick={() => { void context.decide("rejected"); }}>Reject</button>
+      <Button type="button" disabled={context.busy || context.readOnly || expired || arguments_ === null}
+        onClick={() => { void context.decide("confirmed"); }}>Confirm</Button>
+      <Button type="button" disabled={context.busy || context.readOnly || expired}
+        onClick={() => { void context.decide("rejected"); }}>Reject</Button>
     </div>}
-  </article>;
+  </Card>;
 }
 
 const EMPTY_ASSISTANT_AUTHORIZATION_CONTEXT = Object.freeze({});

@@ -1,3 +1,4 @@
+import type { createAssistantMcpRegistry } from "../mcp/registry.js";
 import type { createHandrailFeedback } from "./handrail-feedback.js";
 import { isTextFrame } from "../stream-batches.js";
 export { createAttachmentContentValidator, AttachmentContentError, STANDARD_ATTACHMENT_MEDIA_TYPES,
@@ -157,6 +158,7 @@ export interface CreateHandrailAssistantOptions<TContext extends HandrailAssista
     readonly retryIntervalMilliseconds?: number | null;
     readonly batchSize?: number;
   };
+  readonly mcpRegistry?: ReturnType<typeof createAssistantMcpRegistry<TContext>>;
   readonly tools?: readonly ToolPlugin<ApplicationToolExecutor<TContext>, TContext, TContext, TContext>[];
   /** SDK-owned saved-file preparation, review, approval and verified record
    * receipts. Requires provider saved-file support (for OpenAI: savedConversation). */
@@ -416,10 +418,10 @@ export async function createHandrailAssistant<TContext extends HandrailAssistant
         }) : undefined;
         const feedbackAdmission: ApplicationToolAdmission<TContext> = input => options.feedback?.owns(input.definition.name)
           ? options.feedback.admission(input) : { outcome: "allow" };
-        const admissions = [options.feedback ? feedbackAdmission : undefined, options.toolAdmission, support.admission, recordTools?.admission]
+        const admissions = [options.mcpRegistry?.admission, options.feedback ? feedbackAdmission : undefined, options.toolAdmission, support.admission, recordTools?.admission]
           .filter((admission): admission is ApplicationToolAdmission<TContext> => admission !== undefined);
         return createAiApplication({
-          plugins: [...(options.tools ?? []), ...(options.feedback?.plugins ?? []), ...support.plugins, ...(recordTools ? [recordTools.plugin] : [])], installContext: context,
+          plugins: [...(options.tools ?? []), ...(options.mcpRegistry ? [options.mcpRegistry.plugin] : []), ...(options.feedback?.plugins ?? []), ...support.plugins, ...(recordTools ? [recordTools.plugin] : [])], installContext: context,
           policy: options.toolPolicy ?? (() => ({ outcome: "allow" })),
           ...(admissions.length === 0 ? {} : { toolAdmission: async input => {
             for (const admission of admissions) if ((await admission(input)).outcome !== "allow") return { outcome: "deny" as const };

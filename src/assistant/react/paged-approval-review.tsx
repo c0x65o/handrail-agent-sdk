@@ -1,3 +1,4 @@
+import { useAssistantReviewComponents } from "./registry-review.js";
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { ConversationApprovalReview, type ConversationApprovalReviewReader } from "../client/approval-review.js";
 import type { ConversationApprovalDisplayDecisionInput } from "../conversation/approval-display-review.js";
@@ -28,6 +29,7 @@ export function ConversationPagedApprovalReview(props: ConversationPagedApproval
 }
 
 function ReviewView(props: ConversationPagedApprovalReviewProps & { readonly controller: ConversationApprovalReview }) {
+  const { Card, Button } = useAssistantReviewComponents();
   const { controller } = props;
   const state = useSyncExternalStore(controller.subscribe, controller.getSnapshot, controller.getSnapshot);
   const latest = useRef(props); latest.current = props;
@@ -42,18 +44,18 @@ function ReviewView(props: ConversationPagedApprovalReviewProps & { readonly con
     });
   };
   const busy = state.status === "loading" || state.status === "deciding";
-  return <section className="hr-chat__approval" aria-label="Action review" aria-busy={busy}>
+  return <Card className="hr-chat__approval" aria-label="Action review" aria-busy={busy}>
     <strong>{state.section?.toolName ?? "Action review"}</strong>
     {state.status === "decided" ? <p role="status">{state.decision === "confirmed" ? "Approval saved." : "Rejection saved."}</p>
-      : state.status === "preparing" ? <p role="status">Action details are being prepared. <button type="button" onClick={() => { void controller.load(); }}>Retry review</button></p>
+      : state.status === "preparing" ? <p role="status">Action details are being prepared. <Button type="button" onClick={() => { void controller.load(); }}>Retry review</Button></p>
       : state.status === "error" ? <div role="alert">
         <p>{state.error === "changed" ? "This action changed. Reload its details and review again."
           : state.error === "denied" ? "This action is no longer available."
             : state.error === "decision" ? "The decision could not be verified. Retry to check the saved result."
               : "Action details could not be loaded."}</p>
-        {state.error === "changed" && <button type="button" onClick={props.onRefresh}>Reload action</button>}
-        {state.error === "unavailable" && <button type="button" onClick={() => { void controller.load(); }}>Retry review</button>}
-        {state.error === "decision" && state.decision && <button type="button" disabled={props.readOnly} onClick={() => decide(state.decision!)}>Retry decision</button>}
+        {state.error === "changed" && <Button type="button" onClick={props.onRefresh}>Reload action</Button>}
+        {state.error === "unavailable" && <Button type="button" onClick={() => { void controller.load(); }}>Retry review</Button>}
+        {state.error === "decision" && state.decision && <Button type="button" disabled={props.readOnly} onClick={() => decide(state.decision!)}>Retry decision</Button>}
       </div> : <>
         {state.status === "loading" || state.status === "idle" ? <p role="status">Loading action review…</p>
           : state.status === "deciding" ? <p role="status">Saving decision…</p> : null}
@@ -62,16 +64,16 @@ function ReviewView(props: ConversationPagedApprovalReviewProps & { readonly con
           <div ref={region} tabIndex={0} aria-label="Action arguments part"
             style={{ whiteSpace: "pre-wrap", overflowWrap: "anywhere", maxHeight: "50vh", overflowY: "auto" }}>{state.section.text}</div>
           <div>
-            <button type="button" disabled={busy || state.offset === 0} onClick={() => { void controller.previous(); }}>Previous part</button>{" "}
-            <button type="button" disabled={busy || state.section.nextOffset === null} onClick={() => { void controller.next(); }}>Next part</button>
+            <Button type="button" disabled={busy || state.offset === 0} onClick={() => { void controller.previous(); }}>Previous part</Button>{" "}
+            <Button type="button" disabled={busy || state.section.nextOffset === null} onClick={() => { void controller.next(); }}>Next part</Button>
           </div>
           <label><input type="checkbox" checked={state.acknowledged} disabled={busy || !state.complete || props.readOnly}
             onChange={event => controller.acknowledge(event.target.checked)}/> I have reviewed every part of this action</label>
           <div className="hr-chat__approval-actions">
-            <button type="button" disabled={busy || props.readOnly || !state.complete || !state.acknowledged} onClick={() => decide("confirmed")}>Confirm</button>
-            <button type="button" disabled={busy || props.readOnly} onClick={() => decide("rejected")}>Reject</button>
+            <Button type="button" disabled={busy || props.readOnly || !state.complete || !state.acknowledged} onClick={() => decide("confirmed")}>Confirm</Button>
+            <Button type="button" disabled={busy || props.readOnly} onClick={() => decide("rejected")}>Reject</Button>
           </div>
         </>}
       </>}
-  </section>;
+  </Card>;
 }

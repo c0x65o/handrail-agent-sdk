@@ -99,3 +99,39 @@ snapshots; generate current consumers with the verifier above.
 Mills is the first intended consumer; its application cutover is separate work.
 No live model, generic browser controller, or native Handrail deployment is
 qualified by these source tests.
+
+### Share an MCP tool registry with the assistant gateway
+
+Import `createAssistantMcpRegistry` from `handrail-agent-sdk/assistant/connectors/mcp`.
+Build a bridge from the same trusted catalog and dispatcher used by your OAuth MCP endpoint.
+Pass it as `mcpRegistry` to `createHandrailAssistant`. Construct a new bridge and assistant when installing a new catalog revision.
+
+```ts
+const mcpRegistry = createAssistantMcpRegistry<SessionContext>({
+  id: "erp",
+  tools: registry.tools, // MCP definitions plus scopes, mutation and optional confirmRequired
+  visible: (session, name) => permissions.canDiscover(session, name),
+  grant: session => session.assistantGrant.tools,
+  authorize: (session, tool, args) => permissions.checkCurrentGrantAndAccess(session, tool, args),
+  callTool: input => registry.execute(input),
+  audit: event => audit.recordDispatch(event),
+});
+const assistant = await createHandrailAssistant({ ...gatewayOptions, mcpRegistry });
+```
+
+Supply the authenticated gateway context on every request. Bind grants to the tenant, principal, registry and client.
+Have the shared dispatcher enforce current access, honor the SDK idempotency key, and return only after the domain operation completes.
+Throw for failed or uncertain mutations. The bridge also recognizes MCP results with `isError: true`.
+Tools with `annotations.destructiveHint` or `confirmRequired` always use the SDK's saved approval review.
+
+Return `mcpRegistry.review(session)` from your authenticated host route. Pass its `mutationTools` to
+`HandrailAssistantWorkspace` (or `StyledChatPreset`) for receipts showing the saved call reference and recording time.
+Pass `registryConsent={{ additions, onAccept, busy, error }}` to show missing access.
+In `onAccept`, submit the displayed list to your authenticated, CSRF-protected grant endpoint.
+Inside a grant-store transaction, load the current session and grant, call `mcpRegistry.acceptReviewed(session, submittedList)`,
+and persist the returned grant using a row lock or compare-and-swap. Refresh the session and review after saving or on conflict.
+Unaccepted tools stay undisclosed. Adding a scope to one tool does not grant it to another.
+
+Wrap the workspace in `AssistantReviewComponents.Provider` from `handrail-agent-sdk/assistant/react/styled`
+with `value={{ Card, Button }}` to use your own components. Forward the native attributes and events, including disabled state.
+The default uses the existing assistant theme. Existing integrations can keep their own approval and result renderers.

@@ -39,6 +39,7 @@ export type ConversationTimelineEntry =
 export interface ConversationTimelineOptions {
   readonly includeActivity?: boolean;
   readonly proposals?: readonly ConversationApprovalProposalRecord[];
+  readonly mutationTools?: readonly string[];
   /** Show domain result cards; unselected tool results remain in activity. */
   readonly includeToolResult?: (call: ConversationToolCallRecord) => boolean;
 }
@@ -64,8 +65,10 @@ export function conversationTimeline(state: ConversationState, options: Conversa
   const actions = proposals.map((proposal) => ({ entry: { type: "approval" as const, proposal },
     id: String(proposal.proposal_id), turnId: proposal.turn_id, createdAt: String(proposal.created_at) }));
   const results = state.tool_calls.flatMap((call) => {
-    if (!call.result || !options.includeToolResult?.(call) || call.approval_required_at !== null || proposals.some((proposal) =>
-      proposal.turn_id === call.turn_id && proposal.tool_call_id === call.tool_call_id && proposal.tool_name === call.name)) return [];
+    if (!call.result) return [];
+    const receipt = !call.result.is_error && options.mutationTools?.includes(call.name ?? "");
+    if (!receipt && (!options.includeToolResult?.(call) || call.approval_required_at !== null || proposals.some((proposal) =>
+      proposal.turn_id === call.turn_id && proposal.tool_call_id === call.tool_call_id && proposal.tool_name === call.name))) return [];
     return [{ entry: { type: "tool_result" as const, call }, id: `${call.turn_id}:${call.tool_call_id}`,
       turnId: call.turn_id, createdAt: call.requested_at ?? call.result.recorded_at }];
   });

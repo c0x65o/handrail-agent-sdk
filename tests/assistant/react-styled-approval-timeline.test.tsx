@@ -6,7 +6,7 @@ import { afterEach, expect, it, vi } from "vitest";
 import { createInitialConversationState, type ConversationApprovalProposalRecord, type ConversationState,
   type ConversationToolCallRecord } from "../../src/assistant/conversation/state.js";
 import { assistantToolArgumentReference } from "../../src/assistant/conversation/approval-arguments.js";
-import { StyledChatPreset } from "../../src/assistant/react-styled/index.js";
+import { AssistantReviewComponents, StyledChatPreset } from "../../src/assistant/react-styled/index.js";
 
 afterEach(cleanup);
 const stamp = "2026-09-12T12:00:00.000Z";
@@ -152,4 +152,32 @@ it.each(["executed", "rejected", "expired"] as const)("moves canonical %s to his
   view.rerender(<StyledChatPreset {...props} proposals={[{ ...settled, failure_reason: "Outcome needs reconciliation" }]}/>);
   expect(screen.getByRole("listitem", { name: "Assistant action" })).toBeTruthy();
   expect(f.resources.transitionApproval).not.toHaveBeenCalled();
+});
+
+it("displays a confirmed mutation receipt only after a successful result", () => {
+  const { state } = fixture();
+  const call = state.tool_calls[0]!;
+  const saved = { ...call, result: { content: [], recorded_at: stamp as never, attribution: {} as never, is_error: false } };
+  const view = (is_error: boolean) => <StyledChatPreset state={{ ...state, tool_calls: [{ ...saved, result: { ...saved.result, is_error } }] }}
+    mutationTools={["reclassify_expense"]} transcription={false}/>;
+  const rendered = render(view(true));
+  expect(screen.queryByLabelText("Mutation receipt")).toBeNull();
+  rendered.rerender(view(false));
+  expect(within(screen.getByLabelText("Mutation receipt")).getByText("call")).toBeTruthy();
+});
+
+it("uses host review controls and submits only displayed consent additions", () => {
+  const { state } = fixture();
+  const additions = [{ name: "send_invoice", scopes: ["mail.send"] }];
+  const onAccept = vi.fn();
+  const view = render(<AssistantReviewComponents.Provider value={{
+    Card: props => <article data-host="card" {...props}/>, Button: props => <button data-host="button" {...props}/>,
+  }}><StyledChatPreset state={state} registryConsent={{ additions, onAccept }} transcription={false}/></AssistantReviewComponents.Provider>);
+  const button = screen.getByRole("button", { name: "Allow listed access" });
+  expect(button.closest("[data-host=card]")).toBeTruthy();
+  expect(button.dataset.host).toBe("button");
+  fireEvent.click(button);
+  expect(onAccept).toHaveBeenCalledWith(additions);
+  view.rerender(<StyledChatPreset state={state} registryConsent={{ additions: [], onAccept }} transcription={false}/>);
+  expect(screen.queryByRole("button", { name: "Allow listed access" })).toBeNull();
 });

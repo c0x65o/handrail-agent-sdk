@@ -47,13 +47,13 @@ export function ConversationTranscript(props: ConversationTranscriptProps) {
     : <FullConversationTranscript {...props}/>;
 }
 
-function PagedConversationTranscript({ session, state, proposals, includeToolResult, includeActivity, renderActivity,
+function PagedConversationTranscript({ session, state, proposals, mutationTools, includeToolResult, includeActivity, renderActivity,
   renderMessage, renderApproval, renderToolResult, renderFailure, emptyState, children, ...props }:
   ConversationTranscriptProps & { readonly session: ApplicationConversationSession }) {
   const snapshot = useSyncExternalStore(session.subscribe, session.getSnapshot, session.getSnapshot);
   const positions = useMemo(() => ({ get: () => session.getPosition(), set: (_id: string, value: Parameters<typeof session.savePosition>[0]) => session.savePosition(value) }), [session]);
   const entries = conversationTimeline(state, { ...(proposals ? { proposals } : {}),
-    ...(includeToolResult ? { includeToolResult } : {}), ...(includeActivity ? { includeActivity } : {}) });
+    ...(mutationTools ? { mutationTools } : {}), ...(includeToolResult ? { includeToolResult } : {}), ...(includeActivity ? { includeActivity } : {}) });
   const before = new Map<string, ReactNode[]>(); let pending: ReactNode[] = [];
   const history = entries.flatMap(entry => entry.type === "approval" && isSettled(entry.proposal) ? [entry.proposal] : []);
   for (const entry of entries) {
@@ -95,13 +95,13 @@ function PagedConversationTranscript({ session, state, proposals, includeToolRes
   </ConversationDisplayTranscript>;
 }
 
-function FullConversationTranscript({ state, proposals, includeToolResult, includeActivity, renderActivity,
+function FullConversationTranscript({ state, proposals, mutationTools, includeToolResult, includeActivity, renderActivity,
   renderMessage, renderApproval, renderToolResult, renderFailure, emptyState, children, onScroll, ...props }: ConversationTranscriptProps) {
   const scope = useContext(ConversationContext)?.runtime;
   const contentVersion = useMemo(() => ({ state, proposals }), [state, proposals]);
   const follow = useSmartTranscriptFollow({ conversationId: state.conversation_id, contentVersion });
   const entries = conversationTimeline(state, {
-    ...(includeActivity ? { includeActivity } : {}), ...(proposals ? { proposals } : {}), ...(includeToolResult ? { includeToolResult } : {}),
+    ...(includeActivity ? { includeActivity } : {}), ...(proposals ? { proposals } : {}), ...(mutationTools ? { mutationTools } : {}), ...(includeToolResult ? { includeToolResult } : {}),
   });
   return <div className="hr-chat__transcript-wrap">
     <div {...props} ref={follow.transcriptRef} tabIndex={props.tabIndex ?? 0} role={props.role ?? "list"}
