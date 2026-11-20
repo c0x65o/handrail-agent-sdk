@@ -20,6 +20,7 @@ export interface ConversationApprovalDisplayReviewSection {
   readonly turnId: string;
   readonly toolCallId: string;
   readonly toolName: string;
+  readonly summary?: string;
   readonly argumentReference: string;
   readonly text: string;
   readonly offset: number;
@@ -48,6 +49,7 @@ export function parseConversationApprovalDisplayReview(value: unknown, input: Co
       !Number.isSafeInteger(r.proposalVersion) || (r.proposalVersion as number) < 1 ||
       !id(r.turnId) || !id(r.toolCallId) || !id(r.toolName) || r.groupId !== null && !id(r.groupId) ||
       typeof r.argumentReference !== "string" || !/^args-sha256-[a-f0-9]{64}$/u.test(r.argumentReference) ||
+      r.summary !== undefined && (!id(r.summary) || r.text !== r.summary || offset !== 0 || r.nextOffset !== null) ||
       typeof r.text !== "string" || r.text.length > 16384 || Array.from(r.text).length > 8192 || r.offset !== offset ||
       r.nextOffset !== null && (Array.from(r.text).length !== 8192 || r.nextOffset !== offset + 8192)) return fail();
   return value as ConversationApprovalDisplayReview;

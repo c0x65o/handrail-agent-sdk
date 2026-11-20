@@ -403,6 +403,7 @@ export interface ConversationApprovalRedactedArguments {
 export interface ConversationApprovalOpaqueArguments {
   type: "opaque_reference";
   argument_ref: ConversationApprovalArgumentReference;
+  summary?: string;
 }
 
 export type ConversationApprovalReviewedArguments =
@@ -1040,7 +1041,8 @@ function validateApprovalReviewedArguments(
   }
   if (object.type === "opaque_reference") {
     requiredKeys(object, ["argument_ref"], path);
-    allowedKeys(object, ["type", "argument_ref"], path);
+    allowedKeys(object, ["type", "argument_ref", "summary"], path);
+    if (object.summary !== undefined) stringValue(object.summary, `${path}.summary`, { maxLength: 512 });
     const reference = stringValue(object.argument_ref, `${path}.argument_ref`, {
       maxLength: CONVERSATION_EVENT_LIMITS.approvalArgumentReferenceLength,
     });

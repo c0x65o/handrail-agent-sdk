@@ -109,28 +109,36 @@ Pass it as `mcpRegistry` to `createHandrailAssistant`. Construct a new bridge an
 ```ts
 const mcpRegistry = createAssistantMcpRegistry<SessionContext>({
   id: "erp",
-  tools: registry.tools, // MCP definitions plus scopes, mutation and optional confirmRequired
+  tools: registry.tools.map(tool => tool.name === "send_quote" ? {
+    ...tool,
+    confirmation: args => `Send quote ${args.quoteNumber} to ${args.recipientName}?`,
+  } : tool),
   visible: (session, name) => permissions.canDiscover(session, name),
-  grant: session => session.assistantGrant.tools,
-  authorize: (session, tool, args) => permissions.checkCurrentGrantAndAccess(session, tool, args),
+  authorize: (session, tool, args) => permissions.checkCurrentAppAccess(session, tool, args),
   callTool: input => registry.execute(input),
   audit: event => audit.recordDispatch(event),
 });
 const assistant = await createHandrailAssistant({ ...gatewayOptions, mcpRegistry });
 ```
 
-Supply the authenticated gateway context on every request. Bind grants to the tenant, principal, registry and client.
-Have the shared dispatcher enforce current access, honor the SDK idempotency key, and return only after the domain operation completes.
-Throw for failed or uncertain mutations. The bridge also recognizes MCP results with `isError: true`.
-Tools with `annotations.destructiveHint` or `confirmRequired` always use the SDK's saved approval review.
+Supply the signed-in tenant and principal from the authenticated gateway on every request.
+Use the same record-level permission checks and audited dispatcher as the app, including on replay.
+Remove legacy session-grant checks from host authorization and dispatcher code.
+Keep external OAuth connect-time consent and token-scope enforcement on the external endpoint.
 
-Return `mcpRegistry.review(session)` from your authenticated host route. Pass its `mutationTools` to
-`HandrailAssistantWorkspace` (or `StyledChatPreset`) for receipts showing the saved call reference and recording time.
-Pass `registryConsent={{ additions, onAccept, busy, error }}` to show missing access.
-In `onAccept`, submit the displayed list to your authenticated, CSRF-protected grant endpoint.
-Inside a grant-store transaction, load the current session and grant, call `mcpRegistry.acceptReviewed(session, submittedList)`,
-and persist the returned grant using a row lock or compare-and-swap. Refresh the session and review after saving or on conflict.
-Unaccepted tools stay undisclosed. Adding a scope to one tool does not grant it to another.
+Declare a trusted `confirmation(args, session)` formatter for each tool that sends email, quotes or Spectrum
+packages, deletes records, or involves money or accounting. Include the actual record and recipient or amount.
+Resolve opaque identifiers against authorized application records where needed. Return up to 512 characters
+of safe display text. Existing destructive or confirm-required tools require a formatter at bridge construction.
+Leave ordinary reads and edits without a formatter. Split multi-purpose tools where operations have different risks.
+The SDK binds the question to the saved arguments and rechecks permissions before execution.
+The dispatcher must honor the SDK idempotency key and throw on failed or uncertain mutations.
+
+Use `mcpRegistry.review(session).mutationTools` for receipt display. Remove the grant route and
+`registryConsent` wiring. Mount `HandrailAssistantLauncher` in the page outside any docked layout column,
+or use `HandrailChatWorkspaceLauncher` with an existing workspace. The launcher owns the floating
+desktop overlay and mobile sheet. For one continuous conversation with Clear, set
+`conversationMode: "single"` on the gateway and `threads={false}` on the launcher.
 
 Wrap the workspace in `AssistantReviewComponents.Provider` from `handrail-agent-sdk/assistant/react/styled`
 with `value={{ Card, Button }}` to use your own components. Forward the native attributes and events, including disabled state.

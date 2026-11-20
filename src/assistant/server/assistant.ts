@@ -660,6 +660,7 @@ export async function createHandrailAssistant<TContext extends HandrailAssistant
           ...providerScopeFor(context), limits, instructions,
           toolActivity: createToolActivityObserver({ events: bundle.events, report: reportActivity }),
           tools: createAssistantToolRuntime({ context, application, events: bundle.events,
+            ...(options.mcpRegistry ? { confirmation: options.mcpRegistry.confirmation } : {}),
             proposalStore: approvalStoreFor(context), reportActivity,
             authorizeLocation: async (location, signal) => {
               signal.throwIfAborted();

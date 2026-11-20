@@ -73,7 +73,7 @@ export class ConversationApprovalReview {
   decide = (status: "confirmed" | "rejected", commit: (input: ConversationApprovalDisplayDecisionInput, signal: AbortSignal) => Promise<unknown>): Promise<void> => this.run(async () => {
     if (this.state.status === "decided" || this.intent && this.intent.status !== status) return;
     if (!this.intent) {
-      if (this.state.status !== "ready" || !this.state.section || status === "confirmed" && (!this.state.complete || !this.state.acknowledged)) return;
+      if (this.state.status !== "ready" || !this.state.section || status === "confirmed" && (!this.state.complete || (!this.state.section.summary && !this.state.acknowledged))) return;
       this.publish({ status: "deciding", error: null });
       try {
         // Verify the exact displayed binding again immediately before creating

@@ -154,6 +154,7 @@ export type ConversationStateApprovalReviewedArguments =
   | {
       readonly type: "opaque_reference";
       readonly argument_ref: ConversationApprovalArgumentReference;
+      readonly summary?: string;
     };
 
 export interface ConversationToolCallRecord {

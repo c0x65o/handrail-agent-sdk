@@ -22,3 +22,8 @@ export function reviewedToolArguments(state: Pick<ConversationState, "tool_calls
   const arguments_ = call.arguments as JsonObject;
   return proposal.reviewed_arguments.argument_ref === assistantToolArgumentReference(arguments_) ? arguments_ : null;
 }
+
+/** Optional host-authored question saved with the exact argument binding. */
+export function approvalQuestion(proposal: ConversationApprovalProposalRecord): string | undefined {
+  return proposal.reviewed_arguments?.type === "opaque_reference" ? proposal.reviewed_arguments.summary : undefined;
+}

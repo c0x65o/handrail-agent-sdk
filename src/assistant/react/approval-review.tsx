@@ -1,3 +1,4 @@
+import { approvalQuestion } from "../conversation/approval-arguments.js";
 import {
   createContext,
   Fragment,
@@ -728,8 +729,8 @@ export const ApprovalReviewItem = forwardRef<HTMLLIElement, ApprovalReviewItemPr
       proposal,
     ) ?? defaultReviewedArguments(proposal);
     const content = children ?? <>
-      <h4>{structuredDetailLabel(proposal.tool_name)}</h4>
-      <dl>
+      <h4>{approvalQuestion(proposal) ?? structuredDetailLabel(proposal.tool_name)}</h4>
+      {!approvalQuestion(proposal) && <><dl>
         <dt>Proposal</dt><dd>{proposal.proposal_id}</dd>
         {proposal.group_id === null ? null : <><dt>Group</dt><dd>{proposal.group_id}</dd></>}
         <dt>Version</dt><dd>{proposal.proposal_version}</dd>
@@ -740,7 +741,7 @@ export const ApprovalReviewItem = forwardRef<HTMLLIElement, ApprovalReviewItemPr
         <dt>Latest actor</dt><dd>{proposal.latest_attribution.actor.type}</dd>
         <dt>Latest source</dt><dd>{proposal.latest_attribution.source.type}</dd>
       </dl>
-      {reviewedArguments}
+      {reviewedArguments}</>}
       <ApprovalReviewStatus />
       <div>
         <ApprovalReviewConfirm />
@@ -750,7 +751,7 @@ export const ApprovalReviewItem = forwardRef<HTMLLIElement, ApprovalReviewItemPr
     const nativeProps: ApprovalReviewItemNativeProps = {
       ...props,
       children: content,
-      "aria-label": props["aria-label"] ?? `Approval for ${proposal.tool_name}`,
+      "aria-label": props["aria-label"] ?? `Approval for ${approvalQuestion(proposal) ?? proposal.tool_name}`,
       "data-approval-proposal-id": proposal.proposal_id,
       "data-approval-proposal-status": proposal.status,
       "data-approval-proposal-version": proposal.proposal_version,
@@ -813,7 +814,7 @@ export const ApprovalReviewStatus = forwardRef<HTMLParagraphElement, ApprovalRev
       children: children ?? message,
       role: props.role ?? "status",
       "aria-live": props["aria-live"] ?? "polite",
-      "aria-label": props["aria-label"] ?? `Approval status for ${proposal.tool_name}: ${message}`,
+      "aria-label": props["aria-label"] ?? `Approval status for ${approvalQuestion(proposal) ?? proposal.tool_name}: ${message}`,
       "data-approval-decision-state": state.code,
     };
     return render
@@ -849,7 +850,7 @@ function actionButton(
     ...rest,
     type: rest.type ?? "button",
     children: children ?? label,
-    "aria-label": rest["aria-label"] ?? `${label} ${proposal.tool_name}`,
+    "aria-label": rest["aria-label"] ?? `${label} ${approvalQuestion(proposal) ?? proposal.tool_name}`,
     "aria-busy": rest["aria-busy"] ?? busy,
     disabled: rest.disabled ?? !controller.canDecide(proposal),
     onClick: (event) => {

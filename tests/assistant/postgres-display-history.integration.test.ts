@@ -99,6 +99,19 @@ describe("indexed display history", () => {
     expect(await display().backfillReviewControls("legacy-review")).toEqual({ processed: 0, hasMore: false });
   });
 
+  it("returns the saved action question as one verified review section", async () => {
+    const args = { quote: "2026-617", recipient: "Scott Murphy Daniel" };
+    const summary = "Send quote 2026-617 to Scott Murphy Daniel?";
+    await append("quote-review", [
+      { type: "tool_call.requested", turn_id: "turn", tool_call_id: "call", name: "send", arguments: args },
+      { type: "approval.proposal_created", turn_id: "turn", tool_call_id: "call", tool_name: "send", proposal_id: "approval",
+        reviewed_arguments: { type: "opaque_reference", argument_ref: assistantToolArgumentReference(args), summary },
+        status: "pending", proposal_version: 1, expires_at: null },
+    ]);
+    expect(await display().approvalReview({ conversationId: "quote-review", proposalId: "approval", generation: 0 }))
+      .toMatchObject({ status: "ready", review: { summary, text: summary, nextOffset: null } });
+  });
+
   it("refuses a tool whose recorded argument reference does not match its proposal", async () => {
     await append("wrong-review", [
       { type: "tool_call.requested", turn_id: "turn", tool_call_id: "call", name: "send", arguments: { amount: 100 } },

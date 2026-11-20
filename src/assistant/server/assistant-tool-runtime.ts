@@ -26,6 +26,7 @@ export interface AssistantToolRuntime {
 }
 export interface AssistantToolRuntimeOptions<TContext extends { readonly scopeId: string }> {
   readonly context: TContext;
+  readonly confirmation?: (name: string, args: JsonObject, context: TContext) => string | undefined | Promise<string | undefined>;
   /** Install the native execution ledger and approval execution coordinator. */
   readonly application: AiApplication<TContext, TContext, TContext>;
   readonly events: ConversationEventStore;
@@ -206,10 +207,11 @@ export function createAssistantToolRuntime<TContext extends { readonly scopeId: 
       let proposal = await load();
       if (!proposal) {
         try {
+          const summary = await options.confirmation?.(call.name, rawArguments, context);
           proposal = await proposalStore.create({ permissionContext: context, proposalId,
             groupId: conversationId as never, turnId: turnId as never,
             toolCallId: call.tool_call_id as never, toolName: call.name,
-            reviewedArguments: { type: "opaque_reference", argument_ref: reference as never },
+            reviewedArguments: { type: "opaque_reference", argument_ref: reference as never, ...(summary === undefined ? {} : { summary }) },
             expiresAt: null,
             attribution: SYSTEM_ATTRIBUTION, idempotencyKey: `approval:${identity}`,
             idempotencyFingerprint: `approval:${identity}` });

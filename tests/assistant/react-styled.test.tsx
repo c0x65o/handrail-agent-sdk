@@ -368,7 +368,7 @@ describe("styled React preset", () => {
     expect(trigger.dataset.turnStatus).toBe("completed");
     expect(trigger.dataset.unreadCount).toBe("1");
     fireEvent.click(trigger);
-    expect(screen.getByRole("region", { name: "Aegis" })).toBeTruthy();
+    expect(screen.getByRole("dialog", { name: "Aegis" })).toBeTruthy();
   });
   it("includes unopened server activity in launcher status", () => {
     const empty = { selectedConversationId: null, runningCount: 0, errorCount: 0,

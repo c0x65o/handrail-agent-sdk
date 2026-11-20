@@ -2,7 +2,7 @@ import { createRoot } from "react-dom/client";
 import { ConversationWorkspace, ConversationRuntimeRegistry, InMemoryConversationCatalog,
   InMemoryConversationEventStore, createConversationRuntime, parseConversationEvent,
   createAttachmentUploader, type ConversationId } from "../../../dist/assistant/index.js";
-import { HandrailChatWorkspace } from "../../../dist/assistant/react-styled/index.js";
+import { HandrailChatWorkspace, HandrailChatWorkspaceLauncher } from "../../../dist/assistant/react-styled/index.js";
 
 // Synthetic component fixture. Server singleton/authorization are tested in PGlite.
 void (async () => {
@@ -28,7 +28,8 @@ void (async () => {
     createRuntime: ({ conversationId }) => createConversationRuntime({ conversationId, clientId: "browser" as never,
       eventStore: events, transport: {} as never }) }));
   const uploader = createAttachmentUploader<Blob>({ upload: async () => { throw new Error("unused"); } });
-  createRoot(document.getElementById("root")!).render(<HandrailChatWorkspace threads={false} showConversationTitle
+  const Workspace = new URLSearchParams(location.search).has("overlay") ? HandrailChatWorkspaceLauncher : HandrailChatWorkspace;
+  createRoot(document.getElementById("root")!).render(<Workspace threads={false} showConversationTitle
     workspace={workspace} title="Family Assistant" layout="page"
     theme={{ colors: { accent: "#ad6844", background: "#fffcf6", panel: "#f8f2e8", text: "#4b433a" } }}
     catalogOptions={{ catalog, authorizationContext: context }}

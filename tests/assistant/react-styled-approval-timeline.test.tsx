@@ -6,16 +6,16 @@ import { afterEach, expect, it, vi } from "vitest";
 import { createInitialConversationState, type ConversationApprovalProposalRecord, type ConversationState,
   type ConversationToolCallRecord } from "../../src/assistant/conversation/state.js";
 import { assistantToolArgumentReference } from "../../src/assistant/conversation/approval-arguments.js";
-import { AssistantReviewComponents, StyledChatPreset } from "../../src/assistant/react-styled/index.js";
+import { StyledChatPreset } from "../../src/assistant/react-styled/index.js";
 
 afterEach(cleanup);
 const stamp = "2026-09-12T12:00:00.000Z";
 const arguments_ = { amount: 212, category: "Software", nested: { z: false, a: ["é", 1] } };
-function fixture(matching = true) {
+function fixture(matching = true, summary?: string) {
   const proposal = { proposal_id: "proposal", group_id: "conversation", turn_id: "turn", tool_call_id: "call",
     tool_name: "reclassify_expense", proposal_version: 1, status: "pending", expires_at: "2099-01-01T00:00:00.000Z",
     created_at: stamp, updated_at: stamp, reviewed_arguments: { type: "opaque_reference",
-      argument_ref: assistantToolArgumentReference(arguments_) } } as ConversationApprovalProposalRecord;
+      ...(summary ? { summary } : {}), argument_ref: assistantToolArgumentReference(arguments_) } } as ConversationApprovalProposalRecord;
   const call = { turn_id: "turn", tool_call_id: "call", name: "reclassify_expense", requested_at: stamp,
     approval_required_at: stamp, discovered_at: null, started_at: null, attribution: null, arguments: matching ? arguments_ : { ...arguments_, amount: 300 }, result: null } as unknown as ConversationToolCallRecord;
   const state: ConversationState = { ...createInitialConversationState("conversation" as never), tool_calls: [call], messages: [{
@@ -28,14 +28,14 @@ function fixture(matching = true) {
 }
 
 it("shows bound action details in chronological context before a versioned decision", async () => {
-  const f = fixture();
+  const f = fixture(true, "Reclassify the 212 expense as Software?");
   render(<StyledChatPreset state={f.state} approvalResources={f.resources} includeStyles={false} transcription={false}/>);
   const card = await screen.findByRole("listitem", { name: "Assistant action" });
   expect(card.querySelector('dt')?.textContent).toBe('Amount');
   expect(card.querySelector('dd')?.textContent).toBe('212');
   expect(card.querySelector('pre')).toBeNull();
   const transcript = screen.getByRole("region", { name: "Conversation transcript" });
-  expect(transcript.textContent?.indexOf("Correct this expense")).toBeLessThan(transcript.textContent!.indexOf("Reclassify expense"));
+  expect(transcript.textContent?.indexOf("Correct this expense")).toBeLessThan(transcript.textContent!.indexOf("Reclassify the 212 expense as Software?"));
   fireEvent.click(screen.getByRole("button", { name: "Confirm" }));
   await waitFor(() => expect(f.resources.transitionApproval).toHaveBeenCalledWith(expect.objectContaining({
     conversationId: "conversation", proposalId: "proposal", expectedVersion: 1, status: "confirmed",
@@ -166,18 +166,11 @@ it("displays a confirmed mutation receipt only after a successful result", () =>
   expect(within(screen.getByLabelText("Mutation receipt")).getByText("call")).toBeTruthy();
 });
 
-it("uses host review controls and submits only displayed consent additions", () => {
+it("ignores legacy session consent without accepting grants on the user's behalf", () => {
   const { state } = fixture();
-  const additions = [{ name: "send_invoice", scopes: ["mail.send"] }];
   const onAccept = vi.fn();
-  const view = render(<AssistantReviewComponents.Provider value={{
-    Card: props => <article data-host="card" {...props}/>, Button: props => <button data-host="button" {...props}/>,
-  }}><StyledChatPreset state={state} registryConsent={{ additions, onAccept }} transcription={false}/></AssistantReviewComponents.Provider>);
-  const button = screen.getByRole("button", { name: "Allow listed access" });
-  expect(button.closest("[data-host=card]")).toBeTruthy();
-  expect(button.dataset.host).toBe("button");
-  fireEvent.click(button);
-  expect(onAccept).toHaveBeenCalledWith(additions);
-  view.rerender(<StyledChatPreset state={state} registryConsent={{ additions: [], onAccept }} transcription={false}/>);
+  render(<StyledChatPreset state={state} registryConsent={{ additions: [{ name: "send_invoice", scopes: ["mail.send"] }], onAccept }}/>);
+  expect(screen.queryByText("Review assistant access")).toBeNull();
   expect(screen.queryByRole("button", { name: "Allow listed access" })).toBeNull();
+  expect(onAccept).not.toHaveBeenCalled();
 });

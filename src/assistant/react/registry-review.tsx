@@ -20,18 +20,8 @@ export interface RegistryConsentPromptProps {
   readonly busy?: boolean;
   readonly error?: string;
 }
-export function RegistryConsentPrompt({ additions, onAccept, busy, error }: RegistryConsentPromptProps) {
-  const { Card, Button } = useAssistantReviewComponents();
-  if (!additions.length) return null;
-  return <Card className="hr-chat__approval" role="listitem" aria-label="Assistant access request">
-    <strong>Review assistant access</strong>
-    <span>Allow the assistant to use these additional tools or permissions?</span>
-    <ul className="hr-chat__access-list">{additions.map(tool => <li key={tool.name}>{tool.name}{tool.scopes.length > 0 && <> ({tool.scopes.join(", ")})</>}</li>)}</ul>
-    {error && <p role="alert">{error}</p>}
-    <div className="hr-chat__approval-actions"><Button type="button" disabled={busy}
-      onClick={() => onAccept(additions)}>Allow listed access</Button></div>
-  </Card>;
-}
+/** @deprecated Signed-in assistants use the current app permissions. */
+export function RegistryConsentPrompt(_props: RegistryConsentPromptProps) { return null; }
 export function MutationReceipt({ call }: { readonly call: ConversationToolCallRecord }) {
   const { Card } = useAssistantReviewComponents();
   if (!call.result || call.result.is_error) return null;

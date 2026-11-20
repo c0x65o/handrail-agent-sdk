@@ -73,6 +73,7 @@ function reviewControl(conversationId: string, kind: ConversationDisplayRecordKi
   const p = value as ConversationDisplayRecordTypes["approval"];
   return JSON.stringify({ version: 1, proposalBinding: approvalDisplayProposalBinding(conversationId, p), proposalId: p.proposal_id, proposalVersion: p.proposal_version,
     groupId: p.group_id, turnId: p.turn_id, toolCallId: p.tool_call_id, toolName: p.tool_name, status: p.status,
+    summary: p.reviewed_arguments.type === "opaque_reference" ? p.reviewed_arguments.summary : undefined,
     reviewType: p.reviewed_arguments.type, argumentReference: p.reviewed_arguments.type === "opaque_reference"
       ? p.reviewed_arguments.argument_ref : assistantToolArgumentReference(p.reviewed_arguments.value as JsonObject) });
 }
@@ -466,8 +467,8 @@ export class PostgresConversationDisplayHistory implements ConversationDisplayHi
           (pc->>'reviewType'='redacted_json' OR pc->>'reviewType'='opaque_reference' AND tc->>'version'='1' AND
             pc->>'argumentReference'=tc->>'argumentReference' AND pc->>'turnId'=tc->>'turnId' AND
             pc->>'toolName'=tc->>'toolName' AND pc->>'toolCallId'=tc->>'toolCallId')
-        THEN substring(jsonb_pretty(CASE WHEN pc->>'reviewType'='redacted_json'
-          THEN proposal_payload::jsonb#>'{reviewed_arguments,value}' ELSE tool_payload::jsonb->'arguments' END)
+        THEN substring(COALESCE(pc->>'summary', jsonb_pretty(CASE WHEN pc->>'reviewType'='redacted_json'
+          THEN proposal_payload::jsonb#>'{reviewed_arguments,value}' ELSE tool_payload::jsonb->'arguments' END))
           FROM $5::integer FOR $6::integer) END AS content FROM selected`,
     [this.tenantId, input.conversationId, input.proposalId, input.generation, offset + 1, limits.contentChunkCharacters + 1]);
     await this.authorize(input.conversationId);
@@ -491,6 +492,7 @@ export class PostgresConversationDisplayHistory implements ConversationDisplayHi
     return parseConversationApprovalDisplayReview({ ...header, status: "ready", review: {
       binding, proposalBinding: proposal.proposalBinding, proposalVersion: proposal.proposalVersion, groupId: proposal.groupId, turnId: proposal.turnId,
       toolCallId: proposal.toolCallId, toolName: proposal.toolName, argumentReference: proposal.argumentReference,
+      ...(proposal.summary === undefined ? {} : { summary: proposal.summary }),
       text: characters.slice(0, limits.contentChunkCharacters).join(""), offset,
       nextOffset: characters.length > limits.contentChunkCharacters ? offset + limits.contentChunkCharacters : null,
     } }, input);

@@ -42,7 +42,8 @@ async function setup(required = false, limits?: Partial<BoundedToolExecutorLimit
           binding.argumentReference === reviewedArguments.argument_ref &&
           binding.argumentReference === assistantToolArgumentReference(args) ? "match" : "mismatch" }),
     });
-    return createAssistantToolRuntime({ context, application, events, proposalStore: proposals, authorizeLocation });
+    return createAssistantToolRuntime({ context, application, events, proposalStore: proposals, authorizeLocation,
+      confirmation: (_name, args) => `Save change to ${args.value}?` });
   };
   const pendingProposal = async () => {
     let id: string | undefined;
@@ -83,6 +84,7 @@ it("restores unresolved review context for a comment without copying argument au
   await h.runtime.execute(call, signal, location);
   await h.runtime.awaitApproval({ ...location, call, signal });
   const original = await h.pendingProposal();
+  expect(original.reviewed_arguments).toMatchObject({ summary: "Save change to reviewed?" });
   h.authorizeLocation.mockResolvedValue(undefined);
   const request = parseChatRequest({ protocol_version: AI_RUNTIME_PROTOCOL_VERSION, continuation_of: null,
     messages: [{ role: "user", content: [{ type: "text", text: "Leave the proposal pending" }] }],

@@ -58,3 +58,17 @@ it("invalidates changed reviews and preserves the decision action on uncertain r
   expect(f.decide.mock.calls[0]?.[0]).toBe(f.decide.mock.calls[1]?.[0]);
   expect(f.read).toHaveBeenCalledTimes(2);
 });
+
+it("presents a saved action question with one decision", async () => {
+  const f = fixture();
+  const response = await f.read(input, new AbortController().signal);
+  if (response.status !== "ready") throw new Error("Expected ready fixture");
+  const summary = "Send quote 2026-617 to Scott Murphy Daniel?";
+  f.read.mockResolvedValue({ ...response, review: { ...response.review, summary, text: summary, nextOffset: null } });
+  render(<ConversationPagedApprovalReview {...f.props}/>);
+  await screen.findByText(summary);
+  expect(screen.queryByRole("checkbox")).toBeNull();
+  fireEvent.click(screen.getByRole("button", { name: "Confirm" }));
+  await screen.findByText("Approval saved.");
+  expect(f.decide).toHaveBeenCalledOnce();
+});

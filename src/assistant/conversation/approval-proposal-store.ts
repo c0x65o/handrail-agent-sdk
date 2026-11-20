@@ -730,7 +730,7 @@ function cloneReviewedArguments(
   value: ConversationApprovalReviewedArguments,
 ): ConversationStateApprovalReviewedArguments {
   if (value.type === "opaque_reference") {
-    return deepFreeze({ type: value.type, argument_ref: value.argument_ref });
+    return deepFreeze({ ...value });
   }
   return deepFreeze({
     type: value.type,
@@ -776,10 +776,7 @@ function cloneProposal(
     ...proposal,
     reviewed_arguments:
       proposal.reviewed_arguments.type === "opaque_reference"
-        ? {
-            type: "opaque_reference",
-            argument_ref: proposal.reviewed_arguments.argument_ref,
-          }
+        ? { ...proposal.reviewed_arguments }
         : {
             type: "redacted_json",
             value: cloneJson(proposal.reviewed_arguments.value) as ConversationStateJsonObject,

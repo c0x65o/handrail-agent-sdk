@@ -45,7 +45,7 @@ function ReviewView(props: ConversationPagedApprovalReviewProps & { readonly con
   };
   const busy = state.status === "loading" || state.status === "deciding";
   return <Card className="hr-chat__approval" aria-label="Action review" aria-busy={busy}>
-    <strong>{state.section?.toolName ?? "Action review"}</strong>
+    <strong>{state.section?.summary ?? state.section?.toolName ?? "Action review"}</strong>
     {state.status === "decided" ? <p role="status">{state.decision === "confirmed" ? "Approval saved." : "Rejection saved."}</p>
       : state.status === "preparing" ? <p role="status">Action details are being prepared. <Button type="button" onClick={() => { void controller.load(); }}>Retry review</Button></p>
       : state.status === "error" ? <div role="alert">
@@ -60,7 +60,7 @@ function ReviewView(props: ConversationPagedApprovalReviewProps & { readonly con
         {state.status === "loading" || state.status === "idle" ? <p role="status">Loading action review…</p>
           : state.status === "deciding" ? <p role="status">Saving decision…</p> : null}
         {state.section && <>
-          <p>Action arguments — part {Math.floor(state.offset / 8192) + 1}</p>
+          {!state.section.summary && <><p>Action arguments — part {Math.floor(state.offset / 8192) + 1}</p>
           <div ref={region} tabIndex={0} aria-label="Action arguments part"
             style={{ whiteSpace: "pre-wrap", overflowWrap: "anywhere", maxHeight: "50vh", overflowY: "auto" }}>{state.section.text}</div>
           <div>
@@ -68,9 +68,9 @@ function ReviewView(props: ConversationPagedApprovalReviewProps & { readonly con
             <Button type="button" disabled={busy || state.section.nextOffset === null} onClick={() => { void controller.next(); }}>Next part</Button>
           </div>
           <label><input type="checkbox" checked={state.acknowledged} disabled={busy || !state.complete || props.readOnly}
-            onChange={event => controller.acknowledge(event.target.checked)}/> I have reviewed every part of this action</label>
+            onChange={event => controller.acknowledge(event.target.checked)}/> I have reviewed every part of this action</label></>}
           <div className="hr-chat__approval-actions">
-            <Button type="button" disabled={busy || props.readOnly || !state.complete || !state.acknowledged} onClick={() => decide("confirmed")}>Confirm</Button>
+            <Button type="button" disabled={busy || props.readOnly || !state.complete || (!state.section.summary && !state.acknowledged)} onClick={() => decide("confirmed")}>Confirm</Button>
             <Button type="button" disabled={busy || props.readOnly} onClick={() => decide("rejected")}>Reject</Button>
           </div>
         </>}

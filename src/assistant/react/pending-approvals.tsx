@@ -1,3 +1,4 @@
+import { approvalQuestion } from "../conversation/approval-arguments.js";
 import { useEffect, useState, useSyncExternalStore, type ReactNode } from "react";
 import type { ApplicationConversationSession } from "../client/application-session.js";
 import type { ConversationDisplayPage } from "../conversation/display-history.js";
@@ -58,7 +59,7 @@ export function ConversationPendingApprovals({ session, renderApproval, renderPa
         {!visible.page?.records.length && <p>No pending approvals on this page.</p>}
         <ul>{visible.page?.records.map(record => <li key={record.id}>
           <button type="button" aria-pressed={selected === record.id} onClick={() => setSelected(record.id)}>
-            Review {record.kind === "approval" && record.value ? record.value.tool_name : "action"}
+            {record.kind === "approval" && record.value ? approvalQuestion(record.value) ?? `Review ${record.value.tool_name}` : "Review action"}
           </button>
         </li>)}</ul>
         {visible.page?.nextCursor && <button type="button" onClick={() => { setCursor(visible.page!.nextCursor!); setSelected(undefined); }}>Older pending approvals</button>}

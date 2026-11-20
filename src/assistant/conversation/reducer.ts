@@ -879,7 +879,7 @@ function cloneApprovalReviewedArguments(
   value: ConversationApprovalReviewedArguments,
 ): ConversationStateApprovalReviewedArguments {
   return value.type === "opaque_reference"
-    ? freeze({ type: value.type, argument_ref: value.argument_ref })
+    ? freeze({ ...value })
     : freeze({ type: value.type, value: cloneJsonObject(value.value) });
 }
 
