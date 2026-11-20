@@ -179,7 +179,7 @@ export class FeedbackWatches {
     stop: boolean,
     intent: string,
     call: (args: JsonObject) => Promise<JsonObject>,
-  ) {
+  ): Promise<Partial<Record<Watch["state"], true>>> {
     const { key } = await this.load(context, conversation, kind, report);
     const commandKey = {
       ...key,
