@@ -31,6 +31,7 @@ it("shows bound action details in chronological context before a versioned decis
   const f = fixture(true, "Reclassify the 212 expense as Software?");
   render(<StyledChatPreset state={f.state} approvalResources={f.resources} includeStyles={false} transcription={false}/>);
   const card = await screen.findByRole("listitem", { name: "Assistant action" });
+  expect(screen.getByRole("region", { name: "Conversation transcript" }).contains(card)).toBe(true);
   expect(card.querySelector('dt')?.textContent).toBe('Amount');
   expect(card.querySelector('dd')?.textContent).toBe('212');
   expect(card.querySelector('pre')).toBeNull();
@@ -52,7 +53,7 @@ it("disables confirmation for mismatched arguments while retaining rejection", a
 it("retains saved decided cards and failures and prevents decisions for archived conversations", async () => {
   const f = fixture();
   f.resources.listApprovalGroup.mockResolvedValue([{ ...f.proposal, status: "rejected" }]);
-  const view = render(<StyledChatPreset state={f.state} approvalResources={f.resources} readOnly includeStyles={false} transcription={false}/>);
+  const view = render(<StyledChatPreset toolActivity="collapsed" state={f.state} approvalResources={f.resources} readOnly includeStyles={false} transcription={false}/>);
   const history = (await screen.findByText("Action history (1)")).closest("details")!;
   fireEvent.click(history.querySelector("summary")!);
   expect(await within(history).findByText("Rejected")).toBeTruthy();
@@ -120,7 +121,7 @@ it("collapses settled vehicle/review and invoice cards while preserving canonica
     ({ ...f.proposal, proposal_id: `settled-${i}`, tool_name, status: "executed" }) as ConversationApprovalProposalRecord);
   const active = ["pending", "confirmed", "executing", "failed"].map((status, i) =>
     ({ ...f.proposal, proposal_id: `active-${i}`, tool_name: `Unresolved ${i}`, status }) as ConversationApprovalProposalRecord);
-  const props = { state: f.state, includeStyles: false, transcription: false as const, readOnly: true };
+  const props = { toolActivity: "collapsed" as const, state: f.state, includeStyles: false, transcription: false as const, readOnly: true };
   const view = render(<StyledChatPreset {...props} proposals={[...settled, ...active]}/>);
   expect(screen.getAllByRole("listitem", { name: "Assistant action" })).toHaveLength(4);
   expect(screen.queryByText("Update a vehicle or boat")).toBeNull();
@@ -140,7 +141,7 @@ it("collapses settled vehicle/review and invoice cards while preserving canonica
 
 it.each(["executed", "rejected", "expired"] as const)("moves canonical %s to history on repeated delivery while retaining uncertain failure evidence", async status => {
   const f = fixture();
-  const props = { state: f.state, includeStyles: false, transcription: false as const, readOnly: true };
+  const props = { toolActivity: "collapsed" as const, state: f.state, includeStyles: false, transcription: false as const, readOnly: true };
   const view = render(<StyledChatPreset {...props} proposals={[f.proposal]}/>);
   expect(screen.getByRole("listitem", { name: "Assistant action" })).toBeTruthy();
   const settled = { ...f.proposal, status };

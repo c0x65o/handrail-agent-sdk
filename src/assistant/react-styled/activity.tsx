@@ -7,6 +7,12 @@ import { structuredDetailLabel } from "../react/structured-details.js";
 const labels = { pending: "Queued", running: "Running", awaiting_approval: "Waiting for approval", approved: "Approved · awaiting execution", approval_interrupted: "Approved · execution interrupted",
   reconciliation_required: "Execution needs reconciliation", rejected: "Rejected", expired: "Expired", completed: "Completed", failed: "Failed", cancelled: "Stopped", incomplete: "No result recorded" };
 
+export function ActionList({ activity }: { readonly activity: ToolActivitySnapshot }) {
+  return <ol aria-label="Request actions">{activity.items.map(item =>
+      <li key={item.toolCallId} data-tool-status={item.status}><span>{structuredDetailLabel(item.name)}</span><span>{item.recovery?.status === "recovered"
+        ? `Completed after ${item.recovery.failedAttempts} ${item.recovery.failedAttempts === 1 ? "retry" : "retries"}` : labels[item.status]}</span></li>)}</ol>;
+}
+
 /** Inline action history; live request status belongs in the fixed status strip. */
 export function ConversationActivityCard({ state, group, display = "collapsed", renderDetails }: {
   readonly state: ConversationState;
@@ -35,9 +41,7 @@ export function ConversationActivityCard({ state, group, display = "collapsed", 
   return <details className="hr-activity" open={open}
     onToggle={event => setOpen(event.currentTarget.open)}>
     <summary className="hr-activity__summary"><span className="hr-activity__announcement">{summary}</span></summary>
-    <div className="hr-activity__details">{renderDetails ? renderDetails(activity) : <ol aria-label="Request actions">{activity.items.map(item =>
-      <li key={item.toolCallId} data-tool-status={item.status}><span>{structuredDetailLabel(item.name)}</span><span>{item.recovery?.status === "recovered"
-        ? `Completed after ${item.recovery.failedAttempts} ${item.recovery.failedAttempts === 1 ? "retry" : "retries"}` : labels[item.status]}</span></li>)}</ol>}</div>
+    <div className="hr-activity__details">{renderDetails ? renderDetails(activity) : <ActionList activity={activity}/>}</div>
   </details>;
 }
 

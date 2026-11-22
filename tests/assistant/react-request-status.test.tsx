@@ -47,6 +47,20 @@ it.each(["waiting_for_approval", "completed", "failed"] as const)("keeps conflic
   expect(screen.queryByRole("button", { name: "Confirm", exact: true })).toBeNull();
 });
 
+it("keeps a conflicting approval receipt inline while its two action records are collapsed", () => {
+  const state = advance(waiting(),
+    { type: "tool_call.requested", turn_id: "turn", tool_call_id: "one", name: "update_device", arguments: {} },
+    { type: "tool_call.result_recorded", turn_id: "turn", tool_call_id: "one", content: [{ type: "text", text: "Receipt unavailable" }], is_error: true },
+    { type: "tool_call.requested", turn_id: "turn", tool_call_id: "two", name: "read_device", arguments: {} });
+  render(<StyledChatPreset state={state} proposals={[proposal("one", "executed")]} includeStyles={false} transcription={false}/>);
+  const transcript = screen.getByRole("region", { name: "Conversation transcript" });
+  expect(within(transcript).getByText("Execution needs reconciliation")).toBeTruthy();
+  const toggle = within(current()).getByRole("button", { name: "2 actions" });
+  expect(toggle.getAttribute("aria-expanded")).toBe("false");
+  fireEvent.click(toggle);
+  expect(within(current()).getAllByRole("listitem")).toHaveLength(2);
+});
+
 it("keeps successive approvals and continuation visible outside the transcript until actual completion", () => {
   let state = waiting();
   const props = { includeStyles: false, transcription: false as const };
@@ -145,7 +159,8 @@ it("uses one fixed status for queued, thinking, tool execution, writing and comp
   view.rerender(<StyledChatPreset {...props} state={state}/>);
   expect(screen.getAllByText("Working…")).toHaveLength(1);
   expect(within(current()).getByText("Working…")).toBeTruthy();
-  expect(within(transcript).getByText("Actions")).toBeTruthy();
+  expect(within(current()).getByText("Read devices")).toBeTruthy();
+  expect(transcript.querySelector(".hr-activity")).toBeNull();
   expect(transcript.querySelector(".hr-activity__dots")).toBeNull();
   state = advance(state,
     { type: "tool_call.result_recorded", turn_id: "turn", tool_call_id: "read", content: [{ type: "text", text: "Ready" }], is_error: false },
@@ -158,7 +173,13 @@ it("uses one fixed status for queued, thinking, tool execution, writing and comp
   view.rerender(<StyledChatPreset {...props} state={state}/>);
   expect(current().getAttribute("data-phase")).toBe("complete");
   expect(current().textContent).not.toContain("•••");
-  expect(within(transcript).getByText("Activity complete")).toBeTruthy();
+  expect(transcript.querySelector(".hr-activity")).toBeNull();
+  const toggle = within(current()).getByRole("button", { name: "1 action" });
+  expect(toggle.getAttribute("aria-expanded")).toBe("false");
+  expect(within(current()).queryByRole("list")).toBeNull();
+  fireEvent.click(toggle);
+  expect(toggle.getAttribute("aria-expanded")).toBe("true");
+  expect(within(current()).getByRole("list", { name: "Request actions" }).textContent).toBe("Read devicesCompleted");
 });
 
 it("does not mistake earlier commentary for a response being written on the continuation", () => {
@@ -264,4 +285,30 @@ it("does not let a stale pending control flag undo the complete saved decision s
   expect(current().textContent).toContain("Approved · awaiting execution");
   expect(screen.queryByRole("button", { name: "Review next" })).toBeNull();
   expect(current().getAttribute("data-phase")).toBe("waiting");
+});
+
+it("keeps the answer, Copy and linked citation visible with a failed lookup in the status disclosure", () => {
+  const state = advance(waiting(),
+    { type: "tool_call.requested", turn_id: "turn", tool_call_id: "bugs", name: "list_bugs", arguments: {} },
+    { type: "tool_call.result_recorded", turn_id: "turn", tool_call_id: "bugs", content: [{ type: "text", text: "Unavailable" }], is_error: true },
+    { type: "message.text_appended", message_id: "answer", turn_id: "turn", text: "See the bug tracker." },
+    { type: "turn.completed", turn_id: "turn", outcome: "stop", output_message_ids: ["answer"] });
+  const sources: ConversationState["citation_sources"] = [
+    { source_id: "tool" as never, type: "tool", label: "Spartan ERP tool result" },
+    { source_id: "page" as never, type: "web", label: "Bug tracker", locator: "https://example.com/bugs" },
+  ];
+  const citations: ConversationState["citations"] = sources.map((source, order) => ({
+    citation_id: String(order) as never, source_id: source.source_id, order,
+    target: { type: "assistant_message", message_id: "answer" as never },
+  }));
+  render(<StyledChatPreset state={{ ...state, citation_sources: sources, citations }}
+    proposals={[proposal("other", "executed")]} includeStyles={false} transcription={false}/>);
+  const transcript = within(screen.getByRole("region", { name: "Conversation transcript" }));
+  expect(transcript.queryByText(/Action history/)).toBeNull();
+  expect(transcript.queryByText("Spartan ERP tool result")).toBeNull();
+  expect(transcript.getByRole("link", { name: /Bug tracker/ }).getAttribute("href")).toBe("https://example.com/bugs");
+  expect(transcript.getAllByRole("button", { name: /copy/i })).toHaveLength(2);
+  expect(within(current()).getByText("Request complete")).toBeTruthy();
+  fireEvent.click(within(current()).getByRole("button", { name: "1 action" }));
+  expect(within(current()).getByText("Failed")).toBeTruthy();
 });

@@ -187,8 +187,8 @@ export interface StyledChatPresetProps extends ComposerApprovalControlProps, Con
   readonly presence?: PresenceController;
   /** Shared server activity; the status line shows only this conversation's current work. */
   readonly activity?: ConversationActivityReadable;
-  /** Default collapsed. Hiding technical activity does not disable execution or telemetry. */
-  readonly toolActivity?: "collapsed" | "expanded" | "hidden";
+  /** Defaults to the request status bar. Choose collapsed or expanded for inline activity. */
+  readonly toolActivity?: "status" | "collapsed" | "expanded" | "hidden";
   /** Optional content inside each request group’s expanded details. */
   readonly renderToolActivity?: (activity: ToolActivitySnapshot) => ReactNode;
   readonly conversationPicker?: ReactNode;
@@ -336,6 +336,9 @@ export function StyledChatPreset(props: StyledChatPresetProps): ReactNode {
   const getDisplayError = useCallback(() => session?.getSnapshot().error?.message, [session]);
   const observationError = useSyncExternalStore(subscribeDisplay, getDisplayError, getDisplayError);
   const activityState = { ...resolvedState, approval_proposals: proposals ?? [] };
+  const inlineActivity = props.toolActivity === "collapsed" || props.toolActivity === "expanded";
+  const citationSources = useMemo(() => resolvedState.citation_sources.filter(source =>
+    source.type !== "tool" || source.locator?.trim()), [resolvedState.citation_sources]);
   const statusRoot = useRef<HTMLDivElement>(null);
   const subscribeApprovals = useCallback((notify: () => void) => session?.subscribe(notify) ?? (() => undefined), [session]);
   const getPendingApprovals = useCallback(() => session?.getSnapshot().control?.hasPendingApprovals ?? false, [session]);
@@ -385,9 +388,9 @@ export function StyledChatPreset(props: StyledChatPresetProps): ReactNode {
   >
     <header className="hr-chat__header"><h2>{props.title ?? "Assistant"}</h2>{props.conversationPicker && <div className="hr-chat__picker">{props.conversationPicker}</div>}<OverlayControls/></header>
     <main className="hr-chat__body">
-      {resolvedState && <ConversationTranscript state={resolvedState} className="hr-chat__transcript" role="region" includeActivity
+      {resolvedState && <ConversationTranscript state={resolvedState} className="hr-chat__transcript" role="region" includeActivity={inlineActivity} showActionHistory={inlineActivity}
         renderActivity={group => <ConversationActivityCard state={activityState} group={group}
-          display={props.toolActivity ?? "collapsed"} renderDetails={props.renderToolActivity}/>}
+          display={props.toolActivity === "expanded" ? "expanded" : "collapsed"} renderDetails={props.renderToolActivity}/>}
         {...(proposals ? { proposals } : {})} emptyState={props.emptyState}
         {...(props.mutationTools ? { mutationTools: props.mutationTools } : {})}
         includeToolResult={props.includeToolResult ?? (call => !!props.toolRendererKeys?.[call.name ?? ""])}
@@ -406,7 +409,7 @@ export function StyledChatPreset(props: StyledChatPresetProps): ReactNode {
           : <div className="hr-chat__message-row">
           <Message message={message} toolCalls={[]}
             {...(renderContent ? { renderContent } : {})} renderAttachment={renderAttachment}/>
-          {props.messageCitations === false ? null : <CitationList className="hr-chat__message-citations" messageId={message.message_id}/>}
+          {props.messageCitations === false ? null : <CitationList sources={citationSources} className="hr-chat__message-citations" messageId={message.message_id}/>}
           {props.messageActions === false ? null : <div className="hr-chat__message-actions"><CopyMessageButton className="hr-chat__copy" message={message}/>
             {props.badResponseReporting?.enabled && resolvedState.conversation_id && <BadResponseButton className="hr-chat__copy" message={message}
               conversationId={resolvedState.conversation_id} disabled={!responseIsComplete(resolvedState, message)} reporting={props.badResponseReporting}/>}
@@ -437,6 +440,7 @@ export function StyledChatPreset(props: StyledChatPresetProps): ReactNode {
     {(props.approvals || props.citations) && <aside className="hr-chat__aux">{props.readOnly
       ? <fieldset disabled style={{ border: 0, margin: 0, padding: 0 }}>{props.approvals}</fieldset> : props.approvals}{props.citations}</aside>}
     <div ref={statusRoot} style={{ flex: "none" }}><ConversationRequestStatus state={resolvedState} proposals={proposals ?? []}
+      showActivity={!inlineActivity && props.toolActivity !== "hidden"} renderDetails={props.renderToolActivity}
       activity={currentActivity} observationError={observationError} hasPendingApprovals={hasPendingApprovals} savingDecision={approvalReview.busy !== null}
       onReview={!props.readOnly && (proposals?.some(proposal => proposal.status === "pending") || hasPendingApprovals)
         ? reviewNextApproval : undefined}/></div>

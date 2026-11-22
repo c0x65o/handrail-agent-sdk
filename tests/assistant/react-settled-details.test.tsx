@@ -39,7 +39,7 @@ function fixture() {
   const state = { ...createInitialConversationState("chat" as never), approval_proposals: proposals };
   const binding = { store: { getSnapshot: () => state, subscribe: () => () => {} }, runtime: { displaySession: session } } as never;
   const view = (partial: boolean) => <ConversationContext.Provider value={binding}>
-    <StyledChatPreset state={partial ? { ...state, partial: true } : { ...state, tool_calls: tools }}
+    <StyledChatPreset toolActivity="collapsed" state={partial ? { ...state, partial: true } : { ...state, tool_calls: tools }}
       includeStyles={false} readOnly transcription={false}/></ConversationContext.Provider>;
   return { session, read, view, proposals, page };
 }

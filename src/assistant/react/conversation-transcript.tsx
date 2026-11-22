@@ -12,6 +12,7 @@ import { OutgoingDeliveryStatus } from "./outgoing-delivery-status.js";
 
 export interface ConversationTranscriptProps extends Omit<HTMLAttributes<HTMLDivElement>, "children">, ConversationTimelineOptions {
   readonly state: ConversationState;
+  readonly showActionHistory?: boolean;
   readonly renderActivity?: (group: ConversationActivityGroup) => ReactNode;
   readonly renderMessage?: (message: ConversationMessageRecord) => ReactNode;
   readonly renderApproval?: (proposal: ConversationApprovalProposalRecord) => ReactNode;
@@ -23,7 +24,10 @@ export interface ConversationTranscriptProps extends Omit<HTMLAttributes<HTMLDiv
 
 // Only canonical settled outcomes move to history. Failed or unresolved actions
 // stay in the active presentation; the canonical proposal list is untouched.
-function isSettled(proposal: ConversationApprovalProposalRecord) {
+function isSettled(proposal: ConversationApprovalProposalRecord, state: ConversationState, showActionHistory: boolean) {
+  if (!showActionHistory && proposal.status === "executed" && state.tool_calls.some(call =>
+    call.turn_id === proposal.turn_id && call.tool_call_id === proposal.tool_call_id &&
+    call.name === proposal.tool_name && call.result?.is_error)) return false;
   return ["executed", "rejected", "expired"].includes(proposal.status) && !proposal.failure_reason;
 }
 function ActionHistory({ proposals, renderApproval, scope, conversationId }: {
@@ -47,7 +51,7 @@ export function ConversationTranscript(props: ConversationTranscriptProps) {
     : <FullConversationTranscript {...props}/>;
 }
 
-function PagedConversationTranscript({ session, state, proposals, mutationTools, includeToolResult, includeActivity, renderActivity,
+function PagedConversationTranscript({ session, state, proposals, mutationTools, includeToolResult, includeActivity, showActionHistory = true, renderActivity,
   renderMessage, renderApproval, renderToolResult, renderFailure, emptyState, children, ...props }:
   ConversationTranscriptProps & { readonly session: ApplicationConversationSession }) {
   const snapshot = useSyncExternalStore(session.subscribe, session.getSnapshot, session.getSnapshot);
@@ -55,9 +59,9 @@ function PagedConversationTranscript({ session, state, proposals, mutationTools,
   const entries = conversationTimeline(state, { ...(proposals ? { proposals } : {}),
     ...(mutationTools ? { mutationTools } : {}), ...(includeToolResult ? { includeToolResult } : {}), ...(includeActivity ? { includeActivity } : {}) });
   const before = new Map<string, ReactNode[]>(); let pending: ReactNode[] = [];
-  const history = entries.flatMap(entry => entry.type === "approval" && isSettled(entry.proposal) ? [entry.proposal] : []);
+  const history = entries.flatMap(entry => entry.type === "approval" && isSettled(entry.proposal, state, showActionHistory) ? [entry.proposal] : []);
   for (const entry of entries) {
-    if (entry.type === "approval" && isSettled(entry.proposal)) continue;
+    if (entry.type === "approval" && isSettled(entry.proposal, state, showActionHistory)) continue;
     if (entry.type === "message") { before.set(entry.message.message_id, pending); pending = []; continue; }
     const key = entry.type === "activity" ? `activity:${entry.group.id}` : entry.type === "approval" ? `approval:${entry.proposal.proposal_id}`
       : entry.type === "tool_result" ? `tool:${entry.call.turn_id}:${entry.call.tool_call_id}` : `failure:${entry.turn.turn_id}`;
@@ -80,7 +84,7 @@ function PagedConversationTranscript({ session, state, proposals, mutationTools,
       {renderMessage?.(snapshot.outgoingMessage.message) ?? <Message message={snapshot.outgoingMessage.message}/>}
       <OutgoingDeliveryStatus scope={session} key={`${snapshot.conversationId}:${snapshot.outgoingMessage.message.message_id}`} status={snapshot.outgoingMessage.status}/>
     </article>}
-    {pending}<ActionHistory proposals={history} renderApproval={renderApproval} scope={session} conversationId={state.conversation_id}/>{snapshot.loading && snapshot.window.status === "empty" && <p role="status">Loading conversation…</p>}
+    {pending}{showActionHistory && <ActionHistory proposals={history} renderApproval={renderApproval} scope={session} conversationId={state.conversation_id}/>}{snapshot.loading && snapshot.window.status === "empty" && <p role="status">Loading conversation…</p>}
     {snapshot.error && <div role="alert"><p>{snapshot.error.message}</p>
       {snapshot.error.retryable && <button type="button" onClick={() => { void session.refresh().catch(() => undefined); }}>Retry conversation</button>}</div>}
     {(state.unresolvedCitationCount ?? 0) > 0 && <p role="status">Some citation sources are not loaded in this activity window.</p>}
@@ -95,7 +99,7 @@ function PagedConversationTranscript({ session, state, proposals, mutationTools,
   </ConversationDisplayTranscript>;
 }
 
-function FullConversationTranscript({ state, proposals, mutationTools, includeToolResult, includeActivity, renderActivity,
+function FullConversationTranscript({ state, proposals, mutationTools, includeToolResult, includeActivity, showActionHistory = true, renderActivity,
   renderMessage, renderApproval, renderToolResult, renderFailure, emptyState, children, onScroll, ...props }: ConversationTranscriptProps) {
   const scope = useContext(ConversationContext)?.runtime;
   const contentVersion = useMemo(() => ({ state, proposals }), [state, proposals]);
@@ -108,7 +112,7 @@ function FullConversationTranscript({ state, proposals, mutationTools, includeTo
       aria-label={props["aria-label"] ?? "Conversation transcript"} onScroll={(event) => {
         onScroll?.(event); if (!event.defaultPrevented) follow.onScroll(event);
       }}>
-      {entries.filter(entry => entry.type !== "approval" || !isSettled(entry.proposal)).map((entry) => entry.type === "activity" ? <Fragment key={`activity:${entry.group.id}`}>{renderActivity?.(entry.group)}</Fragment>
+      {entries.filter(entry => entry.type !== "approval" || !isSettled(entry.proposal, state, showActionHistory)).map((entry) => entry.type === "activity" ? <Fragment key={`activity:${entry.group.id}`}>{renderActivity?.(entry.group)}</Fragment>
         : entry.type === "message" ? <Fragment key={`message:${entry.message.message_id}`}>
         {renderMessage ? renderMessage(entry.message) : <Message message={entry.message}/>}</Fragment>
         : entry.type === "approval" ? <Fragment key={`approval:${entry.proposal.proposal_id}`}>{renderApproval?.(entry.proposal)}</Fragment>
@@ -116,8 +120,8 @@ function FullConversationTranscript({ state, proposals, mutationTools, includeTo
             : <Fragment key={`failure:${entry.turn.turn_id}`}>{renderFailure ? renderFailure(entry.turn) : <article className="hr-timeline__failure" role="listitem" aria-label="Failed request">
               <strong>Request failed</strong><p>{entry.turn.error?.message ?? "The assistant could not complete this request."}</p>
             </article>}</Fragment>)}
-      <ActionHistory proposals={entries.flatMap(entry => entry.type === "approval" && isSettled(entry.proposal) ? [entry.proposal] : [])}
-        renderApproval={renderApproval} scope={scope} conversationId={state.conversation_id}/>
+      {showActionHistory && <ActionHistory proposals={entries.flatMap(entry => entry.type === "approval" && isSettled(entry.proposal, state, showActionHistory) ? [entry.proposal] : [])}
+        renderApproval={renderApproval} scope={scope} conversationId={state.conversation_id}/>}
       {state.messages.length === 0 ? emptyState : null}{children}
     </div>
     {!follow.following && <button className="hr-chat__jump" type="button" aria-label="Jump to latest message" onClick={() => follow.scrollToLatest()}>

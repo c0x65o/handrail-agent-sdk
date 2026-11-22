@@ -73,7 +73,7 @@ describe("canonical tool activity", () => {
       { type: "message.created", message_id: "message", role: "assistant",
         content: [{ type: "text", text: "Checking" }] }, call("lookup"), started("lookup")]);
     const view = render(<StyledChatPreset state={state}/>);
-    expect(screen.getByText("1 action")).toBeTruthy();
+    expect(screen.getByRole("button", { name: "1 action" })).toBeTruthy();
     expect(view.container.textContent).not.toContain("not-visible-in-activity");
     view.rerender(<StyledChatPreset state={state} toolActivity="hidden"/>);
     expect(screen.queryByText("1 action")).toBeNull();
@@ -83,7 +83,7 @@ describe("canonical tool activity", () => {
       { type: "turn.status_changed", turn_id: "new", status: "running" }]);
     expect(projectToolActivity(next).total).toBe(0);
     view.rerender(<StyledChatPreset state={next}/>);
-    expect(screen.getByText("Activity complete")).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "1 action" })).toBeNull();
     expect(screen.getByText("Thinking…")).toBeTruthy();
   });
 });
@@ -95,7 +95,7 @@ it("keeps one expanded group with its original question across tool continuation
     { type: "turn.started", turn_id: "turn", input_message_ids: ["question"] },
     call("read_ledger"), started("read_ledger"),
   ];
-  const view = render(<StyledChatPreset state={history(payloads)}/>);
+  const view = render(<StyledChatPreset toolActivity="collapsed" state={history(payloads)}/>);
   const group = view.container.querySelector("details.hr-activity")! as HTMLDetailsElement;
   expect(group.open).toBe(false);
   group.open = true;
@@ -103,7 +103,7 @@ it("keeps one expanded group with its original question across tool continuation
   payloads.push(result("read_ledger"), { type: "turn.completed", turn_id: "turn", outcome: "tool_calls", output_message_ids: [] },
     { type: "turn.started", turn_id: "continued", continuation_of_turn_id: "turn", input_message_ids: ["question"] },
     call("summarize_income", "continued"), started("summarize_income", "continued"));
-  view.rerender(<StyledChatPreset state={history(payloads)}/>);
+  view.rerender(<StyledChatPreset toolActivity="collapsed" state={history(payloads)}/>);
   expect(view.container.querySelectorAll("details.hr-activity")).toHaveLength(1);
   expect(view.container.querySelector("details.hr-activity")).toBe(group);
   expect(group.open).toBe(true);
@@ -116,7 +116,7 @@ it("keeps one expanded group with its original question across tool continuation
     { type: "message.created", message_id: "question2", role: "user", content: [{ type: "text", text: "Second question" }] },
     { type: "turn.started", turn_id: "second", input_message_ids: ["question2"] });
   const completed = history(payloads);
-  view.rerender(<StyledChatPreset state={completed}/>);
+  view.rerender(<StyledChatPreset toolActivity="collapsed" state={completed}/>);
   const text = view.container.querySelector(".hr-chat__transcript")!.textContent!;
   expect(text.indexOf("Activity complete")).toBeLessThan(text.indexOf("Here is the answer"));
   expect(text.indexOf("Here is the answer")).toBeLessThan(text.indexOf("Second question"));
@@ -124,7 +124,7 @@ it("keeps one expanded group with its original question across tool continuation
   expect(screen.getByRole("region", { name: "Current request" }).textContent).toContain("Queued…");
   expect(group.open).toBe(true);
   view.unmount();
-  const restored = render(<StyledChatPreset state={completed}/>);
+  const restored = render(<StyledChatPreset toolActivity="collapsed" state={completed}/>);
   expect(restored.container.querySelectorAll("details.hr-activity")).toHaveLength(1);
   expect(restored.container.querySelector("details.hr-activity")?.textContent).toContain("2 actions");
 });
@@ -148,7 +148,7 @@ it.each([false, true])("distinguishes a declined B from executed A and real fail
   ];
   const state = { ...history(payloads), ...(partial ? { partial: true as const } : {}) };
   expect(projectToolActivity(state)).toMatchObject({ completed: 1, rejected: 1, failed: 0, incomplete: 0 });
-  const view = render(<StyledChatPreset state={state} includeStyles={false} transcription={false}/>);
+  const view = render(<StyledChatPreset toolActivity="collapsed" state={state} includeStyles={false} transcription={false}/>);
   expect(screen.getByText("Activity complete")).toBeTruthy();
   expect(screen.getByText("Request complete")).toBeTruthy();
   expect(view.container.textContent).not.toContain("Failed");
@@ -158,9 +158,9 @@ it.each([false, true])("distinguishes a declined B from executed A and real fail
   expect(state.tool_calls[1]?.result?.is_error).toBe(true);
   const failed = history([...payloads.slice(0, -1), call("read_ledger"), result("read_ledger", true), payloads.at(-1)!]);
   expect(projectToolActivity(failed)).toMatchObject({ rejected: 1, failed: 1 });
-  render(<StyledChatPreset state={failed} includeStyles={false} transcription={false}/>);
+  render(<StyledChatPreset toolActivity="collapsed" state={failed} includeStyles={false} transcription={false}/>);
   expect(screen.getByText("Activity needs attention")).toBeTruthy();
-  expect(screen.getByText("Finished · some actions need attention")).toBeTruthy();
+  expect(screen.getByText("Request complete")).toBeTruthy();
 });
 
 it("does not hide failures using an unrelated, ambiguous, or execution-conflicted rejection", () => {

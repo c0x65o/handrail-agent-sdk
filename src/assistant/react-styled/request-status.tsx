@@ -1,16 +1,33 @@
+import { useState, type ReactNode } from "react";
+import { ActionList } from "./activity.js";
+import { structuredDetailLabel } from "../react/structured-details.js";
 import type { ConversationActivityRecord } from "../conversation/activity.js";
 import type { ConversationPresentationState } from "../conversation/presentation.js";
 import type { ConversationApprovalProposalRecord } from "../conversation/state.js";
-import { projectToolActivity } from "../conversation/tool-activity.js";
+import { projectToolActivity, type ToolActivitySnapshot } from "../conversation/tool-activity.js";
+
+type DetailRenderer = (activity: ToolActivitySnapshot) => ReactNode;
+
+function RequestActions({ tools, renderDetails }: { tools: ToolActivitySnapshot; renderDetails?: DetailRenderer | undefined }) {
+  const [expanded, setExpanded] = useState(false);
+  return <>
+    <button type="button" className="hr-chat__action-toggle" aria-expanded={expanded} onClick={() => setExpanded(!expanded)}>
+      {tools.total} {tools.total === 1 ? "action" : "actions"} <span aria-hidden="true">{expanded ? "⌄" : "›"}</span>
+    </button>
+    {expanded && <div className="hr-activity__details">{renderDetails ? renderDetails(tools) : <ActionList activity={tools}/>}</div>}
+  </>;
+}
 
 /** Current request status lives outside the scrolling transcript and action history. */
-export function ConversationRequestStatus({ state, proposals, activity, hasPendingApprovals, savingDecision, observationError, onReview }: {
+export function ConversationRequestStatus({ state, proposals, activity, hasPendingApprovals, savingDecision, observationError, onReview, showActivity = true, renderDetails }: {
   readonly state: ConversationPresentationState;
   readonly proposals: readonly ConversationApprovalProposalRecord[];
   readonly activity: ConversationActivityRecord | undefined;
   readonly hasPendingApprovals: boolean;
   readonly savingDecision: boolean;
   readonly observationError?: string | undefined;
+  readonly showActivity?: boolean;
+  readonly renderDetails?: DetailRenderer | undefined;
   readonly onReview?: (() => void) | undefined;
 }) {
   const turn = state.turns.find(item => item.turn_id === state.active_turn_id) ?? state.turns.at(-1);
@@ -57,9 +74,13 @@ export function ConversationRequestStatus({ state, proposals, activity, hasPendi
       : tools.running || tools.pending || turn?.status === "waiting_for_tool_result" ? "Working…"
         : continuing ? "Waiting to resume" : writing ? "Writing response…" : turn?.status === "queued" ? "Queued…" : "Thinking…";
     if (title === "Waiting to resume") phase = "waiting";
+    const latestFirst = [...tools.items].reverse();
+    const currentAction = showActivity && !remoteRunning && (latestFirst.find(item => item.status === "running")
+      ?? latestFirst.find(item => item.status === "pending"));
     const progress = activity?.progress;
     detail = activity?.turnStatus === "running" && activity.summary
       ? `${activity.summary}${progress ? ` (${progress.completed}/${progress.total}${progress.unit ? ` ${progress.unit}` : ""})` : ""}`
+      : currentAction ? structuredDetailLabel(currentAction.name)
       : title === "Queued…" ? "Waiting to start." : title === "Waiting to resume" ? "The request has not finished."
         : "The request is still in progress.";
   } else if (!terminal && activity?.turnStatus === "error") {
@@ -72,7 +93,7 @@ export function ConversationRequestStatus({ state, proposals, activity, hasPendi
           : turn.cancellation_reason === "runtime_shutdown" ? "Runtime shut down" : "Request cancelled";
     detail = "Review any changes that already ran.";
   } else if (turn?.status === "completed" || activity?.turnStatus === "completed") {
-    phase = tools.failed || tools.incomplete || approved || executing || pending.length ? "attention" : "complete";
+    phase = decisions.some(proposal => proposal.status === "failed") || tools.incomplete || approved || executing || pending.length ? "attention" : "complete";
     title = phase === "attention" ? "Finished · some actions need attention" : "Request complete";
     detail = "The assistant has finished responding.";
   } else return null;
@@ -83,11 +104,14 @@ export function ConversationRequestStatus({ state, proposals, activity, hasPendi
       <span><strong>{title}</strong><span className="hr-chat__request-detail">{detail}</span></span>
     </div>
     {waiting && !terminal && !observationError && !savingDecision && onReview && <button type="button" onClick={onReview}>Review next</button>}
+    {showActivity && (terminal || !remoteRunning) && tools.total > 0 && <RequestActions key={JSON.stringify([state.conversation_id, tools.turnId])}
+      tools={tools} renderDetails={renderDetails}/>}
   </section>;
 }
 
 export const REQUEST_STATUS_CSS = `
 .hr-chat__request-status{flex:none;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:9px 12px;border-block-start:1px solid var(--hr-border);background:var(--hr-bg);font-size:12px;min-inline-size:0}
+.hr-chat__request-status{flex-wrap:wrap}.hr-chat__request-status>[role=status]{flex:1}.hr-chat__request-status>.hr-chat__action-toggle{background:transparent;border:0;color:var(--hr-muted);font:inherit;cursor:pointer}.hr-chat__request-status>.hr-activity__details{flex-basis:100%;padding-inline:0}
 .hr-chat__request-status>[role=status]{display:flex;align-items:center;gap:10px;min-inline-size:0}.hr-chat__request-status strong{display:block}.hr-chat__request-detail{display:block;color:var(--hr-muted);overflow-wrap:anywhere}.hr-chat__request-icon{flex:none;color:var(--hr-accent)}.hr-chat__request-status>button{flex:none}
 .hr-chat__request-status[data-phase=waiting]{background:var(--hr-panel)}.hr-chat__request-status[data-phase=working] .hr-chat__request-icon,.hr-chat__request-status[data-phase=saving] .hr-chat__request-icon{animation:hr-activity-pulse 1.2s ease-in-out infinite;letter-spacing:2px}@media(prefers-reduced-motion:reduce){.hr-chat__request-icon{animation:none!important}}
 `;
