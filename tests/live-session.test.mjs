@@ -284,3 +284,11 @@ test('saved conversation mode admits ordinary speech once and speaks its saved a
   await until(()=>f.sent.some(e=>e.type==='session.commentary.append'&&e.content==='Morning!'));
   f.delegate();await pause(20);assert.equal(f.queued.length,1);
 });
+
+test('private call keeps greetings local and speaks the delegated lookup result',async t=>{
+  const f=fixture(t,{privateCall:true,delegateAllSpeech:true});await f.start();
+  f.speech('Hello');await pause(50);assert.equal(f.queued.length,0);
+  f.speech('Search orders');f.delegate();await until(()=>f.queued.length===1);
+  f.results.set('work-1',{status:'succeeded',text:'3 matches'});
+  await until(()=>f.sent.some(e=>e.type==='session.commentary.append'&&e.content==='3 matches'));
+});

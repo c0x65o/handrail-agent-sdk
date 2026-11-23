@@ -1,4 +1,4 @@
-export { PostgresLiveConversationQueue } from './live-conversation.js';
+export { PostgresLiveConversationQueue, privateLiveWork, ensurePrivateLiveWork, publishLiveTranscript, liveTranscriptText } from './live-conversation.js';
 export { createLiveHistoryReader, LIVE_HISTORY_MEANING } from './live-history.js';
 export type { LiveHistoryFragment, LiveHistoryPage } from './live-history.js';
 import { randomUUID } from 'node:crypto';
@@ -82,6 +82,8 @@ export interface LiveSessionOptions<C, A> {
   activeSpeechSettleMs?: number;
   /** Route conversational speech through the same saved thread as business requests. */
   delegateAllSpeech?: boolean;
+  /** Greetings stay with Live. Only explicit provider delegations enter the private worker. */
+  privateCall?: boolean;
 }
 
 type Delegation = { id: string; status: string; queueId?: string; revision: number;
@@ -338,7 +340,7 @@ export function createLiveSessionService<C, A>(options: LiveSessionOptions<C, A>
       // speech even when GPT-Live only acknowledges it without delegating.
       // This transports every follow-up; the existing worker owns intent,
       // tools, confirmations and cancellation. No wording classifier runs here.
-      if (options.delegateAllSpeech || [...s.delegations.values()].some(d => d.status === 'queued' && d.queueId))
+      if (!options.privateCall && (options.delegateAllSpeech || [...s.delegations.values()].some(d => d.status === 'queued' && d.queueId)))
         s.pendingSpeechSequence = fragment.sequence;
     }
     if (s.fragments.length > 160) s.fragments.shift();
@@ -409,7 +411,7 @@ export function createLiveSessionService<C, A>(options: LiveSessionOptions<C, A>
           await options.beforeConnect?.(s);
           if(s.status!=='starting')throw fail('Voice startup was cancelled.',409);
           s.publishedContext = s.reference!.fingerprint; s.providerRequested = true;
-          const transport = await connect({ sdp, input: s.reference!.input, instructions: `${options.instructions}\n\n${liveDelegationInstructions(!!options.delegateAllSpeech)}`,
+          const transport = await connect({ sdp, input: s.reference!.input, instructions: `${options.instructions}\n\n${options.privateCall ? "Handle greetings, small talk and clarifications yourself. Do not delegate them. For business requests delegate to the private app worker. Only speak verified results. Never announce an internal queue or promise a later answer." : liveDelegationInstructions(!!options.delegateAllSpeech)}`,
             onCreated: async providerId => { s.providerId = providerId; await options.recordProviderSession(s, providerId); },
             onEvent: e => event(s, e), onDisconnect: message => { s.error = message; if (s.status !== 'starting') finish(s, false, 'connection_lost'); } });
           s.transport = transport;

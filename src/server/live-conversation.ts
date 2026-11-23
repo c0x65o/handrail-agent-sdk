@@ -263,3 +263,59 @@ export class PostgresLiveConversationQueue {
     });
   }
 }
+
+/** Only the trusted gateway uses this scope. A normal user's catalog cannot
+ * list or open the delegated turn, even while its tools are executing. */
+export function privateLiveWork(tenant: string, principal: string, thread: string, call: string) {
+  const key = hash([tenant, principal, thread, call]);
+  return { scopeId: 'voice-scope-' + key, conversationId: 'voice-work-' + key };
+}
+
+export async function ensurePrivateLiveWork(sql: PostgresSqlClient, tenant: string, principal: string, thread: string, call: string) {
+  const work = privateLiveWork(tenant, principal, thread, call);
+  await sql.query(`INSERT INTO handrail_ai_conversations
+    (tenant_id,scope_id,conversation_id,lifecycle,created_at,updated_at,version,metadata)
+    VALUES ($1,$2,$3,'active',now(),now(),1,$4::jsonb) ON CONFLICT DO NOTHING`,
+    [tenant, work.scopeId, work.conversationId, JSON.stringify({parent:thread,call,principal})]);
+  return work;
+}
+
+export function liveTranscriptText(fragments: readonly {role:'user'|'assistant';text:string}[]) {
+  const lines: {role:'user'|'assistant';text:string}[] = [];
+  for (const fragment of fragments) {
+    const last = lines.at(-1);
+    if (last?.role === fragment.role) last.text += fragment.text;
+    else lines.push({...fragment});
+  }
+  return lines.filter(line=>line.text.trim()).map(line =>
+    (line.role === 'user' ? 'You: ' : 'Assistant: ') + line.text.trim()).join('\n\n');
+}
+
+/** Called after capture drains. Publish a standalone message, never a request.
+ * Deduplication and the current parent generation are checked in the append transaction. */
+export async function publishLiveTranscript(options: {persistence:PostgresAiPersistence;tenant:string;thread:string;call:string;
+  authorize(sql:PostgresSqlClient):Promise<boolean>; fragments:readonly {role:'user'|'assistant';text:string}[]}) {
+  const text = liveTranscriptText(options.fragments);
+  if (!text) return;
+  const id = 'voice-transcript-' + hash([options.tenant,options.thread,options.call]);
+  for (let attempt=0;;attempt++) {
+    try {
+      await options.persistence.client.transaction(async sql=>{
+        await sql.query('SELECT pg_advisory_xact_lock(hashtextextended($1,0))',[id]);
+        if (!await options.authorize(sql)) return;
+        if ((await sql.query('SELECT 1 FROM handrail_ai_events WHERE tenant_id=$1 AND event_id=$2',[options.tenant,id])).rows.length) return;
+        const events = new PostgresConversationEventStore(new PostgresAiPersistence(sql),options.tenant);
+        const conversationId = options.thread as ConversationId;
+        const revision = await events.getLatestRevision(conversationId);
+        await events.append({conversationId,expectedRevision:revision,events:[parseConversationEvent({
+          version:1,event_id:id,conversation_id:conversationId,revision:(revision??0)+1,occurred_at:new Date().toISOString(),
+          actor:{type:'system'},source:{type:'runtime'},metadata:{live_call:options.call},
+          payload:{type:'message.created',message_id:id,role:'assistant',content:[{type:'text',text:'Live conversation\n\n'+text}]}
+        })]});
+      });
+      return;
+    } catch (error) {
+      if (!(error instanceof ConversationEventStoreConflictError) || error.code!=='revision_conflict' || attempt>=4) throw error;
+    }
+  }
+}
