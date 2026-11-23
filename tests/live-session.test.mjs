@@ -39,6 +39,8 @@ test('speech is admitted once to the saved conversation and results retain the o
   await until(()=>f.queued.length===1);
   assert.equal(f.queued[0].body,'Check the website.');assert.equal(f.fragments.length,1);
   assert.equal(f.queued[0].threadId,'thread');assert.equal(f.queued[0].context.owner,'owner');
+  assert.ok(!f.sent.some(e=>/saved in the conversation queue|results will follow/i.test(e.content)));
+  assert.ok(!f.sent.some(e=>e.type==='session.commentary.append'));
   f.delegate('new-id-same-speech');await pause(20);assert.equal(f.queued.length,1);
   f.results.set('work-1',{status:'succeeded',text:'The hosted browser verified the page.'});
   await until(()=>f.sent.some(e=>e.type==='session.commentary.append'));
@@ -273,4 +275,12 @@ test('proven creation rejection or confirmed startup cleanup releases the origin
  }
  const uncertain=fixture(t,{connect:async()=>{throw new LiveTransportError('creation_failed');}});
  await assert.rejects(uncertain.start());assert.equal((await uncertain.service.end('original-session-request','owner')).end_confirmed,false);
+});
+
+test('saved conversation mode admits ordinary speech once and speaks its saved answer',async t=>{
+  const f=fixture(t,{delegateAllSpeech:true});await f.start();f.speech('Good morning');
+  await until(()=>f.queued.length===1);
+  f.results.set('work-1',{status:'succeeded',text:'Morning!'});
+  await until(()=>f.sent.some(e=>e.type==='session.commentary.append'&&e.content==='Morning!'));
+  f.delegate();await pause(20);assert.equal(f.queued.length,1);
 });

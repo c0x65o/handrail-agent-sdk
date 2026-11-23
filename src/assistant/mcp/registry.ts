@@ -21,6 +21,8 @@ export interface McpToolGrant {
 export interface AssistantMcpRegistry<C> {
   readonly id: string;
   readonly tools: readonly McpRegistryTool<C>[];
+  /** Use the durable turn approval preference for optional action confirmations. */
+  readonly confirmationMode?: "always" | "policy";
   readonly visible: (context: C, name: string) => boolean;
   /** Resolve current app permissions, including on receipt replay and approval resume. */
   readonly authorize: (context: C, tool: McpRegistryTool<C>, args: JsonObject) => Promise<boolean>;
@@ -63,7 +65,7 @@ export function createAssistantMcpRegistry<C>(registry: AssistantMcpRegistry<C>)
       },
     })),
     approvals: tools.flatMap(tool => tool.confirmation ? [{
-      toolName: tool.name, mode: "always" as const, summarize: (args: JsonObject, context: unknown) => tool.confirmation!(args, context as C),
+      toolName: tool.name, mode: tool.confirmRequired ? "always" as const : registry.confirmationMode ?? "always", summarize: (args: JsonObject, context: unknown) => tool.confirmation!(args, context as C),
     }] : []),
   });
   return { plugin, admission,

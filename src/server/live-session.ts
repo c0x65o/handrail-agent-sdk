@@ -80,6 +80,8 @@ export interface LiveSessionOptions<C, A> {
   transcriptSettleMs?: number;
   /** Buffer follow-up speech to an admitted worker; this does not classify intent. */
   activeSpeechSettleMs?: number;
+  /** Route conversational speech through the same saved thread as business requests. */
+  delegateAllSpeech?: boolean;
 }
 
 type Delegation = { id: string; status: string; queueId?: string; revision: number;
@@ -133,18 +135,18 @@ export function buildLiveDelegationPrompt(fragments: readonly LiveFragment[], pe
 
 // Explain the shared saved-worker transport even when a host supplies its own
 // domain prompt. Speech is context, never proof that an action happened.
-const liveDelegationInstructions = `Delegation policy:
+const liveDelegationInstructions = (allSpeech: boolean) => `Delegation policy:
 Backend tools:
 - The existing saved conversation agent owns reasoning, domain and MCP tools, hosted browser access, durable task state, and native permissions and approvals.
 Delegate to the backend when:
 - A request needs saved information, tool use, careful reasoning, or an action.
 - A correction changes a task already in progress, including its constraints or requested answer format.
 - The user asks to cancel or change admitted work; the backend must verify the outcome.
-Do not delegate to the backend when:
+${allSpeech ? "Delegate every new user turn, including greetings and clarifications. The saved assistant supplies the answer. Wait for its commentary before speaking." : `Do not delegate to the backend when:
 - The user greets you or asks you to repeat a verified result already provided.
-- You need a brief clarification to understand the request.
+- You need a brief clarification to understand the request.`}
 The application forwards later user speech while admitted work is active to the existing saved worker. A new client delegation can also request a correction; the application deduplicates the same speech. A correction is not permission to repeat the original action. Do not claim that a correction was applied just because you heard it; wait for the backend's verified update.
-Delegate before answering anything that depends on backend work. Never claim that work changed, completed, or stopped until the backend confirms it. Continue listening while work runs.`;
+Delegate before answering anything that depends on backend work. Never claim that work changed, completed, or stopped until the backend confirms it. While a lookup runs, listen silently. Speak the verified result as soon as commentary arrives. Do not describe internal admission or promise a later answer.`;
 
 /** One Live frontend delegates to the same durable conversation as text. The
  * application supplies storage and admission; audio termination never cancels
@@ -280,7 +282,6 @@ export function createLiveSessionService<C, A>(options: LiveSessionOptions<C, A>
       }
       if (!receipt.queued_message_id) throw new Error('No durable queue receipt was returned.');
       d.queueId = receipt.queued_message_id; d.status = 'queued'; s.error = null;
-      append(s, 'session.thinking.append', providerId, 'The request is saved in the conversation queue. It is not complete. Results will follow here or in the saved conversation.');
     } catch (error) {
       const attempted = d.status === 'submitting';
       d.status = rejected(error) || !attempted ? 'rejected' : 'unconfirmed';
@@ -337,7 +338,7 @@ export function createLiveSessionService<C, A>(options: LiveSessionOptions<C, A>
       // speech even when GPT-Live only acknowledges it without delegating.
       // This transports every follow-up; the existing worker owns intent,
       // tools, confirmations and cancellation. No wording classifier runs here.
-      if ([...s.delegations.values()].some(d => d.status === 'queued' && d.queueId))
+      if (options.delegateAllSpeech || [...s.delegations.values()].some(d => d.status === 'queued' && d.queueId))
         s.pendingSpeechSequence = fragment.sequence;
     }
     if (s.fragments.length > 160) s.fragments.shift();
@@ -408,7 +409,7 @@ export function createLiveSessionService<C, A>(options: LiveSessionOptions<C, A>
           await options.beforeConnect?.(s);
           if(s.status!=='starting')throw fail('Voice startup was cancelled.',409);
           s.publishedContext = s.reference!.fingerprint; s.providerRequested = true;
-          const transport = await connect({ sdp, input: s.reference!.input, instructions: `${options.instructions}\n\n${liveDelegationInstructions}`,
+          const transport = await connect({ sdp, input: s.reference!.input, instructions: `${options.instructions}\n\n${liveDelegationInstructions(!!options.delegateAllSpeech)}`,
             onCreated: async providerId => { s.providerId = providerId; await options.recordProviderSession(s, providerId); },
             onEvent: e => event(s, e), onDisconnect: message => { s.error = message; if (s.status !== 'starting') finish(s, false, 'connection_lost'); } });
           s.transport = transport;
