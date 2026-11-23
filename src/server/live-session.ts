@@ -3,7 +3,7 @@ export { createLiveHistoryReader, LIVE_HISTORY_MEANING } from './live-history.js
 export type { LiveHistoryFragment, LiveHistoryPage } from './live-history.js';
 import { randomUUID } from 'node:crypto';
 import { LIVE_MODEL, LiveTransportError, type LiveTransport, type LiveTransportInput, type LiveServerEvent,
-  type LiveHistoryItem } from './live-transport.js';
+  type NativeLiveResponses, type LiveHistoryItem } from './live-transport.js';
 
 export { LIVE_MODEL, LiveTransportError, createLiveTransportConnector } from './live-transport.js';
 export type { LiveTransport, LiveTransportInput, LiveServerEvent, LiveClientEvent, LiveHistoryItem } from './live-transport.js';
@@ -51,6 +51,7 @@ export interface LiveFinalReceipt<C> extends LiveSnapshot {
   principalId: string; context: C; finalized: boolean; captureError: string | null;
 }
 export interface LiveSessionOptions<C, A> {
+  nativeResponses?(scope: LiveScope<C>, authorized: A): Promise<NativeLiveResponses>;
   authorize(threadId: string, principalId: string, context: C): Promise<A>;
   prepareContext(scope: LiveScope<C>, authorized: A): Promise<LiveConversationContext>;
   /** Native durable creation claim, after context checks and before provider IO. */
@@ -313,6 +314,10 @@ export function createLiveSessionService<C, A>(options: LiveSessionOptions<C, A>
     }
     if (e.type === 'error') { s.error = 'OpenAI rejected a voice event. Saved work remains in the conversation.'; close(s); return; }
     if (!['connected', 'closing'].includes(s.status)) return;
+    if (options.nativeResponses) {
+      if (e.type === 'session.input_transcript.delta') s.lastSpeech = now();
+      return;
+    }
     if (e.type === 'session.delegation.created') {
       const id = e.delegation.id;
       if (e.delegation.target !== 'client' || s.delegations.has(id) || s.delegationTimers.has(id)) return;
@@ -352,6 +357,7 @@ export function createLiveSessionService<C, A>(options: LiveSessionOptions<C, A>
     s.busy = true;
     try {
       const authorized = await authorize(s.threadId, s.principalId, s.context);
+      if (options.nativeResponses) return;
       if (now() - s.contextObservedAt >= (options.contextPollMs ?? 5000)) await refreshContext(s, authorized);
       publishContext(s);
       if (s.delegationTimers.size) return;
@@ -411,7 +417,8 @@ export function createLiveSessionService<C, A>(options: LiveSessionOptions<C, A>
           await options.beforeConnect?.(s);
           if(s.status!=='starting')throw fail('Voice startup was cancelled.',409);
           s.publishedContext = s.reference!.fingerprint; s.providerRequested = true;
-          const transport = await connect({ sdp, input: s.reference!.input, instructions: `${options.instructions}\n\n${options.privateCall ? "Handle greetings, small talk and clarifications yourself. Do not delegate them. For business requests delegate to the private app worker. Only speak verified results. Never announce an internal queue or promise a later answer." : liveDelegationInstructions(!!options.delegateAllSpeech)}`,
+          const responses = await options.nativeResponses?.(s, authorized);
+          const transport = await connect({ sdp, input: s.reference!.input, ...(responses ? {responses} : {}), instructions: responses ? options.instructions : `${options.instructions}\n\n${options.privateCall ? "Handle greetings, small talk and clarifications yourself. Do not delegate them. For business requests delegate to the private app worker. Only speak verified results. Never announce an internal queue or promise a later answer." : liveDelegationInstructions(!!options.delegateAllSpeech)}`,
             onCreated: async providerId => { s.providerId = providerId; await options.recordProviderSession(s, providerId); },
             onEvent: e => event(s, e), onDisconnect: message => { s.error = message; if (s.status !== 'starting') finish(s, false, 'connection_lost'); } });
           s.transport = transport;
@@ -471,4 +478,16 @@ export function createLiveSessionService<C, A>(options: LiveSessionOptions<C, A>
       for (const s of sessions.values()) { close(s); finish(s, false, 'service_disposed'); await s.finalization; }
     },
   };
+}
+
+
+/** Native calls retain only call lifecycle and usage. Captions travel on WebRTC. */
+export function createNativeLiveSessionService<C,A>(options: Omit<LiveSessionOptions<C,A>,
+  'transcripts'|'enqueue'|'readResult'|'nativeResponses'|'delegateAllSpeech'|'privateCall'> & {
+  nativeResponses(scope:LiveScope<C>, authorized:A): Promise<NativeLiveResponses>;
+}) {
+  const unavailable = async ():Promise<never> => { throw new Error('Native Live calls do not create application turns'); };
+  const {create, heartbeat, end, dispose} = createLiveSessionService({...options,
+    transcripts:{append:unavailable,read:unavailable},enqueue:unavailable,readResult:unavailable});
+  return {create,heartbeat,end,dispose};
 }

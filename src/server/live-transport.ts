@@ -33,7 +33,15 @@ export interface LiveTransport {
   dispose(): void;
 }
 
+export interface NativeLiveResponses {
+  model: string;
+  tools: { type: 'mcp'; server_label: string; server_url: string; authorization: string; require_approval: 'never' }[];
+  instructions?: string;
+}
+
 export interface LiveTransportInput {
+  /** OpenAI manages MCP calls and speaks the result on this same Live session. */
+  responses?: NativeLiveResponses;
   readonly sdp: string;
   readonly input: LiveHistoryItem[];
   readonly instructions: string;
@@ -75,7 +83,8 @@ export function createLiveTransportConnector(options: {
     try {
       created = await client.live.create({
         session: { model: LIVE_MODEL, instructions: input.instructions, input: input.input,
-          delegation: { type: 'client' }, audio: { output: { voice: input.voice ?? 'marin' } }, store: false,
+          // openai 7.32's generated Live union omits remote MCP tools supported by the API.
+          delegation: input.responses ? { type: 'responses', responses: input.responses as unknown as SessionConfig.Responses['responses'] } : { type: 'client' }, audio: { output: { voice: input.voice ?? 'marin' } }, store: false,
           // Browser audio/captions stay native. Only the trusted server may
           // supply instructions, delegate work or publish a backend result.
           client: { data_channel: {

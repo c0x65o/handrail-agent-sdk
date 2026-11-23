@@ -292,3 +292,9 @@ test('private call keeps greetings local and speaks the delegated lookup result'
   f.results.set('work-1',{status:'succeeded',text:'3 matches'});
   await until(()=>f.sent.some(e=>e.type==='session.commentary.append'&&e.content==='3 matches'));
 });
+
+test('native Responses handles speech and tools without application turns or retained captions',async t=>{
+  const f=fixture(t,{nativeResponses:async()=>({model:'model',tools:[]})});await f.start();
+  f.speech('Hello');f.speech('Search orders');f.delegate();await pause(40);
+  assert.deepEqual(f.queued,[]);assert.deepEqual(f.fragments,[]);assert.deepEqual(f.sent,[]);
+});
