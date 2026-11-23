@@ -6,7 +6,7 @@ import OpenAI from 'openai';
 import {createLiveTransportConnector} from '../dist/server/live-transport.js';
 
 async function fixture(t,{status=200,answer='v=0\r\nanswer',rejectSocket=false}={}) {
-  const requests=[],messages=[],peers=[];let saved=false;
+  const requests=[],messages=[],peers=[],attachments=[];let saved=false;
   const server=createServer(async(req,res)=>{
     const parts=[];for await(const part of req)parts.push(part);
     const body=Buffer.concat(parts).toString();requests.push({path:req.url,headers:req.headers,body:body?JSON.parse(body):null});
@@ -22,6 +22,7 @@ async function fixture(t,{status=200,answer='v=0\r\nanswer',rejectSocket=false}=
     assert.equal(req.headers.authorization,'Bearer fixture-key');
     assert.equal(req.headers['openai-project'],'fixture-project');
     assert.match(req.url,/\/live\/sessions\/live_original\/attach/);
+    attachments.push(new URL(req.url, 'http://localhost'));
     sockets.handleUpgrade(req,socket,head,peer=>{peers.push(peer);peer.on('message',raw=>messages.push(JSON.parse(String(raw))));});
   });
   await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
@@ -31,7 +32,7 @@ async function fixture(t,{status=200,answer='v=0\r\nanswer',rejectSocket=false}=
   const events=[],disconnections=[];
   const start=(extra={})=>connect({sdp:'v=0\r\noffer',input:[],instructions:'Speak and delegate.',
     onCreated:async id=>{assert.equal(id,'live_original');saved=true;},onEvent:e=>events.push(e),onDisconnect:e=>disconnections.push(e),...extra});
-  return {start,requests,messages,events,peers,disconnections};
+  return {start,requests,messages,events,peers,disconnections,attachments};
 }
 async function until(check){for(let i=0;i<100;i++){if(check())return;await new Promise(resolve=>setTimeout(resolve,5));}assert.fail('Transport event missing');}
 
@@ -78,4 +79,23 @@ test('a definitive provider rejection records that no call was created',async t=
     });
     assert.equal(f.requests.length,1);
   }
+});
+
+test('requests graceful sideband closure and drains terminal usage after a provider protocol error', async t => {
+  const f = await fixture(t);
+  const transport = await f.start();
+  t.after(() => transport.dispose());
+  assert.equal(f.attachments[0].searchParams.get('graceful_close'), 'true');
+  const peer = f.peers[0];
+  peer.send(JSON.stringify({type:'session.usage.updated',usage:{seconds:29}}));
+  peer.send(JSON.stringify({type:'error',error:{code:'invalid_event',message:'Rejected event'}}));
+  await until(() => f.events.some(event => event.type === 'error'));
+  assert.equal(f.disconnections.length, 0);
+  transport.send({type:'session.close'});
+  await until(() => f.messages.some(event => event.type === 'session.close'));
+  peer.send(JSON.stringify({type:'session.closed',reason:'close_requested',usage:{seconds:41}}));
+  peer.close(1000);
+  await until(() => f.disconnections.length === 1);
+  assert.deepEqual(f.events.at(-1).usage, {seconds:41});
+  assert.equal(f.events.at(-1).type, 'session.closed');
 });

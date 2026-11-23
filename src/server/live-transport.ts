@@ -112,13 +112,19 @@ export function createLiveTransportConnector(options: {
       }
       input.signal?.throwIfAborted();
       const controlStarted = clock();
-      sideband = new SidebandWS(client, { session_id: providerId }, { handshakeTimeout: timeoutMs, reconnect: null });
+      sideband = new SidebandWS(client, { session_id: providerId, graceful_close: true }, { handshakeTimeout: timeoutMs, reconnect: null });
       sideband.on('event', event => {
         if (disposed || ['session.input_audio.append', 'session.output_audio.delta'].includes(event.type)) return;
         try { input.onEvent(event); }
         catch { failure = new LiveTransportError('connection_failed'); disconnect(); }
       });
-      sideband.on('error', () => { failure = new LiveTransportError('connection_failed'); disconnect(); });
+      sideband.on('error', error => {
+        // OpenAI also emits each provider error through 'event'. The session
+        // service handles it there and still needs the socket for final usage.
+        if (error.error?.type === 'error') return;
+        failure = new LiveTransportError('connection_failed');
+        disconnect();
+      });
       sideband.on('close', () => { failure ??= new LiveTransportError('connection_closed'); disconnect(); });
       const socket = sideband.socket;
       await new Promise<void>((resolve, reject) => {
