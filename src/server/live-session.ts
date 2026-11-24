@@ -5,8 +5,8 @@ import { randomUUID } from 'node:crypto';
 import { LIVE_MODEL, LiveTransportError, type LiveTransport, type LiveTransportInput, type LiveServerEvent,
   type NativeLiveResponses, type LiveHistoryItem } from './live-transport.js';
 
-export { LIVE_MODEL, LiveTransportError, createLiveTransportConnector } from './live-transport.js';
-export type { LiveTransport, LiveTransportInput, LiveServerEvent, LiveClientEvent, LiveHistoryItem } from './live-transport.js';
+export { DEFAULT_VOICE_BACKEND, DEFAULT_VOICE_BACKEND_PROMPT, LIVE_MODEL, LiveTransportError, createLiveTransportConnector } from './live-transport.js';
+export type { NativeLiveResponses, LiveTransport, LiveTransportInput, LiveServerEvent, LiveClientEvent, LiveHistoryItem } from './live-transport.js';
 
 export interface LiveFragment {
   id: string; role: 'user' | 'assistant'; text: string; sequence: number;
@@ -50,7 +50,19 @@ export interface LiveUsageReceipt {
 export interface LiveFinalReceipt<C> extends LiveSnapshot {
   principalId: string; context: C; finalized: boolean; captureError: string | null;
 }
+export interface LiveDelegationTiming {
+  event: string;
+  session_id: string;
+  delegation_id: string | null;
+  backend_model: string;
+  since_user_speech_ms: number | null;
+  since_delegation_start_ms: number | null;
+  item_id?: string;
+  error_code?: string;
+}
+
 export interface LiveSessionOptions<C, A> {
+  onTiming?(timing: LiveDelegationTiming): void;
   nativeResponses?(scope: LiveScope<C>, authorized: A): Promise<NativeLiveResponses>;
   authorize(threadId: string, principalId: string, context: C): Promise<A>;
   prepareContext(scope: LiveScope<C>, authorized: A): Promise<LiveConversationContext>;
@@ -98,6 +110,9 @@ type Session<C> = LiveScope<C> & {
   delegations: Map<string, Delegation>; delegationTimers: Map<string, ReturnType<typeof setTimeout>>;
   delegationChain: Promise<void>; revision: number; nextRevision: number;
   eventIds: Set<string>; sequence: number; latestUserSequence: number; lastSubmittedSequence: number;
+  backendModel?: string;
+  delegationStarts: Map<string, number>;
+  lastInputAt?: number;
   pendingSpeechSequence: number;
   lastBodySequence: number; fragments: LiveFragment[]; capture: Promise<void>; captureError: string | null;
   finalization?: Promise<void>; seconds: number; finalized: boolean; endConfirmed: boolean; started: number;
@@ -105,6 +120,10 @@ type Session<C> = LiveScope<C> & {
   heartbeat: number; lastSpeech: number; busy: boolean;
   timer?: ReturnType<typeof setInterval>; closeTimer?: ReturnType<typeof setTimeout>;
 };
+
+function asRecord(value: unknown): Record<string, unknown> {
+  return value && typeof value === 'object' ? value as Record<string, unknown> : {};
+}
 
 const fail = (message: string, statusCode = 400) => Object.assign(new Error(message), { statusCode });
 const errorStatus = (error: unknown) => error && typeof error === 'object' && 'statusCode' in error
@@ -302,8 +321,47 @@ export function createLiveSessionService<C, A>(options: LiveSessionOptions<C, A>
       append(s, 'session.commentary.append', providerId, s.error);
     }
   }
+  function recordNativeTiming(s: Session<C>, e: LiveServerEvent) {
+    if (!options.onTiming || !s.backendModel) return;
+    const at = now();
+    if (e.type === 'session.input_transcript.delta') { s.lastInputAt = at; return; }
+    let name: string = e.type;
+    let id: string | null = null;
+    let code: unknown;
+    let itemId: unknown;
+    let model = s.backendModel;
+    if (e.type === 'session.delegation.created') {
+      id = e.delegation.id;
+      s.delegationStarts.set(id, at);
+    } else if (e.type === 'response.event') {
+      const nested = e.event;
+      if (typeof nested.type !== 'string') return;
+      name = nested.type;
+      id = e.delegation_id ?? null;
+      const response = asRecord(nested.response);
+      if (typeof response.model === 'string') model = response.model;
+      const item = asRecord(nested.item);
+      if (name === 'response.output_item.added' || name === 'response.output_item.done') {
+        if (item.type !== 'mcp_call' && item.type !== 'mcp_list_tools') return;
+        name = name.replace('output_item', item.type);
+      } else if (!/^(?:error|response\.(?:created|completed|done|failed|error|mcp_(?:call|list_tools)\.(?:in_progress|completed|failed)))$/.test(name)) return;
+      itemId = nested.item_id ?? item.id;
+      code = asRecord(response.error).code ?? asRecord(nested.error).code ?? nested.code ?? asRecord(item.error).code;
+    } else if (e.type === 'error') {
+      code = e.error.code;
+    } else return;
+    const start = id === null ? undefined : s.delegationStarts.get(id);
+    try {
+      options.onTiming({ event: name, session_id: s.id, delegation_id: id, backend_model: model,
+        since_user_speech_ms: s.lastInputAt === undefined ? null : Math.max(0, at - s.lastInputAt),
+        since_delegation_start_ms: start === undefined ? null : Math.max(0, at - start),
+        ...(typeof itemId === 'string' ? { item_id: itemId } : {}),
+        ...(typeof code === 'string' ? { error_code: code } : {}) });
+    } catch { /* Diagnostic sinks cannot interrupt the call. */ }
+  }
   function event(s: Session<C>, e: LiveServerEvent) {
     if (s.finished) return;
+    recordNativeTiming(s, e);
     if (e.type === 'session.thinking.appended' && e.client_event_id) s.contextAppends.delete(e.client_event_id);
     if (e.type === 'session.closed' || e.type === 'session.usage.updated') {
       if (!Number.isFinite(e.usage.seconds) || e.usage.seconds < 0) {
@@ -404,7 +462,7 @@ export function createLiveSessionService<C, A>(options: LiveSessionOptions<C, A>
       const completion = new Promise<void>(resolve => { complete = resolve; });
       const s: Session<C> = { id, threadId, principalId, context, offer: sdp, status: 'starting', error: null, completion, complete,
         finished: false, providerRequested: false, providerId: null, contextObservedAt: 0, contextAppends: new Set(),
-        delegations: new Map(), delegationTimers: new Map(), delegationChain: Promise.resolve(),
+        delegationStarts: new Map(), delegations: new Map(), delegationTimers: new Map(), delegationChain: Promise.resolve(),
         revision: 0, nextRevision: 0, eventIds: new Set(), sequence: 0, latestUserSequence: 0,
         lastSubmittedSequence: 0, pendingSpeechSequence: 0, lastBodySequence: 0, fragments: [], capture: Promise.resolve(), captureError: null,
         seconds: 0, finalized: false, endConfirmed: false, started: now(), heartbeat: now(), lastSpeech: now(), busy: false };
@@ -418,6 +476,7 @@ export function createLiveSessionService<C, A>(options: LiveSessionOptions<C, A>
           if(s.status!=='starting')throw fail('Voice startup was cancelled.',409);
           s.publishedContext = s.reference!.fingerprint; s.providerRequested = true;
           const responses = await options.nativeResponses?.(s, authorized);
+          if (responses) s.backendModel = responses.model;
           const transport = await connect({ sdp, input: s.reference!.input, ...(responses ? {responses} : {}), instructions: responses ? options.instructions : `${options.instructions}\n\n${options.privateCall ? "Handle greetings, small talk and clarifications yourself. Do not delegate them. For business requests delegate to the private app worker. Only speak verified results. Never announce an internal queue or promise a later answer." : liveDelegationInstructions(!!options.delegateAllSpeech)}`,
             onCreated: async providerId => { s.providerId = providerId; await options.recordProviderSession(s, providerId); },
             onEvent: e => event(s, e), onDisconnect: message => { s.error = message; if (s.status !== 'starting') finish(s, false, 'connection_lost'); } });

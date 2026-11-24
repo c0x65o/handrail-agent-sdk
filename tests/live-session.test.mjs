@@ -298,3 +298,34 @@ test('native Responses handles speech and tools without application turns or ret
   f.speech('Hello');f.speech('Search orders');f.delegate();await pause(40);
   assert.deepEqual(f.queued,[]);assert.deepEqual(f.fragments,[]);assert.deepEqual(f.sent,[]);
 });
+
+test('native timing correlates overlapping delegations and excludes private payloads', async t => {
+  const timings = [];
+  let at = 1000;
+  const f = fixture(t, {now:()=>at, nativeResponses:async()=>({model:'backend',tools:[]}),
+    onTiming:timing=>timings.push(timing)});
+  await f.start();
+  const created = id => f.event({type:'session.delegation.created', delegation:{id,target:'responses'}});
+  const nested = (type, extra={}) => f.event({type:'response.event', delegation_id:'a',
+    event:{type, ...extra}});
+  created('a');
+  assert.equal(timings[0].since_user_speech_ms, null);
+  at += 10; f.speech('private transcript');
+  at += 10; created('b');
+  at += 10; nested('response.created', {response:{model:'backend-revision', instructions:'private prompt'}});
+  assert.deepEqual(timings.at(-1), {session_id:'original-session-request', delegation_id:'a',
+    event:'response.created', backend_model:'backend-revision', since_user_speech_ms:20, since_delegation_start_ms:30});
+  nested('response.mcp_call_arguments.delta', {delta:'private arguments'});
+  for (const type of ['response.mcp_list_tools.in_progress','response.mcp_call.completed','response.done']) {
+    nested(type, {item_id:'item1', output:'private output'});
+    assert.equal(timings.at(-1).event,type);
+  }
+  nested('response.failed',{response:{error:{code:'server_error',message:'private error'}}});
+  assert.equal(timings.at(-1).error_code,'server_error');
+  nested('error',{code:'invalid_value',message:'private error'});
+  assert.equal(timings.at(-1).error_code,'invalid_value');
+  f.event({type:'error', error:{code:'invalid_request',message:'private error'}});
+  assert.equal(timings.at(-1).error_code,'invalid_request');
+  assert.equal(timings.length,9);
+  assert.doesNotMatch(JSON.stringify(timings),/private|arguments/);
+});

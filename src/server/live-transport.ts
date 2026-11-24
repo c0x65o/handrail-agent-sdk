@@ -35,9 +35,21 @@ export interface LiveTransport {
 
 export interface NativeLiveResponses {
   model: string;
-  tools: { type: 'mcp'; server_label: string; server_url: string; authorization: string; require_approval: 'never' }[];
+  tools: { type: 'mcp'; server_label: string; server_url: string; authorization: string; require_approval: 'never'; allowed_tools?: string[] }[];
   instructions?: string;
+  reasoning?: { effort?: 'minimal' | 'low' | 'medium' | 'high' };
+  service_tier?: 'auto' | 'default' | 'flex' | 'priority';
+  parallel_tool_calls?: boolean;
+  tool_choice?: 'auto' | 'none' | 'required' | { type: 'mcp'; server_label: string; name?: string }
+    | { type: 'function'; name: string };
 }
+
+export const DEFAULT_VOICE_BACKEND = {
+  reasoning: { effort: 'low' }, parallel_tool_calls: true,
+} as const satisfies Partial<NativeLiveResponses>;
+
+export const DEFAULT_VOICE_BACKEND_PROMPT =
+  'Give a brief answer suitable for speech. Use tools when needed and report the verified result.';
 
 export interface LiveTransportInput {
   /** OpenAI manages MCP calls and speaks the result on this same Live session. */
@@ -84,7 +96,7 @@ export function createLiveTransportConnector(options: {
       created = await client.live.create({
         session: { model: LIVE_MODEL, instructions: input.instructions, input: input.input,
           // openai 7.32's generated Live union omits remote MCP tools supported by the API.
-          delegation: input.responses ? { type: 'responses', responses: input.responses as unknown as SessionConfig.Responses['responses'] } : { type: 'client' }, audio: { output: { voice: input.voice ?? 'marin' } }, store: false,
+          delegation: input.responses ? { type: 'responses', responses: { ...input.responses, reasoning: input.responses.reasoning ?? DEFAULT_VOICE_BACKEND.reasoning } as unknown as SessionConfig.Responses['responses'] } : { type: 'client' }, audio: { output: { voice: input.voice ?? 'marin' } }, store: false,
           // Browser audio/captions stay native. Only the trusted server may
           // supply instructions, delegate work or publish a backend result.
           client: { data_channel: {

@@ -99,3 +99,17 @@ test('requests graceful sideband closure and drains terminal usage after a provi
   assert.deepEqual(f.events.at(-1).usage, {seconds:41});
   assert.equal(f.events.at(-1).type, 'session.closed');
 });
+
+test('native delegation defaults only reasoning and serializes explicit backend controls', async t => {
+  const f = await fixture(t);
+  const tool = {type:'mcp', server_label:'erp', server_url:'https://example.test/mcp',
+    authorization:'fixture', require_approval:'never', allowed_tools:['lookup']};
+  const base = {model:'backend', tools:[tool]};
+  for (const settings of [{}, {reasoning:{effort:'high'}, service_tier:'flex',
+    parallel_tool_calls:false, tool_choice:{type:'mcp', server_label:'erp', name:'lookup'}}]) {
+    const transport = await f.start({responses:{...base, ...settings}});
+    transport.dispose();
+    assert.deepEqual(f.requests.at(-1).body.session.delegation,
+      {type:'responses', responses:{...base, reasoning:{effort:'low'}, ...settings}});
+  }
+});

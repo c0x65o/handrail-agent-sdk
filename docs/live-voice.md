@@ -6,11 +6,51 @@ It uses the official OpenAI client and `SidebandWS`. `BrowserLiveCall` from
 `handrail-agent-sdk/assistant/browser` owns microphone/WebRTC/playback lifecycle.
 Both are headless. Projects keep their existing presentation and HTTP routes.
 
-This is a client-delegation frontend to the existing saved agent. Its `enqueue`
+In client-delegation mode this is a frontend to the existing saved agent. Its `enqueue`
 port must admit work to the same durable conversation runtime that text uses.
 Do not install a second tool loop for calls. Hosted browser, MCP tools, native
 approvals, cancellation, work identity and backend usage stay with that runtime.
 The Live voice frontend's seconds are a separate usage receipt.
+
+## Native Responses delegation
+
+With `createNativeLiveSessionService`, return the backend configuration from
+`nativeResponses(scope, authorized)`. GPT-Live sends delegated work to that
+Responses model and its hosted MCP tools. Model processing can account for most
+of a spoken turn even when the MCP server answers quickly.
+
+```ts
+import { DEFAULT_VOICE_BACKEND, DEFAULT_VOICE_BACKEND_PROMPT } from 'handrail-agent-sdk/server/live';
+
+const nativeResponses = async () => ({
+  ...DEFAULT_VOICE_BACKEND,
+  model: backendModel,
+  instructions: DEFAULT_VOICE_BACKEND_PROMPT,
+  tools: authorizedMcpTools,
+});
+```
+
+Omitting `reasoning` sends `{ effort: 'low' }`. Models differ in supported
+efforts. If your model rejects low, set `reasoning.effort` to a supported
+`minimal`, `low`, `medium`, or `high`, or select a compatible model.
+Provider rejection follows the existing error path. The SDK does not retry
+creation with different settings.
+
+The preset also opts into `parallel_tool_calls: true`. Without the preset,
+the SDK leaves parallel calls and `service_tier` to the provider. Apps can set
+`parallel_tool_calls` to either boolean and `service_tier` to `auto`, `default`,
+`flex`, or `priority`. Set `tool_choice` to `auto`, `none`, `required`,
+`{type: 'mcp', server_label, name?}`, or `{type: 'function', name}`.
+Use `tools[i].allowed_tools` for an array of allowed MCP tool names.
+
+Pass `onTiming: timing => logger.info(timing)` to the native session service to
+record handoff, backend response, MCP discovery/call and error events. Records
+include the session and delegation IDs, backend model, and milliseconds since
+the last input transcript arrived and since that delegation was observed. A
+missing origin produces `null`. Parallel MCP events include the item ID when
+available. Failures include the provider error code when supplied. Transcript
+text, instructions, tool arguments, results and provider error messages are
+excluded.
 
 ## Server ports
 
